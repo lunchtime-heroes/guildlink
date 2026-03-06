@@ -1281,7 +1281,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
             );
           })}
         </div>
-      </div>}
+      </div>
+      }
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1364,7 +1365,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
             </div>
           ))}
         </div>
-      </div>}
+      </div>
+      }
     </div>
     </>
   );
