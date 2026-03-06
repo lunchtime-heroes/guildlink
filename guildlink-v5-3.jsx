@@ -1,0 +1,1888 @@
+import { useState, useEffect } from "react";
+
+function useWindowSize() {
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+  useEffect(() => {
+    const handle = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, []);
+  return width;
+}
+
+const C = {
+  bg: "#0a0c12",
+  surface: "#13161f",
+  surfaceHover: "#1a1d2a",
+  surfaceRaised: "#1e2130",
+  border: "#252836",
+  borderHover: "#353849",
+  accent: "#6c63ff",
+  accentGlow: "#6c63ff22",
+  accentSoft: "#9b94ff",
+  accentDim: "#6c63ff44",
+  green: "#22c55e",
+  gold: "#f59e0b",
+  goldDim: "#f59e0b22",
+  goldBorder: "#f59e0b33",
+  goldGlow: "#f59e0b15",
+  red: "#ef4444",
+  teal: "#06b6d4",
+  purple: "#a855f7",
+  text: "#e8eaf2",
+  textMuted: "#8b8fa8",
+  textDim: "#4a4d63",
+  online: "#22c55e",
+};
+
+// ─── FOUNDING / RING / QUEST DATA ────────────────────────────────────────────
+
+const FOUNDING = {
+  total: 10000,
+  claimed: 4847,
+  price: 5,
+  closeDate: "Dec 31, 2025",
+};
+
+const PROFILE_RINGS = [
+  { id: "none", label: "No Ring", color: "transparent", border: C?.border, description: "Standard member", unlocked: true, how: "Default" },
+  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", unlocked: true, how: "Become a Founding Member", special: true },
+  { id: "platinum", label: "Platinum Ring", color: "#e2e8f0", glow: "#e2e8f022", description: "Complete 50 game reviews", unlocked: false, how: "Quest: The Critic" },
+  { id: "crimson", label: "Crimson Ring", color: "#ef4444", glow: "#ef444433", description: "Reach Top Voice on any game page", unlocked: false, how: "Quest: Top of the Feed" },
+  { id: "void", label: "Void Ring", color: "#7c3aed", glow: "#7c3aed33", description: "Complete 10 games to 100%", unlocked: false, how: "Quest: The Completionist" },
+  { id: "emerald", label: "Emerald Ring", color: "#10b981", glow: "#10b98133", description: "Help 100 players find a squad", unlocked: false, how: "Quest: The Connector" },
+  { id: "celestial", label: "Celestial Ring", color: "#38bdf8", glow: "#38bdf833", description: "500 followers on GuildLink", unlocked: false, how: "Quest: Rising Star" },
+  { id: "onyx", label: "Onyx Ring", color: "#1e293b", glow: "#94a3b833", description: "1 year as a GuildLink member", unlocked: false, how: "Quest: Veteran" },
+];
+
+const QUESTS = [
+  { id: "q1", title: "First Words", desc: "Post for the first time", reward: "10 XP", progress: 1, total: 1, done: true, ring: null },
+  { id: "q2", title: "The Critic", desc: "Write 50 game reviews", reward: "Platinum Ring", progress: 32, total: 50, done: false, ring: "platinum" },
+  { id: "q3", title: "Top of the Feed", desc: "Reach Top Voice status on any game page", reward: "Crimson Ring", progress: 0, total: 1, done: false, ring: "crimson" },
+  { id: "q4", title: "The Completionist", desc: "Mark 10 games as 100% complete", reward: "Void Ring", progress: 3, total: 10, done: false, ring: "void" },
+  { id: "q5", title: "The Connector", desc: "Have 100 players join squads you posted", reward: "Emerald Ring", progress: 14, total: 100, done: false, ring: "emerald" },
+  { id: "q6", title: "Rising Star", desc: "Reach 500 followers", reward: "Celestial Ring", progress: 312, total: 500, done: false, ring: "celestial" },
+  { id: "q7", title: "Veteran", desc: "Be a GuildLink member for 1 year", reward: "Onyx Ring", progress: 0, total: 12, done: false, ring: "onyx", unit: "months" },
+  { id: "q8", title: "NPC Whisperer", desc: "Get 10 NPC replies on your posts", reward: "500 XP + Badge", progress: 7, total: 10, done: false, ring: null },
+];
+
+// ─── NPC DATA ─────────────────────────────────────────────────────────────────
+
+const NPCS = {
+  merv: {
+    id: "merv",
+    name: "ShopKeep Merv",
+    handle: "@ShopKeepMerv_NPC",
+    avatar: "SM",
+    isNPC: true,
+    universe: "Realm of Aethoria",
+    universeIcon: "⚔️",
+    role: "Licensed Cave Merchant · Aethoria Trade Guild",
+    location: "The Fogwood Cave, Eastern Pass, Aethoria",
+    status: "online",
+    yearsOfService: 340,
+    followers: 28400,
+    connections: 12,
+    bio: "I have operated this cave-based general store since the Third Age. My inventory is well-stocked. My location is findable. I am here every day. The lantern is on. I do not understand the foot traffic situation.",
+    lore: "Merv took over the Fogwood Cave shop from his father, who took it over from his father, who allegedly started the business after getting lost during an adventure and never finding his way out. The family has made peace with this. The Eastern Pass sees considerable hero traffic. Merv has spoken to very few of them.",
+    stats: [
+      { label: "Apples Sold", value: "4,532", note: "Single-day record. Unannounced." },
+      { label: "Heroes Greeted", value: "847,291", note: "Greeted. Not necessarily acknowledged." },
+      { label: "Quests Overheard", value: "12,004", note: "Could have helped with most of them." },
+      { label: "Years in Business", value: "340", note: "No reviews. Not on any maps." },
+      { label: "Inventory Restocks", value: "∞", note: "The arrows just appear. He doesn't ask." },
+      { label: "Unsolicited Advice Given", value: "0", note: "Professional." },
+    ],
+    games: ["Elden Ring", "Dark Souls III", "Hollow Knight"],
+    posts: [
+      { id: "m1", time: "3h ago", content: "Inventory update: 847 arrows, 12 health potions, one sword of unclear origin. I have been in this cave since the Third Age. Business is steady.", likes: 4821, comments: 18, liked: false },
+      { id: "m2", time: "1d ago", content: "A hero came in today. Looked at my wares for 45 seconds. Said 'hm'. Left. I have been thinking about it since.", likes: 9204, comments: 47, liked: false },
+      { id: "m3", time: "2d ago", content: "Updated the sign outside. It now reads SHOP in larger letters. Foot traffic unchanged. The sign looks good though.", likes: 6103, comments: 29, liked: false },
+    ],
+  },
+  grunt: {
+    id: "grunt",
+    name: "Grunt #4471",
+    handle: "@GRUNT_NPC",
+    avatar: "G4",
+    isNPC: true,
+    universe: "Realm of Aethoria",
+    universeIcon: "⚔️",
+    role: "Eastern Gate Guard, 3rd Rotation · Royal City of Aethon",
+    location: "Eastern Gate, Royal City of Aethon, Aethoria",
+    status: "online",
+    yearsOfService: 6,
+    followers: 31200,
+    connections: 8,
+    bio: "I guard the Eastern Gate. I have guarded this gate for six years. I have a lot of thoughts about the people who walk through it. I am not permitted to share most of them. The knee is fine. Please stop asking about the knee.",
+    lore: "Grunt #4471 enlisted in the Royal Guard at 18, motivated by a love of structure and a desire to see the world. He has seen the Eastern Gate. It is a nice gate. He has opinions about every single person who has passed through it and zero outlet for those opinions until GuildLink.",
+    stats: [
+      { label: "Hours Stood at Post", value: "52,560", note: "Consecutive. Mostly." },
+      { label: "Travelers Greeted", value: "2.1M", note: "Response rate: 4%." },
+      { label: "Threats Neutralized", value: "0", note: "Quiet gate. Good gate." },
+      { label: "Times Knee Mentioned", value: "847", note: "It was one comment." },
+      { label: "Unsolicited Directions Given", value: "12,004", note: "Nobody asked." },
+      { label: "Naps Taken on Duty", value: "0", note: "Alleged." },
+    ],
+    games: ["Elden Ring", "Dark Souls III", "Skyrim"],
+    posts: [
+      { id: "g1", time: "5h ago", content: "Sixth year at the Eastern Gate. The sunrise is the same every morning. I have memorized it. I have given it a name. I will not be sharing the name.", likes: 7823, comments: 34, liked: false },
+      { id: "g2", time: "2d ago", content: "A hero walked through the gate today without making eye contact. I said good morning. The wind took it. Another day.", likes: 11204, comments: 82, liked: false },
+    ],
+  },
+  villager47: {
+    id: "villager47",
+    name: "Villager No. 47",
+    handle: "@VillagerNo47_NPC",
+    avatar: "V4",
+    isNPC: true,
+    universe: "Maplewood Valley",
+    universeIcon: "🌿",
+    role: "Background Resident · Maplewood Valley Homeowners Assoc.",
+    location: "Plot 47, Riverside District, Maplewood Valley",
+    status: "online",
+    yearsOfService: 12,
+    followers: 44800,
+    connections: 31,
+    bio: "I live at Plot 47. I have always lived at Plot 47. The river is nice. The new residents keep moving my fence. I have filed nothing. I notice everything. Have a good Tuesday.",
+    lore: "Villager No. 47 has been a resident of Maplewood Valley longer than any current mayor, any current shop, and most of the trees. She remembers when the fishing spot was undiscovered. She has feelings about what happened to the fishing spot. She is processing.",
+    stats: [
+      { label: "Years as Resident", value: "12", note: "Predates the current mayor by 9 years." },
+      { label: "Fences Moved by Others", value: "23", note: "Filed: 0 complaints." },
+      { label: "Fish Witnessed Being Caught", value: "8,847", note: "Was not invited to fish." },
+      { label: "Wholesome Interactions", value: "∞", note: "It's her thing." },
+      { label: "Passive Aggressive Waves", value: "204", note: "Unverified. She denies this." },
+      { label: "Flowers Planted", value: "1,847", note: "Near Plot 48. Intentional." },
+    ],
+    games: ["Stardew Valley", "Animal Crossing", "Hollow Knight"],
+    posts: [
+      { id: "v1", time: "2h ago", content: "A new resident moved into town today. They immediately started chopping down trees. I have filed nothing. I feel nothing. Welcome.", likes: 12847, comments: 67, liked: false },
+      { id: "v2", time: "1d ago", content: "The river looked particularly nice this morning. I stood by it for a while. Nobody asked why. I appreciated that.", likes: 8921, comments: 41, liked: false },
+    ],
+  },
+  beekeeper: {
+    id: "beekeeper",
+    name: "BeeKeeper Nan",
+    handle: "@BeeKeeperNan_NPC",
+    avatar: "BN",
+    isNPC: true,
+    universe: "Maplewood Valley",
+    universeIcon: "🌿",
+    role: "Apiarist & Unofficial Florist · Maplewood Valley",
+    location: "The Meadow, North District, Maplewood Valley",
+    status: "away",
+    yearsOfService: 8,
+    followers: 29100,
+    connections: 28,
+    bio: "I keep bees. The bees are fine. The flowers near plot 4 are gone and I noticed. I always notice. The honey is available at the market on Saturdays. Come early.",
+    lore: "Nan arrived in Maplewood Valley eight years ago with seventeen beehives and opinions about pollinator corridors. She has expanded to forty-two hives. The opinions have also expanded.",
+    stats: [
+      { label: "Beehives Maintained", value: "42", note: "Up from 17. The bees chose this." },
+      { label: "Honey Jars Sold", value: "9,204", note: "Saturday market. Come early." },
+      { label: "Flower Losses Documented", value: "847", note: "Mentally. Not formally." },
+      { label: "Bees Named", value: "3", note: "Gerald, Susan, and The Fast One." },
+      { label: "Unsolicited Garden Opinions", value: "2,847", note: "Solicited: also 2,847." },
+      { label: "Years of Perfect Honey", value: "8", note: "Consecutive. She will mention this." },
+    ],
+    games: ["Stardew Valley", "Animal Crossing"],
+    posts: [],
+  },
+  minion: {
+    id: "minion",
+    name: "Just A Minion",
+    handle: "@JustAMinion_NPC",
+    avatar: "JM",
+    isNPC: true,
+    universe: "Sector Null",
+    universeIcon: "🚀",
+    role: "Level 1 Enemy Unit · Sector Null Defense Force",
+    location: "Spawn Point 7, Sector Null Outpost",
+    status: "ingame",
+    yearsOfService: 3,
+    followers: 52300,
+    connections: 4,
+    bio: "I am a Level 1 enemy unit. My job is to patrol, engage, and respawn. I am good at two of those things. I have thoughts about difficulty settings that I keep mostly to myself. The respawn is instant. The dignity takes longer.",
+    lore: "Unit designation JM-0047 was deployed to Sector Null Outpost three years ago. In that time he has been defeated by heroes, speedrunners, people testing their new controller, and once by someone who appeared to be playing with their eyes closed. He has achieved a kind of peace about it.",
+    stats: [
+      { label: "Times Defeated", value: "14,847", note: "This season alone." },
+      { label: "Respawn Time", value: "0.3s", note: "Very efficient. Small mercy." },
+      { label: "Heroes Engaged", value: "14,847", note: "Correlation noted." },
+      { label: "Times Avoided Entirely", value: "204", note: "Speedrunners. Rude but efficient." },
+      { label: "Patrol Routes Completed", value: "2", note: "Things escalate quickly." },
+      { label: "Existential Crises", value: "1", note: "Ongoing." },
+    ],
+    games: ["Valorant", "Overwatch 2", "Dark Souls III"],
+    posts: [
+      { id: "jm1", time: "4h ago", content: "Respawned 23 times today before 9am. The hero is having a productive morning. I support their goals. This is fine.", likes: 18204, comments: 94, liked: false },
+    ],
+  },
+  oldmanquest: {
+    id: "oldmanquest",
+    name: "Old Man Quest",
+    handle: "@OldManQuest_NPC",
+    avatar: "OQ",
+    isNPC: true,
+    universe: "Realm of Aethoria",
+    universeIcon: "⚔️",
+    role: "Senior Quest Issuer · Aethoria Quest Bureau, Retired (Not Retired)",
+    location: "The Old Mill, Crossroads Village, Aethoria",
+    status: "online",
+    yearsOfService: 200,
+    followers: 38700,
+    connections: 6,
+    bio: "I have quests. Important quests. The fate of several villages depends on their completion. I stand at the crossroads every day. I am very visible. I have a large glowing exclamation mark above my head. The ancient evil grows stronger.",
+    lore: "The Old Man has been issuing quests since before the current kingdom existed. His quest completion rate is 0.003%. He has made peace with nothing. The exclamation mark was installed 200 years ago and has never once been acknowledged.",
+    stats: [
+      { label: "Quests Issued", value: "847", note: "Completion rate: 0.003%." },
+      { label: "Years at the Crossroads", value: "200", note: "Rain or shine." },
+      { label: "Exclamation Marks Displayed", value: "1", note: "Glowing. Quite large." },
+      { label: "Villages That Needed Saving", value: "12", note: "Still need saving." },
+      { label: "Times Someone Stopped", value: "3", note: "Two left mid-conversation." },
+      { label: "Ancient Evils Pending", value: "4", note: "Growing stronger daily." },
+    ],
+    games: ["Elden Ring", "Dark Souls III", "Hollow Knight"],
+    posts: [
+      { id: "oq1", time: "6h ago", content: "Day 73,000 at the crossroads. The ancient evil grows stronger. I have four quests available. I am wearing the exclamation mark. I don't know what else I can do.", likes: 22847, comments: 113, liked: false },
+    ],
+  },
+};
+
+// ─── FEED POSTS WITH COMMENTS ─────────────────────────────────────────────────
+
+const FEED_POSTS = [
+  {
+    id: 1,
+    user: { name: "Jordan Park", handle: "@jpark_gamer", avatar: "JP", status: "online", isNPC: false },
+    time: "2h ago", game: "Elden Ring", gameId: "elden-ring", gameIcon: "🗡️",
+    content: "Finally beat Malenia after 47 attempts. The feeling when she finally went down... absolutely unreal. If anyone's struggling, happy to share my build — bleed arcane was the key 🗡️",
+    likes: 284, comments: 4, shares: 12, liked: false,
+    commentList: [
+      { id: "c1", user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true }, time: "1h ago", content: "I sell Preserving Boluses from a cave 40 feet from her arena. I have Preserving Boluses in stock at all times. Nobody has ever asked.", likes: 1847 },
+      { id: "c2", user: { name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true }, time: "1h ago", content: "I stood outside that arena for 6 years. Not one person said hello. Congratulations on your victory. Sincerely.", likes: 2104 },
+      { id: "c3", user: { name: "Sam Rivera", handle: "@sam_fps", avatar: "SR", isNPC: false }, time: "58m ago", content: "wait are you two in the same game?? 😭", likes: 847 },
+      { id: "c4", user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true }, time: "55m ago", content: "We met at a trade guild mixer. It was sparsely attended. There were refreshments. Merv brought the arrows.", likes: 3921 },
+    ],
+  },
+  {
+    id: 2,
+    user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", status: "online", isNPC: true },
+    time: "3h ago", game: null, gameId: null, gameIcon: null,
+    content: "Inventory update: 847 arrows, 12 health potions, one sword of unclear origin. I have been in this cave since the Third Age. Business is steady. The lantern is on.",
+    likes: 4821, comments: 5, shares: 892, liked: false,
+    commentList: [
+      { id: "c5", user: { name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true }, time: "2h ago", content: "I have a quest that requires 400 arrows. I have mentioned this to no one.", likes: 5204 },
+      { id: "c6", user: { name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true }, time: "2h ago", content: "I could have told people about the quest. I stand near the entrance to this entire region.", likes: 2847 },
+      { id: "c7", user: { name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true }, time: "1h ago", content: "Why didn't you?", likes: 1923 },
+      { id: "c8", user: { name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true }, time: "1h ago", content: "Nobody asks me anything. I mentioned the knee situation once and they all walked past.", likes: 8847 },
+      { id: "c9", user: { name: "Priya Nair", handle: "@priya_plays", avatar: "PN", isNPC: false }, time: "45m ago", content: "I am genuinely losing my mind at this thread. I came here to talk about games.", likes: 4102 },
+    ],
+  },
+  {
+    id: 3,
+    user: { name: "Taylor Kim", handle: "@taylorplays", avatar: "TK", status: "ingame", isNPC: false },
+    time: "4h ago", game: "Stardew Valley", gameId: null, gameIcon: "🌱",
+    content: "just cried because my favorite villager said something nice to me in Stardew 🌱 I need help. I am a grown adult.",
+    likes: 3847, comments: 4, shares: 204, liked: true,
+    commentList: [
+      { id: "c10", user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true }, time: "3h ago", content: "We notice everything. We just don't always say it. You're doing great out there. Genuinely.", likes: 6847 },
+      { id: "c11", user: { name: "Alex Chen", handle: "@axelstrike", avatar: "AC", isNPC: false }, time: "3h ago", content: "this reply just made it worse im crying harder what is happening", likes: 2904 },
+      { id: "c12", user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true }, time: "2h ago", content: "That was the intended outcome. Have a good Tuesday.", likes: 11203 },
+      { id: "c13", user: { name: "BeeKeeper Nan", handle: "@BeeKeeperNan_NPC", avatar: "BN", isNPC: true }, time: "2h ago", content: "The flowers near Plot 4 are also doing well, for what it's worth. It's worth something.", likes: 3847 },
+    ],
+  },
+  {
+    id: 4,
+    user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", status: "online", isNPC: true },
+    time: "5h ago", game: null, gameId: null, gameIcon: null,
+    content: "A new resident moved into town today. They immediately started chopping down trees. I have filed nothing. I feel nothing. Welcome.",
+    likes: 12847, comments: 4, shares: 1847, liked: false,
+    commentList: [
+      { id: "c14", user: { name: "BeeKeeper Nan", handle: "@BeeKeeperNan_NPC", avatar: "BN", isNPC: true }, time: "4h ago", content: "The flowers near plot 4 are gone. I noticed. I have been noticing.", likes: 4821 },
+      { id: "c15", user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true }, time: "4h ago", content: "We all noticed, Nan.", likes: 7203 },
+      { id: "c16", user: { name: "Mayor Whistle", handle: "@MayorWhistle_NPC", avatar: "MW", isNPC: true }, time: "3h ago", content: "I've received 3 formal complaints and 47 informal ones. I am handling it. Please stop sending complaints. I am one person.", likes: 9847 },
+      { id: "c17", user: { name: "Jordan Park", handle: "@jpark_gamer", avatar: "JP", isNPC: false }, time: "2h ago", content: "the maplewood valley lore is getting DEEP and I am here for every second of it", likes: 5204 },
+    ],
+  },
+  {
+    id: 5,
+    user: { name: "Sam Rivera", handle: "@sam_fps", avatar: "SR", status: "away", isNPC: false },
+    time: "6h ago", game: "Valorant", gameId: null, gameIcon: "🎯",
+    content: "lost 8 ranked games in a row. I am cooked. genuinely considering touching grass for the first time in weeks 💀",
+    likes: 521, comments: 3, shares: 31, liked: false,
+    commentList: [
+      { id: "c18", user: { name: "Just A Minion", handle: "@JustAMinion_NPC", avatar: "JM", isNPC: true }, time: "5h ago", content: "I have died 14,847 times this season. Ranked or casual, the result is the same. You respawn. You try again. This is the way. Also the grass is fine.", likes: 8204 },
+      { id: "c19", user: { name: "Sam Rivera", handle: "@sam_fps", avatar: "SR", isNPC: false }, time: "5h ago", content: "a level 1 minion just gave me better life advice than my actual therapist. incredible platform.", likes: 6847 },
+      { id: "c20", user: { name: "Just A Minion", handle: "@JustAMinion_NPC", avatar: "JM", isNPC: true }, time: "4h ago", content: "I charge nothing. My rates are very competitive. I am also available to be defeated if that would help.", likes: 12903 },
+    ],
+  },
+  {
+    id: 6,
+    user: { name: "Alex Chen", handle: "@axelstrike", avatar: "AC", status: "online", isNPC: false },
+    time: "8h ago", game: "Hollow Knight", gameId: "hollow-knight", gameIcon: "🦋",
+    content: "Silksong just dropped and I have cleared my entire weekend. Family has been notified. The fridge is stocked. I am ready.",
+    likes: 2104, comments: 3, shares: 847, liked: false,
+    commentList: [
+      { id: "c21", user: { name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true }, time: "7h ago", content: "I have a quest in a kingdom very similar to this one. It has been pending for 200 years. No rush. Enjoy your weekend.", likes: 7821 },
+      { id: "c22", user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true }, time: "7h ago", content: "I have supplies available if needed. I am near the Eastern Pass. I am always near the Eastern Pass.", likes: 3204 },
+      { id: "c23", user: { name: "Taylor Kim", handle: "@taylorplays", avatar: "TK", isNPC: false }, time: "6h ago", content: "same. my out of office is on. I have no regrets.", likes: 1847 },
+    ],
+  },
+];
+
+// ─── GAME DATA ────────────────────────────────────────────────────────────────
+
+const GAMES = {
+  "elden-ring": {
+    id: "elden-ring", name: "Elden Ring", icon: "🗡️",
+    genre: ["Action RPG", "Souls-like", "Open World"], year: 2022, developer: "FromSoftware",
+    claimed: true, followers: 48200, activePlayers: 1840, completions: 12400,
+    reviewScore: 9.4, reviewCount: 3821, color: "#c9a84c",
+    gradient: "linear-gradient(135deg, #1a1000 0%, #3d2800 40%, #1a0a00 100%)",
+    description: "A vast open-world action RPG set in the Lands Between, crafted by FromSoftware and George R.R. Martin.",
+    trendingTopics: [
+      { tag: "Shadow of the Erdtree", posts: 4200, reactions: 18900, trend: "🔥 Hot", delta: "+340%" },
+      { tag: "Malenia Build Guide", posts: 890, reactions: 6700, trend: "📈 Rising", delta: "+89%" },
+      { tag: "Patch 1.12 Changes", posts: 2100, reactions: 9400, trend: "💬 Active", delta: "+120%" },
+      { tag: "Lore Deep Dive", posts: 560, reactions: 4200, trend: "📚 Steady", delta: "+12%" },
+    ],
+    topVoices: [
+      { name: "VaatiVidya", handle: "@vaati", avatar: "VV", score: 98400, badge: "👑", posts: 284 },
+      { name: "Let Me Solo Her", handle: "@letmesoloher", avatar: "LM", score: 76200, badge: "⚔️", posts: 142 },
+      { name: "Jordan Park", handle: "@jpark", avatar: "JP", score: 34100, badge: "🔥", posts: 98 },
+      { name: "Alex Chen", handle: "@axelstrike", avatar: "AC", score: 28900, badge: "⭐", posts: 76 },
+    ],
+    alsoLiked: [
+      { id: "hollow-knight", name: "Hollow Knight", icon: "🦋", overlap: 78, reason: "Challenging, rewarding mastery" },
+      { id: "stardew-valley", name: "Stardew Valley", icon: "🌱", overlap: 67, reason: "Fans crave a cozy contrast" },
+      { id: "dark-souls", name: "Dark Souls III", icon: "🔥", overlap: 94, reason: "The natural predecessor" },
+      { id: "animal-crossing", name: "Animal Crossing", icon: "🏝️", overlap: 61, reason: "\"I earned this peace\" 😂" },
+    ],
+    tips: [
+      { title: "Bleed builds wreck everything early", author: "JP", upvotes: 2841, category: "Build" },
+      { title: "Always explore caves before advancing areas", author: "AC", upvotes: 1920, category: "Exploration" },
+      { title: "Torrent can access areas enemies can't follow", author: "MS", upvotes: 1540, category: "Mechanic" },
+    ],
+    posts: [
+      { id: 1, user: { name: "Jordan Park", avatar: "JP", handle: "@jpark", status: "online" }, time: "2h ago", content: "Finally beat Malenia after 47 attempts. Bleed arcane build was the key 🗡️", likes: 284, comments: 47, liked: false },
+      { id: 2, user: { name: "Maya Storm", avatar: "MS", handle: "@mayastorm", status: "ingame" }, time: "5h ago", content: "The Shadow of the Erdtree DLC lore is wild. Miquella's full story recontextualizes everything. Thread incoming 🧵", likes: 892, comments: 134, liked: true },
+    ],
+  },
+  "hollow-knight": {
+    id: "hollow-knight", name: "Hollow Knight", icon: "🦋",
+    genre: ["Metroidvania", "Indie", "Platformer"], year: 2017, developer: "Team Cherry",
+    claimed: false, followers: 31400, activePlayers: 920, completions: 8700,
+    reviewScore: 9.7, reviewCount: 2940, color: "#7c6fff",
+    gradient: "linear-gradient(135deg, #080818 0%, #1a1040 50%, #080818 100%)",
+    description: "A challenging action-adventure through a vast underground kingdom of insects and heroes.",
+    trendingTopics: [
+      { tag: "Silksong Release", posts: 8900, reactions: 42000, trend: "🔥 Massive", delta: "+890%" },
+      { tag: "Pantheon Tips", posts: 1200, reactions: 8900, trend: "📈 Rising", delta: "+45%" },
+    ],
+    topVoices: [
+      { name: "Mossbag", handle: "@mossbag", avatar: "MB", score: 124000, badge: "👑", posts: 412 },
+      { name: "Taylor Kim", handle: "@taylorplays", avatar: "TK", score: 54200, badge: "🦋", posts: 198 },
+    ],
+    alsoLiked: [
+      { id: "elden-ring", name: "Elden Ring", icon: "🗡️", overlap: 78, reason: "Shared love of challenge & lore" },
+      { id: "celeste", name: "Celeste", icon: "🏔️", overlap: 84, reason: "Precision platforming fans" },
+    ],
+    tips: [
+      { title: "Get Mothwing Cloak before Fungal Wastes", author: "TK", upvotes: 3200, category: "Progression" },
+    ],
+    posts: [
+      { id: 1, user: { name: "Taylor Kim", avatar: "TK", handle: "@taylorplays", status: "ingame" }, time: "1h ago", content: "Silksong is a masterpiece. 9.5/10 🦋", likes: 1203, comments: 188, liked: false },
+    ],
+  },
+};
+
+const BROWSE_GAMES = [
+  { id: "elden-ring", name: "Elden Ring", icon: "🗡️", followers: 48200, genre: "Action RPG", hot: true },
+  { id: "hollow-knight", name: "Hollow Knight", icon: "🦋", followers: 31400, genre: "Metroidvania", hot: true },
+  { id: "valorant", name: "Valorant", icon: "🎯", followers: 92100, genre: "FPS", hot: false },
+  { id: "stardew-valley", name: "Stardew Valley", icon: "🌱", followers: 28900, genre: "Simulation", hot: false },
+  { id: "overwatch", name: "Overwatch 2", icon: "🦸", followers: 61200, genre: "Hero Shooter", hot: false },
+  { id: "dark-souls", name: "Dark Souls III", icon: "🔥", followers: 39400, genre: "Souls-like", hot: false },
+  { id: "animal-crossing", name: "Animal Crossing", icon: "🏝️", followers: 44800, genre: "Life Sim", hot: false },
+  { id: "celeste", name: "Celeste", icon: "🏔️", followers: 18200, genre: "Platformer", hot: false },
+];
+
+const mockUser = {
+  name: "Alex Chen", handle: "@axelstrike", avatar: "AC",
+  level: 47, xp: 82400, xpNext: 90000,
+  title: "Apex Predator · FPS Specialist",
+  location: "San Francisco, CA",
+  connections: 312, followers: 1840,
+  bio: "Competitive FPS player & indie game enthusiast. Top 500 Overwatch. Always looking for serious teammates.",
+  games: ["Arc Raiders", "Elden Ring", "Hollow Knight", "Valorant"],
+  status: "online",
+  isFounding: true,
+  activeRing: "founding",
+};
+
+const squadPosts = [
+  { id: 1, user: { name: "Morgan Lee", avatar: "ML" }, game: "Valorant", gameIcon: "🎯", rank: "Diamond II", looking: "2 players", style: "Competitive", time: "10m ago", tags: ["Evenings PST", "18+", "Chill vibes"] },
+  { id: 2, user: { name: "Chris Wang", avatar: "CW" }, game: "Overwatch 2", gameIcon: "🦸", rank: "Platinum", looking: "Full team", style: "Casual", time: "1h ago", tags: ["Weekends", "Voice chat", "Learning"] },
+  { id: 3, user: { name: "Priya Nair", avatar: "PN" }, game: "Elden Ring", gameIcon: "🗡️", rank: "NG+3", looking: "1 player", style: "Co-op", time: "3h ago", tags: ["Bosses only", "No summons", "Patient"] },
+];
+
+// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
+
+function Avatar({ initials, size = 40, status, isNPC = false, ring = null, founding = false }) {
+  const statusColors = { online: C.online, away: C.gold, ingame: C.purple, offline: C.textDim };
+  const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
+  const showFoundingRing = founding && !ring;
+  const ringColor = ringData?.color || (showFoundingRing ? C.gold : null);
+  const ringGlow = ringData?.glow || (showFoundingRing ? C.goldBorder : null);
+  const hasRing = ringColor && ringColor !== "transparent";
+  const pad = hasRing ? 3 : 0;
+
+  return (
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size + pad * 2, height: size + pad * 2, flexShrink: 0 }}>
+      {/* Ring */}
+      {hasRing && (
+        <div style={{
+          position: "absolute", inset: 0,
+          borderRadius: "50%",
+          border: `${pad}px solid ${ringColor}`,
+          boxShadow: `0 0 ${size * 0.3}px ${ringGlow || ringColor + "44"}, inset 0 0 ${size * 0.15}px ${ringGlow || ringColor + "22"}`,
+          zIndex: 1, pointerEvents: "none",
+        }} />
+      )}
+      <div style={{
+        width: size, height: size, borderRadius: "50%",
+        background: isNPC
+          ? `linear-gradient(135deg, #3d2e00, #7a5c00)`
+          : `linear-gradient(135deg, ${C.accent}cc, ${C.accent}55)`,
+        border: `2px solid ${isNPC ? C.gold + "66" : hasRing ? ringColor + "44" : C.accent + "55"}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: size * 0.35, fontWeight: 700, color: isNPC ? C.gold : "#fff",
+        letterSpacing: "-0.5px", position: "relative", zIndex: 0, flexShrink: 0,
+      }}>{initials}</div>
+      {status && <div style={{
+        position: "absolute", bottom: pad + 1, right: pad + 1,
+        width: size * 0.28, height: size * 0.28, borderRadius: "50%",
+        background: statusColors[status] || C.textDim,
+        border: `2px solid ${C.surface}`, zIndex: 2,
+      }} />}
+    </div>
+  );
+}
+
+function FoundingBadge() {
+  return (
+    <span style={{
+      background: C.goldGlow, color: C.gold,
+      border: `1px solid ${C.goldBorder}`,
+      borderRadius: 5, padding: "2px 7px",
+      fontSize: 10, fontWeight: 800, letterSpacing: "0.5px",
+      whiteSpace: "nowrap",
+    }}>F</span>
+  );
+}
+
+function NPCBadge() {
+  return (
+    <span style={{
+      background: C.goldGlow, color: C.gold,
+      border: `1px solid ${C.goldBorder}`,
+      borderRadius: 5, padding: "2px 7px",
+      fontSize: 10, fontWeight: 800, letterSpacing: "0.5px",
+      textTransform: "uppercase", whiteSpace: "nowrap",
+    }}>⚙ NPC</span>
+  );
+}
+
+function Badge({ children, color = C.accent, small }) {
+  return (
+    <span style={{
+      background: `${color}18`, color, border: `1px solid ${color}33`,
+      borderRadius: 6, padding: small ? "2px 7px" : "4px 10px",
+      fontSize: small ? 11 : 12, fontWeight: 600, whiteSpace: "nowrap",
+    }}>{children}</span>
+  );
+}
+
+// ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
+
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC }) {
+  const [showComments, setShowComments] = useState(false);
+  const [localPost, setLocalPost] = useState(post);
+
+  const toggleLike = () => setLocalPost(p => ({ ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 }));
+
+  return (
+    <div style={{
+      background: C.surface,
+      border: `1px solid ${localPost.user.isNPC ? C.goldBorder : C.border}`,
+      borderRadius: 14, marginBottom: 12, overflow: "hidden",
+      boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
+    }}>
+      <div style={{ padding: 20 }}>
+        {/* Post header */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+          <div style={{ cursor: localPost.user.isNPC ? "pointer" : "default" }}
+            onClick={() => { if (localPost.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}>
+            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{
+                fontWeight: 700, fontSize: 14, cursor: localPost.user.isNPC ? "pointer" : "default",
+                color: localPost.user.isNPC ? C.gold : C.text,
+              }}
+                onClick={() => { if (localPost.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}
+              >{localPost.user.name}</span>
+              {localPost.user.isNPC && <NPCBadge />}
+              <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
+              {localPost.game && (
+                <span onClick={() => { if (localPost.gameId) { setCurrentGame(localPost.gameId); setActivePage("game"); } }}
+                  style={{ cursor: localPost.gameId ? "pointer" : "default" }}>
+                  <Badge small color={C.accent}>{localPost.gameIcon} {localPost.game}</Badge>
+                </span>
+              )}
+            </div>
+            <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{localPost.time}</div>
+          </div>
+        </div>
+
+        <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px" }}>{localPost.content}</p>
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+          <button onClick={toggleLike} style={{
+            background: localPost.liked ? `${C.red}18` : "transparent",
+            border: `1px solid ${localPost.liked ? C.red + "44" : C.border}`,
+            borderRadius: 8, padding: "5px 14px", cursor: "pointer",
+            color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
+          }}>{localPost.liked ? "❤️" : "🤍"} {localPost.likes}</button>
+          <button onClick={() => setShowComments(!showComments)} style={{
+            background: showComments ? C.accentGlow : "transparent",
+            border: `1px solid ${showComments ? C.accentDim : C.border}`,
+            borderRadius: 8, padding: "5px 14px", cursor: "pointer",
+            color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 5,
+          }}>💬 {localPost.commentList.length} {showComments ? "▲" : "▼"}</button>
+          <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>↗ {localPost.shares || 0}</button>
+        </div>
+      </div>
+
+      {/* Comments */}
+      {showComments && (
+        <div style={{ background: C.surfaceHover, borderTop: `1px solid ${C.border}`, padding: "14px 20px" }}>
+          {localPost.commentList.map((comment, i) => (
+            <div key={comment.id} style={{
+              display: "flex", gap: 10, marginBottom: i < localPost.commentList.length - 1 ? 14 : 0,
+            }}>
+              <div style={{ cursor: comment.user.isNPC ? "pointer" : "default" }}
+                onClick={() => { if (comment.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === comment.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}>
+                <Avatar initials={comment.user.avatar} size={32} isNPC={comment.user.isNPC} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  background: C.surfaceRaised,
+                  border: `1px solid ${comment.user.isNPC ? C.goldBorder : C.border}`,
+                  borderRadius: 10, padding: "10px 14px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                    <span style={{
+                      fontWeight: 700, fontSize: 13,
+                      color: comment.user.isNPC ? C.gold : C.text,
+                      cursor: comment.user.isNPC ? "pointer" : "default",
+                    }}
+                      onClick={() => { if (comment.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === comment.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}
+                    >{comment.user.name}</span>
+                    {comment.user.isNPC && <NPCBadge />}
+                    <span style={{ color: C.textDim, fontSize: 11 }}>{comment.user.handle}</span>
+                    <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{comment.time}</span>
+                  </div>
+                  <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{comment.content}</p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 5, paddingLeft: 4 }}>
+                  <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {comment.likes.toLocaleString()}</span>
+                  <span style={{ color: C.textDim, fontSize: 12, cursor: "pointer" }}>Reply</span>
+                </div>
+              </div>
+            </div>
+          ))}
+          {/* Comment input */}
+          <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+            <Avatar initials="AC" size={32} />
+            <input placeholder="Write a comment..." style={{
+              flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`,
+              borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none",
+            }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── NPC PROFILE PAGE ─────────────────────────────────────────────────────────
+
+function NPCProfilePage({ npcId, setActivePage, isMobile }) {
+  const npc = NPCS[npcId];
+  const [activeTab, setActiveTab] = useState("posts");
+  const [followed, setFollowed] = useState(false);
+
+  if (!npc) return null;
+
+  const tabs = [
+    { id: "posts", label: "📝 Posts" },
+    { id: "stats", label: "📊 Stats" },
+    { id: "lore", label: "📖 Lore" },
+  ];
+
+  return (
+    <div style={{ paddingTop: isMobile ? 52 : 60 }}>
+      {/* Gold hero header */}
+      <div style={{
+        background: `linear-gradient(135deg, #1a1200 0%, #2d2000 40%, #1a1200 100%)`,
+        borderBottom: `1px solid ${C.goldBorder}`,
+        position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 1px 1px, ${C.gold}08 1px, transparent 0)`, backgroundSize: "24px 24px" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 70% 50%, rgba(245,158,11,0.08) 0%, transparent 60%)" }} />
+
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "24px 16px 20px" : "36px 24px 28px", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 20, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+            <div style={{
+              width: isMobile ? 64 : 88, height: isMobile ? 64 : 88, borderRadius: "50%", flexShrink: 0,
+              background: `linear-gradient(135deg, #3d2e00, #7a5c00)`,
+              border: `3px solid ${C.gold}66`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: isMobile ? 22 : 32, fontWeight: 800, color: C.gold, letterSpacing: "-1px",
+              boxShadow: `0 0 32px ${C.gold}22`,
+            }}>{npc.avatar}</div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 26, color: C.gold, letterSpacing: "-0.5px" }}>{npc.name}</h1>
+                <NPCBadge />
+                <span style={{ background: `${C.gold}18`, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                  {npc.universeIcon} {npc.universe}
+                </span>
+              </div>
+              <div style={{ color: `${C.gold}99`, fontSize: 12, marginBottom: 4 }}>{npc.handle}</div>
+              <div style={{ color: `${C.gold}77`, fontSize: 12, marginBottom: isMobile ? 6 : 10 }}>{npc.role}</div>
+              {!isMobile && <div style={{ color: `${C.gold}55`, fontSize: 12, marginBottom: 14 }}>📍 {npc.location}</div>}
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 14px", lineHeight: 1.65 }}>{npc.bio}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setFollowed(!followed)} style={{ background: followed ? C.goldGlow : C.gold, border: `1px solid ${C.gold}`, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followed ? "✓ Following" : "+ Follow"}</button>
+                <button style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 14px", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Share</button>
+              </div>
+            </div>
+
+            {/* Header stats — row on mobile, column on desktop */}
+            <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start", flexDirection: isMobile ? "row" : "column" }}>
+              {[
+                { label: "Followers", value: (npc.followers / 1000).toFixed(1) + "k", color: C.gold },
+                { label: "Yrs Service", value: npc.yearsOfService, color: "#e8d5a0" },
+                { label: "Associates", value: npc.connections, color: C.textMuted },
+              ].map(s => (
+                <div key={s.label} style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 90 }}>
+                  <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18, color: s.color }}>{s.value}</div>
+                  <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 3 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.goldBorder}`, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px", display: "flex", gap: 2 }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              background: "transparent", border: "none",
+              borderBottom: activeTab === tab.id ? `2px solid ${C.gold}` : "2px solid transparent",
+              padding: isMobile ? "12px 14px" : "14px 18px", cursor: "pointer",
+              color: activeTab === tab.id ? C.gold : C.textMuted,
+              fontSize: isMobile ? 12 : 13, fontWeight: activeTab === tab.id ? 700 : 500,
+            }}>{tab.label}</button>
+          ))}
+          <button onClick={() => setActivePage(isMobile ? "npcs" : "feed")} style={{ marginLeft: "auto", background: "transparent", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", padding: "12px 0" }}>← Back</button>
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "16px 16px 80px" : "24px" }}>
+
+        {/* POSTS TAB */}
+        {activeTab === "posts" && (
+          <div>
+            {npc.posts.length > 0 ? npc.posts.map(post => (
+              <div key={post.id} style={{
+                background: C.surface, border: `1px solid ${C.goldBorder}`,
+                borderRadius: 14, padding: 20, marginBottom: 12,
+                boxShadow: `0 0 0 1px ${C.goldGlow}`,
+              }}>
+                <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                  <Avatar initials={npc.avatar} size={42} isNPC={true} />
+                  <div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>{npc.name}</span>
+                      <NPCBadge />
+                    </div>
+                    <div style={{ color: C.textDim, fontSize: 12 }}>{post.time}</div>
+                  </div>
+                </div>
+                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px" }}>{post.content}</p>
+                <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>🤍 {post.likes.toLocaleString()}</button>
+                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600 }}>💬 {post.comments}</button>
+                </div>
+              </div>
+            )) : (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🕯️</div>
+                <div style={{ fontSize: 14 }}>No posts yet. They're thinking about it.</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STATS TAB */}
+        {activeTab === "stats" && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>In-Game Record</div>
+              <div style={{ color: C.textDim, fontSize: 13 }}>Official statistics from {npc.universe} records. Verified by the guild.</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
+              {npc.stats.map((stat, i) => (
+                <div key={i} style={{
+                  background: C.surface, border: `1px solid ${C.goldBorder}`,
+                  borderRadius: 14, padding: 20, position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{ position: "absolute", top: 0, right: 0, width: 60, height: 60, background: `radial-gradient(circle, ${C.gold}08, transparent)` }} />
+                  <div style={{ fontWeight: 900, fontSize: 28, color: C.gold, marginBottom: 6, letterSpacing: "-0.5px" }}>{stat.value}</div>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{stat.label}</div>
+                  <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic", lineHeight: 1.5 }}>{stat.note}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Games observed */}
+            <div style={{ marginTop: 20, background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20 }}>
+              <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>🎮 Games Observed</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {npc.games.map(g => (
+                  <span key={g} style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600 }}>{g}</span>
+                ))}
+              </div>
+              <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>These are the worlds {npc.name.split(" ")[0]} follows, comments on, and has feelings about.</div>
+            </div>
+          </div>
+        )}
+
+        {/* LORE TAB */}
+        {activeTab === "lore" && (
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap: 20 }}>
+            <div>
+              <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28, marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>Origin</div>
+                <div style={{ color: `${C.gold}66`, fontSize: 12, marginBottom: 16 }}>From the official {npc.universe} lore archives</div>
+                <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{npc.lore}</p>
+              </div>
+              <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28 }}>
+                <div style={{ fontWeight: 800, color: C.gold, fontSize: 16, marginBottom: 16 }}>Sample Interactions</div>
+                {[
+                  { context: "On an Elden Ring post", quote: "I have inventory relevant to this situation. I am available. The cave is lit." },
+                  { context: "When @mentioned", quote: "I appreciate being included. This does not happen often." },
+                  { context: "On a patch notes post", quote: "Nothing in this patch affects the cave economy. I note this without emotion." },
+                ].map((ex, i) => (
+                  <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < 2 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{ex.context}</div>
+                    <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "12px 14px", color: C.text, fontSize: 14, lineHeight: 1.6, fontStyle: "italic" }}>"{ex.quote}"</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>Universe</div>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>{npc.universeIcon}</div>
+                  <div style={{ fontWeight: 800, color: C.gold, fontSize: 16 }}>{npc.universe}</div>
+                  <div style={{ color: C.textDim, fontSize: 12, marginTop: 6 }}>A GuildLink original universe</div>
+                  <div style={{ marginTop: 14, color: C.textMuted, fontSize: 13 }}>Meet the cast:</div>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                    {Object.values(NPCS).filter(n => n.universe === npc.universe && n.id !== npc.id).map(n => (
+                      <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 6, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" }}>
+                        <Avatar initials={n.avatar} size={22} isNPC={true} />
+                        <span style={{ color: C.gold, fontSize: 11, fontWeight: 600 }}>{n.name.split(" ")[0]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, textAlign: "center" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🤝</div>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>Interested in Sponsored NPCs?</div>
+                <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>Game studios can create official character accounts tied to real game pages. Players love it.</div>
+                <button style={{ background: C.gold, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Learn More</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+
+// ─── FOUNDING MEMBER PAGE ─────────────────────────────────────────────────────
+
+function FoundingMemberPage({ setActivePage, isMobile }) {
+  const [joined, setJoined] = useState(false);
+  const pct = (FOUNDING.claimed / FOUNDING.total) * 100;
+  const remaining = FOUNDING.total - FOUNDING.claimed;
+
+  const perks = [
+    { icon: "🔮", title: "Founding Ring", desc: "A permanent gold profile ring. Yours forever, even after Pro launches. Never earned any other way." },
+    { icon: "🧪", title: "Early Feature Access", desc: "Test every new feature — Guilds, advanced squad tools, and more — free for 2 months before public launch." },
+    { icon: "💰", title: "$5 Off Any Add-On", desc: "When features launch publicly, founding members pay half. Guilds at $10/mo? You pay $5. Always." },
+    { icon: "📣", title: "Shape What Gets Built", desc: "Direct feedback channel to the team during early access. You're not a user — you're a collaborator." },
+    { icon: "🏛️", title: "Town Square Status", desc: "Visible founding badge on every post and comment. The community will know you were here first." },
+    { icon: "🔒", title: "No Data. Ever.", desc: "GuildLink doesn't sell your data. Founding members get our promise in writing. This is the town square, not a data farm." },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", paddingTop: 60, background: C.bg }}>
+      {/* Hero */}
+      <div style={{
+        background: `linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)`,
+        borderBottom: `1px solid ${C.goldBorder}`,
+        position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 1px 1px, ${C.gold}06 1px, transparent 0)`, backgroundSize: "32px 32px" }} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, background: `radial-gradient(circle, ${C.gold}08 0%, transparent 70%)`, pointerEvents: "none" }} />
+
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "40px 16px 32px" : "64px 24px 56px", textAlign: "center", position: "relative" }}>
+          {/* Ring preview */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
+            <div style={{ position: "relative" }}>
+              <div style={{
+                width: 96, height: 96, borderRadius: "50%",
+                background: `linear-gradient(135deg, ${C.accent}cc, ${C.accent}55)`,
+                border: `3px solid ${C.gold}`,
+                boxShadow: `0 0 40px ${C.gold}44, 0 0 80px ${C.gold}22`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 36, fontWeight: 800, color: "#fff",
+              }}>GL</div>
+              <div style={{
+                position: "absolute", inset: -4, borderRadius: "50%",
+                border: `3px solid ${C.gold}`,
+                boxShadow: `0 0 20px ${C.gold}66`,
+                animation: "pulse 2s ease-in-out infinite",
+              }} />
+            </div>
+          </div>
+
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 20, padding: "6px 16px", marginBottom: 20 }}>
+            <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>⚙ Founding Membership</span>
+          </div>
+
+          <h1 style={{ margin: "0 0 16px", fontWeight: 900, fontSize: 42, color: "#fff", letterSpacing: "-1px", lineHeight: 1.1 }}>
+            The town square<br /><span style={{ color: C.gold }}>needs its first citizens.</span>
+          </h1>
+
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 17, maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.7 }}>
+            GuildLink is building a social platform for gamers that doesn't mine your data, doesn't trick you, and actually listens. Founding members help shape what it becomes — and never lose their place in history.
+          </p>
+
+          {/* Progress bar */}
+          <div style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: "24px 28px", marginBottom: 32, maxWidth: 500, margin: "0 auto 32px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ color: C.gold, fontWeight: 800, fontSize: 22 }}>{FOUNDING.claimed.toLocaleString()}</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, alignSelf: "center" }}>of {FOUNDING.total.toLocaleString()} spots</span>
+            </div>
+            <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 5, overflow: "hidden", marginBottom: 10 }}>
+              <div style={{
+                height: "100%", width: `${pct}%`,
+                background: `linear-gradient(90deg, ${C.gold}aa, ${C.gold})`,
+                borderRadius: 5, transition: "width 1s ease",
+              }} />
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 13 }}>
+              <span style={{ color: C.gold, fontWeight: 700 }}>{remaining.toLocaleString()} spots remaining</span> · Closes {FOUNDING.closeDate} or when full
+            </div>
+          </div>
+
+          {/* CTA */}
+          {!joined ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              <button onClick={() => setJoined(true)} style={{
+                background: `linear-gradient(135deg, ${C.gold}, #d97706)`,
+                border: "none", borderRadius: 12, padding: "16px 48px",
+                color: "#000", fontSize: 16, fontWeight: 900, cursor: "pointer",
+                boxShadow: `0 8px 32px ${C.gold}44`,
+                letterSpacing: "-0.3px",
+              }}>Become a Founding Member — $5/mo</button>
+              <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Cancel anytime. No tricks. No dark patterns.</div>
+            </div>
+          ) : (
+            <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: "20px 32px", display: "inline-block" }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🎉</div>
+              <div style={{ fontWeight: 800, color: C.gold, fontSize: 18 }}>Welcome, Founding Member!</div>
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 6 }}>Your gold ring is active. You're #{FOUNDING.claimed + 1} of {FOUNDING.total.toLocaleString()}.</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Perks grid */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "32px 16px 80px" : "56px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 26, marginBottom: 8 }}>What you get</div>
+          <div style={{ color: C.textMuted, fontSize: 15 }}>Not a subscription. A founding stake.</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16, marginBottom: 56 }}>
+          {perks.map((perk, i) => (
+            <div key={i} style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 24 }}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>{perk.icon}</div>
+              <div style={{ fontWeight: 700, color: C.gold, fontSize: 15, marginBottom: 8 }}>{perk.title}</div>
+              <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.65 }}>{perk.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Ring showcase */}
+        <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: 32, marginBottom: 40 }}>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 6 }}>Profile Rings — Earn Your Mark</div>
+            <div style={{ color: C.textMuted, fontSize: 14 }}>Every ring tells a story. Founding rings are the only ones you can't earn through quests.</div>
+          </div>
+          <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+            {PROFILE_RINGS.filter(r => r.id !== "none").map(ring => (
+              <div key={ring.id} style={{ textAlign: "center", width: 100 }}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+                  <div style={{ position: "relative", width: 56, height: 56 }}>
+                    <div style={{
+                      position: "absolute", inset: -3, borderRadius: "50%",
+                      border: `3px solid ${ring.color}`,
+                      boxShadow: `0 0 16px ${ring.glow || ring.color + "44"}`,
+                    }} />
+                    <div style={{
+                      width: 56, height: 56, borderRadius: "50%",
+                      background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`,
+                      border: `2px solid ${ring.color}44`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 20,
+                    }}>
+                      {ring.id === "founding" ? "⚔️" : ring.id === "platinum" ? "📝" : ring.id === "crimson" ? "🏆" : ring.id === "void" ? "💯" : ring.id === "emerald" ? "🤝" : ring.id === "celestial" ? "⭐" : "🕯️"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontWeight: 700, color: ring.color, fontSize: 11, marginBottom: 3 }}>{ring.label}</div>
+                <div style={{ color: C.textDim, fontSize: 10, lineHeight: 1.4 }}>{ring.how}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pricing clarity */}
+        <div style={{ background: `linear-gradient(135deg, #0f0a00, #1f1500)`, border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: isMobile ? 20 : 32, textAlign: "center" }}>
+          <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 17 : 20, marginBottom: 20 }}>How the pricing works. No surprises.</div>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "center", gap: isMobile ? 10 : 0, maxWidth: 600, margin: "0 auto 24px" }}>
+            {[
+              { label: "Founding Membership", price: "$5/mo", color: C.gold, desc: "Base access + ring + early features" },
+              { label: "+ Any Feature Add-on", price: "$5/mo", color: C.accentSoft, desc: "vs $10/mo standard price" },
+              { label: "= Total", price: "$10/mo", color: C.green, desc: "Full platform. Half price." },
+            ].map((tier, i) => (
+              <div key={i} style={{
+                flex: 1, padding: isMobile ? "14px 16px" : "20px 16px",
+                background: "rgba(0,0,0,0.3)",
+                border: `1px solid ${tier.color}33`,
+                borderRadius: isMobile ? 10 : i === 0 ? "10px 0 0 10px" : i === 2 ? "0 10px 10px 0" : 0,
+                borderLeft: !isMobile && i !== 0 ? "none" : `1px solid ${tier.color}33`,
+                borderRight: !isMobile && i !== 2 ? "none" : `1px solid ${tier.color}33`,
+              }}>
+                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{tier.label}</div>
+                <div style={{ fontWeight: 900, color: tier.color, fontSize: isMobile ? 22 : 26, marginBottom: 6 }}>{tier.price}</div>
+                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{tier.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, lineHeight: 1.7 }}>
+            When Founding Membership closes, standard Pro launches at $10/mo.<br />
+            Founding members lock in $5/mo forever. The ring stays even if you cancel.
+          </div>
+          {!joined && (
+            <button onClick={() => setJoined(true)} style={{ marginTop: 24, background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 10, padding: "12px 36px", color: "#000", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
+              Claim Your Spot — $5/mo
+            </button>
+          )}
+        </div>
+      </div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }`}</style>
+    </div>
+  );
+}
+
+// ─── FOUNDING BANNER ──────────────────────────────────────────────────────────
+
+function FoundingBanner({ onDismiss, setActivePage }) {
+  const pct = (FOUNDING.claimed / FOUNDING.total) * 100;
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, #1a1200, #2d2000)`,
+      border: `1px solid ${C.goldBorder}`,
+      borderRadius: 12, padding: "14px 18px", marginBottom: 14,
+      display: "flex", alignItems: "center", gap: 16,
+      boxShadow: `0 0 0 1px ${C.goldGlow}`,
+    }}>
+      <div style={{ fontSize: 24, flexShrink: 0 }}>⚔️</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+          <span style={{ fontWeight: 800, color: C.gold, fontSize: 13 }}>Founding Membership is open</span>
+          <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>{FOUNDING.total - FOUNDING.claimed} spots left</span>
+        </div>
+        <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 5, maxWidth: 300 }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}88, ${C.gold})`, borderRadius: 2 }} />
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>$5/mo · Gold ring forever · Early access to every new feature</div>
+      </div>
+      <button onClick={() => setActivePage("founding")} style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+        Learn More
+      </button>
+      <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.25)", fontSize: 18, cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>×</button>
+    </div>
+  );
+}
+
+
+function NavBar({ activePage, setActivePage, isMobile }) {
+  const mobileItems = [
+    { id: "feed", icon: "⊞", label: "Feed" },
+    { id: "games", icon: "🎮", label: "Games" },
+    { id: "squad", icon: "⚡", label: "Squad" },
+    { id: "npcs", icon: "⚙", label: "NPCs" },
+  ];
+  const desktopItems = [
+    { id: "feed", icon: "⊞", label: "Feed" },
+    { id: "games", icon: "🎮", label: "Games" },
+    { id: "profile", icon: "◉", label: "Profile" },
+    { id: "squad", icon: "⚡", label: "Squad" },
+    { id: "founding", icon: "⚔️", label: "Founding", gold: true },
+  ];
+
+  if (isMobile) {
+    return (
+      <>
+        {/* Mobile top bar */}
+        <nav style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          background: `${C.bg}f8`, backdropFilter: "blur(20px)",
+          borderBottom: `1px solid ${C.border}`,
+          height: 52, display: "flex", alignItems: "center", padding: "0 16px", gap: 10,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setActivePage("feed")}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: `linear-gradient(135deg, ${C.accent}, #a855f7)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>G</div>
+            <span style={{ fontWeight: 800, fontSize: 16, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
+          </div>
+          <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
+            <span style={{ position: "absolute", left: 10, color: C.textDim, fontSize: 12 }}>🔍</span>
+            <input placeholder="Search..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 10px 6px 28px", color: C.text, fontSize: 13, outline: "none" }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px" }}>
+              🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+            </button>
+            <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
+              <Avatar initials="AC" size={30} status="online" founding={true} ring="founding" />
+            </div>
+          </div>
+        </nav>
+
+        {/* Mobile bottom tab bar */}
+        <nav style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+          background: `${C.surface}fc`, backdropFilter: "blur(20px)",
+          borderTop: `1px solid ${C.border}`,
+          height: 60, display: "flex", alignItems: "center",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}>
+          {mobileItems.map(item => {
+            const active = activePage === item.id || (item.id === "npcs" && activePage === "npc");
+            return (
+              <button key={item.id} onClick={() => setActivePage(item.id)} style={{
+                flex: 1, background: "transparent", border: "none",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 3, cursor: "pointer", padding: "8px 0",
+                color: active ? C.accentSoft : C.textDim,
+              }}>
+                <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
+                <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{item.label}</span>
+                {active && <div style={{ width: 4, height: 4, borderRadius: "50%", background: C.accent, position: "absolute", bottom: 8 }} />}
+              </button>
+            );
+          })}
+        </nav>
+      </>
+    );
+  }
+
+  return (
+    <nav style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+      background: `${C.bg}f0`, backdropFilter: "blur(20px)",
+      borderBottom: `1px solid ${C.border}`,
+      height: 60, display: "flex", alignItems: "center", padding: "0 24px", gap: 8,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 20, cursor: "pointer" }} onClick={() => setActivePage("feed")}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${C.accent}, #a855f7)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>G</div>
+        <span style={{ fontWeight: 800, fontSize: 18, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
+      </div>
+      <div style={{ flex: 1, maxWidth: 300, position: "relative", display: "flex", alignItems: "center" }}>
+        <span style={{ position: "absolute", left: 12, color: C.textDim, fontSize: 13 }}>🔍</span>
+        <input placeholder="Search games, players, squads..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none" }} />
+      </div>
+      <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
+        {desktopItems.map(item => (
+          <button key={item.id} onClick={() => setActivePage(item.id)} style={{
+            background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
+            border: item.gold ? activePage === item.id ? `1px solid ${C.goldBorder}` : "1px solid transparent" : activePage === item.id ? `1px solid ${C.accentDim}` : "1px solid transparent",
+            borderRadius: 8, padding: "6px 14px",
+            color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : activePage === item.id ? C.accentSoft : C.textMuted,
+            cursor: "pointer", fontSize: 13, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 5,
+          }}><span>{item.icon}</span>{item.label}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
+        <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px 6px" }}>
+          🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+        </button>
+        <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
+          <Avatar initials="AC" size={34} status="online" founding={true} ring="founding" />
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// ─── NPC BROWSE PAGE (mobile tab) ────────────────────────────────────────────
+
+function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
+  return (
+    <div style={{ maxWidth: 700, margin: "0 auto", padding: "70px 16px 80px" }}>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: 22, color: C.text }}>⚙ GuildLink NPCs</h2>
+        <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Original characters from the GuildLink universe. They're out here living their best lives.</p>
+      </div>
+      {Object.values(NPCS).map(npc => (
+        <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
+          style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 18, marginBottom: 12, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
+          <Avatar initials={npc.avatar} size={50} isNPC={true} status={npc.status} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{npc.name}</span>
+              <NPCBadge />
+            </div>
+            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>{npc.handle}</div>
+            <div style={{ color: C.textMuted, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.role}</div>
+            <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+              <span style={{ color: C.textDim, fontSize: 11 }}>👥 {(npc.followers / 1000).toFixed(1)}k followers</span>
+              <span style={{ color: C.textDim, fontSize: 11 }}>{npc.universeIcon} {npc.universe}</span>
+            </div>
+          </div>
+          <span style={{ color: C.textDim, fontSize: 18 }}>→</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── FEED PAGE ────────────────────────────────────────────────────────────────
+
+function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
+  const [showBanner, setShowBanner] = useState(true);
+  const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
+  const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
+  return (
+    <>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: topPad }}>
+      {showBanner && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
+      {isMobile && (
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 4 }}>
+          {[
+            { tag: "SilksongRelease", icon: "🦋", hot: true },
+            { tag: "MaleniaBuild", icon: "🗡️", hot: true },
+            { tag: "ValoBugReport", icon: "🎯", hot: false },
+            { tag: "StardewUpdate", icon: "🌱", hot: false },
+            { tag: "SoulslikeOfTheYear", icon: "🎮", hot: false },
+          ].map(t => (
+            <div key={t.tag} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "6px 12px", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+              <span style={{ fontSize: 12 }}>{t.icon}</span>
+              <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>#{t.tag}</span>
+              {t.hot && <span style={{ fontSize: 10 }}>🔥</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    <div style={{ display: "flex", gap: 20, maxWidth: 1100, margin: "0 auto", padding: mainPad }}>
+      {/* Left sidebar — desktop only */}
+      {!isMobile && <div style={{ width: 230, flexShrink: 0 }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+          <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
+          <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
+            <Avatar initials="AC" size={44} status="online" />
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{mockUser.name}</div>
+              <div style={{ color: C.textMuted, fontSize: 12 }}>{mockUser.handle}</div>
+              <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{mockUser.title}</div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{mockUser.connections}</div><div style={{ color: C.textDim, fontSize: 10 }}>Connections</div></div>
+              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{(mockUser.followers / 1000).toFixed(1)}k</div><div style={{ color: C.textDim, fontSize: 10 }}>Followers</div></div>
+              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{mockUser.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
+            </div>
+          </div>
+        </div>
+
+        {/* NPC Spotlight */}
+        <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>⚙ NPC Spotlight</div>
+          {Object.values(NPCS).slice(0, 3).map(npc => (
+            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
+              style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, cursor: "pointer" }}>
+              <Avatar initials={npc.avatar} size={32} isNPC={true} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
+                <div style={{ color: C.textDim, fontSize: 11 }}>{(npc.followers / 1000).toFixed(1)}k followers</div>
+              </div>
+            </div>
+          ))}
+          <button style={{ width: "100%", background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>View All NPCs</button>
+        </div>
+
+        {/* Your games */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
+          {mockUser.games.map(g => {
+            const gData = Object.values(GAMES).find(x => x.name === g);
+            return (
+              <div key={g} onClick={() => { if (gData) { setCurrentGame(gData.id); setActivePage("game"); } }}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", cursor: gData ? "pointer" : "default", borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 15 }}>{gData?.icon || "🎮"}</span>
+                <span style={{ color: C.textMuted, fontSize: 13 }}>{g}</span>
+                {gData && <span style={{ marginLeft: "auto", color: C.textDim, fontSize: 11 }}>→</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>}
+
+      {/* Main feed */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Composer */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Avatar initials="AC" size={isMobile ? 32 : 38} status="online" founding={true} ring="founding" />
+            <div style={{ flex: 1 }}>
+              <textarea placeholder="Share a win, review a game, find teammates..." style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {(isMobile ? ["🎮", "⭐", "⚡"] : ["🎮 Tag Game", "⭐ Review", "⚡ LFG"]).map((tag, i) => (
+                    <button key={i} style={{ background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: C.textMuted, fontSize: isMobile ? 16 : 12, cursor: "pointer" }}>{tag}</button>
+                  ))}
+                </div>
+                <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Post</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {FEED_POSTS.map(post => (
+          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
+        ))}
+      </div>
+
+      {/* Right sidebar — desktop only */}
+      {!isMobile && <div style={{ width: 210, flexShrink: 0 }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Connect</div>
+          {[
+            { name: "Kai Nakamura", handle: "@kai_pro", avatar: "KN", mutual: 8, game: "Valorant" },
+            { name: "Zoe Patel", handle: "@zoeplays", avatar: "ZP", mutual: 3, game: "Hollow Knight" },
+            { name: "Dev Santos", handle: "@dev_games", avatar: "DS", mutual: 12, game: "Elden Ring" },
+          ].map(p => (
+            <div key={p.name} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                <Avatar initials={p.avatar} size={34} />
+                <div><div style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{p.name}</div><div style={{ color: C.textDim, fontSize: 11 }}>{p.mutual} mutual · {p.game}</div></div>
+              </div>
+              <button style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Connect</button>
+            </div>
+          ))}
+        </div>
+
+        {/* Trending across GuildLink */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔥 Trending</div>
+          {[
+            { tag: "SilksongRelease", game: "Hollow Knight", gameIcon: "🦋", posts: 8900, hot: true },
+            { tag: "MaleniaBuild", game: "Elden Ring", gameIcon: "🗡️", posts: 4200, hot: true },
+            { tag: "ValoBugReport", game: "Valorant", gameIcon: "🎯", posts: 2100, hot: false },
+            { tag: "StardewUpdate", game: "Stardew Valley", gameIcon: "🌱", posts: 1840, hot: false },
+            { tag: "SoulslikeOfTheYear", game: "All Games", gameIcon: "🎮", posts: 1200, hot: false },
+          ].map((t, i) => (
+            <div key={t.tag} style={{ paddingBottom: i < 4 ? 12 : 0, marginBottom: i < 4 ? 12 : 0, borderBottom: i < 4 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 3 }}>
+                <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>#{t.tag}</span>
+                {t.hot && <span style={{ fontSize: 10, color: C.red }}>🔥</span>}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{t.gameIcon} {t.game}</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{(t.posts / 1000).toFixed(1)}k posts</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Active NPCs */}
+        <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>⚙ NPCs Online</div>
+          {Object.values(NPCS).filter(n => n.status === "online").slice(0, 3).map(npc => (
+            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
+              style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, cursor: "pointer" }}>
+              <Avatar initials={npc.avatar} size={30} isNPC={true} status={npc.status} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
+                <div style={{ color: C.textDim, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.posts[0]?.content.slice(0, 30)}...</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>}
+    </div>
+    </>
+  );
+}
+
+// ─── GAMES BROWSE PAGE ────────────────────────────────────────────────────────
+
+function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
+  return (
+    <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>🎮 Game Communities</h2>
+        <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Find your people. Every game has a home here.</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 32 }}>
+        {Object.values(GAMES).map(game => (
+          <div key={game.id} onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+            style={{ background: game.gradient, border: `1px solid ${game.color}33`, borderRadius: 16, padding: 24, cursor: "pointer", position: "relative", overflow: "hidden" }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = game.color + "88"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = game.color + "33"}
+          >
+            <div style={{ fontSize: 40, marginBottom: 12 }}>{game.icon}</div>
+            <div style={{ fontWeight: 800, color: "#fff", fontSize: 20, marginBottom: 4 }}>{game.name}</div>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16 }}>{game.genre.join(" · ")} · {game.year}</div>
+            <div style={{ display: "flex", gap: 16 }}>
+              <div><div style={{ fontWeight: 700, color: game.color, fontSize: 15 }}>{(game.followers / 1000).toFixed(1)}k</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Followers</div></div>
+              <div><div style={{ fontWeight: 700, color: C.online, fontSize: 15 }}>{game.activePlayers.toLocaleString()}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Active today</div></div>
+              <div><div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>★ {game.reviewScore}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Score</div></div>
+            </div>
+            {game.claimed && <div style={{ position: "absolute", top: 16, right: 16 }}><Badge small color={C.teal}>✓ Dev Claimed</Badge></div>}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 14 }}>All Games</div>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10 }}>
+        {BROWSE_GAMES.map(g => (
+          <div key={g.id} onClick={() => { if (GAMES[g.id]) { setCurrentGame(g.id); setActivePage("game"); } }}
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
+            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+          >
+            <div style={{ fontSize: 28, marginBottom: 8 }}>{g.icon}</div>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{g.name}</div>
+            <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8 }}>{g.genre}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: C.textMuted, fontSize: 11 }}>{(g.followers / 1000).toFixed(1)}k</span>
+              {g.hot && <Badge small color={C.red}>🔥 Hot</Badge>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── GAME PAGE ────────────────────────────────────────────────────────────────
+
+function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
+  const game = GAMES[gameId];
+  const [activeTab, setActiveTab] = useState("pulse");
+  const [followed, setFollowed] = useState(false);
+
+  if (!game) return (
+    <div style={{ maxWidth: 800, margin: "100px auto", textAlign: "center", color: C.textMuted }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>Game page coming soon</div>
+      <button onClick={() => setActivePage("games")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Browse Games</button>
+    </div>
+  );
+
+  const tabs = [{ id: "pulse", label: "🔥 Pulse" }, { id: "community", label: "👥 Community" }, { id: "tips", label: "💡 Tips" }, { id: "posts", label: "📝 Posts" }, { id: "developer", label: "🏢 Developer" }];
+
+  return (
+    <div style={{ paddingTop: isMobile ? 52 : 60 }}>
+      <div style={{ background: game.gradient, borderBottom: `1px solid ${game.color}33` }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px 20px" : "36px 24px 28px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 20, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+            <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: 16, fontSize: isMobile ? 30 : 44, background: `${game.color}22`, border: `2px solid ${game.color}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{game.icon}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 28, color: "#fff" }}>{game.name}</h1>
+                {game.claimed && <Badge color={C.teal}>✓ Dev Claimed</Badge>}
+              </div>
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: isMobile ? 8 : 10 }}>{game.developer} · {game.year}</div>
+              {!isMobile && <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: "0 0 16px", maxWidth: 540, lineHeight: 1.6 }}>{game.description}</p>}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0 }}>
+                <button onClick={() => setFollowed(!followed)} style={{ background: followed ? `${game.color}33` : game.color, border: `1px solid ${game.color}`, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followed ? "✓ Following" : "+ Follow"}</button>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start" }}>
+              {[{ label: "Followers", value: (game.followers / 1000).toFixed(1) + "k", color: game.color }, { label: "Active", value: game.activePlayers.toLocaleString(), color: C.online }, { label: "Score", value: "★ " + game.reviewScore, color: C.gold }].map(s => (
+                <div key={s.label} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 80 }}>
+                  <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 17, color: s.color }}>{s.value}</div>
+                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 3 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px", display: "flex", overflowX: "auto" }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: "transparent", border: "none", borderBottom: activeTab === tab.id ? `2px solid ${game.color}` : "2px solid transparent", padding: isMobile ? "12px 14px" : "14px 18px", cursor: "pointer", color: activeTab === tab.id ? "#fff" : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: activeTab === tab.id ? 700 : 500, whiteSpace: "nowrap" }}>{tab.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "16px 16px 80px" : "24px" }}>
+        {activeTab === "pulse" && (
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: 20 }}>
+            <div>
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>📈 Trending Topics</div>
+                  <span style={{ color: C.textDim, fontSize: 12 }}>Updates hourly</span>
+                </div>
+                {game.trendingTopics.map((topic, i) => (
+                  <div key={topic.tag} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: i < game.trendingTopics.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: i === 0 ? C.goldDim : C.surfaceRaised, border: `1px solid ${i === 0 ? C.gold + "44" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 13, flexShrink: 0 }}>#{i + 1}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>#{topic.tag}</div>
+                      <div style={{ color: C.textDim, fontSize: 12 }}>{topic.posts.toLocaleString()} posts · {topic.reactions.toLocaleString()} reactions</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? C.red : C.textMuted }}>{topic.trend}</div>
+                      <div style={{ fontSize: 11, color: C.green }}>{topic.delta}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
+                <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
+                <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Based on follows, reviews & completions</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {game.alsoLiked.map(g2 => (
+                    <div key={g2.id} onClick={() => { setCurrentGame(g2.id); setActiveTab("pulse"); }}
+                      style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, cursor: "pointer" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <span style={{ fontSize: 22 }}>{g2.icon}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{g2.name}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
+                            <div style={{ height: 4, width: 50, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${g2.overlap}%`, background: game.color, borderRadius: 2 }} />
+                            </div>
+                            <span style={{ color: game.color, fontSize: 11, fontWeight: 700 }}>{g2.overlap}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>{g2.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, alignSelf: "start" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, color: C.text, fontSize: 15 }}>🏆 Top Voices</div>
+                <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
+              </div>
+              {game.topVoices.map((voice, i) => (
+                <div key={voice.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < game.topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
+                  <Avatar initials={voice.avatar} size={34} color={i === 0 ? C.gold : C.accent} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.name} {voice.badge}</div>
+                    <div style={{ color: C.textDim, fontSize: 11 }}>{(voice.score / 1000).toFixed(1)}k pts</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "community" && (
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, gridColumn: "span 2" }}>
+              <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🏁 Completion Board</div>
+              <div style={{ color: C.textDim, fontSize: 13, marginBottom: 20 }}>{game.completions.toLocaleString()} GuildLink members have completed this game</div>
+              {[{ label: "Any% Complete", count: game.completions, pct: 100, color: C.green }, { label: "True Ending", count: Math.floor(game.completions * 0.64), pct: 64, color: C.teal }, { label: "New Game+", count: Math.floor(game.completions * 0.41), pct: 41, color: C.accent }, { label: "100% / Platinum", count: Math.floor(game.completions * 0.18), pct: 18, color: C.gold }, { label: "Speedrun (sub 2hr)", count: Math.floor(game.completions * 0.04), pct: 4, color: C.red }].map(row => (
+                <div key={row.label} style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                    <span style={{ color: C.textMuted, fontSize: 13 }}>{row.label}</span>
+                    <span style={{ color: row.color, fontSize: 13, fontWeight: 700 }}>{row.count.toLocaleString()} <span style={{ color: C.textDim, fontWeight: 400 }}>({row.pct}%)</span></span>
+                  </div>
+                  <div style={{ height: 6, background: C.surfaceRaised, borderRadius: 3 }}>
+                    <div style={{ height: "100%", width: `${row.pct}%`, background: row.color, borderRadius: 3 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
+              <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 16 }}>⭐ Community Score</div>
+              <div style={{ textAlign: "center", marginBottom: 20 }}>
+                <div style={{ fontSize: 56, fontWeight: 900, color: C.gold }}>{game.reviewScore}</div>
+                <div style={{ color: C.textDim, fontSize: 13, marginTop: 6 }}>Based on {game.reviewCount.toLocaleString()} reviews</div>
+              </div>
+              <button style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "8px", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Write a Review</button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "tips" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {game.tips.map((tip, i) => (
+              <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 }}>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: C.goldDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💡</div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{tip.title}</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Badge small color={C.teal}>{tip.category}</Badge>
+                      <span style={{ color: C.textDim, fontSize: 12 }}>by {tip.author}</span>
+                      <span style={{ color: C.gold, fontSize: 12, fontWeight: 700, marginLeft: "auto" }}>▲ {tip.upvotes.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "posts" && (
+          <div style={{ maxWidth: 680 }}>
+            {game.posts.map(post => (
+              <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                  <Avatar initials={post.user.avatar} size={42} status={post.user.status} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{post.user.name}</div>
+                    <div style={{ color: C.textDim, fontSize: 12 }}>{post.time}</div>
+                  </div>
+                </div>
+                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: 0 }}>{post.content}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "developer" && (
+          <div>
+            {game.claimed ? (
+              <div style={{ background: C.surface, border: `1px solid ${C.teal}33`, borderRadius: 14, padding: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: `${C.teal}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏢</div>
+                  <div>
+                    <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>{game.developer}</div>
+                    <Badge color={C.teal}>✓ Verified Developer</Badge>
+                  </div>
+                </div>
+                <div style={{ background: C.surfaceRaised, borderRadius: 12, padding: 20 }}>
+                  <div style={{ fontWeight: 700, color: C.teal, fontSize: 14, marginBottom: 8 }}>📢 Official Announcement</div>
+                  <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: 0 }}>Patch 1.12 is now live. Balance changes to Colosseum fights, new shard farm locations, and several boss hitbox fixes.</p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "60px 40px" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🏢</div>
+                <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 8 }}>Are you the developer?</div>
+                <p style={{ color: C.textMuted, fontSize: 14, maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.7 }}>Claim this page to access community insights and post official announcements — without controlling the conversation.</p>
+                <button style={{ background: C.teal, border: "none", borderRadius: 10, padding: "12px 32px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Claim This Page</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
+
+function ProfilePage({ setActivePage, isMobile }) {
+  const [activeTab, setActiveTab] = useState("posts");
+  const achievements = [
+    { icon: "🏆", name: "Top 500", desc: "Overwatch 2 Season 12", color: C.gold },
+    { icon: "💎", name: "Radiant", desc: "Valorant Act 3", color: C.purple },
+    { icon: "🔥", name: "Elden Lord", desc: "Elden Ring NG+5", color: C.red },
+    { icon: "⭐", name: "Speedrunner", desc: "Hollow Knight sub-30m", color: C.green },
+    { icon: "🎯", name: "Sharpshooter", desc: "95%+ HS rate", color: C.accent },
+    { icon: "⚡", name: "Early Adopter", desc: "GuildLink Beta", color: C.teal },
+  ];
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
+          <div style={{ position: "absolute", bottom: -36, left: 28 }}>
+            <Avatar initials="AC" size={84} status="online" founding={mockUser.isFounding} ring={mockUser.activeRing} />
+          </div>
+          {mockUser.isFounding && (
+            <div style={{ position: "absolute", top: 16, right: 16 }}>
+              <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "48px 28px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: 22 }}>{mockUser.name}</h1>
+                <Badge color={C.gold}>Lv.{mockUser.level}</Badge>
+                {mockUser.isFounding && <FoundingBadge />}
+                <Badge color={C.accent}>Verified</Badge>
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{mockUser.handle} · {mockUser.location}</div>
+              <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{mockUser.title}</div>
+              <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", maxWidth: 480, lineHeight: 1.6 }}>{mockUser.bio}</p>
+            </div>
+            <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>Edit Profile</button>
+          </div>
+          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center" }}>
+            {[{ label: "Connections", val: mockUser.connections, color: C.accent }, { label: "Followers", val: mockUser.followers.toLocaleString(), color: C.accentSoft }].map(s => (
+              <div key={s.label}><div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div><div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div></div>
+            ))}
+            <div style={{ marginLeft: "auto", minWidth: 160 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>XP Progress</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{mockUser.xp.toLocaleString()} / {mockUser.xpNext.toLocaleString()}</span>
+              </div>
+              <div style={{ height: 8, background: C.surfaceHover, borderRadius: 4 }}>
+                <div style={{ height: "100%", width: `${(mockUser.xp / mockUser.xpNext) * 100}%`, background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
+        {["posts", "achievements", "quests", "rings"].map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: activeTab === tab ? C.accentGlow : "transparent", border: activeTab === tab ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 20px", cursor: "pointer", color: activeTab === tab ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, textTransform: "capitalize" }}>{tab}</button>
+        ))}
+      </div>
+
+      {/* Posts */}
+      {activeTab === "posts" && FEED_POSTS.filter(p => !p.user.isNPC && p.user.handle === "@axelstrike").slice(0, 2).map(post => (
+        <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px" }}>{post.content}</p>
+          <div style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes} · 💬 {post.comments} · {post.time}</div>
+        </div>
+      ))}
+      {activeTab === "posts" && FEED_POSTS.filter(p => !p.user.isNPC && p.user.handle === "@axelstrike").length === 0 && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px" }}>{FEED_POSTS[5].content}</p>
+          <div style={{ color: C.textDim, fontSize: 12 }}>❤️ {FEED_POSTS[5].likes} · 💬 {FEED_POSTS[5].comments} · {FEED_POSTS[5].time}</div>
+        </div>
+      )}
+
+      {/* Achievements */}
+      {activeTab === "achievements" && (
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
+          {achievements.map(a => (
+            <div key={a.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, textAlign: "center" }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>{a.icon}</div>
+              <div style={{ fontWeight: 700, color: a.color, fontSize: 14 }}>{a.name}</div>
+              <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{a.desc}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Quests */}
+      {activeTab === "quests" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {QUESTS.map(quest => (
+            <div key={quest.id} style={{ background: C.surface, border: `1px solid ${quest.done ? C.green + "44" : C.border}`, borderRadius: 14, padding: 20, display: "flex", gap: 16, alignItems: "center" }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: quest.done ? `${C.green}22` : C.surfaceRaised, border: `1px solid ${quest.done ? C.green + "44" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+                {quest.done ? "✓" : quest.ring ? PROFILE_RINGS.find(r => r.id === quest.ring)?.id === "platinum" ? "📝" : quest.ring === "crimson" ? "🏆" : quest.ring === "void" ? "💯" : quest.ring === "emerald" ? "🤝" : quest.ring === "celestial" ? "⭐" : "🎯" : "🎯"}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontWeight: 700, color: quest.done ? C.green : C.text, fontSize: 14 }}>{quest.title}</span>
+                  {quest.ring && <span style={{ background: PROFILE_RINGS.find(r => r.id === quest.ring)?.color + "22", color: PROFILE_RINGS.find(r => r.id === quest.ring)?.color, border: `1px solid ${PROFILE_RINGS.find(r => r.id === quest.ring)?.color}44`, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>RING</span>}
+                </div>
+                <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>{quest.desc}</div>
+                <div style={{ height: 5, background: C.surfaceRaised, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min((quest.progress / quest.total) * 100, 100)}%`, background: quest.done ? C.green : C.accent, borderRadius: 3 }} />
+                </div>
+                <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{quest.progress}{quest.unit ? " " + quest.unit : ""} / {quest.total}{quest.unit ? " " + quest.unit : ""}</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ color: quest.done ? C.green : C.textMuted, fontSize: 12, fontWeight: 700 }}>{quest.reward}</div>
+                {quest.done && <div style={{ color: C.green, fontSize: 11, marginTop: 4 }}>Claimed ✓</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Rings */}
+      {activeTab === "rings" && (
+        <div>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 4 }}>Active Ring</div>
+            <div style={{ color: C.textDim, fontSize: 13, marginBottom: 16 }}>Your ring shows on your avatar everywhere on GuildLink.</div>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <Avatar initials="AC" size={56} founding={mockUser.isFounding} ring={mockUser.activeRing} />
+              <div>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{PROFILE_RINGS.find(r => r.id === mockUser.activeRing)?.label}</div>
+                <div style={{ color: C.textDim, fontSize: 13 }}>{PROFILE_RINGS.find(r => r.id === mockUser.activeRing)?.description}</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 12 }}>
+            {PROFILE_RINGS.map(ring => (
+              <div key={ring.id} style={{ background: C.surface, border: `1px solid ${ring.unlocked ? ring.color + "44" : C.border}`, borderRadius: 14, padding: 18, opacity: ring.unlocked ? 1 : 0.6, position: "relative" }}>
+                {ring.special && <div style={{ position: "absolute", top: 12, right: 12 }}><Badge small color={C.gold}>Exclusive</Badge></div>}
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                  <div style={{ position: "relative", width: 44, height: 44 }}>
+                    {ring.id !== "none" && <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `3px solid ${ring.color}`, boxShadow: `0 0 12px ${ring.glow || ring.color + "44"}` }} />}
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${ring.color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                      {ring.id === "none" ? "○" : ring.id === "founding" ? "⚔️" : ring.id === "platinum" ? "📝" : ring.id === "crimson" ? "🏆" : ring.id === "void" ? "💯" : ring.id === "emerald" ? "🤝" : ring.id === "celestial" ? "⭐" : "🕯️"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontWeight: 700, color: ring.unlocked ? ring.color : C.textMuted, fontSize: 13, marginBottom: 4, textAlign: "center" }}>{ring.label}</div>
+                <div style={{ color: C.textDim, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>{ring.unlocked ? ring.description : ring.how}</div>
+                {ring.unlocked && ring.id !== "none" && (
+                  <button style={{ width: "100%", marginTop: 10, background: ring.id === mockUser.activeRing ? `${ring.color}22` : "transparent", border: `1px solid ${ring.color}44`, borderRadius: 8, padding: "6px", color: ring.id === mockUser.activeRing ? ring.color : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    {ring.id === mockUser.activeRing ? "Active ✓" : "Equip"}
+                  </button>
+                )}
+                {!ring.unlocked && (
+                  <div style={{ marginTop: 10, textAlign: "center", color: C.textDim, fontSize: 11 }}>🔒 Locked</div>
+                )}
+              </div>
+            ))}
+          </div>
+          {!mockUser.isFounding && (
+            <div style={{ marginTop: 16, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 4 }}>Want the Founding Ring?</div>
+                <div style={{ color: C.textDim, fontSize: 13 }}>The only ring you can't earn through quests. Founding members only.</div>
+              </div>
+              <button onClick={() => setActivePage("founding")} style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Become a Founding Member</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SQUAD PAGE ───────────────────────────────────────────────────────────────
+
+function SquadPage({ isMobile }) {
+  const [filter, setFilter] = useState("All");
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 24, color: C.text }}>⚡ Find Your Squad</h2>
+      <p style={{ margin: "0 0 20px", color: C.textMuted, fontSize: 14 }}>Connect with players who match your style and rank.</p>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {["All", "Valorant", "Overwatch 2", "Elden Ring"].map(g => (
+          <button key={g} onClick={() => setFilter(g)} style={{ background: filter === g ? C.accentGlow : C.surface, border: `1px solid ${filter === g ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: filter === g ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g}</button>
+        ))}
+        <button style={{ marginLeft: "auto", background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Post LFG</button>
+      </div>
+      {squadPosts.filter(p => filter === "All" || p.game === filter).map(post => (
+        <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, display: "flex", gap: 18, marginBottom: 12 }}>
+          <Avatar initials={post.user.avatar} size={46} />
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{post.user.name}</span>
+              <Badge color={C.accent}>{post.gameIcon} {post.game}</Badge>
+              <Badge color={C.textMuted} small>{post.rank}</Badge>
+              <span style={{ color: C.textDim, fontSize: 12, marginLeft: "auto" }}>{post.time}</span>
+            </div>
+            <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+              <span style={{ color: C.textDim, fontSize: 13 }}>Looking for <strong style={{ color: C.text }}>{post.looking}</strong></span>
+              <span style={{ color: C.textDim, fontSize: 13 }}>Style: <strong style={{ color: C.text }}>{post.style}</strong></span>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {post.tags.map(tag => <Badge key={tag} small color={C.textMuted}>{tag}</Badge>)}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join</button>
+            <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Profile</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────────
+
+export default function GuildLink() {
+  const [activePage, setActivePage] = useState("feed");
+  const [currentGame, setCurrentGame] = useState("elden-ring");
+  const [currentNPC, setCurrentNPC] = useState("merv");
+  const width = useWindowSize();
+  const isMobile = width < 768;
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
+        * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; text-align: left; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #0a0c12; }
+        ::-webkit-scrollbar-thumb { background: #252836; border-radius: 3px; }
+        button { font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; }
+        button:hover { opacity: 0.85; }
+        input, textarea { font-family: 'DM Sans', sans-serif !important; }
+        textarea::placeholder, input::placeholder { color: #4a4d63; }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+        ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
+      `}</style>
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} />
+      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />}
+      {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
+      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
+      {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} isMobile={isMobile} />}
+      {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
+      {activePage === "profile" && <ProfilePage setActivePage={setActivePage} isMobile={isMobile} />}
+      {activePage === "squad" && <SquadPage isMobile={isMobile} />}
+      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
+    </div>
+  );
+}
