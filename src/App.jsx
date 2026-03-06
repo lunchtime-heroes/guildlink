@@ -844,12 +844,12 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
   const remaining = FOUNDING.total - FOUNDING.claimed;
 
   const perks = [
-    { icon: "🔮", title: "Founding Ring", desc: "A permanent gold profile ring. Yours forever, even after Pro launches. Never earned any other way." },
-    { icon: "🧪", title: "Early Feature Access", desc: "Test every new feature — Guilds, advanced squad tools, and more — free for 2 months before public launch." },
-    { icon: "💰", title: "$5 Off Any Add-On", desc: "When features launch publicly, founding members pay half. Guilds at $10/mo? You pay $5. Always." },
-    { icon: "📣", title: "Shape What Gets Built", desc: "Direct feedback channel to the team during early access. You're not a user — you're a collaborator." },
-    { icon: "🏛️", title: "Town Square Status", desc: "Visible founding badge on every post and comment. The community will know you were here first." },
-    { icon: "🔒", title: "No Data. Ever.", desc: "GuildLink doesn't sell your data. Founding members get our promise in writing. This is the town square, not a data farm." },
+    { icon: "⚔️", title: "Guild Hub — $5/mo. Forever.", desc: "Guild hubs launch publicly at $12/mo. Founding members pay $5/mo for life. You're not buying a discount — you're locking in a price before it exists." },
+    { icon: "🧪", title: "Early Feature Access", desc: "Test every new feature — Guilds, advanced squad tools, and more — free for 2 months before public launch. Your feedback shapes what ships." },
+    { icon: "🔒", title: "Your Data Stays Yours", desc: "GuildLink never sells your personal data. Not now, not ever. If you see an ad, it's because you play that game — not because we built a profile on you." },
+    { icon: "🎯", title: "Ads Based on Games, Not You", desc: "We show game-relevant ads based on what you play, nothing else. No behavioral tracking, no demographic targeting, no data brokers. Just: you like Elden Ring, here's a FromSoftware ad." },
+    { icon: "🏛️", title: "Founding Ring — Permanent", desc: "A gold profile ring that marks you as a founding member. It's yours forever, even if you cancel. No one else can ever earn it this way." },
+    { icon: "📣", title: "Shape What Gets Built", desc: "Two months of free early access to every new feature before public launch. Use it, break it, tell us what's wrong. You're a collaborator, not a beta tester." },
   ];
 
   return (
@@ -893,7 +893,7 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
           </h1>
 
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 17, maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.7 }}>
-            GuildLink is building a social platform for gamers that doesn't mine your data, doesn't trick you, and actually listens. Founding members help shape what it becomes — and never lose their place in history.
+            GuildLink is the town square for gamers. No personal data sold. No behavioral targeting. If you see an ad, it's because you play that game — full stop. Founding members lock in $5/mo forever, including guild hubs when they launch.
           </p>
 
           {/* Progress bar */}
@@ -991,9 +991,9 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
           <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 17 : 20, marginBottom: 20 }}>How the pricing works. No surprises.</div>
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "center", gap: isMobile ? 10 : 0, maxWidth: 600, margin: "0 auto 24px" }}>
             {[
-              { label: "Founding Membership", price: "$5/mo", color: C.gold, desc: "Base access + ring + early features" },
-              { label: "+ Any Feature Add-on", price: "$5/mo", color: C.accentSoft, desc: "vs $10/mo standard price" },
-              { label: "= Total", price: "$10/mo", color: C.green, desc: "Full platform. Half price." },
+              { label: "Founding Membership", price: "$5/mo", color: C.gold, desc: "Ring + early access + your price lock" },
+              { label: "+ Guild Hub (at launch)", price: "$5/mo", color: C.accentSoft, desc: "vs $12/mo standard price" },
+              { label: "= Total", price: "$10/mo", color: C.green, desc: "Full platform. Forever." },
             ].map((tier, i) => (
               <div key={i} style={{
                 flex: 1, padding: isMobile ? "14px 16px" : "20px 16px",
@@ -1010,8 +1010,8 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
             ))}
           </div>
           <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, lineHeight: 1.7 }}>
-            When Founding Membership closes, standard Pro launches at $10/mo.<br />
-            Founding members lock in $5/mo forever. The ring stays even if you cancel.
+            Guild hubs launch publicly at $12/mo. Founding members pay $5/mo forever — that's your price lock, not a discount.<br />
+            Your personal data is never sold. Ads are targeted by game, not by you. The founding ring is yours even if you cancel.
           </div>
           {!joined && (
             <button onClick={() => setJoined(true)} style={{ marginTop: 24, background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 10, padding: "12px 36px", color: "#000", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
@@ -1046,7 +1046,7 @@ function FoundingBanner({ onDismiss, setActivePage }) {
         <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 5, maxWidth: 300 }}>
           <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}88, ${C.gold})`, borderRadius: 2 }} />
         </div>
-        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>$5/mo · Gold ring forever · Early access to every new feature</div>
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>$5/mo forever · Guild hubs at launch · No personal data sold · Gold ring permanent</div>
       </div>
       <button onClick={() => setActivePage("founding")} style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
         Learn More
@@ -1263,8 +1263,11 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
           <button style={{ width: "100%", background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>View All NPCs</button>
         </div>
 
-        {/* Your games */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+        {/* Data promise */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔒 Our Promise</div>
+          <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Your personal data is never sold. Ads are based on games you play — nothing else.</div>
+        </div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
           {mockUser.games.map(g => {
             const gData = Object.values(GAMES).find(x => x.name === g);
