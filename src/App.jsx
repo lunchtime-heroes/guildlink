@@ -545,7 +545,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           </div>
         </div>
 
-        <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px" }}>{localPost.content}</p>
+        <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
@@ -596,7 +596,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                     <span style={{ color: C.textDim, fontSize: 11 }}>{comment.user.handle}</span>
                     <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{comment.time}</span>
                   </div>
-                  <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{comment.content}</p>
+                  <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 5, paddingLeft: 4 }}>
                   <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {comment.likes.toLocaleString()}</span>
@@ -729,7 +729,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
                     <div style={{ color: C.textDim, fontSize: 12 }}>{post.time}</div>
                   </div>
                 </div>
-                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px" }}>{post.content}</p>
+                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{post.content}</p>
                 <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
                   <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>🤍 {post.likes.toLocaleString()}</button>
                   <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600 }}>💬 {post.comments}</button>
@@ -844,12 +844,12 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
   const remaining = FOUNDING.total - FOUNDING.claimed;
 
   const perks = [
-    { icon: "⚔️", title: "Guild Hub — $5/mo. Forever.", desc: "Guild hubs launch publicly at $12/mo. Founding members pay $5/mo for life. You're not buying a discount — you're locking in a price before it exists." },
-    { icon: "🧪", title: "Early Feature Access", desc: "Test every new feature — Guilds, advanced squad tools, and more — free for 2 months before public launch. Your feedback shapes what ships." },
+    { icon: "⚔️", title: "GuildLink Pro — $5/mo. Forever.", desc: "Pro launches publicly at $9.99/mo. Founding members pay $5/mo for life. You're not getting a discount — you're locking in a price before it exists." },
+    { icon: "🏰", title: "Guild Hubs", desc: "Run your own private community space with custom branding, member management, and events. Included in Pro. Launch price for everyone else: $9.99/mo." },
+    { icon: "🎮", title: "Achievement Sync — Coming Soon", desc: "Connect your Xbox, PlayStation, and Steam accounts. Your real achievements populate your profile automatically. Verified bragging rights." },
+    { icon: "📊", title: "Gaming Report — Coming Soon", desc: "A monthly breakdown of your gaming life — hours played, completions, taste shifts, how you rank on GuildLink. Think Spotify Wrapped, but for games." },
     { icon: "🔒", title: "Your Data Stays Yours", desc: "GuildLink never sells your personal data. Not now, not ever. If you see an ad, it's because you play that game — not because we built a profile on you." },
     { icon: "🎯", title: "Ads Based on Games, Not You", desc: "We show game-relevant ads based on what you play, nothing else. No behavioral tracking, no demographic targeting, no data brokers. Just: you like Elden Ring, here's a FromSoftware ad." },
-    { icon: "🏛️", title: "Founding Ring — Permanent", desc: "A gold profile ring that marks you as a founding member. It's yours forever, even if you cancel. No one else can ever earn it this way." },
-    { icon: "📣", title: "Shape What Gets Built", desc: "Two months of free early access to every new feature before public launch. Use it, break it, tell us what's wrong. You're a collaborator, not a beta tester." },
   ];
 
   return (
@@ -888,12 +888,12 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
             <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>⚙ Founding Membership</span>
           </div>
 
-          <h1 style={{ margin: "0 0 16px", fontWeight: 900, fontSize: 42, color: "#fff", letterSpacing: "-1px", lineHeight: 1.1 }}>
+          <h1 style={{ margin: "0 0 16px", fontWeight: 900, fontSize: 42, color: "#fff", letterSpacing: "-1px", lineHeight: 1.1, textAlign: "center" }}>
             The town square<br /><span style={{ color: C.gold }}>needs its first citizens.</span>
           </h1>
 
-          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 17, maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.7 }}>
-            GuildLink is the town square for gamers. No personal data sold. No behavioral targeting. If you see an ad, it's because you play that game — full stop. Founding members lock in $5/mo forever, including guild hubs when they launch.
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 17, maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.7, textAlign: "center" }}>
+            GuildLink is the town square for gamers. No personal data sold. No behavioral targeting. If you see an ad, it's because you play that game — full stop. Founding members lock in $5/mo forever for everything Pro includes, now and in the future.
           </p>
 
           {/* Progress bar */}
@@ -939,8 +939,8 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
       {/* Perks grid */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "32px 16px 80px" : "56px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 26, marginBottom: 8 }}>What you get</div>
-          <div style={{ color: C.textMuted, fontSize: 15 }}>Not a subscription. A founding stake.</div>
+          <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 26, marginBottom: 8 }}>What founding members get</div>
+          <div style={{ color: C.textMuted, fontSize: 15 }}>$5/mo locks in everything Pro includes — now and as it grows.</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16, marginBottom: 56 }}>
           {perks.map((perk, i) => (
@@ -991,9 +991,9 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
           <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 17 : 20, marginBottom: 20 }}>How the pricing works. No surprises.</div>
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "center", gap: isMobile ? 10 : 0, maxWidth: 600, margin: "0 auto 24px" }}>
             {[
-              { label: "Founding Membership", price: "$5/mo", color: C.gold, desc: "Ring + early access + your price lock" },
-              { label: "+ Guild Hub (at launch)", price: "$5/mo", color: C.accentSoft, desc: "vs $12/mo standard price" },
-              { label: "= Total", price: "$10/mo", color: C.green, desc: "Full platform. Forever." },
+              { label: "Founding Membership", price: "$5/mo", color: C.gold, desc: "Everything Pro includes, forever" },
+              { label: "GuildLink Pro (public)", price: "$9.99/mo", color: C.accentSoft, desc: "Standard price at launch" },
+              { label: "You save", price: "$4.99/mo", color: C.green, desc: "Every month. Forever." },
             ].map((tier, i) => (
               <div key={i} style={{
                 flex: 1, padding: isMobile ? "14px 16px" : "20px 16px",
@@ -1010,8 +1010,8 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
             ))}
           </div>
           <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, lineHeight: 1.7 }}>
-            Guild hubs launch publicly at $12/mo. Founding members pay $5/mo forever — that's your price lock, not a discount.<br />
-            Your personal data is never sold. Ads are targeted by game, not by you. The founding ring is yours even if you cancel.
+            GuildLink Pro launches publicly at $9.99/mo — guild hubs, achievement sync, gaming reports, and everything that follows.<br />
+            Founding members pay $5/mo forever. Your personal data is never sold. Ads are targeted by game, not by you. The founding ring is yours even if you cancel.
           </div>
           {!joined && (
             <button onClick={() => setJoined(true)} style={{ marginTop: 24, background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 10, padding: "12px 36px", color: "#000", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
@@ -1705,13 +1705,13 @@ function ProfilePage({ setActivePage, isMobile }) {
       {/* Posts */}
       {activeTab === "posts" && FEED_POSTS.filter(p => !p.user.isNPC && p.user.handle === "@axelstrike").slice(0, 2).map(post => (
         <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px" }}>{post.content}</p>
+          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", textAlign: "left" }}>{post.content}</p>
           <div style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes} · 💬 {post.comments} · {post.time}</div>
         </div>
       ))}
       {activeTab === "posts" && FEED_POSTS.filter(p => !p.user.isNPC && p.user.handle === "@axelstrike").length === 0 && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px" }}>{FEED_POSTS[5].content}</p>
+          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", textAlign: "left" }}>{FEED_POSTS[5].content}</p>
           <div style={{ color: C.textDim, fontSize: 12 }}>❤️ {FEED_POSTS[5].likes} · 💬 {FEED_POSTS[5].comments} · {FEED_POSTS[5].time}</div>
         </div>
       )}
@@ -1866,7 +1866,7 @@ export default function GuildLink() {
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
-        * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; text-align: left; }
+        * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #0a0c12; }
         ::-webkit-scrollbar-thumb { background: #252836; border-radius: 3px; }
