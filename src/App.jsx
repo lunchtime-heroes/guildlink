@@ -1229,7 +1229,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
     </div>
     <div style={{ display: "flex", gap: 20, maxWidth: 1100, margin: "0 auto", padding: mainPad }}>
       {/* Left sidebar — desktop only */}
-      {!isMobile && <div style={{ width: 230, flexShrink: 0 }}>
+      {!isMobile && (
+      <div style={{ width: 230, flexShrink: 0 }}>
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
           <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
           <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
@@ -1268,6 +1269,9 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
           <div style={{ fontWeight: 700, color: C.text, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔒 Our Promise</div>
           <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Your personal data is never sold. Ads are based on games you play — nothing else.</div>
         </div>
+
+        {/* Your games */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
           {mockUser.games.map(g => {
             const gData = Object.values(GAMES).find(x => x.name === g);
@@ -1282,7 +1286,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
           })}
         </div>
       </div>
-      }
+      )}
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1310,7 +1314,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
       </div>
 
       {/* Right sidebar — desktop only */}
-      {!isMobile && <div style={{ width: 210, flexShrink: 0 }}>
+      {!isMobile && (
+      <div style={{ width: 210, flexShrink: 0 }}>
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Connect</div>
           {[
@@ -1366,7 +1371,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
           ))}
         </div>
       </div>
-      }
+      )}
     </div>
     </>
   );
