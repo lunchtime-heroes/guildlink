@@ -1326,11 +1326,11 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
+  const [taggedGames, setTaggedGames] = useState([]); // array of game ids, max 3
 
   const handlePostTextChange = (e) => {
     const val = e.target.value;
     setPostText(val);
-    // Detect @ mention
     const atMatch = val.match(/@(\w*)$/);
     if (atMatch) {
       const query = atMatch[1].toLowerCase();
@@ -1347,11 +1347,20 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   };
 
   const selectMention = (game) => {
-    const newText = postText.replace(/@\w*$/, "") + "@" + game.name.replace(/\s+/g, "") + " ";
-    setPostText(newText);
-    setSelectedGame(game.id);
+    // Replace the trailing @query with @GameName (no spaces) in text
+    const inserted = postText.replace(/@\w*$/, "@" + game.name.replace(/\s+/g, "")) + " ";
+    setPostText(inserted);
+    // Add to tagged games if not already there and under limit
+    setTaggedGames(prev => {
+      if (prev.includes(game.id) || prev.length >= 3) return prev;
+      return [...prev, game.id];
+    });
     setMentionQuery(null);
     setMentionResults([]);
+  };
+
+  const removeTaggedGame = (gameId) => {
+    setTaggedGames(prev => prev.filter(id => id !== gameId));
   };
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
@@ -1376,7 +1385,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
     const { data, error } = await supabase.from("posts").insert({
       user_id: authUser?.id || null,
       content: postText.trim(),
-      game_tag: selectedGame || null,
+      game_tag: taggedGames[0] || null,
       likes: 0,
       comment_count: 0,
     }).select().single();
@@ -1392,7 +1401,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
       };
       setLivePosts(prev => [newPost, ...prev]);
       setPostText("");
-      setSelectedGame(null);
+      setTaggedGames([]);
     }
     setPosting(false);
   };
@@ -1505,11 +1514,14 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  {selectedGame && (
-                    <span style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                      {GAMES[selectedGame]?.icon} {GAMES[selectedGame]?.name}
-                      <span onClick={() => setSelectedGame(null)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim }}>×</span>
+                  {taggedGames.map(gameId => (
+                    <span key={gameId} style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                      {GAMES[gameId]?.name}
+                      <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
                     </span>
+                  ))}
+                  {taggedGames.length === 0 && (
+                    <span style={{ color: C.textDim, fontSize: 12 }}>@ a game to tag it</span>
                   )}
                   {(isMobile ? ["⭐", "⚡"] : ["⭐ Review", "⚡ LFG"]).map((tag, i) => (
                     <button key={i} style={{ background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: C.textMuted, fontSize: isMobile ? 16 : 12, cursor: "pointer" }}>{tag}</button>
