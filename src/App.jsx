@@ -688,8 +688,44 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
   const npc = NPCS[npcId];
   const [activeTab, setActiveTab] = useState("posts");
   const [followed, setFollowed] = useState(false);
+  const [liveNPC, setLiveNPC] = useState(null);
+  const [npcPosts, setNpcPosts] = useState([]);
+
+  useEffect(() => {
+    loadNPCData();
+  }, [npcId]);
+
+  const loadNPCData = async () => {
+    // Try to find NPC in database by handle
+    const handle = npc ? npc.handle : null;
+    if (!handle) return;
+    const { data: npcData } = await supabase
+      .from("npcs")
+      .select("*")
+      .eq("handle", handle)
+      .single();
+    if (npcData) {
+      setLiveNPC(npcData);
+      const { data: posts } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("npc_id", npcData.id)
+        .order("created_at", { ascending: false });
+      if (posts) setNpcPosts(posts);
+    }
+  };
 
   if (!npc) return null;
+
+  const displayNPC = liveNPC ? {
+    ...npc,
+    name: liveNPC.name,
+    handle: liveNPC.handle,
+    bio: liveNPC.bio || npc.bio,
+    followers: liveNPC.followers,
+    role: liveNPC.role || npc.role,
+    location: liveNPC.location || npc.location,
+  } : npc;
 
   const tabs = [
     { id: "posts", label: "📝 Posts" },
@@ -717,20 +753,20 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: isMobile ? 22 : 32, fontWeight: 800, color: C.gold, letterSpacing: "-1px",
               boxShadow: `0 0 32px ${C.gold}22`,
-            }}>{npc.avatar}</div>
+            }}>{displayNPC.avatar}</div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 26, color: C.gold, letterSpacing: "-0.5px" }}>{npc.name}</h1>
+                <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 26, color: C.gold, letterSpacing: "-0.5px" }}>{displayNPC.name}</h1>
                 <NPCBadge />
                 <span style={{ background: `${C.gold}18`, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                  {npc.universeIcon} {npc.universe}
+                  {displayNPC.universeIcon} {displayNPC.universe}
                 </span>
               </div>
-              <div style={{ color: `${C.gold}99`, fontSize: 12, marginBottom: 4 }}>{npc.handle}</div>
-              <div style={{ color: `${C.gold}77`, fontSize: 12, marginBottom: isMobile ? 6 : 10 }}>{npc.role}</div>
-              {!isMobile && <div style={{ color: `${C.gold}55`, fontSize: 12, marginBottom: 14 }}>📍 {npc.location}</div>}
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 14px", lineHeight: 1.65 }}>{npc.bio}</p>
+              <div style={{ color: `${C.gold}99`, fontSize: 12, marginBottom: 4 }}>{displayNPC.handle}</div>
+              <div style={{ color: `${C.gold}77`, fontSize: 12, marginBottom: isMobile ? 6 : 10 }}>{displayNPC.role}</div>
+              {!isMobile && <div style={{ color: `${C.gold}55`, fontSize: 12, marginBottom: 14 }}>📍 {displayNPC.location}</div>}
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 14px", lineHeight: 1.65 }}>{displayNPC.bio}</p>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => setFollowed(!followed)} style={{ background: followed ? C.goldGlow : C.gold, border: `1px solid ${C.gold}`, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followed ? "✓ Following" : "+ Follow"}</button>
                 <button style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 14px", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Share</button>
@@ -776,29 +812,30 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
         {/* POSTS TAB */}
         {activeTab === "posts" && (
           <div>
-            {npc.posts.length > 0 ? npc.posts.map(post => (
+            {(npcPosts.length > 0 ? npcPosts : npc.posts).map(post => (
               <div key={post.id} style={{
                 background: C.surface, border: `1px solid ${C.goldBorder}`,
                 borderRadius: 14, padding: 20, marginBottom: 12,
                 boxShadow: `0 0 0 1px ${C.goldGlow}`,
               }}>
                 <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-                  <Avatar initials={npc.avatar} size={42} isNPC={true} />
+                  <Avatar initials={displayNPC.avatar} size={42} isNPC={true} />
                   <div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>{npc.name}</span>
+                      <span style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>{displayNPC.name}</span>
                       <NPCBadge />
                     </div>
-                    <div style={{ color: C.textDim, fontSize: 12 }}>{post.time}</div>
+                    <div style={{ color: C.textDim, fontSize: 12 }}>{timeAgo(post.created_at) || post.time}</div>
                   </div>
                 </div>
                 <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{post.content}</p>
                 <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
-                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>🤍 {post.likes.toLocaleString()}</button>
-                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600 }}>💬 {post.comments}</button>
+                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>🤍 {(post.likes || 0).toLocaleString()}</button>
+                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600 }}>💬 {post.comment_count || 0}</button>
                 </div>
               </div>
-            )) : (
+            ))}
+            {npcPosts.length === 0 && npc.posts.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🕯️</div>
                 <div style={{ fontSize: 14 }}>No posts yet. They're thinking about it.</div>
@@ -812,7 +849,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
           <div>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>In-Game Record</div>
-              <div style={{ color: C.textDim, fontSize: 13 }}>Official statistics from {npc.universe} records. Verified by the guild.</div>
+              <div style={{ color: C.textDim, fontSize: 13 }}>Official statistics from {displayNPC.universe} records. Verified by the guild.</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
               {npc.stats.map((stat, i) => (
@@ -847,7 +884,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
             <div>
               <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28, marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>Origin</div>
-                <div style={{ color: `${C.gold}66`, fontSize: 12, marginBottom: 16 }}>From the official {npc.universe} lore archives</div>
+                <div style={{ color: `${C.gold}66`, fontSize: 12, marginBottom: 16 }}>From the official {displayNPC.universe} lore archives</div>
                 <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{npc.lore}</p>
               </div>
               <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28 }}>
@@ -869,8 +906,8 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
               <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>Universe</div>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>{npc.universeIcon}</div>
-                  <div style={{ fontWeight: 800, color: C.gold, fontSize: 16 }}>{npc.universe}</div>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>{displayNPC.universeIcon}</div>
+                  <div style={{ fontWeight: 800, color: C.gold, fontSize: 16 }}>{displayNPC.universe}</div>
                   <div style={{ color: C.textDim, fontSize: 12, marginTop: 6 }}>A GuildLink original universe</div>
                   <div style={{ marginTop: 14, color: C.textMuted, fontSize: 13 }}>Meet the cast:</div>
                   <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
