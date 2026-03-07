@@ -529,6 +529,17 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [liveComments, setLiveComments] = useState(null);
+  const [taggedGameName, setTaggedGameName] = useState(null);
+
+  useEffect(() => {
+    const gameId = post.game_tag || post.gameId;
+    if (!gameId) return;
+    if (GAMES[gameId]) { setTaggedGameName(GAMES[gameId].name); return; }
+    // Look up from DB
+    supabase.from("games").select("name").eq("id", gameId).single().then(({ data }) => {
+      if (data) setTaggedGameName(data.name);
+    });
+  }, [post.game_tag, post.gameId]);
 
   const toggleLike = async () => {
     const newLiked = !localPost.liked;
@@ -597,13 +608,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
               {(localPost.game || localPost.game_tag) && (() => {
                 const gameId = localPost.gameId || localPost.game_tag;
-                const gameData = gameId ? GAMES[gameId] : null;
-                const gameName = gameData ? gameData.name : localPost.game;
-                const gameIcon = gameData ? gameData.icon : (localPost.gameIcon || "🎮");
-                return gameName ? (
-                  <span onClick={() => { if (gameId && GAMES[gameId]) { setCurrentGame(gameId); setActivePage("game"); } }}
-                    style={{ cursor: gameId && GAMES[gameId] ? "pointer" : "default" }}>
-                    <Badge small color={C.accent}>{gameIcon} {gameName}</Badge>
+                const displayName = taggedGameName || localPost.game;
+                return displayName ? (
+                  <span onClick={() => { if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
+                    style={{ cursor: gameId ? "pointer" : "default" }}>
+                    <Badge small color={C.accent}>{displayName}</Badge>
                   </span>
                 ) : null;
               })()}
@@ -1332,20 +1341,24 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const [mentionResults, setMentionResults] = useState([]);
   const [taggedGames, setTaggedGames] = useState([]);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [dbGames, setDbGames] = useState({}); // id -> game object cache
   const textareaRef = useRef(null); // array of game ids, max 3
 
-  const handlePostTextChange = (e) => {
+  const handlePostTextChange = async (e) => {
     const val = e.target.value;
     setPostText(val);
     const atMatch = val.match(/@(\w*)$/);
     if (atMatch) {
       const query = atMatch[1].toLowerCase();
-      const matches = Object.values(GAMES).filter(g =>
-        g.name.toLowerCase().replace(/\s+/g, "").includes(query) ||
-        g.name.toLowerCase().includes(query)
-      ).slice(0, 5);
+      if (query.length === 0) {
+        // Show top games by followers when just @ is typed
+        const { data } = await supabase.from("games").select("id, name, followers").order("followers", { ascending: false }).limit(5);
+        setMentionResults(data || []);
+      } else {
+        const { data } = await supabase.from("games").select("id, name, followers").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5);
+        setMentionResults(data || []);
+      }
       setMentionQuery(query);
-      setMentionResults(matches);
       setMentionIndex(0);
     } else {
       setMentionQuery(null);
@@ -1363,16 +1376,17 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   };
 
   const selectMention = (game) => {
-    const inserted = postText.replace(/@\w*$/, "@" + game.name.replace(/\s+/g, "")) + " ";
+    const gameName = game.name.replace(/\s+/g, "");
+    const inserted = postText.replace(/@\w*$/, "@" + gameName) + " ";
     setPostText(inserted);
     setTaggedGames(prev => {
       if (prev.includes(game.id) || prev.length >= 3) return prev;
       return [...prev, game.id];
     });
+    setDbGames(prev => ({ ...prev, [game.id]: game }));
     setMentionQuery(null);
     setMentionResults([]);
     setMentionIndex(0);
-    // Refocus textarea after selection
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
@@ -1529,12 +1543,15 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  {taggedGames.map(gameId => (
-                    <span key={gameId} style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                      {GAMES[gameId]?.name}
-                      <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
-                    </span>
-                  ))}
+                  {taggedGames.map(gameId => {
+                    const game = dbGames[gameId] || GAMES[gameId];
+                    return (
+                      <span key={gameId} style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                        {game?.name || gameId}
+                        <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
+                      </span>
+                    );
+                  })}
                   {taggedGames.length === 0 && (
                     <span style={{ color: C.textDim, fontSize: 12 }}>@ a game to tag it</span>
                   )}
@@ -1694,14 +1711,55 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
 // ─── GAME PAGE ────────────────────────────────────────────────────────────────
 
 function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
-  const game = GAMES[gameId];
+  const hardcoded = GAMES[gameId];
   const [activeTab, setActiveTab] = useState("pulse");
   const [followed, setFollowed] = useState(false);
+  const [dbGame, setDbGame] = useState(null);
+  const [gamePosts, setGamePosts] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      // Try by id first (uuid), then by name match from hardcoded
+      let query = supabase.from("games").select("*");
+      if (gameId && gameId.includes('-')) {
+        query = query.eq("id", gameId);
+      } else if (hardcoded) {
+        query = query.ilike("name", hardcoded.name);
+      }
+      const { data } = await query.single();
+      if (data) {
+        setDbGame(data);
+        // Load posts tagged to this game
+        const { data: posts } = await supabase
+          .from("posts")
+          .select("*, profiles(username, handle, avatar_initials)")
+          .eq("game_tag", data.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (posts) setGamePosts(posts);
+      }
+    };
+    load();
+  }, [gameId]);
+
+  const game = dbGame ? {
+    ...(hardcoded || {}),
+    name: dbGame.name,
+    developer: dbGame.developer,
+    description: dbGame.description,
+    followers: dbGame.followers,
+    genre: dbGame.genre ? [dbGame.genre] : (hardcoded?.genre || []),
+    color: hardcoded?.color || C.accent,
+    gradient: hardcoded?.gradient || `linear-gradient(135deg, #0a0c12 0%, #1a1c2e 100%)`,
+    icon: hardcoded?.icon || "🎮",
+    claimed: dbGame.is_claimed,
+    id: gameId,
+  } : hardcoded;
 
   if (!game) return (
     <div style={{ maxWidth: 800, margin: "100px auto", textAlign: "center", color: C.textMuted }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>Game page coming soon</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>Loading...</div>
       <button onClick={() => setActivePage("games")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Browse Games</button>
     </div>
   );
