@@ -523,11 +523,53 @@ function Badge({ children, color = C.accent, small }) {
 
 // ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, currentUser }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [liveComments, setLiveComments] = useState(null);
 
-  const toggleLike = () => setLocalPost(p => ({ ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 }));
+  const toggleLike = async () => {
+    const newLiked = !localPost.liked;
+    const newLikes = newLiked ? localPost.likes + 1 : localPost.likes - 1;
+    setLocalPost(p => ({ ...p, liked: newLiked, likes: newLikes }));
+    if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
+      await supabase.from("posts").update({ likes: newLikes }).eq("id", post.id);
+    }
+  };
+
+  const loadComments = async () => {
+    if (!post.id || !post.id.includes('-')) return;
+    const { data } = await supabase
+      .from("comments")
+      .select("*, profiles(username, handle, avatar_initials)")
+      .eq("post_id", post.id)
+      .order("created_at", { ascending: true });
+    if (data) setLiveComments(data);
+  };
+
+  const toggleComments = () => {
+    if (!showComments && liveComments === null) loadComments();
+    setShowComments(s => !s);
+  };
+
+  const submitComment = async () => {
+    if (!commentText.trim() || submittingComment) return;
+    setSubmittingComment(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from("comments").insert({
+      post_id: post.id,
+      user_id: authUser.id,
+      content: commentText.trim(),
+    }).select("*, profiles(username, handle, avatar_initials)").single();
+    if (!error && data) {
+      setLiveComments(prev => [...(prev || []), data]);
+      setCommentText("");
+      setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
+    }
+    setSubmittingComment(false);
+  };
 
   return (
     <div style={{
@@ -575,7 +617,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
           }}>{localPost.liked ? "❤️" : "🤍"} {localPost.likes}</button>
-          <button onClick={() => setShowComments(!showComments)} style={{
+          <button onClick={toggleComments} style={{
             background: showComments ? C.accentGlow : "transparent",
             border: `1px solid ${showComments ? C.accentDim : C.border}`,
             borderRadius: 8, padding: "5px 14px", cursor: "pointer",
@@ -589,48 +631,50 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       {/* Comments */}
       {showComments && (
         <div style={{ background: C.surfaceHover, borderTop: `1px solid ${C.border}`, padding: "14px 20px" }}>
-          {localPost.commentList.map((comment, i) => (
-            <div key={comment.id} style={{
-              display: "flex", gap: 10, marginBottom: i < localPost.commentList.length - 1 ? 14 : 0,
-            }}>
-              <div style={{ cursor: comment.user.isNPC ? "pointer" : "default" }}
-                onClick={() => { if (comment.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === comment.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}>
-                <Avatar initials={comment.user.avatar} size={32} isNPC={comment.user.isNPC} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  background: C.surfaceRaised,
-                  border: `1px solid ${comment.user.isNPC ? C.goldBorder : C.border}`,
-                  borderRadius: 10, padding: "10px 14px",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
-                    <span style={{
-                      fontWeight: 700, fontSize: 13,
-                      color: comment.user.isNPC ? C.gold : C.text,
-                      cursor: comment.user.isNPC ? "pointer" : "default",
-                    }}
-                      onClick={() => { if (comment.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === comment.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}
-                    >{comment.user.name}</span>
-                    {comment.user.isNPC && <NPCBadge />}
-                    <span style={{ color: C.textDim, fontSize: 11 }}>{comment.user.handle}</span>
-                    <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{comment.time}</span>
+          {(liveComments || localPost.commentList).map((comment, i) => {
+            const isLive = !!comment.profiles;
+            const author = isLive ? comment.profiles : comment.user;
+            const name = isLive ? author.username : author.name;
+            const handle = isLive ? author.handle : author.handle;
+            const avatar = isLive ? author.avatar_initials : author.avatar;
+            const isNPC = !isLive && comment.user.isNPC;
+            const allComments = liveComments || localPost.commentList;
+            return (
+              <div key={comment.id} style={{
+                display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0,
+              }}>
+                <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} />
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    background: C.surfaceRaised,
+                    border: `1px solid ${isNPC ? C.goldBorder : C.border}`,
+                    borderRadius: 10, padding: "10px 14px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name || "Gamer"}</span>
+                      {isNPC && <NPCBadge />}
+                      <span style={{ color: C.textDim, fontSize: 11 }}>{handle}</span>
+                      <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(comment.created_at) || comment.time}</span>
+                    </div>
+                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
                   </div>
-                  <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 5, paddingLeft: 4 }}>
-                  <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {comment.likes.toLocaleString()}</span>
-                  <span style={{ color: C.textDim, fontSize: 12, cursor: "pointer" }}>Reply</span>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {/* Comment input */}
           <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-            <Avatar initials="AC" size={32} />
-            <input placeholder="Write a comment..." style={{
-              flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`,
-              borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none",
-            }} />
+            <Avatar initials={currentUser?.avatar || "GL"} size={32} />
+            <input
+              value={commentText}
+              onChange={e => setCommentText(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && submitComment()}
+              placeholder="Write a comment..."
+              style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+            />
+            <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              {submittingComment ? "..." : "Reply"}
+            </button>
           </div>
         </div>
       )}
@@ -1382,7 +1426,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
               commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={user} />
           );
         })}
         {FEED_POSTS.map(post => (
