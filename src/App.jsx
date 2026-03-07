@@ -1400,7 +1400,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-14</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-15</span>
       </div>
     </nav>
   );
@@ -1668,22 +1668,40 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
   const loadPosts = async () => {
     if (isGuest) {
-      // Guest feed: top NPC post first, then top-liked posts overall, limit 20
-      const [npcResult, topResult] = await Promise.all([
+      // Fetch top 2 NPC posts and top real posts separately
+      const [npcResult, realResult] = await Promise.all([
         supabase.from("posts")
           .select("*, npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .not("npc_id", "is", null)
           .order("likes", { ascending: false })
-          .limit(1),
+          .limit(2),
         supabase.from("posts")
-          .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+          .is("npc_id", null)
           .order("likes", { ascending: false })
-          .limit(21),
+          .limit(30),
       ]);
-      const topNpc = npcResult.data?.[0];
-      const topPosts = (topResult.data || []).filter(p => p.id !== topNpc?.id).slice(0, 19);
-      const combined = [topNpc, ...topPosts].filter(Boolean).map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
-      setLivePosts(combined);
+
+      const npcPosts = (npcResult.data || []).map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
+      
+      // Score real posts: likes * 2 + comments * 1.5 + recency bonus (posts in last 7 days get +10)
+      const now = Date.now();
+      const weekMs = 7 * 24 * 60 * 60 * 1000;
+      const scoredReal = (realResult.data || [])
+        .map(p => ({
+          ...p,
+          comment_count: p.comments?.length || 0,
+          _score: (p.likes || 0) * 2 + (p.comments?.length || 0) * 1.5 + (now - new Date(p.created_at) < weekMs ? 10 : 0),
+        }))
+        .sort((a, b) => b._score - a._score)
+        .slice(0, 18);
+
+      // Place NPC posts at positions 1 and 6 (index 0 and 5)
+      const feed = [...scoredReal];
+      if (npcPosts[0]) feed.splice(0, 0, npcPosts[0]);
+      if (npcPosts[1]) feed.splice(5, 0, npcPosts[1]);
+
+      setLivePosts(feed.slice(0, 20));
       setGuestFeedDone(true);
     } else {
       const { data } = await supabase
