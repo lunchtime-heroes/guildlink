@@ -629,7 +629,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             borderRadius: 8, padding: "5px 14px", cursor: "pointer",
             color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5,
-          }}>💬 {localPost.commentList.length} {showComments ? "▲" : "▼"}</button>
+          }}>💬 {liveComments !== null ? liveComments.length : localPost.commentList.length} {showComments ? "▲" : "▼"}</button>
           <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>↗ {localPost.shares || 0}</button>
         </div>
       </div>
@@ -670,17 +670,21 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           })}
           {/* Comment input */}
           <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-            <Avatar initials={currentUser?.avatar || "GL"} size={32} />
-            <input
-              value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && submitComment()}
-              placeholder="Write a comment..."
-              style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
-            />
-            <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              {submittingComment ? "..." : "Reply"}
-            </button>
+            {currentUser ? (<>
+              <Avatar initials={currentUser?.avatar || "GL"} size={32} />
+              <input
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && submitComment()}
+                placeholder="Write a comment..."
+                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+              />
+              <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                {submittingComment ? "..." : "Reply"}
+              </button>
+            </>) : (
+              <div style={{ color: C.textDim, fontSize: 13 }}>Sign in to comment</div>
+            )}
           </div>
         </div>
       )}
@@ -690,7 +694,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
 // ─── NPC PROFILE PAGE ─────────────────────────────────────────────────────────
 
-function NPCProfilePage({ npcId, setActivePage, isMobile }) {
+function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, isMobile, currentUser }) {
   const npc = NPCS[npcId];
   const [activeTab, setActiveTab] = useState("posts");
   const [followed, setFollowed] = useState(false);
@@ -827,29 +831,29 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
         {/* POSTS TAB */}
         {activeTab === "posts" && (
           <div>
-            {(npcPosts.length > 0 ? npcPosts : (npc?.posts || [])).map(post => (
-              <div key={post.id} style={{
-                background: C.surface, border: `1px solid ${C.goldBorder}`,
-                borderRadius: 14, padding: 20, marginBottom: 12,
-                boxShadow: `0 0 0 1px ${C.goldGlow}`,
-              }}>
-                <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-                  <Avatar initials={displayNPC.avatar} size={42} isNPC={true} />
-                  <div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>{displayNPC.name}</span>
-                      <NPCBadge />
-                    </div>
-                    <div style={{ color: C.textDim, fontSize: 12 }}>{timeAgo(post.created_at) || post.time}</div>
-                  </div>
-                </div>
-                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{post.content}</p>
-                <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
-                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>🤍 {(post.likes || 0).toLocaleString()}</button>
-                  <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600 }}>💬 {post.comment_count || 0}</button>
-                </div>
-              </div>
-            ))}
+            {(npcPosts.length > 0 ? npcPosts : (npc?.posts || [])).map(post => {
+              const isLivePost = !!post.created_at;
+              const feedPost = isLivePost ? {
+                id: post.id,
+                npc_id: post.npc_id || liveNPC?.id,
+                game_tag: post.game_tag,
+                user: {
+                  name: displayNPC.name,
+                  handle: displayNPC.handle,
+                  avatar: displayNPC.avatar,
+                  status: "online",
+                  isNPC: true,
+                },
+                content: post.content,
+                time: timeAgo(post.created_at),
+                likes: post.likes || 0,
+                commentList: [],
+              } : {
+                ...post,
+                user: { ...post.user, isNPC: true },
+              };
+              return <FeedPostCard key={post.id} post={feedPost} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={currentUser} />;
+            })}
             {npcPosts.length === 0 && (npc?.posts || []).length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🕯️</div>
@@ -1569,7 +1573,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
           );
         })}
         {FEED_POSTS.map(post => (
-          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
+          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={user} />
         ))}
       </div>
 
@@ -2310,7 +2314,7 @@ export default function GuildLink() {
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
-      {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} isMobile={isMobile} />}
+      {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && <ProfilePage setActivePage={setActivePage} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
