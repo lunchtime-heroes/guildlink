@@ -2167,12 +2167,53 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
-function ProfilePage({ setActivePage, isMobile, currentUser }) {
+function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const user = currentUser || mockUser;
   const [activeTab, setActiveTab] = useState("posts");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
   const [saving, setSaving] = useState(false);
+  const [userPosts, setUserPosts] = useState([]);
+  const [userReviews, setUserReviews] = useState([]);
+  const [gameLibrary, setGameLibrary] = useState([]);
+  const [postCount, setPostCount] = useState(0);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      // Real posts
+      const { data: posts } = await supabase
+        .from("posts")
+        .select("*, profiles(username, handle, avatar_initials)")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (posts) { setUserPosts(posts); setPostCount(posts.length); }
+
+      // Reviews with game info
+      const { data: reviews } = await supabase
+        .from("reviews")
+        .select("*, games(id, name, developer, genre)")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false });
+      if (reviews) setUserReviews(reviews);
+
+      // Game library — unique games from posts + reviews
+      const gameIds = new Set();
+      if (posts) posts.forEach(p => p.game_tag && gameIds.add(p.game_tag));
+      if (reviews) reviews.forEach(r => r.game_id && gameIds.add(r.game_id));
+      if (gameIds.size > 0) {
+        const { data: games } = await supabase
+          .from("games")
+          .select("id, name, developer, genre, followers")
+          .in("id", [...gameIds]);
+        if (games) setGameLibrary(games);
+      }
+    };
+    load();
+  }, []);
 
   const startEdit = () => {
     setEditForm({
@@ -2194,12 +2235,10 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
       avatar_initials: editForm.username.trim().slice(0, 2).toUpperCase(),
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
-    if (!error) {
-      setEditing(false);
-      window.location.reload();
-    }
+    if (!error) { setEditing(false); window.location.reload(); }
     setSaving(false);
   };
+
   const achievements = [
     { icon: "🏆", name: "Top 500", desc: "Overwatch 2 Season 12", color: C.gold },
     { icon: "💎", name: "Radiant", desc: "Valorant Act 3", color: C.purple },
@@ -2209,8 +2248,18 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
     { icon: "⚡", name: "Early Adopter", desc: "GuildLink Beta", color: C.teal },
   ];
 
+  const tabs = [
+    { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
+    { id: "games", label: `Games${gameLibrary.length > 0 ? ` (${gameLibrary.length})` : ""}` },
+    { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
+    { id: "achievements", label: "Achievements" },
+    { id: "quests", label: "Quests" },
+    { id: "rings", label: "Rings" },
+  ];
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      {/* Header card */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
@@ -2223,34 +2272,29 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
           )}
         </div>
         <div style={{ padding: "48px 28px 24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: 22 }}>{user.name}</h1>
-                <Badge color={C.gold}>Lv.{user.level}</Badge>
+                <Badge color={C.gold}>Lv.{user.level || 1}</Badge>
                 {user.isFounding && <FoundingBadge />}
-                <Badge color={C.accent}>Verified</Badge>
               </div>
-              <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle} · {user.location}</div>
-              <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{user.title}</div>
-              <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", maxWidth: 480, lineHeight: 1.6 }}>{user.bio}</p>
+              <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle}</div>
+              <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
             </div>
-            <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>Edit Profile</button>
+            <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
           </div>
+
           {editing && (
             <div style={{ marginTop: 20, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>Edit Profile</div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Display Name</div>
-                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
-                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72 }} />
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Games (comma separated)</div>
-                <input value={editForm.games} onChange={e => setEditForm(f => ({ ...f, games: e.target.value }))} placeholder="Elden Ring, Valorant, Hollow Knight..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving..." : "Save"}</button>
@@ -2258,17 +2302,26 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
               </div>
             </div>
           )}
-          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center" }}>
-            {[{ label: "Connections", val: user.connections, color: C.accent }, { label: "Followers", val: user.followers.toLocaleString(), color: C.accentSoft }].map(s => (
-              <div key={s.label}><div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div><div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div></div>
+
+          {/* Stats row */}
+          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center", flexWrap: "wrap" }}>
+            {[
+              { label: "Posts", val: postCount || 0, color: C.accent },
+              { label: "Reviews", val: userReviews.length, color: C.teal },
+              { label: "Games", val: gameLibrary.length, color: C.gold },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div>
+              </div>
             ))}
             <div style={{ marginLeft: "auto", minWidth: 160 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                 <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>XP Progress</span>
-                <span style={{ color: C.textDim, fontSize: 11 }}>{user.xp.toLocaleString()} / {user.xpNext.toLocaleString()}</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{user.xp?.toLocaleString() || 0} / {user.xpNext?.toLocaleString() || 1000}</span>
               </div>
               <div style={{ height: 8, background: C.surfaceHover, borderRadius: 4 }}>
-                <div style={{ height: "100%", width: `${(user.xp / user.xpNext) * 100}%`, background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
+                <div style={{ height: "100%", width: `${Math.min(((user.xp || 0) / (user.xpNext || 1000)) * 100, 100)}%`, background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
               </div>
             </div>
           </div>
@@ -2276,23 +2329,97 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-        {["posts", "achievements", "quests", "rings"].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} style={{ background: activeTab === tab ? C.accentGlow : "transparent", border: activeTab === tab ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 20px", cursor: "pointer", color: activeTab === tab ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, textTransform: "capitalize" }}>{tab}</button>
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
         ))}
       </div>
 
-      {/* Posts */}
-      {activeTab === "posts" && FEED_POSTS.filter(p => !p.user.isNPC && p.user.handle === "@axelstrike").slice(0, 2).map(post => (
-        <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", textAlign: "left" }}>{post.content}</p>
-          <div style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes} · 💬 {post.comments} · {post.time}</div>
+      {/* Posts tab */}
+      {activeTab === "posts" && (
+        <div>
+          {userPosts.length > 0 ? userPosts.map(post => (
+            <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+              <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 10px", textAlign: "left" }}>{post.content}</p>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                {post.game_tag && <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}>🎮 Tagged game</span>}
+                <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes || 0} · {timeAgo(post.created_at)}</span>
+              </div>
+            </div>
+          )) : (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
+              <div style={{ fontSize: 14 }}>No posts yet. Share what you're playing.</div>
+            </div>
+          )}
         </div>
-      ))}
-      {activeTab === "posts" && FEED_POSTS.filter(p => !p.user.isNPC && p.user.handle === "@axelstrike").length === 0 && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 10px", textAlign: "left" }}>{FEED_POSTS[5].content}</p>
-          <div style={{ color: C.textDim, fontSize: 12 }}>❤️ {FEED_POSTS[5].likes} · 💬 {FEED_POSTS[5].comments} · {FEED_POSTS[5].time}</div>
+      )}
+
+      {/* Games tab */}
+      {activeTab === "games" && (
+        <div>
+          {gameLibrary.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
+              {gameLibrary.map(game => {
+                const hardcoded = GAMES[game.id];
+                const review = userReviews.find(r => r.game_id === game.id);
+                return (
+                  <div key={game.id} onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                    style={{ background: C.surface, border: `1px solid ${hardcoded?.color + "44" || C.border}`, borderRadius: 14, padding: 18, cursor: "pointer", transition: "border-color 0.2s" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <div style={{ fontSize: 28 }}>{hardcoded?.icon || "🎮"}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{game.name}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}</div>
+                      </div>
+                    </div>
+                    {review ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 6, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 13 }}>{review.rating}/10</span>
+                        {review.headline && <span style={{ color: C.textDim, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{review.headline}</span>}
+                      </div>
+                    ) : (
+                      <div style={{ color: C.textDim, fontSize: 12 }}>No review yet</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
+              <div style={{ fontSize: 14 }}>Your game library builds as you post and review games.</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reviews tab */}
+      {activeTab === "reviews" && (
+        <div>
+          {userReviews.length > 0 ? userReviews.map(review => (
+            <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
+              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12, cursor: review.games ? "pointer" : "default" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 24 }}>{GAMES[review.game_id]?.icon || "🎮"}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
+                  <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
+                </div>
+                <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
+              </div>
+              {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
+              {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
+              {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>⚠️ {review.didnt_love}</div>}
+              {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: "8px 0 0" }}>{review.content}</p>}
+              <div style={{ color: C.textDim, fontSize: 11, marginTop: 10 }}>{timeAgo(review.created_at)}</div>
+            </div>
+          )) : (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
+              <div style={{ fontSize: 14 }}>No reviews yet. Visit a game page to write your first.</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2315,7 +2442,7 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
           {QUESTS.map(quest => (
             <div key={quest.id} style={{ background: C.surface, border: `1px solid ${quest.done ? C.green + "44" : C.border}`, borderRadius: 14, padding: 20, display: "flex", gap: 16, alignItems: "center" }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: quest.done ? `${C.green}22` : C.surfaceRaised, border: `1px solid ${quest.done ? C.green + "44" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-                {quest.done ? "✓" : quest.ring ? PROFILE_RINGS.find(r => r.id === quest.ring)?.id === "platinum" ? "📝" : quest.ring === "crimson" ? "🏆" : quest.ring === "void" ? "💯" : quest.ring === "emerald" ? "🤝" : quest.ring === "celestial" ? "⭐" : "🎯" : "🎯"}
+                {quest.done ? "✓" : "🎯"}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
@@ -2370,9 +2497,7 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
                     {ring.id === user.activeRing ? "Active ✓" : "Equip"}
                   </button>
                 )}
-                {!ring.unlocked && (
-                  <div style={{ marginTop: 10, textAlign: "center", color: C.textDim, fontSize: 11 }}>🔒 Locked</div>
-                )}
+                {!ring.unlocked && <div style={{ marginTop: 10, textAlign: "center", color: C.textDim, fontSize: 11 }}>🔒 Locked</div>}
               </div>
             ))}
           </div>
@@ -2573,7 +2698,7 @@ export default function GuildLink() {
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && <ProfilePage setActivePage={setActivePage} isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "profile" && <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
     </div>
