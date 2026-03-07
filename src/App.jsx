@@ -1400,7 +1400,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-12</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-13</span>
       </div>
     </nav>
   );
@@ -1442,7 +1442,7 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
 
 // ─── CHARTS WIDGET ────────────────────────────────────────────────────────────
 
-function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey }) {
+function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, limit }) {
   const [charts, setCharts] = useState([]);
   const [prevCharts, setPrevCharts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -1504,7 +1504,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey }) {
             return { id, rawScore, finalScore, uniqueUsers, ...countMap[id] };
           })
           .sort((a, b) => b.finalScore - a.finalScore)
-          .slice(0, 10)
+          .slice(0, limit || 10)
           .map((entry, i) => ({
             rank: i + 1,
             ...entry,
@@ -1582,6 +1582,12 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey }) {
               </div>
             );
           })}
+          {limit && charts.length >= limit && (
+            <button onClick={() => setActivePage("charts")}
+              style={{ width: "100%", marginTop: 10, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              See Full Charts →
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1705,10 +1711,10 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   return (
     <>
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: topPad }}>
-      {showBanner && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
+      {showBanner && !(isMobile && isGuest) && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
-          <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} />
+          <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
         </div>
       )}
     </div>
@@ -1734,7 +1740,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         </div>
 
         {/* The Charts */}
-        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} />
+        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
 
         {/* Data promise */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
@@ -1762,16 +1768,18 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Composer or guest prompt */}
+        {/* Composer or guest prompt — desktop guests see teaser, mobile guests see nothing */}
         {isGuest ? (
-          <div onClick={() => onSignIn?.("Share wins, review games, and find your squad.")}
-            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 14 : 18, marginBottom: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: "50%", background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 16, flexShrink: 0 }}>⚔️</div>
-            <div style={{ flex: 1, background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 13 }}>
-              Share a win, review a game, find teammates...
+          !isMobile && (
+            <div onClick={() => onSignIn?.("Share wins, review games, and find your squad.")}
+              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginBottom: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 16, flexShrink: 0 }}>⚔️</div>
+              <div style={{ flex: 1, background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 13 }}>
+                Share a win, review a game, find teammates...
+              </div>
+              <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Join Free</button>
             </div>
-            <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Join Free</button>
-          </div>
+          )
         ) : (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
