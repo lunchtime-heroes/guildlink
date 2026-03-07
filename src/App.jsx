@@ -2177,6 +2177,12 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const [userReviews, setUserReviews] = useState([]);
   const [gameLibrary, setGameLibrary] = useState([]);
   const [postCount, setPostCount] = useState(0);
+  const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
+  const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
+  const [dragOver, setDragOver] = useState(null); // status column being hovered
+  const [addingGame, setAddingGame] = useState(false);
+  const [gameSearch, setGameSearch] = useState("");
+  const [gameSearchResults, setGameSearchResults] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -2200,23 +2206,27 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
         .order("created_at", { ascending: false });
       if (reviews) setUserReviews(reviews);
 
-      // Game library — from reviews (already have game data) + posts with valid UUIDs
-      const gamesMap = {};
-      if (reviews) {
-        reviews.forEach(r => {
-          if (r.games) gamesMap[r.game_id] = r.games;
+      // Game shelf from user_games table
+      const { data: shelfData } = await supabase
+        .from("user_games")
+        .select("*, games(id, name, developer, genre)")
+        .eq("user_id", authUser.id);
+      if (shelfData) {
+        const shelf = { want_to_play: [], playing: [], have_played: [] };
+        shelfData.forEach(entry => {
+          if (shelf[entry.status]) shelf[entry.status].push(entry);
         });
+        setUserShelf(shelf);
       }
+
+      // Game library — from reviews + shelf
+      const gamesMap = {};
+      if (reviews) reviews.forEach(r => { if (r.games) gamesMap[r.game_id] = r.games; });
+      if (shelfData) shelfData.forEach(s => { if (s.games) gamesMap[s.game_id] = s.games; });
       if (posts) {
-        const postGameIds = posts
-          .filter(p => p.game_tag && p.game_tag.includes('-'))
-          .map(p => p.game_tag)
-          .filter(id => !gamesMap[id]);
+        const postGameIds = posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag).filter(id => !gamesMap[id]);
         if (postGameIds.length > 0) {
-          const { data: games } = await supabase
-            .from("games")
-            .select("id, name, developer, genre, followers")
-            .in("id", postGameIds);
+          const { data: games } = await supabase.from("games").select("id, name, developer, genre, followers").in("id", postGameIds);
           if (games) games.forEach(g => gamesMap[g.id] = g);
         }
       }
@@ -2248,6 +2258,82 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
     if (!error) { setEditing(false); window.location.reload(); }
     setSaving(false);
   };
+
+  const moveGame = async (gameId, fromStatus, toStatus) => {
+    if (fromStatus === toStatus) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("user_games").upsert({
+      user_id: authUser.id,
+      game_id: gameId,
+      status: toStatus,
+      updated_at: new Date().toISOString(),
+    });
+    setUserShelf(prev => {
+      const entry = prev[fromStatus].find(e => e.game_id === gameId);
+      if (!entry) return prev;
+      return {
+        ...prev,
+        [fromStatus]: prev[fromStatus].filter(e => e.game_id !== gameId),
+        [toStatus]: [...prev[toStatus], { ...entry, status: toStatus }],
+      };
+    });
+  };
+
+  const addToShelf = async (game, status = "want_to_play") => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { error } = await supabase.from("user_games").upsert({
+      user_id: authUser.id,
+      game_id: game.id,
+      status,
+      updated_at: new Date().toISOString(),
+    });
+    if (!error) {
+      setUserShelf(prev => {
+        // Remove from any existing status first
+        const cleaned = {
+          want_to_play: prev.want_to_play.filter(e => e.game_id !== game.id),
+          playing: prev.playing.filter(e => e.game_id !== game.id),
+          have_played: prev.have_played.filter(e => e.game_id !== game.id),
+        };
+        return { ...cleaned, [status]: [...cleaned[status], { game_id: game.id, status, games: game }] };
+      });
+      setGameLibrary(prev => prev.find(g => g.id === game.id) ? prev : [...prev, game]);
+      setAddingGame(false);
+      setGameSearch("");
+      setGameSearchResults([]);
+    }
+  };
+
+  const removeFromShelf = async (gameId, status) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("user_games").delete().eq("user_id", authUser.id).eq("game_id", gameId);
+    setUserShelf(prev => ({ ...prev, [status]: prev[status].filter(e => e.game_id !== gameId) }));
+  };
+
+  const searchGames = async (q) => {
+    setGameSearch(q);
+    if (q.length < 2) { setGameSearchResults([]); return; }
+    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
+    setGameSearchResults(data || []);
+  };
+
+  const handleDragStart = (gameId, fromStatus) => setDragging({ gameId, fromStatus });
+  const handleDragOver = (e, status) => { e.preventDefault(); setDragOver(status); };
+  const handleDrop = (e, toStatus) => {
+    e.preventDefault();
+    if (dragging) moveGame(dragging.gameId, dragging.fromStatus, toStatus);
+    setDragging(null);
+    setDragOver(null);
+  };
+
+  const SHELF_COLUMNS = [
+    { id: "want_to_play", label: "Want to Play", color: C.accent, emptyText: "Games you're eyeing" },
+    { id: "playing", label: "Playing Now", color: C.green, emptyText: "What are you playing?" },
+    { id: "have_played", label: "Have Played", color: C.gold, emptyText: "Your completed games" },
+  ];
 
   const achievements = [
     { icon: "🏆", name: "Top 500", desc: "Overwatch 2 Season 12", color: C.gold },
@@ -2318,7 +2404,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
             {[
               { label: "Posts", val: postCount || 0, color: C.accent },
               { label: "Reviews", val: userReviews.length, color: C.teal },
-              { label: "Games", val: gameLibrary.length, color: C.gold },
+              { label: "Games", val: userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length || gameLibrary.length, color: C.gold },
             ].map(s => (
               <div key={s.label}>
                 <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div>
@@ -2368,39 +2454,85 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
       {/* Games tab */}
       {activeTab === "games" && (
         <div>
-          {gameLibrary.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
-              {gameLibrary.map(game => {
-                const hardcoded = GAMES[game.id];
-                const review = userReviews.find(r => r.game_id === game.id);
-                return (
-                  <div key={game.id} onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-                    style={{ background: C.surface, border: `1px solid ${hardcoded?.color + "44" || C.border}`, borderRadius: 14, padding: 18, cursor: "pointer", transition: "border-color 0.2s" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <div style={{ fontSize: 28 }}>{hardcoded?.icon || "🎮"}</div>
+          {/* Add game bar */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ color: C.textDim, fontSize: 13 }}>Drag games between columns to update status.</div>
+            <button onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
+          </div>
+
+          {/* Search to add */}
+          {addingGame && (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 16, position: "relative" }}>
+              <input
+                autoFocus
+                value={gameSearch}
+                onChange={e => searchGames(e.target.value)}
+                placeholder="Search for a game to add..."
+                style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+              />
+              {gameSearchResults.length > 0 && (
+                <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                  {gameSearchResults.map(game => (
+                    <div key={game.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.surfaceRaised, borderBottom: `1px solid ${C.border}` }}>
                       <div>
-                        <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{game.name}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}</div>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {SHELF_COLUMNS.map(col => (
+                          <button key={col.id} onClick={() => addToShelf(game, col.id)}
+                            style={{ background: "transparent", border: `1px solid ${col.color}44`, borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                            {col.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    {review ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 6, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 13 }}>{review.rating}/10</span>
-                        {review.headline && <span style={{ color: C.textDim, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{review.headline}</span>}
-                      </div>
-                    ) : (
-                      <div style={{ color: C.textDim, fontSize: 12 }}>No review yet</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
-              <div style={{ fontSize: 14 }}>Your game library builds as you post and review games.</div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
+          {/* Kanban board */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
+            {SHELF_COLUMNS.map(col => (
+              <div key={col.id}
+                onDragOver={e => handleDragOver(e, col.id)}
+                onDrop={e => handleDrop(e, col.id)}
+                style={{ background: dragOver === col.id ? `${col.color}11` : C.surface, border: `1px solid ${dragOver === col.id ? col.color + "66" : col.color + "33"}`, borderRadius: 14, padding: 14, minHeight: 200, transition: "all 0.15s" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
+                  <div style={{ background: `${col.color}22`, color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
+                </div>
+                {userShelf[col.id].length > 0 ? userShelf[col.id].map(entry => {
+                  const game = entry.games;
+                  if (!game) return null;
+                  const hardcoded = GAMES[game.id] || Object.values(GAMES).find(g => g.name === game.name);
+                  const review = userReviews.find(r => r.game_id === game.id);
+                  return (
+                    <div key={entry.game_id}
+                      draggable
+                      onDragStart={() => handleDragStart(entry.game_id, col.id)}
+                      onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                      style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 18 }}>{hardcoded?.icon || "🎮"}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                          <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
+                        </div>
+                        {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating}/10</span>}
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div style={{ textAlign: "center", padding: "30px 10px", color: C.textDim, fontSize: 12, borderRadius: 8, border: `1px dashed ${col.color}33` }}>
+                    {col.emptyText}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
