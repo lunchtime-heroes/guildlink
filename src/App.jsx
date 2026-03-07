@@ -2173,7 +2173,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>📊 The Charts</div>
                   <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
                   {[
                     { label: "Posts This Week", value: chartsData?.weeklyPosts ?? "—", color: game.color },
                     { label: "New Reviews", value: chartsData?.weeklyReviews ?? "—", color: C.teal },
@@ -2256,7 +2256,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
                 <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
                   <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Based on follows, reviews & completions</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                     {game.alsoLiked.map(g2 => (
                       <div key={g2.id} onClick={() => { setCurrentGame(g2.id); setActiveTab("pulse"); }}
                         style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, cursor: "pointer" }}>
@@ -2346,7 +2346,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
         )}
 
         {activeTab === "tips" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             {game.tips.map((tip, i) => (
               <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 }}>
                 <div style={{ display: "flex", gap: 10 }}>
@@ -2446,8 +2446,9 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
-  const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
-  const [dragOver, setDragOver] = useState(null); // status column being hovered
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const [mobileMoveCard, setMobileMoveCard] = useState(null); // { gameId, fromStatus } for tap-to-move on mobile
   const [addingGame, setAddingGame] = useState(false);
   const [gameSearch, setGameSearch] = useState("");
   const [gameSearchResults, setGameSearchResults] = useState([]);
@@ -2781,13 +2782,13 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
             </div>
           )}
 
-          {/* Kanban board */}
+                  {/* Kanban board */}
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
             {SHELF_COLUMNS.map(col => (
               <div key={col.id}
                 onDragOver={e => handleDragOver(e, col.id)}
                 onDrop={e => handleDrop(e, col.id)}
-                style={{ background: dragOver === col.id ? `${col.color}11` : C.surface, border: `1px solid ${dragOver === col.id ? col.color + "66" : col.color + "33"}`, borderRadius: 14, padding: 14, minHeight: 200, transition: "all 0.15s" }}>
+                style={{ background: dragOver === col.id ? `${col.color}11` : C.surface, border: `1px solid ${dragOver === col.id ? col.color + "66" : col.color + "33"}`, borderRadius: 14, padding: 14, minHeight: isMobile ? 80 : 200, transition: "all 0.15s" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
                   <div style={{ background: `${col.color}22`, color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
@@ -2795,26 +2796,50 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
                 {userShelf[col.id].length > 0 ? userShelf[col.id].map(entry => {
                   const game = entry.games;
                   if (!game) return null;
-                  const hardcoded = GAMES[game.id] || Object.values(GAMES).find(g => g.name === game.name);
                   const review = userReviews.find(r => r.game_id === game.id);
+                  const isMoving = mobileMoveCard?.gameId === entry.game_id;
                   return (
-                    <div key={entry.game_id}
-                      draggable
-                      onDragStart={() => handleDragStart(entry.game_id, col.id)}
-                      onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-                      style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                          <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
+                    <div key={entry.game_id}>
+                      <div
+                        draggable={!isMobile}
+                        onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
+                        onClick={() => {
+                          if (isMobile) {
+                            if (isMoving) { setMobileMoveCard(null); }
+                            else { setMobileMoveCard({ gameId: entry.game_id, fromStatus: col.id }); }
+                          } else {
+                            setCurrentGame(game.id); setActivePage("game");
+                          }
+                        }}
+                        style={{ background: isMoving ? `${col.color}22` : C.surfaceRaised, border: `1px solid ${isMoving ? col.color + "66" : C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                            <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
+                          </div>
+                          {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating}/10</span>}
+                          {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
                         </div>
-                        {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating}/10</span>}
                       </div>
+                      {/* Mobile move picker */}
+                      {isMoving && (
+                        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                          {SHELF_COLUMNS.filter(c => c.id !== col.id).map(target => (
+                            <button key={target.id} onClick={() => { moveGame(entry.game_id, col.id, target.id); setMobileMoveCard(null); }}
+                              style={{ flex: 1, background: `${target.color}22`, border: `1px solid ${target.color}66`, borderRadius: 8, padding: "6px 8px", color: target.color, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              → {target.label}
+                            </button>
+                          ))}
+                          <button onClick={() => { removeFromShelf(entry.game_id, col.id); setMobileMoveCard(null); }}
+                            style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 8px", color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 }) : (
-                  <div style={{ textAlign: "center", padding: "30px 10px", color: C.textDim, fontSize: 12, borderRadius: 8, border: `1px dashed ${col.color}33` }}>
+                  <div style={{ textAlign: "center", padding: isMobile ? "12px 10px" : "30px 10px", color: C.textDim, fontSize: 12, borderRadius: 8, border: `1px dashed ${col.color}33` }}>
                     {col.emptyText}
                   </div>
                 )}
@@ -3171,29 +3196,29 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header card */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
-        <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
-          <div style={{ position: "absolute", bottom: -36, left: 28 }}>
-            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={84} status="online" />
+        <div style={{ height: isMobile ? 100 : 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
+          <div style={{ position: "absolute", bottom: isMobile ? -28 : -36, left: isMobile ? 16 : 28 }}>
+            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" />
           </div>
         </div>
-        <div style={{ padding: "48px 28px 24px" }}>
+        <div style={{ padding: isMobile ? "40px 16px 20px" : "48px 28px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: 22 }}>{profile.username}</h1>
+                <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: isMobile ? 18 : 22 }}>{profile.username}</h1>
                 {profile.level && <Badge color={C.gold}>Lv.{profile.level}</Badge>}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
               {profile.bio && <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{profile.bio}</p>}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", alignItems: isMobile ? "center" : "flex-end", gap: 8, width: isMobile ? "100%" : "auto" }}>
               {!isOwnProfile && (
-                <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
                   Follow
                 </button>
               )}
               {compatibilityText && (
-                <div style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, maxWidth: 240, textAlign: "right" }}>
+                <div style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : "none", textAlign: "center" }}>
                   {compatibilityText}
                 </div>
               )}
