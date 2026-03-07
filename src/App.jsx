@@ -2200,17 +2200,27 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
         .order("created_at", { ascending: false });
       if (reviews) setUserReviews(reviews);
 
-      // Game library — unique games from posts + reviews
-      const gameIds = new Set();
-      if (posts) posts.forEach(p => p.game_tag && gameIds.add(p.game_tag));
-      if (reviews) reviews.forEach(r => r.game_id && gameIds.add(r.game_id));
-      if (gameIds.size > 0) {
-        const { data: games } = await supabase
-          .from("games")
-          .select("id, name, developer, genre, followers")
-          .in("id", [...gameIds]);
-        if (games) setGameLibrary(games);
+      // Game library — from reviews (already have game data) + posts with valid UUIDs
+      const gamesMap = {};
+      if (reviews) {
+        reviews.forEach(r => {
+          if (r.games) gamesMap[r.game_id] = r.games;
+        });
       }
+      if (posts) {
+        const postGameIds = posts
+          .filter(p => p.game_tag && p.game_tag.includes('-'))
+          .map(p => p.game_tag)
+          .filter(id => !gamesMap[id]);
+        if (postGameIds.length > 0) {
+          const { data: games } = await supabase
+            .from("games")
+            .select("id, name, developer, genre, followers")
+            .in("id", postGameIds);
+          if (games) games.forEach(g => gamesMap[g.id] = g);
+        }
+      }
+      setGameLibrary(Object.values(gamesMap));
     };
     load();
   }, []);
