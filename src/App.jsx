@@ -1716,10 +1716,15 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
   const [followed, setFollowed] = useState(false);
   const [dbGame, setDbGame] = useState(null);
   const [gamePosts, setGamePosts] = useState([]);
+  const [topVoices, setTopVoices] = useState([]);
+  const [latestReviews, setLatestReviews] = useState([]);
+  const [chartsData, setChartsData] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     const load = async () => {
-      // Try by id first (uuid), then by name match from hardcoded
       let query = supabase.from("games").select("*");
       if (gameId && gameId.includes('-')) {
         query = query.eq("id", gameId);
@@ -1727,20 +1732,98 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
         query = query.ilike("name", hardcoded.name);
       }
       const { data } = await query.single();
-      if (data) {
-        setDbGame(data);
-        // Load posts tagged to this game
-        const { data: posts } = await supabase
-          .from("posts")
-          .select("*, profiles(username, handle, avatar_initials)")
-          .eq("game_tag", data.id)
-          .order("created_at", { ascending: false })
-          .limit(20);
-        if (posts) setGamePosts(posts);
+      if (!data) return;
+      setDbGame(data);
+      const dbId = data.id;
+
+      // Posts
+      const { data: posts } = await supabase
+        .from("posts")
+        .select("*, profiles(username, handle, avatar_initials)")
+        .eq("game_tag", dbId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (posts) setGamePosts(posts);
+
+      // Top Voices — users with most likes on posts for this game
+      const { data: voicePosts } = await supabase
+        .from("posts")
+        .select("user_id, likes, profiles(username, handle, avatar_initials, is_founding)")
+        .eq("game_tag", dbId)
+        .not("user_id", "is", null);
+      if (voicePosts) {
+        const byUser = {};
+        voicePosts.forEach(p => {
+          if (!p.user_id || !p.profiles) return;
+          if (!byUser[p.user_id]) byUser[p.user_id] = { ...p.profiles, user_id: p.user_id, totalLikes: 0, postCount: 0 };
+          byUser[p.user_id].totalLikes += (p.likes || 0);
+          byUser[p.user_id].postCount += 1;
+        });
+        const sorted = Object.values(byUser).sort((a, b) => b.totalLikes - a.totalLikes).slice(0, 5);
+        setTopVoices(sorted);
       }
+
+      // Latest reviews
+      const { data: reviews } = await supabase
+        .from("reviews")
+        .select("*, profiles(username, handle, avatar_initials)")
+        .eq("game_id", dbId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (reviews) setLatestReviews(reviews);
+
+      // Charts data — rank by weekly posts + reviews
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { count: weeklyPosts } = await supabase
+        .from("posts")
+        .select("id", { count: "exact", head: true })
+        .eq("game_tag", dbId)
+        .gte("created_at", oneWeekAgo);
+      const { count: weeklyReviews } = await supabase
+        .from("reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("game_id", dbId)
+        .gte("created_at", oneWeekAgo);
+      const { data: avgData } = await supabase
+        .from("reviews")
+        .select("rating")
+        .eq("game_id", dbId);
+      const avgRating = avgData && avgData.length > 0
+        ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1)
+        : null;
+      setChartsData({ weeklyPosts: weeklyPosts || 0, weeklyReviews: weeklyReviews || 0, avgRating, totalReviews: avgData?.length || 0 });
     };
     load();
   }, [gameId]);
+
+  const submitReview = async () => {
+    if (!reviewForm.rating || submittingReview) return;
+    setSubmittingReview(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser || !dbGame) { setSubmittingReview(false); return; }
+    const { error } = await supabase.from("reviews").upsert({
+      user_id: authUser.id,
+      game_id: dbGame.id,
+      rating: reviewForm.rating,
+      headline: reviewForm.headline || null,
+      time_played: reviewForm.time_played ? parseInt(reviewForm.time_played) : null,
+      completed: reviewForm.completed,
+      loved: reviewForm.loved || null,
+      didnt_love: reviewForm.didnt_love || null,
+      content: reviewForm.content || null,
+    });
+    if (!error) {
+      // Refresh reviews and charts
+      const { data: reviews } = await supabase.from("reviews").select("*, profiles(username, handle, avatar_initials)").eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(5);
+      if (reviews) setLatestReviews(reviews);
+      const { data: avgData } = await supabase.from("reviews").select("rating").eq("game_id", dbGame.id);
+      const avgRating = avgData && avgData.length > 0 ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1) : null;
+      setChartsData(prev => ({ ...prev, avgRating, totalReviews: avgData?.length || 0 }));
+      setShowReviewForm(false);
+      setReviewForm({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
+    }
+    setSubmittingReview(false);
+  };
 
   const game = dbGame ? {
     trendingTopics: [],
@@ -1750,8 +1833,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
     posts: [],
     activePlayers: 0,
     completions: 0,
-    reviewScore: null,
-    reviewCount: 0,
+    reviewScore: chartsData?.avgRating || null,
+    reviewCount: chartsData?.totalReviews || 0,
     year: null,
     ...(hardcoded || {}),
     name: dbGame.name,
@@ -1817,65 +1900,152 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
         {activeTab === "pulse" && (
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: 20 }}>
             <div>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>📈 Trending Topics</div>
-                  <span style={{ color: C.textDim, fontSize: 12 }}>Updates hourly</span>
+              {/* The Charts card */}
+              <div style={{ background: C.surface, border: `1px solid ${game.color}44`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>📊 The Charts</div>
+                  <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
                 </div>
-                {game.trendingTopics.map((topic, i) => (
-                  <div key={topic.tag} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: i < game.trendingTopics.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: i === 0 ? C.goldDim : C.surfaceRaised, border: `1px solid ${i === 0 ? C.gold + "44" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 13, flexShrink: 0 }}>#{i + 1}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>#{topic.tag}</div>
-                      <div style={{ color: C.textDim, fontSize: 12 }}>{topic.posts.toLocaleString()} posts · {topic.reactions.toLocaleString()} reactions</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? C.red : C.textMuted }}>{topic.trend}</div>
-                      <div style={{ fontSize: 11, color: C.green }}>{topic.delta}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
-                <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
-                <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Based on follows, reviews & completions</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {game.alsoLiked.map(g2 => (
-                    <div key={g2.id} onClick={() => { setCurrentGame(g2.id); setActiveTab("pulse"); }}
-                      style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, cursor: "pointer" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <span style={{ fontSize: 22 }}>{g2.icon}</span>
-                        <div>
-                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{g2.name}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                            <div style={{ height: 4, width: 50, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: `${g2.overlap}%`, background: game.color, borderRadius: 2 }} />
-                            </div>
-                            <span style={{ color: game.color, fontSize: 11, fontWeight: 700 }}>{g2.overlap}%</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>{g2.reason}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  {[
+                    { label: "Posts This Week", value: chartsData?.weeklyPosts ?? "—", color: game.color },
+                    { label: "New Reviews", value: chartsData?.weeklyReviews ?? "—", color: C.teal },
+                    { label: "Avg Rating", value: chartsData?.avgRating ? `${chartsData.avgRating}/10` : "—", color: C.gold },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: C.surfaceRaised, borderRadius: 10, padding: "14px 12px", textAlign: "center" }}>
+                      <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.value}</div>
+                      <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{s.label}</div>
                     </div>
                   ))}
                 </div>
+                {chartsData?.weeklyPosts === 0 && (
+                  <div style={{ textAlign: "center", color: C.textDim, fontSize: 13, marginTop: 14 }}>
+                    Be the first to post about {game.name} and get on The Charts.
+                  </div>
+                )}
               </div>
+
+              {/* Latest Reviews */}
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>⭐ Latest Reviews</div>
+                  <button onClick={() => setShowReviewForm(true)} style={{ background: game.color, border: "none", borderRadius: 7, padding: "5px 12px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
+                </div>
+                {showReviewForm && (
+                  <div style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, marginBottom: 18 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Your Review of {game.name}</div>
+                    {/* Star rating */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Rating (required)</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                          <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                            style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${reviewForm.rating >= n ? C.gold : C.border}`, background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                      <input value={reviewForm.time_played} onChange={e => setReviewForm(f => ({ ...f, time_played: e.target.value }))} placeholder="Hours played" type="number" style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                        <input type="checkbox" checked={reviewForm.completed} onChange={e => setReviewForm(f => ({ ...f, completed: e.target.checked }))} />
+                        Completed
+                      </label>
+                    </div>
+                    <input value={reviewForm.loved} onChange={e => setReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
+                    <input value={reviewForm.didnt_love} onChange={e => setReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
+                    <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                      <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                      <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview} style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 18px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>{submittingReview ? "Saving..." : "Submit Review"}</button>
+                    </div>
+                  </div>
+                )}
+                {latestReviews.length > 0 ? latestReviews.map((review, i) => (
+                  <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
+                      </div>
+                      <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating}/10</div>
+                    </div>
+                    {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
+                    {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
+                    {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>⚠️ {review.didnt_love}</div>}
+                    {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>}
+                  </div>
+                )) : (
+                  <div style={{ textAlign: "center", padding: "30px 0", color: C.textDim }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
+                    <div style={{ fontSize: 13 }}>No reviews yet. Be the first.</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Also liked — keep for hardcoded games, hide for DB-only */}
+              {game.alsoLiked.length > 0 && (
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
+                  <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Based on follows, reviews & completions</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {game.alsoLiked.map(g2 => (
+                      <div key={g2.id} onClick={() => { setCurrentGame(g2.id); setActiveTab("pulse"); }}
+                        style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, cursor: "pointer" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                          <span style={{ fontSize: 22 }}>{g2.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{g2.name}</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
+                              <div style={{ height: 4, width: 50, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+                                <div style={{ height: "100%", width: `${g2.overlap}%`, background: game.color, borderRadius: 2 }} />
+                              </div>
+                              <span style={{ color: game.color, fontSize: 11, fontWeight: 700 }}>{g2.overlap}%</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>{g2.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Right sidebar — Top Voices */}
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, alignSelf: "start" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 15 }}>🏆 Top Voices</div>
-                <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
+                <span style={{ color: C.textDim, fontSize: 12 }}>By likes earned</span>
               </div>
-              {game.topVoices.map((voice, i) => (
-                <div key={voice.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < game.topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              {topVoices.length > 0 ? topVoices.map((voice, i) => (
+                <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                  <Avatar initials={voice.avatar} size={34} color={i === 0 ? C.gold : C.accent} />
+                  <Avatar initials={voice.avatar_initials || "GL"} size={34} color={i === 0 ? C.gold : C.accent} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.name} {voice.badge}</div>
-                    <div style={{ color: C.textDim, fontSize: 11 }}>{(voice.score / 1000).toFixed(1)}k pts</div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
+                    <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                // Fallback to hardcoded for games that have it
+                game.topVoices.length > 0 ? game.topVoices.map((voice, i) => (
+                  <div key={voice.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < game.topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
+                    <Avatar initials={voice.avatar} size={34} color={i === 0 ? C.gold : C.accent} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.name} {voice.badge}</div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>{(voice.score / 1000).toFixed(1)}k pts</div>
+                    </div>
+                  </div>
+                )) : (
+                  <div style={{ textAlign: "center", padding: "30px 0", color: C.textDim }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
+                    <div style={{ fontSize: 13 }}>Post about {game.name} to appear here.</div>
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}
