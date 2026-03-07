@@ -1211,8 +1211,42 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
 function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, currentUser }) {
   const user = currentUser || mockUser;
   const [showBanner, setShowBanner] = useState(true);
+  const [postText, setPostText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [livePosts, setLivePosts] = useState([]);
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
+
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = async () => {
+    const { data } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setLivePosts(data);
+  };
+
+  const submitPost = async () => {
+    if (!postText.trim() || posting) return;
+    setPosting(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from("posts").insert({
+      user_id: authUser?.id || null,
+      content: postText.trim(),
+      likes: 0,
+      comment_count: 0,
+    }).select().single();
+    if (!error && data) {
+      setLivePosts(prev => [data, ...prev]);
+      setPostText("");
+    }
+    setPosting(false);
+  };
+
   return (
     <>
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: topPad }}>
@@ -1303,19 +1337,29 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
             <div style={{ flex: 1 }}>
-              <textarea placeholder="Share a win, review a game, find teammates..." style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+              <textarea value={postText} onChange={e => setPostText(e.target.value)} placeholder="Share a win, review a game, find teammates..." style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {(isMobile ? ["🎮", "⭐", "⚡"] : ["🎮 Tag Game", "⭐ Review", "⚡ LFG"]).map((tag, i) => (
                     <button key={i} style={{ background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: C.textMuted, fontSize: isMobile ? 16 : 12, cursor: "pointer" }}>{tag}</button>
                   ))}
                 </div>
-                <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Post</button>
+                <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
               </div>
             </div>
           </div>
         </div>
 
+        {livePosts.map(post => (
+          <FeedPostCard key={post.id} post={{
+            id: post.id,
+            user: { name: user.name, handle: user.handle, avatar: user.avatar, status: "online", isNPC: false },
+            content: post.content,
+            time: "Just now",
+            likes: post.likes || 0,
+            comments: [],
+          }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
+        ))}
         {FEED_POSTS.map(post => (
           <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
         ))}
