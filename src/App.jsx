@@ -1063,7 +1063,7 @@ function FoundingBanner({ onDismiss, setActivePage }) {
 }
 
 
-function NavBar({ activePage, setActivePage, isMobile, signOut }) {
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
@@ -1101,7 +1101,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut }) {
               🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
             </button>
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-              <Avatar initials="AC" size={30} status="online" founding={true} ring="founding" />
+              <Avatar initials={currentUser?.avatar || "GL"} size={30} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
             </div>
           </div>
         </nav>
@@ -1166,7 +1166,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut }) {
           🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
         </button>
         <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-          <Avatar initials="AC" size={34} status="online" founding={true} ring="founding" />
+          <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
       </div>
@@ -1242,7 +1242,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
           <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
           <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
-            <Avatar initials="AC" size={44} status="online" />
+            <Avatar initials={user.avatar} size={44} status="online" />
             <div style={{ marginTop: 8 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
               <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
@@ -1301,7 +1301,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
         {/* Composer */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
-            <Avatar initials="AC" size={isMobile ? 32 : 38} status="online" founding={true} ring="founding" />
+            <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
             <div style={{ flex: 1 }}>
               <textarea placeholder="Share a win, review a game, find teammates..." style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
@@ -1671,7 +1671,7 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
-            <Avatar initials="AC" size={84} status="online" founding={user.isFounding} ring={user.activeRing} />
+            <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} />
           </div>
           {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
@@ -1780,7 +1780,7 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 4 }}>Active Ring</div>
             <div style={{ color: C.textDim, fontSize: 13, marginBottom: 16 }}>Your ring shows on your avatar everywhere on GuildLink.</div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <Avatar initials="AC" size={56} founding={user.isFounding} ring={user.activeRing} />
+              <Avatar initials={user.avatar} size={56} founding={user.isFounding} ring={user.activeRing} />
               <div>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{PROFILE_RINGS.find(r => r.id === user.activeRing)?.label}</div>
                 <div style={{ color: C.textDim, fontSize: 13 }}>{PROFILE_RINGS.find(r => r.id === user.activeRing)?.description}</div>
@@ -2003,7 +2003,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} />
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} />
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
