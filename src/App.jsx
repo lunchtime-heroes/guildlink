@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -1328,7 +1328,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const [mentionResults, setMentionResults] = useState([]);
   const [taggedGames, setTaggedGames] = useState([]);
   const [mentionIndex, setMentionIndex] = useState(0);
-  const textareaRef = React.useRef(null); // array of game ids, max 3
+  const textareaRef = useRef(null); // array of game ids, max 3
 
   const handlePostTextChange = (e) => {
     const val = e.target.value;
