@@ -1324,6 +1324,35 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const [posting, setPosting] = useState(false);
   const [livePosts, setLivePosts] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentionResults, setMentionResults] = useState([]);
+
+  const handlePostTextChange = (e) => {
+    const val = e.target.value;
+    setPostText(val);
+    // Detect @ mention
+    const atMatch = val.match(/@(\w*)$/);
+    if (atMatch) {
+      const query = atMatch[1].toLowerCase();
+      const matches = Object.values(GAMES).filter(g =>
+        g.name.toLowerCase().replace(/\s+/g, "").includes(query) ||
+        g.name.toLowerCase().includes(query)
+      ).slice(0, 5);
+      setMentionQuery(query);
+      setMentionResults(matches);
+    } else {
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  };
+
+  const selectMention = (game) => {
+    const newText = postText.replace(/@\w*$/, "") + "@" + game.name.replace(/\s+/g, "") + " ";
+    setPostText(newText);
+    setSelectedGame(game.id);
+    setMentionQuery(null);
+    setMentionResults([]);
+  };
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
 
@@ -1458,21 +1487,30 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
             <div style={{ flex: 1 }}>
-              <textarea value={postText} onChange={e => setPostText(e.target.value)} placeholder="Share a win, review a game, find teammates..." style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+              <div style={{ position: "relative" }}>
+                <textarea value={postText} onChange={handlePostTextChange} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+                {mentionResults.length > 0 && (
+                  <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                    {mentionResults.map(game => (
+                      <div key={game.id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: "transparent" }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <span style={{ fontSize: 16 }}>{game.icon}</span>
+                        <span style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{game.name}</span>
+                        <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{(game.followers / 1000).toFixed(1)}k</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  <div style={{ position: "relative" }}>
-                    <select
-                      value={selectedGame || ""}
-                      onChange={e => setSelectedGame(e.target.value || null)}
-                      style={{ background: selectedGame ? C.accentGlow : C.surfaceHover, border: `1px solid ${selectedGame ? C.accent : C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: selectedGame ? C.accentSoft : C.textMuted, fontSize: 12, cursor: "pointer", outline: "none" }}
-                    >
-                      <option value="">🎮 Tag Game</option>
-                      {Object.values(GAMES).map(g => (
-                        <option key={g.id} value={g.id}>{g.icon} {g.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {selectedGame && (
+                    <span style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                      {GAMES[selectedGame]?.icon} {GAMES[selectedGame]?.name}
+                      <span onClick={() => setSelectedGame(null)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim }}>×</span>
+                    </span>
+                  )}
                   {(isMobile ? ["⭐", "⚡"] : ["⭐ Review", "⚡ LFG"]).map((tag, i) => (
                     <button key={i} style={{ background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: C.textMuted, fontSize: isMobile ? 16 : 12, cursor: "pointer" }}>{tag}</button>
                   ))}
