@@ -821,7 +821,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
         {/* POSTS TAB */}
         {activeTab === "posts" && (
           <div>
-            {(npcPosts.length > 0 ? npcPosts : npc.posts).map(post => (
+            {(npcPosts.length > 0 ? npcPosts : (npc?.posts || [])).map(post => (
               <div key={post.id} style={{
                 background: C.surface, border: `1px solid ${C.goldBorder}`,
                 borderRadius: 14, padding: 20, marginBottom: 12,
@@ -844,7 +844,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
                 </div>
               </div>
             ))}
-            {npcPosts.length === 0 && npc.posts.length === 0 && (
+            {npcPosts.length === 0 && (npc?.posts || []).length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🕯️</div>
                 <div style={{ fontSize: 14 }}>No posts yet. They're thinking about it.</div>
@@ -861,7 +861,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
               <div style={{ color: C.textDim, fontSize: 13 }}>Official statistics from {displayNPC.universe} records. Verified by the guild.</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
-              {npc.stats.map((stat, i) => (
+              {(npc?.stats || []).map((stat, i) => (
                 <div key={i} style={{
                   background: C.surface, border: `1px solid ${C.goldBorder}`,
                   borderRadius: 14, padding: 20, position: "relative", overflow: "hidden",
@@ -894,7 +894,7 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
               <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28, marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>Origin</div>
                 <div style={{ color: `${C.gold}66`, fontSize: 12, marginBottom: 16 }}>From the official {displayNPC.universe} lore archives</div>
-                <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{npc.lore}</p>
+                <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{npc?.lore || displayNPC.bio || "Lore coming soon."}</p>
               </div>
               <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 16, marginBottom: 16 }}>Sample Interactions</div>
