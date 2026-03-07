@@ -3144,7 +3144,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
       {activePage === "profile" && <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
-      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}}
+      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
     </div>
   );
 }
