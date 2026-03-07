@@ -1350,7 +1350,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
           <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-9</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-10</span>
       </div>
     </nav>
   );
@@ -1612,10 +1612,14 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const loadPosts = async () => {
     const { data } = await supabase
       .from("posts")
-      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
       .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) setLivePosts(data);
+      .limit(20);
+    if (data) {
+      // Inject real comment count from joined comments
+      const withCounts = data.map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
+      setLivePosts(withCounts);
+    }
   };
 
   const submitPost = async () => {
