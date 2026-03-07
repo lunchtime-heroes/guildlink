@@ -1224,7 +1224,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const loadPosts = async () => {
     const { data } = await supabase
       .from("posts")
-      .select("*")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+      .is("npc_id", null)
       .order("created_at", { ascending: false })
       .limit(50);
     if (data) setLivePosts(data);
@@ -1350,16 +1351,26 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
           </div>
         </div>
 
-        {livePosts.map(post => (
-          <FeedPostCard key={post.id} post={{
-            id: post.id,
-            user: { name: user.name, handle: user.handle, avatar: user.avatar, status: "online", isNPC: false },
-            content: post.content,
-            time: "Just now",
-            likes: post.likes || 0,
-            commentList: [],
-          }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
-        ))}
+        {livePosts.map(post => {
+          const author = post.profiles || {};
+          return (
+            <FeedPostCard key={post.id} post={{
+              id: post.id,
+              user: {
+                name: author.username || "Gamer",
+                handle: author.handle || "@gamer",
+                avatar: author.avatar_initials || "GL",
+                status: "online",
+                isNPC: false,
+                isFounding: author.is_founding || false,
+              },
+              content: post.content,
+              time: "Just now",
+              likes: post.likes || 0,
+              commentList: [],
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
+          );
+        })}
         {FEED_POSTS.map(post => (
           <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
         ))}
