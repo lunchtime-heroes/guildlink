@@ -2193,20 +2193,20 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
       // Real posts
       const { data: posts } = await supabase
         .from("posts")
-        .select("*, profiles(username, handle, avatar_initials)")
+        .select("*, profiles(username, handle, avatar_initials), games(id, name)")
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(20);
       if (posts) {
         setUserPosts(posts);
         setPostCount(posts.length);
-        // Fetch game names for tagged posts
-        const gameIds = [...new Set(posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag))];
+        // Build names map from posts that have game_tag, fetch in one query
+        const gameIds = [...new Set(posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag.trim()))];
         if (gameIds.length > 0) {
           const { data: games } = await supabase.from("games").select("id, name").in("id", gameIds);
           if (games) {
             const namesMap = {};
-            games.forEach(g => namesMap[g.id] = g.name);
+            games.forEach(g => { namesMap[g.id] = g.name; });
             setPostGameNames(namesMap);
           }
         }
@@ -2454,7 +2454,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {post.game_tag && (
                   <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}>
-                    {postGameNames[post.game_tag] || "Tagged game"}
+                    {post.games?.name || postGameNames[post.game_tag] || gameLibrary.find(g => g.id === post.game_tag)?.name || "Tagged game"}
                   </span>
                 )}
                 <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes || 0} · {timeAgo(post.created_at)}</span>
