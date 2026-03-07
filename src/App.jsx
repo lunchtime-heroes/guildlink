@@ -595,12 +595,18 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               >{localPost.user.name}</span>
               {localPost.user.isNPC && <NPCBadge />}
               <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
-              {localPost.game && (
-                <span onClick={() => { if (localPost.gameId) { setCurrentGame(localPost.gameId); setActivePage("game"); } }}
-                  style={{ cursor: localPost.gameId ? "pointer" : "default" }}>
-                  <Badge small color={C.accent}>{localPost.gameIcon} {localPost.game}</Badge>
-                </span>
-              )}
+              {(localPost.game || localPost.game_tag) && (() => {
+                const gameId = localPost.gameId || localPost.game_tag;
+                const gameData = gameId ? GAMES[gameId] : null;
+                const gameName = gameData ? gameData.name : localPost.game;
+                const gameIcon = gameData ? gameData.icon : (localPost.gameIcon || "🎮");
+                return gameName ? (
+                  <span onClick={() => { if (gameId && GAMES[gameId]) { setCurrentGame(gameId); setActivePage("game"); } }}
+                    style={{ cursor: gameId && GAMES[gameId] ? "pointer" : "default" }}>
+                    <Badge small color={C.accent}>{gameIcon} {gameName}</Badge>
+                  </span>
+                ) : null;
+              })()}
             </div>
             <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{localPost.time}</div>
           </div>
@@ -1317,6 +1323,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
   const [livePosts, setLivePosts] = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
 
@@ -1340,12 +1347,14 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
     const { data, error } = await supabase.from("posts").insert({
       user_id: authUser?.id || null,
       content: postText.trim(),
+      game_tag: selectedGame || null,
       likes: 0,
       comment_count: 0,
     }).select().single();
     if (!error && data) {
       setLivePosts(prev => [data, ...prev]);
       setPostText("");
+      setSelectedGame(null);
     }
     setPosting(false);
   };
@@ -1442,8 +1451,20 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
             <div style={{ flex: 1 }}>
               <textarea value={postText} onChange={e => setPostText(e.target.value)} placeholder="Share a win, review a game, find teammates..." style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {(isMobile ? ["🎮", "⭐", "⚡"] : ["🎮 Tag Game", "⭐ Review", "⚡ LFG"]).map((tag, i) => (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={selectedGame || ""}
+                      onChange={e => setSelectedGame(e.target.value || null)}
+                      style={{ background: selectedGame ? C.accentGlow : C.surfaceHover, border: `1px solid ${selectedGame ? C.accent : C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: selectedGame ? C.accentSoft : C.textMuted, fontSize: 12, cursor: "pointer", outline: "none" }}
+                    >
+                      <option value="">🎮 Tag Game</option>
+                      {Object.values(GAMES).map(g => (
+                        <option key={g.id} value={g.id}>{g.icon} {g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(isMobile ? ["⭐", "⚡"] : ["⭐ Review", "⚡ LFG"]).map((tag, i) => (
                     <button key={i} style={{ background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: C.textMuted, fontSize: isMobile ? 16 : 12, cursor: "pointer" }}>{tag}</button>
                   ))}
                 </div>
@@ -1461,6 +1482,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
             <FeedPostCard key={post.id} post={{
               id: post.id,
               npc_id: post.npc_id,
+              game_tag: post.game_tag,
               user: {
                 name: author.name || author.username || "Gamer",
                 handle: author.handle || "@gamer",
