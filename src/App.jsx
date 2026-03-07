@@ -1305,7 +1305,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
           <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-4</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-5</span>
       </div>
     </nav>
   );
@@ -3060,6 +3060,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
 }
 
 
+export default function GuildLink() {
   const [activePage, setActivePage] = useState("feed");
   const [currentGame, setCurrentGame] = useState("elden-ring");
   const [currentNPC, setCurrentNPC] = useState("merv");
