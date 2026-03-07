@@ -1400,7 +1400,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-13</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-14</span>
       </div>
     </nav>
   );
@@ -1601,6 +1601,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [posting, setPosting] = useState(false);
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
+  const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
@@ -1666,15 +1667,31 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   }, []);
 
   const loadPosts = async () => {
-    const { data } = await supabase
-      .from("posts")
-      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (data) {
-      // Inject real comment count from joined comments
-      const withCounts = data.map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
-      setLivePosts(withCounts);
+    if (isGuest) {
+      // Guest feed: top NPC post first, then top-liked posts overall, limit 20
+      const [npcResult, topResult] = await Promise.all([
+        supabase.from("posts")
+          .select("*, npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .not("npc_id", "is", null)
+          .order("likes", { ascending: false })
+          .limit(1),
+        supabase.from("posts")
+          .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .order("likes", { ascending: false })
+          .limit(21),
+      ]);
+      const topNpc = npcResult.data?.[0];
+      const topPosts = (topResult.data || []).filter(p => p.id !== topNpc?.id).slice(0, 19);
+      const combined = [topNpc, ...topPosts].filter(Boolean).map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
+      setLivePosts(combined);
+      setGuestFeedDone(true);
+    } else {
+      const { data } = await supabase
+        .from("posts")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (data) setLivePosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0 })));
     }
   };
 
@@ -1711,10 +1728,44 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   return (
     <>
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: topPad }}>
-      {showBanner && !(isMobile && isGuest) && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
+      {showBanner && !isGuest && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
+      {/* Guest welcome banner */}
+      {isGuest && showBanner && (
+        <div style={{ background: `linear-gradient(135deg, ${C.accent}22, #a855f722)`, border: `1px solid ${C.accentDim}`, borderRadius: 14, padding: isMobile ? "16px" : "18px 24px", marginBottom: 14, display: "flex", alignItems: "center", gap: isMobile ? 12 : 20, flexWrap: isMobile ? "wrap" : "nowrap", position: "relative" }}>
+          <button onClick={() => setShowBanner(false)} style={{ position: "absolute", top: 10, right: 12, background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+          <div style={{ fontSize: isMobile ? 28 : 36, flexShrink: 0 }}>⚔️</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, marginBottom: 4 }}>GuildLink is where gamers talk about games... and that's it.</div>
+            <div style={{ color: C.textMuted, fontSize: isMobile ? 12 : 13, lineHeight: 1.6 }}>Build your shelf, influence The Charts, complete quests, and meet some of the local NPCs.</div>
+          </div>
+          <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
+            style={{ background: C.accent, border: "none", borderRadius: 10, padding: isMobile ? "9px 18px" : "10px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+            Join Free
+          </button>
+        </div>
+      )}
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
           <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
+          {isGuest && (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔥 Trending</div>
+              {[
+                { tag: "SilksongRelease", game: "Hollow Knight", gameIcon: "🦋", hot: true },
+                { tag: "MaleniaBuild", game: "Elden Ring", gameIcon: "🗡️", hot: true },
+                { tag: "ValoBugReport", game: "Valorant", gameIcon: "🎯", hot: false },
+                { tag: "StardewUpdate", game: "Stardew Valley", gameIcon: "🌱", hot: false },
+              ].map((t, i, arr) => (
+                <div key={t.tag} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: i < arr.length - 1 ? 8 : 0, marginBottom: i < arr.length - 1 ? 8 : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 13 }}>{t.gameIcon}</span>
+                    <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600 }}>#{t.tag}</span>
+                    {t.hot && <span style={{ fontSize: 10 }}>🔥</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1722,22 +1773,40 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       {/* Left sidebar — desktop only */}
       {!isMobile && (
       <div style={{ width: 230, flexShrink: 0 }}>
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
-          <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
-          <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
-            <Avatar initials={user.avatar} size={44} status="online" />
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
-              <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
-              <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
-            </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{user.connections}</div><div style={{ color: C.textDim, fontSize: 10 }}>Connections</div></div>
-              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{(user.followers / 1000).toFixed(1)}k</div><div style={{ color: C.textDim, fontSize: 10 }}>Followers</div></div>
-              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{user.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
+        {/* User block — real profile or guest "unclaimed" card */}
+        {isGuest ? (
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}22, #a855f722)` }} />
+            <div style={{ padding: "0 16px 18px", marginTop: -22 }}>
+              {/* Question mark avatar */}
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
+              <div style={{ marginTop: 10, marginBottom: 14 }}>
+                <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6 }}>This profile grid is waiting to be claimed. Will you be the proud new owner?</div>
+              </div>
+              <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
+                style={{ width: "100%", background: C.accent, border: "none", borderRadius: 8, padding: "8px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Join Free
+              </button>
             </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
+            <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
+              <Avatar initials={user.avatar} size={44} status="online" />
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
+                <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
+                <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{user.connections}</div><div style={{ color: C.textDim, fontSize: 10 }}>Connections</div></div>
+                <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{(user.followers / 1000).toFixed(1)}k</div><div style={{ color: C.textDim, fontSize: 10 }}>Followers</div></div>
+                <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{user.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* The Charts */}
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
@@ -1768,19 +1837,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Composer or guest prompt — desktop guests see teaser, mobile guests see nothing */}
-        {isGuest ? (
-          !isMobile && (
-            <div onClick={() => onSignIn?.("Share wins, review games, and find your squad.")}
-              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginBottom: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 16, flexShrink: 0 }}>⚔️</div>
-              <div style={{ flex: 1, background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 13 }}>
-                Share a win, review a game, find teammates...
-              </div>
-              <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Join Free</button>
-            </div>
-          )
-        ) : (
+        {/* Composer — members only */}
+        {!isGuest && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
@@ -1851,8 +1909,27 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           );
         })}
         {FEED_POSTS.map(post => (
-          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+          !isGuest && <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
         ))}
+
+        {/* Guest sign-up wall after feed */}
+        {isGuest && guestFeedDone && (
+          <div style={{ background: `linear-gradient(180deg, transparent 0%, ${C.bg} 40%)`, borderRadius: 14, padding: "40px 24px 32px", textAlign: "center", marginTop: -40, position: "relative" }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>⚔️</div>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 18 : 22, marginBottom: 8, letterSpacing: "-0.5px" }}>You've seen the highlights.</div>
+            <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24, maxWidth: 360, margin: "0 auto 24px" }}>
+              Create a free account to see the full feed, post your own takes, build your shelf, and influence The Charts.
+            </div>
+            <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
+              style={{ background: C.accent, border: "none", borderRadius: 10, padding: "12px 32px", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "block", width: "100%", maxWidth: 280, margin: "0 auto 12px" }}>
+              Create Free Account
+            </button>
+            <button onClick={() => onSignIn?.()}
+              style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 32px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "block", width: "100%", maxWidth: 280, margin: "0 auto" }}>
+              Sign In
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right sidebar — desktop only */}
