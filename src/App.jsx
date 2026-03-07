@@ -2193,7 +2193,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
       // Real posts
       const { data: posts } = await supabase
         .from("posts")
-        .select("*, profiles(username, handle, avatar_initials), games(id, name)")
+        .select("*, profiles(username, handle, avatar_initials)")
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -2454,7 +2454,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {post.game_tag && (
                   <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}>
-                    {post.games?.name || postGameNames[post.game_tag] || gameLibrary.find(g => g.id === post.game_tag)?.name || "Tagged game"}
+                    {postGameNames[post.game_tag] || gameLibrary.find(g => g.id === post.game_tag)?.name || "Tagged game"}
                   </span>
                 )}
                 <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes || 0} · {timeAgo(post.created_at)}</span>
