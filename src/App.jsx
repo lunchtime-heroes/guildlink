@@ -1357,7 +1357,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
             content: post.content,
             time: "Just now",
             likes: post.likes || 0,
-            comments: [],
+            commentList: [],
           }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />
         ))}
         {FEED_POSTS.map(post => (
