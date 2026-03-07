@@ -2177,7 +2177,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const [userReviews, setUserReviews] = useState([]);
   const [gameLibrary, setGameLibrary] = useState([]);
   const [postCount, setPostCount] = useState(0);
-  const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
+  const [postGameNames, setPostGameNames] = useState({});
   const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
   const [dragOver, setDragOver] = useState(null); // status column being hovered
   const [addingGame, setAddingGame] = useState(false);
@@ -2196,7 +2196,20 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(20);
-      if (posts) { setUserPosts(posts); setPostCount(posts.length); }
+      if (posts) {
+        setUserPosts(posts);
+        setPostCount(posts.length);
+        // Fetch game names for tagged posts
+        const gameIds = [...new Set(posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag))];
+        if (gameIds.length > 0) {
+          const { data: games } = await supabase.from("games").select("id, name").in("id", gameIds);
+          if (games) {
+            const namesMap = {};
+            games.forEach(g => namesMap[g.id] = g.name);
+            setPostGameNames(namesMap);
+          }
+        }
+      }
 
       // Reviews with game info
       const { data: reviews } = await supabase
@@ -2438,7 +2451,11 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
             <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
               <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 10px", textAlign: "left" }}>{post.content}</p>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                {post.game_tag && <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}>🎮 Tagged game</span>}
+                {post.game_tag && (
+                  <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }} onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}>
+                    {postGameNames[post.game_tag] || "Tagged game"}
+                  </span>
+                )}
                 <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes || 0} · {timeAgo(post.created_at)}</span>
               </div>
             </div>
