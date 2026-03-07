@@ -15,13 +15,32 @@ function getWeekStart() {
 }
 
 async function logChartEvent(gameId, eventType, userId) {
-  if (!gameId || !gameId.includes('-')) return; // skip non-UUID game IDs
-  await supabase.from("chart_events").insert({
-    game_id: gameId,
-    user_id: userId,
-    event_type: eventType,
-    week_start: getWeekStart(),
-  });
+  if (!gameId || !gameId.includes('-')) return;
+  const weekStart = getWeekStart();
+
+  if (eventType === 'post') {
+    // Find current post sequence for this user/game/week
+    const { data: existing } = await supabase
+      .from("chart_events")
+      .select("post_sequence")
+      .eq("game_id", gameId)
+      .eq("user_id", userId)
+      .eq("event_type", "post")
+      .eq("week_start", weekStart)
+      .order("post_sequence", { ascending: false })
+      .limit(1);
+    const nextSeq = existing && existing.length > 0 ? existing[0].post_sequence + 1 : 1;
+    await supabase.from("chart_events").insert({
+      game_id: gameId, user_id: userId, event_type: eventType,
+      week_start: weekStart, post_sequence: nextSeq,
+    });
+  } else {
+    // All other events: upsert (dedup via unique index)
+    await supabase.from("chart_events").upsert({
+      game_id: gameId, user_id: userId, event_type: eventType,
+      week_start: weekStart, post_sequence: 1,
+    }, { onConflict: "user_id,game_id,event_type,week_start", ignoreDuplicates: true });
+  }
 }
 
 function timeAgo(timestamp) {
@@ -593,6 +612,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       content: commentText.trim(),
     }).select("*, profiles(username, handle, avatar_initials)").single();
     if (!error && data) {
+      // Log chart event if post is tagged to a game
+      const gameId = post.game_tag || post.gameId;
+      if (gameId && authUser) logChartEvent(gameId, 'comment', authUser.id);
       setLiveComments(prev => [...(prev || []), data]);
       setCommentText("");
       setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
@@ -1323,7 +1345,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
           <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-7</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-8</span>
       </div>
     </nav>
   );
@@ -1365,7 +1387,7 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
 
 // ─── CHARTS WIDGET ────────────────────────────────────────────────────────────
 
-function ChartsWidget({ setActivePage, setCurrentGame, category }) {
+function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey }) {
   const [charts, setCharts] = useState([]);
   const [prevCharts, setPrevCharts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -1390,31 +1412,49 @@ function ChartsWidget({ setActivePage, setCurrentGame, category }) {
       const { data: events } = await query;
 
       if (events) {
-        // Aggregate scores per game
-        const weights = { post: 1, review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1 };
+        // Aggregate scores per game with decay for posts, dedup for others
         const scoreMap = {};
         const countMap = {};
+        const userMap = {}; // track unique users per game
+
+        // Group post sequences per user per game
+        const postSeqs = {};
         events.forEach(e => {
           if (!e.games) return;
           const id = e.game_id;
           if (!scoreMap[id]) {
             scoreMap[id] = 0;
-            countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0 };
+            countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 };
+            userMap[id] = new Set();
           }
-          scoreMap[id] += weights[e.event_type] || 0;
-          countMap[id][e.event_type] = (countMap[id][e.event_type] || 0) + 1;
+          userMap[id].add(e.user_id);
+          if (e.event_type === 'post') {
+            // Decay: seq 1=1.0, 2=0.5, 3=0.25, 4+=0.1
+            const seq = e.post_sequence || 1;
+            const weight = seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
+            scoreMap[id] += weight;
+            countMap[id].post++;
+          } else {
+            const weights = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+            scoreMap[id] += weights[e.event_type] || 0;
+            if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++;
+          }
         });
 
+        // Apply breadth multiplier: 1 + ln(unique_users) * 0.2
         const sorted = Object.entries(scoreMap)
-          .sort((a, b) => b[1] - a[1])
+          .map(([id, rawScore]) => {
+            const uniqueUsers = userMap[id].size;
+            const finalScore = rawScore * (1 + Math.log(Math.max(uniqueUsers, 1)) * 0.2);
+            return { id, rawScore, finalScore, uniqueUsers, ...countMap[id] };
+          })
+          .sort((a, b) => b.finalScore - a.finalScore)
           .slice(0, 10)
-          .map(([id, score], i) => ({
+          .map((entry, i) => ({
             rank: i + 1,
-            id,
-            name: countMap[id].game.name,
-            score,
-            dominantSignal: getDominantSignal(countMap[id]),
-            ...countMap[id],
+            ...entry,
+            name: entry.game.name,
+            dominantSignal: getDominantSignal(entry),
           }));
         setCharts(sorted);
 
@@ -1433,11 +1473,12 @@ function ChartsWidget({ setActivePage, setCurrentGame, category }) {
       setLoading(false);
     };
     load();
-  }, [category]);
+  }, [category, refreshKey]);
 
   const getDominantSignal = (counts) => {
     if (counts.shelf_playing > 0) return `${counts.shelf_playing} playing`;
     if (counts.review > 0) return `${counts.review} review${counts.review > 1 ? 's' : ''}`;
+    if (counts.comment > 0) return `${counts.comment} comment${counts.comment > 1 ? 's' : ''}`;
     if (counts.shelf_want > 0) return `${counts.shelf_want} want to play`;
     if (counts.post > 0) return `${counts.post} post${counts.post > 1 ? 's' : ''}`;
     return null;
@@ -1497,6 +1538,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
@@ -1596,6 +1638,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       setLivePosts(prev => [newPost, ...prev]);
       setPostText("");
       setTaggedGames([]);
+      if (data.game_tag) setChartRefresh(r => r + 1);
     }
     setPosting(false);
   };
@@ -1644,7 +1687,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         </div>
 
         {/* The Charts */}
-        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} />
+        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} />
 
         {/* Data promise */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
