@@ -1224,8 +1224,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const loadPosts = async () => {
     const { data } = await supabase
       .from("posts")
-      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
-      .is("npc_id", null)
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role)")
       .order("created_at", { ascending: false })
       .limit(50);
     if (data) setLivePosts(data);
@@ -1352,17 +1351,19 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
         </div>
 
         {livePosts.map(post => {
-          const author = post.profiles || {};
+          const isNPC = !!post.npc_id;
+          const author = isNPC ? post.npcs : post.profiles;
+          if (!author) return null;
           return (
             <FeedPostCard key={post.id} post={{
               id: post.id,
               user: {
-                name: author.username || "Gamer",
+                name: author.name || author.username || "Gamer",
                 handle: author.handle || "@gamer",
                 avatar: author.avatar_initials || "GL",
                 status: "online",
-                isNPC: false,
-                isFounding: author.is_founding || false,
+                isNPC: isNPC,
+                isFounding: !isNPC && (author.is_founding || false),
               },
               content: post.content,
               time: "Just now",
