@@ -1676,11 +1676,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
           >
             <div style={{ fontSize: 40, marginBottom: 12 }}>{game.icon}</div>
             <div style={{ fontWeight: 800, color: "#fff", fontSize: 20, marginBottom: 4 }}>{game.name}</div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16 }}>{game.genre.join(" · ")} · {game.year}</div>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16 }}>{game.genre.join(" · ")}{game.year ? " · " + game.year : ""}</div>
             <div style={{ display: "flex", gap: 16 }}>
               <div><div style={{ fontWeight: 700, color: game.color, fontSize: 15 }}>{(game.followers / 1000).toFixed(1)}k</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Followers</div></div>
-              <div><div style={{ fontWeight: 700, color: C.online, fontSize: 15 }}>{game.activePlayers.toLocaleString()}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Active today</div></div>
-              <div><div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>★ {game.reviewScore}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Score</div></div>
+              <div><div style={{ fontWeight: 700, color: C.online, fontSize: 15 }}>{(game.activePlayers || 0).toLocaleString()}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Active today</div></div>
+              <div><div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{game.reviewScore ? "★ " + game.reviewScore : "—"}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Score</div></div>
             </div>
             {game.claimed && <div style={{ position: "absolute", top: 16, right: 16 }}><Badge small color={C.teal}>✓ Dev Claimed</Badge></div>}
           </div>
@@ -1743,6 +1743,16 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
   }, [gameId]);
 
   const game = dbGame ? {
+    trendingTopics: [],
+    topVoices: [],
+    alsoLiked: [],
+    tips: [],
+    posts: [],
+    activePlayers: 0,
+    completions: 0,
+    reviewScore: null,
+    reviewCount: 0,
+    year: null,
     ...(hardcoded || {}),
     name: dbGame.name,
     developer: dbGame.developer,
@@ -1784,7 +1794,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start" }}>
-              {[{ label: "Followers", value: (game.followers / 1000).toFixed(1) + "k", color: game.color }, { label: "Active", value: game.activePlayers.toLocaleString(), color: C.online }, { label: "Score", value: "★ " + game.reviewScore, color: C.gold }].map(s => (
+              {[{ label: "Followers", value: (game.followers / 1000).toFixed(1) + "k", color: game.color }, { label: "Active", value: (game.activePlayers || 0).toLocaleString(), color: C.online }, { label: "Score", value: game.reviewScore ? "★ " + game.reviewScore : "—", color: C.gold }].map(s => (
                 <div key={s.label} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 80 }}>
                   <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 17, color: s.color }}>{s.value}</div>
                   <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 3 }}>{s.label}</div>
@@ -1874,8 +1884,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, gridColumn: "span 2" }}>
               <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🏁 Completion Board</div>
-              <div style={{ color: C.textDim, fontSize: 13, marginBottom: 20 }}>{game.completions.toLocaleString()} GuildLink members have completed this game</div>
-              {[{ label: "Any% Complete", count: game.completions, pct: 100, color: C.green }, { label: "True Ending", count: Math.floor(game.completions * 0.64), pct: 64, color: C.teal }, { label: "New Game+", count: Math.floor(game.completions * 0.41), pct: 41, color: C.accent }, { label: "100% / Platinum", count: Math.floor(game.completions * 0.18), pct: 18, color: C.gold }, { label: "Speedrun (sub 2hr)", count: Math.floor(game.completions * 0.04), pct: 4, color: C.red }].map(row => (
+              <div style={{ color: C.textDim, fontSize: 13, marginBottom: 20 }}>{(game.completions || 0).toLocaleString()} GuildLink members have completed this game</div>
+              {[{ label: "Any% Complete", count: game.completions, pct: 100, color: C.green }, { label: "True Ending", count: Math.floor((game.completions || 0) * 0.64), pct: 64, color: C.teal }, { label: "New Game+", count: Math.floor((game.completions || 0) * 0.41), pct: 41, color: C.accent }, { label: "100% / Platinum", count: Math.floor((game.completions || 0) * 0.18), pct: 18, color: C.gold }, { label: "Speedrun (sub 2hr)", count: Math.floor((game.completions || 0) * 0.04), pct: 4, color: C.red }].map(row => (
                 <div key={row.label} style={{ marginBottom: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                     <span style={{ color: C.textMuted, fontSize: 13 }}>{row.label}</span>
@@ -1891,7 +1901,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
               <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 16 }}>⭐ Community Score</div>
               <div style={{ textAlign: "center", marginBottom: 20 }}>
                 <div style={{ fontSize: 56, fontWeight: 900, color: C.gold }}>{game.reviewScore}</div>
-                <div style={{ color: C.textDim, fontSize: 13, marginTop: 6 }}>Based on {game.reviewCount.toLocaleString()} reviews</div>
+                <div style={{ color: C.textDim, fontSize: 13, marginTop: 6 }}>Based on {(game.reviewCount || 0).toLocaleString()} reviews</div>
               </div>
               <button style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "8px", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Write a Review</button>
             </div>
@@ -1920,7 +1930,21 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
         {activeTab === "posts" && (
           <div style={{ maxWidth: 680 }}>
-            {game.posts.map(post => (
+            {gamePosts.length > 0 ? gamePosts.map(post => {
+              const author = post.profiles || {};
+              return (
+                <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+                  <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                    <Avatar initials={author.avatar_initials || "GL"} size={42} />
+                    <div>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{author.username || "Gamer"}</div>
+                      <div style={{ color: C.textDim, fontSize: 12 }}>{timeAgo(post.created_at)}</div>
+                    </div>
+                  </div>
+                  <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: 0 }}>{post.content}</p>
+                </div>
+              );
+            }) : game.posts.length > 0 ? game.posts.map(post => (
               <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
                   <Avatar initials={post.user.avatar} size={42} status={post.user.status} />
@@ -1931,7 +1955,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
                 </div>
                 <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: 0 }}>{post.content}</p>
               </div>
-            ))}
+            )) : (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
+                <div style={{ fontSize: 14 }}>No posts yet. Be the first to post about {game.name}.</div>
+              </div>
+            )}
           </div>
         )}
 
