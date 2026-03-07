@@ -1726,6 +1726,36 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 function ProfilePage({ setActivePage, isMobile, currentUser }) {
   const user = currentUser || mockUser;
   const [activeTab, setActiveTab] = useState("posts");
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setEditForm({
+      username: user.name || "",
+      bio: user.bio || "",
+      games: Array.isArray(user.games) ? user.games.join(", ") : user.games || "",
+    });
+    setEditing(true);
+  };
+
+  const saveProfile = async () => {
+    setSaving(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const updates = {
+      username: editForm.username.trim(),
+      handle: "@" + editForm.username.trim().toLowerCase().replace(/\s+/g, "_"),
+      bio: editForm.bio.trim(),
+      games: editForm.games.trim(),
+      avatar_initials: editForm.username.trim().slice(0, 2).toUpperCase(),
+    };
+    const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
+    if (!error) {
+      setEditing(false);
+      window.location.reload();
+    }
+    setSaving(false);
+  };
   const achievements = [
     { icon: "🏆", name: "Top 500", desc: "Overwatch 2 Season 12", color: C.gold },
     { icon: "💎", name: "Radiant", desc: "Valorant Act 3", color: C.purple },
@@ -1761,8 +1791,29 @@ function ProfilePage({ setActivePage, isMobile, currentUser }) {
               <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{user.title}</div>
               <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", maxWidth: 480, lineHeight: 1.6 }}>{user.bio}</p>
             </div>
-            <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>Edit Profile</button>
+            <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>Edit Profile</button>
           </div>
+          {editing && (
+            <div style={{ marginTop: 20, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }}>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>Edit Profile</div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Display Name</div>
+                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
+                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72 }} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Games (comma separated)</div>
+                <input value={editForm.games} onChange={e => setEditForm(f => ({ ...f, games: e.target.value }))} placeholder="Elden Ring, Valorant, Hollow Knight..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving..." : "Save"}</button>
+                <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center" }}>
             {[{ label: "Connections", val: user.connections, color: C.accent }, { label: "Followers", val: user.followers.toLocaleString(), color: C.accentSoft }].map(s => (
               <div key={s.label}><div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div><div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div></div>
