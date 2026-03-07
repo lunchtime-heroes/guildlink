@@ -1400,7 +1400,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-11</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-12</span>
       </div>
     </nav>
   );
@@ -1707,20 +1707,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: topPad }}>
       {showBanner && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
       {isMobile && (
-        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 4 }}>
-          {[
-            { tag: "SilksongRelease", icon: "🦋", hot: true },
-            { tag: "MaleniaBuild", icon: "🗡️", hot: true },
-            { tag: "ValoBugReport", icon: "🎯", hot: false },
-            { tag: "StardewUpdate", icon: "🌱", hot: false },
-            { tag: "SoulslikeOfTheYear", icon: "🎮", hot: false },
-          ].map(t => (
-            <div key={t.tag} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "6px 12px", whiteSpace: "nowrap", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-              <span style={{ fontSize: 12 }}>{t.icon}</span>
-              <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>#{t.tag}</span>
-              {t.hot && <span style={{ fontSize: 10 }}>🔥</span>}
-            </div>
-          ))}
+        <div style={{ marginBottom: 4 }}>
+          <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} />
         </div>
       )}
     </div>
