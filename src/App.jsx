@@ -1400,7 +1400,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-15</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-16</span>
       </div>
     </nav>
   );
@@ -2018,48 +2018,96 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 // ─── GAMES BROWSE PAGE ────────────────────────────────────────────────────────
 
 function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
+  const [dbGames, setDbGames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    supabase.from("games").select("*").order("followers", { ascending: false }).then(({ data }) => {
+      if (data) setDbGames(data);
+      setLoading(false);
+    });
+  }, []);
+
+  // Generate a deterministic color/icon/gradient for games not in the hardcoded list
+  const gameVisuals = (g) => {
+    const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name.toLowerCase());
+    if (hard) return { color: hard.color, gradient: hard.gradient, icon: hard.icon };
+    const ICONS = { 'MMO': '🌐', 'MOBA': '⚔️', 'Battle Royale': '🎯', 'Action RPG': '🗡️', 'RPG': '📖', 'Roguelike': '🎲', 'Tactical Shooter': '🔫', 'Hero Shooter': '🦸', 'Looter Shooter': '💥', 'Soulslike': '💀', 'Fighting': '🥊', 'Farming Sim': '🌱', 'Life Simulation': '🏡', 'City Builder': '🏙️', 'Sandbox Survival': '⛏️', 'Survival': '🪓', 'Racing': '🏎️', 'Sports': '⚽', 'Platformer': '🕹️', 'Auto Battler': '♟️', 'RTS': '🏰', 'Turn-Based Strategy': '🎖️', 'Simulation RPG': '🎭', 'Puzzle Adventure': '🔍', 'Open World': '🗺️' };
+    const COLORS = ['#6c63ff','#f59e0b','#10b981','#ef4444','#3b82f6','#a855f7','#f97316','#06b6d4'];
+    const colorIndex = g.name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % COLORS.length;
+    const color = COLORS[colorIndex];
+    return {
+      color,
+      gradient: `linear-gradient(135deg, ${color}22 0%, #0a0c12 100%)`,
+      icon: ICONS[g.genre] || '🎮',
+    };
+  };
+
+  const featured = dbGames.slice(0, 6);
+  const filtered = search
+    ? dbGames.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.genre?.toLowerCase().includes(search.toLowerCase()))
+    : dbGames;
+
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 24 }}>
         <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>🎮 Game Communities</h2>
-        <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Find your people. Every game has a home here.</p>
+        <p style={{ margin: "0 0 16px", color: C.textMuted, fontSize: 14 }}>Find your people. Every game has a home here.</p>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search games..."
+          style={{ width: "100%", maxWidth: 320, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 14px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+        />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 32 }}>
-        {Object.values(GAMES).map(game => (
-          <div key={game.id} onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-            style={{ background: game.gradient, border: `1px solid ${game.color}33`, borderRadius: 16, padding: 24, cursor: "pointer", position: "relative", overflow: "hidden" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = game.color + "88"}
-            onMouseLeave={e => e.currentTarget.style.borderColor = game.color + "33"}
-          >
-            <div style={{ fontSize: 40, marginBottom: 12 }}>{game.icon}</div>
-            <div style={{ fontWeight: 800, color: "#fff", fontSize: 20, marginBottom: 4 }}>{game.name}</div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16 }}>{game.genre.join(" · ")}{game.year ? " · " + game.year : ""}</div>
-            <div style={{ display: "flex", gap: 16 }}>
-              <div><div style={{ fontWeight: 700, color: game.color, fontSize: 15 }}>{(game.followers / 1000).toFixed(1)}k</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Followers</div></div>
-              <div><div style={{ fontWeight: 700, color: C.online, fontSize: 15 }}>{(game.activePlayers || 0).toLocaleString()}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Active today</div></div>
-              <div><div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{game.reviewScore ? "★ " + game.reviewScore : "—"}</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Score</div></div>
-            </div>
-            {game.claimed && <div style={{ position: "absolute", top: 16, right: 16 }}><Badge small color={C.teal}>✓ Dev Claimed</Badge></div>}
+
+      {loading && <div style={{ color: C.textMuted, textAlign: "center", padding: 40 }}>Loading games...</div>}
+
+      {!loading && !search && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 32 }}>
+            {featured.map(g => {
+              const v = gameVisuals(g);
+              return (
+                <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+                  style={{ background: v.gradient, border: `1px solid ${v.color}33`, borderRadius: 16, padding: 24, cursor: "pointer", position: "relative", overflow: "hidden" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = v.color + "88"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = v.color + "33"}
+                >
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>{v.icon}</div>
+                  <div style={{ fontWeight: 800, color: "#fff", fontSize: 20, marginBottom: 4 }}>{g.name}</div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16 }}>{g.genre}{g.category ? ` · ${g.category}` : ""}</div>
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <div><div style={{ fontWeight: 700, color: v.color, fontSize: 15 }}>{((g.followers || 0) / 1000).toFixed(1)}k</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Followers</div></div>
+                  </div>
+                  {g.is_claimed && <div style={{ position: "absolute", top: 16, right: 16 }}><Badge small color={C.teal}>✓ Dev Claimed</Badge></div>}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
-      <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 14 }}>All Games</div>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 14 }}>All Games ({dbGames.length})</div>
+        </>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10 }}>
-        {BROWSE_GAMES.map(g => (
-          <div key={g.id} onClick={() => { if (GAMES[g.id]) { setCurrentGame(g.id); setActivePage("game"); } }}
-            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: "pointer" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
-            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-          >
-            <div style={{ fontSize: 28, marginBottom: 8 }}>{g.icon}</div>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{g.name}</div>
-            <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8 }}>{g.genre}</div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: C.textMuted, fontSize: 11 }}>{(g.followers / 1000).toFixed(1)}k</span>
-              {g.hot && <Badge small color={C.red}>🔥 Hot</Badge>}
+        {filtered.map(g => {
+          const v = gameVisuals(g);
+          return (
+            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
+              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+            >
+              <div style={{ fontSize: 28, marginBottom: 8 }}>{v.icon}</div>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{g.name}</div>
+              <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8 }}>{g.genre || g.category}</div>
+              <div style={{ color: C.textMuted, fontSize: 11 }}>{((g.followers || 0) / 1000).toFixed(1)}k followers</div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+        {!loading && filtered.length === 0 && (
+          <div style={{ gridColumn: "1 / -1", color: C.textMuted, textAlign: "center", padding: 40 }}>No games found for "{search}"</div>
+        )}
       </div>
     </div>
   );
@@ -2087,7 +2135,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
         query = query.eq("id", gameId);
       } else if (hardcoded) {
         query = query.ilike("name", hardcoded.name);
-      }
+      } else return;
       const { data } = await query.single();
       if (!data) return;
       setDbGame(data);
@@ -2200,9 +2248,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
     description: dbGame.description,
     followers: dbGame.followers,
     genre: dbGame.genre ? [dbGame.genre] : (hardcoded?.genre || []),
-    color: hardcoded?.color || C.accent,
-    gradient: hardcoded?.gradient || `linear-gradient(135deg, #0a0c12 0%, #1a1c2e 100%)`,
-    icon: hardcoded?.icon || "🎮",
+    color: hardcoded?.color || (() => { const COLORS = ['#6c63ff','#f59e0b','#10b981','#ef4444','#3b82f6','#a855f7','#f97316','#06b6d4']; return COLORS[(dbGame.name || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length]; })(),
+    gradient: hardcoded?.gradient || (() => { const COLORS = ['#6c63ff','#f59e0b','#10b981','#ef4444','#3b82f6','#a855f7','#f97316','#06b6d4']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return `linear-gradient(135deg, ${c}22 0%, #0a0c12 100%)`; })(),
+    icon: hardcoded?.icon || { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽','Platformer':'🕹️','Auto Battler':'♟️','RTS':'🏰','Turn-Based Strategy':'🎖️' }[dbGame.genre] || '🎮',
     claimed: dbGame.is_claimed,
     id: gameId,
   } : hardcoded;
