@@ -523,7 +523,7 @@ function Badge({ children, color = C.accent, small }) {
 
 // ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, currentUser }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -592,17 +592,31 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       <div style={{ padding: 20 }}>
         {/* Post header */}
         <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-          <div style={{ cursor: localPost.user.isNPC ? "pointer" : "default" }}
-            onClick={() => { if (localPost.user.isNPC) { if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); } else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } } }}>
+          <div style={{ cursor: "pointer" }}
+            onClick={() => {
+              if (localPost.user.isNPC) {
+                if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+                else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+              } else if (localPost.user_id) {
+                setCurrentPlayer(localPost.user_id); setActivePage("player");
+              }
+            }}>
             <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{
-                fontWeight: 700, fontSize: 14, cursor: localPost.user.isNPC ? "pointer" : "default",
+                fontWeight: 700, fontSize: 14, cursor: "pointer",
                 color: localPost.user.isNPC ? C.gold : C.text,
               }}
-                onClick={() => { if (localPost.user.isNPC) { if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); } else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } } }}
+                onClick={() => {
+                  if (localPost.user.isNPC) {
+                    if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+                    else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+                  } else if (localPost.user_id) {
+                    setCurrentPlayer(localPost.user_id); setActivePage("player");
+                  }
+                }}
               >{localPost.user.name}</span>
               {localPost.user.isNPC && <NPCBadge />}
               <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
@@ -861,7 +875,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, i
                 ...post,
                 user: { ...post.user, isNPC: true },
               };
-              return <FeedPostCard key={post.id} post={feedPost} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={currentUser} />;
+              return <FeedPostCard key={post.id} post={feedPost} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} />;
             })}
             {npcPosts.length === 0 && (npc?.posts || []).length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
@@ -1330,7 +1344,7 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
 
 // ─── FEED PAGE ────────────────────────────────────────────────────────────────
 
-function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, currentUser }) {
+function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser }) {
   const user = currentUser || mockUser;
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
@@ -1586,11 +1600,11 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
               commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={user} />
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} />
           );
         })}
         {FEED_POSTS.map(post => (
-          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={user} />
+          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} />
         ))}
       </div>
 
@@ -2779,10 +2793,276 @@ function AuthPage() {
   );
 }
 
-export default function GuildLink() {
+// ─── PLAYER PROFILE PAGE ──────────────────────────────────────────────────────
+
+function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, currentUser }) {
+  const [profile, setProfile] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [shelf, setShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
+  const [postGameNames, setPostGameNames] = useState({});
+  const [activeTab, setActiveTab] = useState("posts");
+  const [compatibility, setCompatibility] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    const load = async () => {
+      setLoading(true);
+
+      // Profile
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      if (prof) setProfile(prof);
+
+      // Posts
+      const { data: userPosts } = await supabase
+        .from("posts").select("*").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(20);
+      if (userPosts) {
+        setPosts(userPosts);
+        const gameIds = [...new Set(userPosts.filter(p => p.game_tag?.includes('-')).map(p => p.game_tag))];
+        if (gameIds.length > 0) {
+          const { data: games } = await supabase.from("games").select("id, name").in("id", gameIds);
+          if (games) { const m = {}; games.forEach(g => m[g.id] = g.name); setPostGameNames(m); }
+        }
+      }
+
+      // Reviews
+      const { data: userReviews } = await supabase
+        .from("reviews").select("*, games(id, name, developer)")
+        .eq("user_id", userId).order("created_at", { ascending: false });
+      if (userReviews) setReviews(userReviews);
+
+      // Shelf
+      const { data: shelfData } = await supabase
+        .from("user_games").select("*, games(id, name, developer, genre)")
+        .eq("user_id", userId);
+      if (shelfData) {
+        const s = { want_to_play: [], playing: [], have_played: [] };
+        shelfData.forEach(e => { if (s[e.status]) s[e.status].push(e); });
+        setShelf(s);
+
+        // Compatibility — compare with current user's shelf
+        if (currentUser) {
+          const { data: myShelf } = await supabase
+            .from("user_games").select("game_id, status, games(name)")
+            .eq("user_id", currentUser.id);
+          if (myShelf && myShelf.length > 0) {
+            // Priority: playing match > want_to_play match > have_played match
+            const theirPlaying = shelfData.filter(e => e.status === "playing").map(e => ({ id: e.game_id, name: e.games?.name }));
+            const theirWant = shelfData.filter(e => e.status === "want_to_play").map(e => ({ id: e.game_id, name: e.games?.name }));
+            const theirPlayed = shelfData.filter(e => e.status === "have_played").map(e => ({ id: e.game_id, name: e.games?.name }));
+            const myGameIds = new Set(myShelf.map(e => e.game_id));
+
+            const playingMatch = theirPlaying.find(g => myGameIds.has(g.id));
+            if (playingMatch) { setCompatibility({ type: "playing", gameName: playingMatch.name }); }
+            else {
+              const wantMatch = theirWant.find(g => myGameIds.has(g.id));
+              if (wantMatch) { setCompatibility({ type: "want", gameName: wantMatch.name }); }
+              else {
+                const playedMatch = theirPlayed.find(g => myGameIds.has(g.id));
+                if (playedMatch) { setCompatibility({ type: "played", gameName: playedMatch.name }); }
+              }
+            }
+          }
+        }
+      }
+
+      setLoading(false);
+    };
+    load();
+  }, [userId]);
+
+  const SHELF_COLUMNS = [
+    { id: "want_to_play", label: "Want to Play", color: C.accent },
+    { id: "playing", label: "Playing Now", color: C.green },
+    { id: "have_played", label: "Have Played", color: C.gold },
+  ];
+
+  const compatibilityText = compatibility ? {
+    playing: `Also playing ${compatibility.gameName}`,
+    want: `Also wants to play ${compatibility.gameName}`,
+    played: `Also played ${compatibility.gameName}`,
+  }[compatibility.type] : null;
+
+  if (loading) return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px" : "80px 20px", textAlign: "center", color: C.textDim, paddingTop: 120 }}>
+      Loading profile...
+    </div>
+  );
+
+  if (!profile) return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px" : "80px 20px", textAlign: "center", color: C.textDim, paddingTop: 120 }}>
+      Player not found.
+    </div>
+  );
+
+  const totalGames = shelf.want_to_play.length + shelf.playing.length + shelf.have_played.length;
+  const tabs = [
+    { id: "posts", label: `Posts${posts.length > 0 ? ` (${posts.length})` : ""}` },
+    { id: "games", label: `Games${totalGames > 0 ? ` (${totalGames})` : ""}` },
+    { id: "reviews", label: `Reviews${reviews.length > 0 ? ` (${reviews.length})` : ""}` },
+  ];
+
+  const isOwnProfile = currentUser?.id === userId;
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      {/* Header card */}
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
+          <div style={{ position: "absolute", bottom: -36, left: 28 }}>
+            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={84} status="online" />
+          </div>
+        </div>
+        <div style={{ padding: "48px 28px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: 22 }}>{profile.username}</h1>
+                {profile.level && <Badge color={C.gold}>Lv.{profile.level}</Badge>}
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
+              {profile.bio && <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{profile.bio}</p>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+              {!isOwnProfile && (
+                <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Follow
+                </button>
+              )}
+              {compatibilityText && (
+                <div style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, maxWidth: 240, textAlign: "right" }}>
+                  {compatibilityText}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
+            {[
+              { label: "Posts", val: posts.length, color: C.accent },
+              { label: "Reviews", val: reviews.length, color: C.teal },
+              { label: "Games", val: totalGames, color: C.gold },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Posts */}
+      {activeTab === "posts" && (
+        <div>
+          {posts.length > 0 ? posts.map(post => (
+            <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+              <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 10px", textAlign: "left" }}>{post.content}</p>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                {post.game_tag && (
+                  <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                    onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}>
+                    {postGameNames[post.game_tag] || "Tagged game"}
+                  </span>
+                )}
+                <span style={{ color: C.textDim, fontSize: 12 }}>❤️ {post.likes || 0} · {timeAgo(post.created_at)}</span>
+              </div>
+            </div>
+          )) : (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 13 }}>No posts yet.</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Games — read-only kanban */}
+      {activeTab === "games" && (
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
+          {SHELF_COLUMNS.map(col => (
+            <div key={col.id} style={{ background: C.surface, border: `1px solid ${col.color}33`, borderRadius: 14, padding: 14, minHeight: 160 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
+                <div style={{ background: `${col.color}22`, color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{shelf[col.id].length}</div>
+              </div>
+              {shelf[col.id].length > 0 ? shelf[col.id].map(entry => {
+                const game = entry.games;
+                if (!game) return null;
+                const review = reviews.find(r => r.game_id === entry.game_id);
+                return (
+                  <div key={entry.game_id}
+                    onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                    style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "pointer" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
+                      </div>
+                      {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating}/10</span>}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div style={{ textAlign: "center", padding: "20px 10px", color: C.textDim, fontSize: 12, borderRadius: 8, border: `1px dashed ${col.color}33` }}>
+                  Nothing here yet
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reviews */}
+      {activeTab === "reviews" && (
+        <div>
+          {reviews.length > 0 ? reviews.map(review => (
+            <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
+              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
+                  <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
+                </div>
+                <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
+              </div>
+              {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
+              {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
+              {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>⚠️ {review.didnt_love}</div>}
+              {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: "8px 0 0" }}>{review.content}</p>}
+              <div style={{ color: C.textDim, fontSize: 11, marginTop: 10 }}>{timeAgo(review.created_at)}</div>
+            </div>
+          )) : (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 13 }}>No reviews yet.</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
   const [activePage, setActivePage] = useState("feed");
   const [currentGame, setCurrentGame] = useState("elden-ring");
   const [currentNPC, setCurrentNPC] = useState("merv");
+  const [currentPlayer, setCurrentPlayer] = useState(null);
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -2855,14 +3135,15 @@ export default function GuildLink() {
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
       <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} />
-      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
-      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
+      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}}
     </div>
   );
 }
