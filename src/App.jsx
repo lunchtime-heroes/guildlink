@@ -1326,7 +1326,9 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
-  const [taggedGames, setTaggedGames] = useState([]); // array of game ids, max 3
+  const [taggedGames, setTaggedGames] = useState([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const textareaRef = React.useRef(null); // array of game ids, max 3
 
   const handlePostTextChange = (e) => {
     const val = e.target.value;
@@ -1340,23 +1342,34 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
       ).slice(0, 5);
       setMentionQuery(query);
       setMentionResults(matches);
+      setMentionIndex(0);
     } else {
       setMentionQuery(null);
       setMentionResults([]);
+      setMentionIndex(0);
     }
   };
 
+  const handlePostKeyDown = (e) => {
+    if (mentionResults.length === 0) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionResults.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter" && mentionResults.length > 0) { e.preventDefault(); selectMention(mentionResults[mentionIndex]); }
+    else if (e.key === "Escape") { setMentionResults([]); setMentionQuery(null); }
+  };
+
   const selectMention = (game) => {
-    // Replace the trailing @query with @GameName (no spaces) in text
     const inserted = postText.replace(/@\w*$/, "@" + game.name.replace(/\s+/g, "")) + " ";
     setPostText(inserted);
-    // Add to tagged games if not already there and under limit
     setTaggedGames(prev => {
       if (prev.includes(game.id) || prev.length >= 3) return prev;
       return [...prev, game.id];
     });
     setMentionQuery(null);
     setMentionResults([]);
+    setMentionIndex(0);
+    // Refocus textarea after selection
+    setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   const removeTaggedGame = (gameId) => {
@@ -1497,14 +1510,12 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
             <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
-                <textarea value={postText} onChange={handlePostTextChange} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
                   <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {mentionResults.map(game => (
-                      <div key={game.id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: "transparent" }}
-                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <span style={{ fontSize: 16 }}>{game.icon}</span>
+                    {mentionResults.map((game, i) => (
+                      <div key={game.id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
+                        onMouseEnter={e => { setMentionIndex(i); }}>
                         <span style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{game.name}</span>
                         <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{(game.followers / 1000).toFixed(1)}k</span>
                       </div>
