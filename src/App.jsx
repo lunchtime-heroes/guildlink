@@ -2476,7 +2476,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
                     <div key={game.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.surfaceRaised, borderBottom: `1px solid ${C.border}` }}>
                       <div>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}{game.genre ? " · " + game.genre : ""}</div>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         {SHELF_COLUMNS.map(col => (
@@ -2516,7 +2516,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
                       onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
                       style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 18 }}>{hardcoded?.icon || "🎮"}</span>
+                        
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                           <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
@@ -2543,7 +2543,9 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
             <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
               style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12, cursor: review.games ? "pointer" : "default" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ fontSize: 24 }}>{GAMES[review.game_id]?.icon || "🎮"}</div>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
                   <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
