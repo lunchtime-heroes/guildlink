@@ -6,6 +6,24 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwYWxrcGNxaWh4YW1lZHltbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NDc3MTQsImV4cCI6MjA4ODQyMzcxNH0.8V9MEXpcCH8dibm65PVtaPZseDbPvYCwSPJQ-9Cu-Zo"
 );
 
+// Week start helper — Monday of current week
+function getWeekStart() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff)).toISOString().split('T')[0];
+}
+
+async function logChartEvent(gameId, eventType, userId) {
+  if (!gameId || !gameId.includes('-')) return; // skip non-UUID game IDs
+  await supabase.from("chart_events").insert({
+    game_id: gameId,
+    user_id: userId,
+    event_type: eventType,
+    week_start: getWeekStart(),
+  });
+}
+
 function timeAgo(timestamp) {
   if (!timestamp) return "Just now";
   const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
@@ -1305,7 +1323,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
           <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-6</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-7</span>
       </div>
     </nav>
   );
@@ -1344,6 +1362,135 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
 }
 
 // ─── FEED PAGE ────────────────────────────────────────────────────────────────
+
+// ─── CHARTS WIDGET ────────────────────────────────────────────────────────────
+
+function ChartsWidget({ setActivePage, setCurrentGame, category }) {
+  const [charts, setCharts] = useState([]);
+  const [prevCharts, setPrevCharts] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+
+      // Get current week start
+      const d = new Date();
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const weekStart = new Date(new Date().setDate(diff)).toISOString().split('T')[0];
+
+      // Live scores from chart_events this week
+      let query = supabase
+        .from("chart_events")
+        .select("game_id, event_type, games(id, name, category, genre)")
+        .eq("week_start", weekStart);
+      if (category) query = query.eq("games.category", category);
+
+      const { data: events } = await query;
+
+      if (events) {
+        // Aggregate scores per game
+        const weights = { post: 1, review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1 };
+        const scoreMap = {};
+        const countMap = {};
+        events.forEach(e => {
+          if (!e.games) return;
+          const id = e.game_id;
+          if (!scoreMap[id]) {
+            scoreMap[id] = 0;
+            countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0 };
+          }
+          scoreMap[id] += weights[e.event_type] || 0;
+          countMap[id][e.event_type] = (countMap[id][e.event_type] || 0) + 1;
+        });
+
+        const sorted = Object.entries(scoreMap)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([id, score], i) => ({
+            rank: i + 1,
+            id,
+            name: countMap[id].game.name,
+            score,
+            dominantSignal: getDominantSignal(countMap[id]),
+            ...countMap[id],
+          }));
+        setCharts(sorted);
+
+        // Get last week's rankings for movement arrows
+        const lastWeek = new Date(new Date(weekStart).setDate(new Date(weekStart).getDate() - 7)).toISOString().split('T')[0];
+        const { data: history } = await supabase
+          .from("chart_history")
+          .select("game_id, rank")
+          .eq("week_start", lastWeek);
+        if (history) {
+          const prev = {};
+          history.forEach(h => prev[h.game_id] = h.rank);
+          setPrevCharts(prev);
+        }
+      }
+      setLoading(false);
+    };
+    load();
+  }, [category]);
+
+  const getDominantSignal = (counts) => {
+    if (counts.shelf_playing > 0) return `${counts.shelf_playing} playing`;
+    if (counts.review > 0) return `${counts.review} review${counts.review > 1 ? 's' : ''}`;
+    if (counts.shelf_want > 0) return `${counts.shelf_want} want to play`;
+    if (counts.post > 0) return `${counts.post} post${counts.post > 1 ? 's' : ''}`;
+    return null;
+  };
+
+  const getMovement = (gameId, currentRank) => {
+    const prev = prevCharts[gameId];
+    if (!prev) return { label: "NEW", color: C.teal };
+    const diff = prev - currentRank;
+    if (diff > 0) return { label: `+${diff}`, color: C.green };
+    if (diff < 0) return { label: `${diff}`, color: C.red };
+    return { label: "—", color: C.textDim };
+  };
+
+  return (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          {category ? `${category} Charts` : "The Charts"}
+        </div>
+        <div style={{ color: C.textDim, fontSize: 10 }}>This week</div>
+      </div>
+
+      {loading ? (
+        <div style={{ color: C.textDim, fontSize: 12, textAlign: "center", padding: "20px 0" }}>Loading...</div>
+      ) : charts.length === 0 ? (
+        <div style={{ color: C.textDim, fontSize: 12, textAlign: "center", padding: "20px 0", lineHeight: 1.6 }}>
+          Charts fill up as the community posts, reviews, and plays games this week.
+        </div>
+      ) : (
+        <div>
+          {charts.map((entry, i) => {
+            const mv = getMovement(entry.id, entry.rank);
+            return (
+              <div key={entry.id}
+                onClick={() => { setCurrentGame(entry.id); setActivePage("game"); }}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < charts.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}>
+                <div style={{ width: 18, textAlign: "center", color: i < 3 ? C.gold : C.textDim, fontWeight: 800, fontSize: i < 3 ? 13 : 11, flexShrink: 0 }}>
+                  {entry.rank}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.name}</div>
+                  {entry.dominantSignal && <div style={{ color: C.textDim, fontSize: 10 }}>{entry.dominantSignal}</div>}
+                </div>
+                <div style={{ color: mv.color, fontSize: 11, fontWeight: 700, flexShrink: 0, minWidth: 28, textAlign: "right" }}>{mv.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser }) {
   const user = currentUser || mockUser;
@@ -1436,6 +1583,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       comment_count: 0,
     }).select().single();
     if (!error && data) {
+      if (data.game_tag) logChartEvent(data.game_tag, 'post', authUser?.id);
       const newPost = {
         ...data,
         profiles: {
@@ -1495,21 +1643,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           </div>
         </div>
 
-        {/* NPC Spotlight */}
-        <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>⚙ NPC Spotlight</div>
-          {Object.values(NPCS).slice(0, 3).map(npc => (
-            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
-              style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, cursor: "pointer" }}>
-              <Avatar initials={npc.avatar} size={32} isNPC={true} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
-                <div style={{ color: C.textDim, fontSize: 11 }}>{(npc.followers / 1000).toFixed(1)}k followers</div>
-              </div>
-            </div>
-          ))}
-          <button style={{ width: "100%", background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>View All NPCs</button>
-        </div>
+        {/* The Charts */}
+        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} />
 
         {/* Data promise */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
@@ -1653,19 +1788,20 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           ))}
         </div>
 
-        {/* Active NPCs */}
+        {/* NPC Spotlight */}
         <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>⚙ NPCs Online</div>
-          {Object.values(NPCS).filter(n => n.status === "online").slice(0, 3).map(npc => (
+          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPC Spotlight</div>
+          {Object.values(NPCS).slice(0, 3).map(npc => (
             <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
               style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, cursor: "pointer" }}>
               <Avatar initials={npc.avatar} size={30} isNPC={true} status={npc.status} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
-                <div style={{ color: C.textDim, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.posts[0]?.content.slice(0, 30)}...</div>
+                <div style={{ color: C.textDim, fontSize: 10 }}>{(npc.followers / 1000).toFixed(1)}k followers</div>
               </div>
             </div>
           ))}
+          <button onClick={() => setActivePage("npcs")} style={{ width: "100%", background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>View All</button>
         </div>
       </div>
       )}
@@ -1829,6 +1965,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
       content: reviewForm.content || null,
     });
     if (!error) {
+      logChartEvent(dbGame.id, 'review', authUser.id);
       // Refresh reviews and charts
       const { data: reviews } = await supabase.from("reviews").select("*, profiles(username, handle, avatar_initials)").eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(5);
       if (reviews) setLatestReviews(reviews);
@@ -2299,6 +2436,8 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
       status: toStatus,
       updated_at: new Date().toISOString(),
     });
+    const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
+    if (eventMap[toStatus]) logChartEvent(gameId, eventMap[toStatus], authUser.id);
     setUserShelf(prev => {
       const entry = prev[fromStatus].find(e => e.game_id === gameId);
       if (!entry) return prev;
@@ -2320,8 +2459,9 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
       updated_at: new Date().toISOString(),
     });
     if (!error) {
+      const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
+      if (eventMap[status]) logChartEvent(game.id, eventMap[status], authUser.id);
       setUserShelf(prev => {
-        // Remove from any existing status first
         const cleaned = {
           want_to_play: prev.want_to_play.filter(e => e.game_id !== game.id),
           playing: prev.playing.filter(e => e.game_id !== game.id),
