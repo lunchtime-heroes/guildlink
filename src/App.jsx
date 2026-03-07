@@ -2178,6 +2178,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const [gameLibrary, setGameLibrary] = useState([]);
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
+  const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
   const [dragOver, setDragOver] = useState(null); // status column being hovered
   const [addingGame, setAddingGame] = useState(false);
