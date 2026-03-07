@@ -582,7 +582,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         {/* Post header */}
         <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
           <div style={{ cursor: localPost.user.isNPC ? "pointer" : "default" }}
-            onClick={() => { if (localPost.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}>
+            onClick={() => { if (localPost.user.isNPC) { if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); } else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } } }}>
             <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} />
           </div>
           <div style={{ flex: 1 }}>
@@ -591,7 +591,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 fontWeight: 700, fontSize: 14, cursor: localPost.user.isNPC ? "pointer" : "default",
                 color: localPost.user.isNPC ? C.gold : C.text,
               }}
-                onClick={() => { if (localPost.user.isNPC) { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } }}
+                onClick={() => { if (localPost.user.isNPC) { if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); } else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } } } }}
               >{localPost.user.name}</span>
               {localPost.user.isNPC && <NPCBadge />}
               <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
@@ -696,14 +696,16 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
   }, [npcId]);
 
   const loadNPCData = async () => {
-    // Try to find NPC in database by handle
-    const handle = npc ? npc.handle : null;
-    if (!handle) return;
-    const { data: npcData } = await supabase
-      .from("npcs")
-      .select("*")
-      .eq("handle", handle)
-      .single();
+    // npcId can be a uuid (from database) or a string key like "merv" (from hardcoded)
+    const isUUID = npcId && npcId.includes('-');
+    let npcData = null;
+    if (isUUID) {
+      const { data } = await supabase.from("npcs").select("*").eq("id", npcId).single();
+      npcData = data;
+    } else if (npc) {
+      const { data } = await supabase.from("npcs").select("*").eq("handle", npc.handle).single();
+      npcData = data;
+    }
     if (npcData) {
       setLiveNPC(npcData);
       const { data: posts } = await supabase
@@ -715,16 +717,19 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
     }
   };
 
-  if (!npc) return null;
+  if (!npc && !liveNPC) return null;
 
   const displayNPC = liveNPC ? {
-    ...npc,
+    ...(npc || {}),
     name: liveNPC.name,
     handle: liveNPC.handle,
-    bio: liveNPC.bio || npc.bio,
+    bio: liveNPC.bio,
     followers: liveNPC.followers,
-    role: liveNPC.role || npc.role,
-    location: liveNPC.location || npc.location,
+    role: liveNPC.role,
+    location: liveNPC.location,
+    avatar: liveNPC.avatar_initials || (npc?.avatar) || "NPC",
+    universe: liveNPC.universe || (npc?.universe) || "Unknown",
+    universeIcon: npc?.universeIcon || "⚔️",
   } : npc;
 
   const tabs = [
@@ -1451,6 +1456,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
           return (
             <FeedPostCard key={post.id} post={{
               id: post.id,
+              npc_id: post.npc_id,
               user: {
                 name: author.name || author.username || "Gamer",
                 handle: author.handle || "@gamer",
