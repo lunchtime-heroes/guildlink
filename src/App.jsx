@@ -1063,7 +1063,7 @@ function FoundingBanner({ onDismiss, setActivePage }) {
 }
 
 
-function NavBar({ activePage, setActivePage, isMobile }) {
+function NavBar({ activePage, setActivePage, isMobile, signOut }) {
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
@@ -1168,6 +1168,7 @@ function NavBar({ activePage, setActivePage, isMobile }) {
         <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
           <Avatar initials="AC" size={34} status="online" founding={true} ring="founding" />
         </div>
+        {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
       </div>
     </nav>
   );
@@ -1207,7 +1208,8 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
 
 // ─── FEED PAGE ────────────────────────────────────────────────────────────────
 
-function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
+function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, currentUser }) {
+  const user = currentUser || mockUser;
   const [showBanner, setShowBanner] = useState(true);
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
@@ -1242,14 +1244,14 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
           <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
             <Avatar initials="AC" size={44} status="online" />
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{mockUser.name}</div>
-              <div style={{ color: C.textMuted, fontSize: 12 }}>{mockUser.handle}</div>
-              <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{mockUser.title}</div>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
+              <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
+              <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{mockUser.connections}</div><div style={{ color: C.textDim, fontSize: 10 }}>Connections</div></div>
-              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{(mockUser.followers / 1000).toFixed(1)}k</div><div style={{ color: C.textDim, fontSize: 10 }}>Followers</div></div>
-              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{mockUser.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
+              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{user.connections}</div><div style={{ color: C.textDim, fontSize: 10 }}>Connections</div></div>
+              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{(user.followers / 1000).toFixed(1)}k</div><div style={{ color: C.textDim, fontSize: 10 }}>Followers</div></div>
+              <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{user.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
             </div>
           </div>
         </div>
@@ -1279,7 +1281,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile }) {
         {/* Your games */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
-          {mockUser.games.map(g => {
+          {user.games.map(g => {
             const gData = Object.values(GAMES).find(x => x.name === g);
             return (
               <div key={g} onClick={() => { if (gData) { setCurrentGame(gData.id); setActivePage("game"); } }}
@@ -1652,7 +1654,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
-function ProfilePage({ setActivePage, isMobile }) {
+function ProfilePage({ setActivePage, isMobile, currentUser }) {
+  const user = currentUser || mockUser;
   const [activeTab, setActiveTab] = useState("posts");
   const achievements = [
     { icon: "🏆", name: "Top 500", desc: "Overwatch 2 Season 12", color: C.gold },
@@ -1668,9 +1671,9 @@ function ProfilePage({ setActivePage, isMobile }) {
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
-            <Avatar initials="AC" size={84} status="online" founding={mockUser.isFounding} ring={mockUser.activeRing} />
+            <Avatar initials="AC" size={84} status="online" founding={user.isFounding} ring={user.activeRing} />
           </div>
-          {mockUser.isFounding && (
+          {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
               <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
             </div>
@@ -1680,28 +1683,28 @@ function ProfilePage({ setActivePage, isMobile }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: 22 }}>{mockUser.name}</h1>
-                <Badge color={C.gold}>Lv.{mockUser.level}</Badge>
-                {mockUser.isFounding && <FoundingBadge />}
+                <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: 22 }}>{user.name}</h1>
+                <Badge color={C.gold}>Lv.{user.level}</Badge>
+                {user.isFounding && <FoundingBadge />}
                 <Badge color={C.accent}>Verified</Badge>
               </div>
-              <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{mockUser.handle} · {mockUser.location}</div>
-              <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{mockUser.title}</div>
-              <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", maxWidth: 480, lineHeight: 1.6 }}>{mockUser.bio}</p>
+              <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle} · {user.location}</div>
+              <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{user.title}</div>
+              <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", maxWidth: 480, lineHeight: 1.6 }}>{user.bio}</p>
             </div>
             <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>Edit Profile</button>
           </div>
           <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center" }}>
-            {[{ label: "Connections", val: mockUser.connections, color: C.accent }, { label: "Followers", val: mockUser.followers.toLocaleString(), color: C.accentSoft }].map(s => (
+            {[{ label: "Connections", val: user.connections, color: C.accent }, { label: "Followers", val: user.followers.toLocaleString(), color: C.accentSoft }].map(s => (
               <div key={s.label}><div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div><div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div></div>
             ))}
             <div style={{ marginLeft: "auto", minWidth: 160 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                 <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>XP Progress</span>
-                <span style={{ color: C.textDim, fontSize: 11 }}>{mockUser.xp.toLocaleString()} / {mockUser.xpNext.toLocaleString()}</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{user.xp.toLocaleString()} / {user.xpNext.toLocaleString()}</span>
               </div>
               <div style={{ height: 8, background: C.surfaceHover, borderRadius: 4 }}>
-                <div style={{ height: "100%", width: `${(mockUser.xp / mockUser.xpNext) * 100}%`, background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
+                <div style={{ height: "100%", width: `${(user.xp / user.xpNext) * 100}%`, background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
               </div>
             </div>
           </div>
@@ -1777,10 +1780,10 @@ function ProfilePage({ setActivePage, isMobile }) {
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 4 }}>Active Ring</div>
             <div style={{ color: C.textDim, fontSize: 13, marginBottom: 16 }}>Your ring shows on your avatar everywhere on GuildLink.</div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <Avatar initials="AC" size={56} founding={mockUser.isFounding} ring={mockUser.activeRing} />
+              <Avatar initials="AC" size={56} founding={user.isFounding} ring={user.activeRing} />
               <div>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{PROFILE_RINGS.find(r => r.id === mockUser.activeRing)?.label}</div>
-                <div style={{ color: C.textDim, fontSize: 13 }}>{PROFILE_RINGS.find(r => r.id === mockUser.activeRing)?.description}</div>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{PROFILE_RINGS.find(r => r.id === user.activeRing)?.label}</div>
+                <div style={{ color: C.textDim, fontSize: 13 }}>{PROFILE_RINGS.find(r => r.id === user.activeRing)?.description}</div>
               </div>
             </div>
           </div>
@@ -1799,8 +1802,8 @@ function ProfilePage({ setActivePage, isMobile }) {
                 <div style={{ fontWeight: 700, color: ring.unlocked ? ring.color : C.textMuted, fontSize: 13, marginBottom: 4, textAlign: "center" }}>{ring.label}</div>
                 <div style={{ color: C.textDim, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>{ring.unlocked ? ring.description : ring.how}</div>
                 {ring.unlocked && ring.id !== "none" && (
-                  <button style={{ width: "100%", marginTop: 10, background: ring.id === mockUser.activeRing ? `${ring.color}22` : "transparent", border: `1px solid ${ring.color}44`, borderRadius: 8, padding: "6px", color: ring.id === mockUser.activeRing ? ring.color : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    {ring.id === mockUser.activeRing ? "Active ✓" : "Equip"}
+                  <button style={{ width: "100%", marginTop: 10, background: ring.id === user.activeRing ? `${ring.color}22` : "transparent", border: `1px solid ${ring.color}44`, borderRadius: 8, padding: "6px", color: ring.id === user.activeRing ? ring.color : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    {ring.id === user.activeRing ? "Active ✓" : "Equip"}
                   </button>
                 )}
                 {!ring.unlocked && (
@@ -1809,7 +1812,7 @@ function ProfilePage({ setActivePage, isMobile }) {
               </div>
             ))}
           </div>
-          {!mockUser.isFounding && (
+          {!user.isFounding && (
             <div style={{ marginTop: 16, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 4 }}>Want the Founding Ring?</div>
@@ -1931,6 +1934,7 @@ export default function GuildLink() {
   const [currentNPC, setCurrentNPC] = useState("merv");
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
   const width = useWindowSize();
   const isMobile = width < 768;
 
@@ -1938,12 +1942,25 @@ export default function GuildLink() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
+      if (session) fetchProfile(session.user.id);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) fetchProfile(session.user.id);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchProfile = async (userId) => {
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (data) setProfile(data);
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setProfile(null);
+  };
 
   if (authLoading) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1952,6 +1969,24 @@ export default function GuildLink() {
   );
 
   if (!session) return <AuthPage />;
+
+  const liveUser = profile ? {
+    name: profile.username || "Gamer",
+    handle: profile.handle || "@gamer",
+    avatar: profile.avatar_initials || "GL",
+    level: profile.level || 1,
+    xp: profile.xp || 0,
+    xpNext: 1000,
+    title: profile.bio || "New to GuildLink",
+    location: "",
+    connections: 0,
+    followers: 0,
+    bio: profile.bio || "",
+    games: profile.games ? profile.games.split(",") : [],
+    status: "online",
+    isFounding: profile.is_founding || false,
+    activeRing: profile.active_ring || "none",
+  } : mockUser;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
@@ -1968,13 +2003,13 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} />
-      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} />}
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} />
+      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} isMobile={isMobile} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && <ProfilePage setActivePage={setActivePage} isMobile={isMobile} />}
+      {activePage === "profile" && <ProfilePage setActivePage={setActivePage} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
     </div>
