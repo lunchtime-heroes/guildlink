@@ -612,9 +612,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       content: commentText.trim(),
     }).select("*, profiles(username, handle, avatar_initials)").single();
     if (!error && data) {
+      // Increment comment count on post
+      if (post.id && post.id.includes('-')) {
+        await supabase.from("posts").update({ comment_count: (localPost.comment_count || 0) + (liveComments?.length || 0) + 1 }).eq("id", post.id);
+        setLocalPost(p => ({ ...p, comment_count: (p.comment_count || 0) + 1 }));
+      }
       // Log chart event if post is tagged to a game
       const gameId = post.game_tag || post.gameId;
-      if (gameId && authUser) logChartEvent(gameId, 'comment', authUser.id);
+      if (gameId && gameId.includes('-') && authUser) logChartEvent(gameId, 'comment', authUser.id);
       setLiveComments(prev => [...(prev || []), data]);
       setCommentText("");
       setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
@@ -692,7 +697,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             borderRadius: 8, padding: "5px 14px", cursor: "pointer",
             color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5,
-          }}>💬 {liveComments !== null ? liveComments.length : localPost.commentList.length} {showComments ? "▲" : "▼"}</button>
+          }}>💬 {liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)} {showComments ? "▲" : "▼"}</button>
           <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>↗ {localPost.shares || 0}</button>
         </div>
       </div>
@@ -1345,7 +1350,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
           <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-8</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-9</span>
       </div>
     </nav>
   );
@@ -1779,6 +1784,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               content: post.content,
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
+              comment_count: post.comment_count || 0,
               commentList: [],
             }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} />
           );
