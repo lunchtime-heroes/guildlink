@@ -560,7 +560,7 @@ function Badge({ children, color = C.accent, small }) {
 
 // ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -579,6 +579,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   }, [post.game_tag, post.gameId]);
 
   const toggleLike = async () => {
+    if (isGuest) { onSignIn?.("Like posts and join the conversation."); return; }
     const newLiked = !localPost.liked;
     const newLikes = newLiked ? localPost.likes + 1 : localPost.likes - 1;
     setLocalPost(p => ({ ...p, liked: newLiked, likes: newLikes }));
@@ -603,6 +604,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   };
 
   const submitComment = async () => {
+    if (isGuest) { onSignIn?.("Join the conversation and comment on posts."); return; }
     if (!commentText.trim() || submittingComment) return;
     setSubmittingComment(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -738,7 +740,12 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           })}
           {/* Comment input */}
           <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-            {currentUser ? (<>
+            {isGuest ? (
+              <div onClick={() => onSignIn?.("Join the conversation and comment on posts.")}
+                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
+                Sign in to join the conversation...
+              </div>
+            ) : currentUser ? (<>
               <Avatar initials={currentUser?.avatar || "GL"} size={32} />
               <input
                 value={commentText}
@@ -1244,7 +1251,35 @@ function FoundingBanner({ onDismiss, setActivePage }) {
 }
 
 
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
+// ─── SIGN IN PROMPT MODAL ─────────────────────────────────────────────────────
+
+function SignInPrompt({ onClose, onSignIn, message }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+      onClick={onClose}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 32, maxWidth: 380, width: "100%", textAlign: "center" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 36, marginBottom: 16 }}>⚔️</div>
+        <div style={{ fontWeight: 800, fontSize: 20, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Join the Guild</div>
+        <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+          {message || "Create a free account to post, review games, and build your shelf."}
+        </div>
+        <button onClick={onSignIn} style={{ width: "100%", background: C.accent, border: "none", borderRadius: 10, padding: "12px", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>
+          Create Free Account
+        </button>
+        <button onClick={onSignIn} style={{ width: "100%", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+          Sign In
+        </button>
+        <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginTop: 14 }}>
+          Continue browsing
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn }) {
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
@@ -1254,7 +1289,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
-    { id: "profile", icon: "◉", label: "Profile" },
+    ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "Squad" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
   ];
@@ -1278,12 +1313,18 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
             <input placeholder="Search..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 10px 6px 28px", color: C.text, fontSize: 13, outline: "none" }} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px" }}>
-              🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
-            </button>
-            <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-              <Avatar initials={currentUser?.avatar || "GL"} size={30} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
-            </div>
+            {isGuest ? (
+              <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Sign In</button>
+            ) : (
+              <>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px" }}>
+                  🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+                </button>
+                <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
+                  <Avatar initials={currentUser?.avatar || "GL"} size={30} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
+                </div>
+              </>
+            )}
           </div>
         </nav>
 
@@ -1343,14 +1384,23 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
-        <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px 6px" }}>
-          🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
-        </button>
-        <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-          <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
-        </div>
-        {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-10</span>
+        {isGuest ? (
+          <>
+            <button onClick={onSignIn} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
+            <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
+          </>
+        ) : (
+          <>
+            <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px 6px" }}>
+              🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+            </button>
+            <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
+              <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
+            </div>
+            {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
+          </>
+        )}
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-11</span>
       </div>
     </nav>
   );
@@ -1538,7 +1588,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey }) {
   );
 }
 
-function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser }) {
+function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn }) {
   const user = currentUser || mockUser;
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
@@ -1724,7 +1774,17 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Composer */}
+        {/* Composer or guest prompt */}
+        {isGuest ? (
+          <div onClick={() => onSignIn?.("Share wins, review games, and find your squad.")}
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 14 : 18, marginBottom: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: "50%", background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 16, flexShrink: 0 }}>⚔️</div>
+            <div style={{ flex: 1, background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 13 }}>
+              Share a win, review a game, find teammates...
+            </div>
+            <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Join Free</button>
+          </div>
+        ) : (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
@@ -1766,6 +1826,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
             </div>
           </div>
         </div>
+        )}
 
         {livePosts.map(post => {
           const isNPC = !!post.npc_id;
@@ -1790,11 +1851,11 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               likes: post.likes || 0,
               comment_count: post.comment_count || 0,
               commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} />
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
           );
         })}
         {FEED_POSTS.map(post => (
-          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} />
+          <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
         ))}
       </div>
 
@@ -2931,7 +2992,7 @@ function SquadPage({ isMobile }) {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 
-function AuthPage() {
+function AuthPage({ onBack }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -2982,6 +3043,11 @@ function AuthPage() {
           <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
             {loading ? "..." : mode === "login" ? "Log In" : "Create Account"}
           </button>
+          {onBack && (
+            <button onClick={onBack} style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+              ← Continue browsing without account
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -3262,6 +3328,8 @@ export default function GuildLink() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [signInPromptMsg, setSignInPromptMsg] = useState(null);
   const width = useWindowSize();
   const isMobile = width < 768;
 
@@ -3273,7 +3341,7 @@ export default function GuildLink() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) { fetchProfile(session.user.id); setShowAuth(false); setSignInPromptMsg(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -3289,13 +3357,21 @@ export default function GuildLink() {
     setProfile(null);
   };
 
+  const openSignIn = (msg) => {
+    setSignInPromptMsg(msg || null);
+    setShowAuth(true);
+  };
+
   if (authLoading) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ color: C.textMuted, fontSize: 14 }}>Loading...</div>
     </div>
   );
 
-  if (!session) return <AuthPage />;
+  // Show full auth page if explicitly requested
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
+
+  const isGuest = !session;
 
   const liveUser = profile ? {
     name: profile.username || "Gamer",
@@ -3313,10 +3389,17 @@ export default function GuildLink() {
     status: "online",
     isFounding: profile.is_founding || false,
     activeRing: profile.active_ring || "none",
-  } : mockUser;
+  } : null;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
+      {signInPromptMsg !== null && (
+        <SignInPrompt
+          message={signInPromptMsg || undefined}
+          onClose={() => setSignInPromptMsg(null)}
+          onSignIn={() => { setSignInPromptMsg(null); setShowAuth(true); }}
+        />
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
         * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
@@ -3330,13 +3413,13 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} />
-      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} />
+      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
-      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
+      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
