@@ -717,7 +717,11 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
     }
   };
 
-  if (!npc && !liveNPC) return null;
+  if (!npc && !liveNPC) return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: C.textMuted, fontSize: 14 }}>Loading...</div>
+    </div>
+  );
 
   const displayNPC = liveNPC ? {
     ...(npc || {}),
@@ -781,9 +785,9 @@ function NPCProfilePage({ npcId, setActivePage, isMobile }) {
             {/* Header stats — row on mobile, column on desktop */}
             <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start", flexDirection: isMobile ? "row" : "column" }}>
               {[
-                { label: "Followers", value: (npc.followers / 1000).toFixed(1) + "k", color: C.gold },
-                { label: "Yrs Service", value: npc.yearsOfService, color: "#e8d5a0" },
-                { label: "Associates", value: npc.connections, color: C.textMuted },
+                { label: "Followers", value: ((displayNPC.followers || 0) / 1000).toFixed(1) + "k", color: C.gold },
+                { label: "Yrs Service", value: displayNPC.yearsOfService || "—", color: "#e8d5a0" },
+                { label: "Associates", value: displayNPC.connections || "—", color: C.textMuted },
               ].map(s => (
                 <div key={s.label} style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 90 }}>
                   <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18, color: s.color }}>{s.value}</div>
