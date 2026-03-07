@@ -1352,7 +1352,16 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, isMobile, curr
       comment_count: 0,
     }).select().single();
     if (!error && data) {
-      setLivePosts(prev => [data, ...prev]);
+      const newPost = {
+        ...data,
+        profiles: {
+          username: user.name,
+          handle: user.handle,
+          avatar_initials: user.avatar,
+          is_founding: user.isFounding,
+        }
+      };
+      setLivePosts(prev => [newPost, ...prev]);
       setPostText("");
       setSelectedGame(null);
     }
