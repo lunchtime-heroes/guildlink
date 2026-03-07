@@ -1305,7 +1305,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser }) {
           <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
         </div>
         {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-5</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-6</span>
       </div>
     </nav>
   );
@@ -1589,6 +1589,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               id: post.id,
               npc_id: post.npc_id,
               game_tag: post.game_tag,
+              user_id: post.user_id,
               user: {
                 name: author.name || author.username || "Gamer",
                 handle: author.handle || "@gamer",
