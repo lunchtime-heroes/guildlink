@@ -2386,6 +2386,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       .not("followed_game_id", "is", null);
     if (data) setFollowedGames(data.map(d => d.games).filter(Boolean));
   };
+
+  const loadFollowing = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase
