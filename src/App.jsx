@@ -579,6 +579,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [liveComments, setLiveComments] = useState(null);
+  const [replyTo, setReplyTo] = useState(null); // { id, name }
   const [taggedGameName, setTaggedGameName] = useState(null);
 
   useEffect(() => {
@@ -625,18 +626,18 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       post_id: post.id,
       user_id: authUser.id,
       content: commentText.trim(),
+      reply_to_comment_id: replyTo?.id || null,
     }).select("*, profiles(username, handle, avatar_initials)").single();
     if (!error && data) {
-      // Increment comment count on post
       if (post.id && post.id.includes('-')) {
         await supabase.from("posts").update({ comment_count: (localPost.comment_count || 0) + (liveComments?.length || 0) + 1 }).eq("id", post.id);
         setLocalPost(p => ({ ...p, comment_count: (p.comment_count || 0) + 1 }));
       }
-      // Log chart event if post is tagged to a game
       const gameId = post.game_tag || post.gameId;
       if (gameId && gameId.includes('-') && authUser) logChartEvent(gameId, 'comment', authUser.id);
       setLiveComments(prev => [...(prev || []), data]);
       setCommentText("");
+      setReplyTo(null);
       setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
     }
     setSubmittingComment(false);
@@ -721,32 +722,47 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       {showComments && (
         <div style={{ background: C.surfaceHover, borderTop: `1px solid ${C.border}`, padding: "14px 20px" }}>
           {(liveComments || localPost.commentList).map((comment, i) => {
-            const isLive = !!comment.profiles;
-            const author = isLive ? comment.profiles : comment.user;
-            const name = isLive ? author.username : author.name;
-            const handle = isLive ? author.handle : author.handle;
-            const avatar = isLive ? author.avatar_initials : author.avatar;
-            const isNPC = !isLive && comment.user.isNPC;
+            const isLive = !!comment.profiles || !!comment.npc_id;
+            const npcData = comment.npc_id ? NPCS[comment.npc_id] : null;
+            const isNPC = !!(comment.npc_id || (!isLive && comment.user?.isNPC));
+            const author = npcData || (isLive ? comment.profiles : comment.user);
+            const name = npcData ? npcData.name : (isLive ? author?.username : author?.name);
+            const handle = npcData ? npcData.handle : author?.handle;
+            const avatar = npcData ? npcData.avatar : (author?.avatar_initials || author?.avatar);
             const allComments = liveComments || localPost.commentList;
+            // Find the comment being replied to
+            const parentComment = comment.reply_to_comment_id
+              ? allComments.find(c => c.id === comment.reply_to_comment_id)
+              : null;
+            const parentName = parentComment
+              ? (NPCS[parentComment.npc_id]?.name || parentComment.profiles?.username || parentComment.user?.name || "someone")
+              : null;
+            const isMyComment = currentUser && comment.user_id === currentUser.id;
             return (
-              <div key={comment.id} style={{
-                display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0,
-              }}>
+              <div key={comment.id} style={{ display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0 }}>
                 <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} />
                 <div style={{ flex: 1 }}>
-                  <div style={{
-                    background: C.surfaceRaised,
-                    border: `1px solid ${isNPC ? C.goldBorder : C.border}`,
-                    borderRadius: 10, padding: "10px 14px",
-                  }}>
+                  <div style={{ background: C.surfaceRaised, border: `1px solid ${isNPC ? C.goldBorder : C.border}`, borderRadius: 10, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name || "Gamer"}</span>
                       {isNPC && <NPCBadge />}
                       <span style={{ color: C.textDim, fontSize: 11 }}>{handle}</span>
                       <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(comment.created_at) || comment.time}</span>
                     </div>
+                    {parentName && (
+                      <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                        <span>↩</span>
+                        <span style={{ color: C.accentSoft }}>@{parentName}</span>
+                      </div>
+                    )}
                     <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
                   </div>
+                  {!isGuest && currentUser && (
+                    <button onClick={() => { setReplyTo({ id: comment.id, name: name }); setShowComments(true); }}
+                      style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px", marginTop: 2 }}>
+                      ↩ Reply
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -758,19 +774,30 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
                 Sign in to join the conversation...
               </div>
-            ) : currentUser ? (<>
-              <Avatar initials={currentUser?.avatar || "GL"} size={32} />
-              <input
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && submitComment()}
-                placeholder="Write a comment..."
-                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
-              />
-              <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {submittingComment ? "..." : "Reply"}
-              </button>
-            </>) : (
+            ) : currentUser ? (
+              <div style={{ flex: 1 }}>
+                {replyTo && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 10px" }}>
+                    <span style={{ color: C.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyTo.name}</strong></span>
+                    <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", lineHeight: 1 }}>×</button>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <Avatar initials={currentUser?.avatar || "GL"} size={32} />
+                  <input
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && submitComment()}
+                    placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
+                    style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+                    autoFocus={!!replyTo}
+                  />
+                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    {submittingComment ? "…" : "Reply"}
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div style={{ color: C.textDim, fontSize: 13 }}>Sign in to comment</div>
             )}
           </div>
@@ -1444,7 +1471,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-27</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-28</span>
       </div>
     </nav>
   );
@@ -3683,21 +3710,29 @@ function NPCStudioPage({ isMobile, currentUser }) {
       .not("npc_id", "is", null);
     const repliedIds = new Set((npcReplies || []).map(r => r.post_id));
 
+    // Fetch posts that have replies (someone replied to someone) — engagement signal
+    const { data: replyComments } = await supabase
+      .from("comments")
+      .select("post_id")
+      .not("reply_to_comment_id", "is", null);
+    const replyThreadCounts = {};
+    (replyComments || []).forEach(c => { replyThreadCounts[c.post_id] = (replyThreadCounts[c.post_id] || 0) + 1; });
+
     const now = Date.now();
     const scored = posts
       .filter(p => !repliedIds.has(p.id))
       .map(p => {
         const profile = p.profiles;
         const ageHours = (now - new Date(p.created_at).getTime()) / 3600000;
-        const recencyScore = Math.max(0, 1 - ageHours / 72); // decays over 72h
+        const recencyScore = Math.max(0, 1 - ageHours / 72);
         const engagementScore = Math.min(1, ((p.likes || 0) + (commentCounts[p.id] || 0) * 1.5) / 50);
-        // New user: account created within 7 days
+        const threadScore = Math.min(1, (replyThreadCounts[p.id] || 0) / 5); // active reply thread bonus
         const accountAgeDays = profile?.created_at
           ? (now - new Date(profile.created_at).getTime()) / 86400000
           : 999;
         const newUserBonus = accountAgeDays < 7 ? 1 : 0;
-        const score = newUserBonus * 0.4 + engagementScore * 0.35 + recencyScore * 0.25;
-        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, score };
+        const score = newUserBonus * 0.35 + engagementScore * 0.30 + threadScore * 0.20 + recencyScore * 0.15;
+        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, hasThread: (replyThreadCounts[p.id] || 0) > 0, score };
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
@@ -3932,6 +3967,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
                         </div>
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                           {post.newUser && <span style={{ background: `${C2.accent}22`, border: `1px solid ${C2.accentDim}`, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW</span>}
+                          {post.hasThread && <span style={{ background: `#f59e0b22`, border: `1px solid #f59e0b44`, borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
                           <span style={{ color: C2.textDim, fontSize: 11 }}>♥ {post.likes || 0} · 💬 {post.commentCount}</span>
                         </div>
                       </div>
