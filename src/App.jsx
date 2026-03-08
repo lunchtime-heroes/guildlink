@@ -5428,7 +5428,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
             </div>
           </div>
         );
-      })}
+      }) : null}
     </div>
   );
 }
