@@ -1333,7 +1333,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "Squad" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
-    ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
+    ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }, { id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
   ];
 
   if (isMobile) {
@@ -1442,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-25</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-26</span>
       </div>
     </nav>
   );
@@ -3634,7 +3634,394 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   );
 }
 
-// ─── SQUAD PAGE ───────────────────────────────────────────────────────────────
+// ─── NPC STUDIO ───────────────────────────────────────────────────────────────
+
+function NPCStudioPage({ isMobile, currentUser }) {
+  const [selectedNPC, setSelectedNPC] = useState(null);
+  const [mode, setMode] = useState("respond"); // "respond" | "post"
+  const [candidates, setCandidates] = useState([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [composeText, setComposeText] = useState("");
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [queue, setQueue] = useState([]);
+
+  const npcList = Object.values(NPCS);
+
+  // Load candidate posts for Respond mode
+  const loadCandidates = async () => {
+    setLoadingCandidates(true);
+    // Fetch recent posts with author info, likes, comments
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, content, created_at, likes, user_id, game_tag, profiles(username, handle, avatar_initials, created_at)")
+      .is("npc_id", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (!posts) { setLoadingCandidates(false); return; }
+
+    // Fetch comment counts
+    const postIds = posts.map(p => p.id);
+    const { data: comments } = await supabase
+      .from("comments")
+      .select("post_id")
+      .in("post_id", postIds);
+    const commentCounts = {};
+    (comments || []).forEach(c => { commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1; });
+
+    // Fetch already-replied post IDs by any NPC
+    const { data: npcReplies } = await supabase
+      .from("comments")
+      .select("post_id")
+      .not("npc_id", "is", null);
+    const repliedIds = new Set((npcReplies || []).map(r => r.post_id));
+
+    const now = Date.now();
+    const scored = posts
+      .filter(p => !repliedIds.has(p.id))
+      .map(p => {
+        const profile = p.profiles;
+        const ageHours = (now - new Date(p.created_at).getTime()) / 3600000;
+        const recencyScore = Math.max(0, 1 - ageHours / 72); // decays over 72h
+        const engagementScore = Math.min(1, ((p.likes || 0) + (commentCounts[p.id] || 0) * 1.5) / 50);
+        // New user: account created within 7 days
+        const accountAgeDays = profile?.created_at
+          ? (now - new Date(profile.created_at).getTime()) / 86400000
+          : 999;
+        const newUserBonus = accountAgeDays < 7 ? 1 : 0;
+        const score = newUserBonus * 0.4 + engagementScore * 0.35 + recencyScore * 0.25;
+        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
+
+    setCandidates(scored);
+    setLoadingCandidates(false);
+  };
+
+  useEffect(() => {
+    if (selectedNPC && mode === "respond") loadCandidates();
+  }, [selectedNPC, mode]);
+
+  // Load scheduled queue
+  const loadQueue = async () => {
+    const { data } = await supabase
+      .from("npc_scheduled_posts")
+      .select("*")
+      .order("scheduled_for", { ascending: true });
+    if (data) setQueue(data);
+  };
+  useEffect(() => { loadQueue(); }, []);
+
+  const handleSend = async () => {
+    if (!composeText.trim() || !selectedNPC) return;
+    setSending(true);
+    const npc = NPCS[selectedNPC];
+
+    if (scheduleMode && scheduleDate && scheduleTime) {
+      const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+      await supabase.from("npc_scheduled_posts").insert({
+        npc_id: selectedNPC,
+        content: composeText.trim(),
+        reply_to_post_id: selectedPost?.id || null,
+        scheduled_for: scheduledFor,
+        status: "scheduled",
+      });
+      await loadQueue();
+    } else {
+      // Post now
+      const postData = {
+        content: composeText.trim(),
+        npc_id: selectedNPC,
+        user_id: null,
+        game_tag: null,
+      };
+      if (mode === "respond" && selectedPost) {
+        // Insert as comment on the selected post
+        await supabase.from("comments").insert({
+          post_id: selectedPost.id,
+          content: composeText.trim(),
+          npc_id: selectedNPC,
+          user_id: null,
+        });
+      } else {
+        await supabase.from("posts").insert(postData);
+      }
+    }
+
+    setComposeText("");
+    setSelectedPost(null);
+    setSending(false);
+    setSent(true);
+    setTimeout(() => setSent(false), 2500);
+    if (mode === "respond") loadCandidates();
+  };
+
+  const deleteScheduled = async (id) => {
+    await supabase.from("npc_scheduled_posts").delete().eq("id", id);
+    loadQueue();
+  };
+
+  const C2 = C; // alias
+  const pad = isMobile ? "60px 12px 80px" : "80px 24px 40px";
+
+  if (!selectedNPC) {
+    // NPC picker screen
+    return (
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: pad }}>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontWeight: 800, fontSize: 22, color: C2.text, letterSpacing: "-0.5px", marginBottom: 6 }}>NPC Studio</div>
+          <div style={{ color: C2.textMuted, fontSize: 14 }}>Choose a character to write as.</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 14 }}>
+          {npcList.map(npc => (
+            <div key={npc.id} onClick={() => setSelectedNPC(npc.id)}
+              style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 16, padding: 20, cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C2.goldBorder; e.currentTarget.style.background = C2.goldGlow; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C2.border; e.currentTarget.style.background = C2.surface; }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <Avatar initials={npc.avatar} size={40} isNPC={true} status={npc.status} />
+                <div>
+                  <div style={{ fontWeight: 700, color: C2.text, fontSize: 14 }}>{npc.name}</div>
+                  <div style={{ color: C2.textDim, fontSize: 11 }}>{npc.handle}</div>
+                </div>
+              </div>
+              <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>{npc.bio.slice(0, 100)}…</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {npc.games.slice(0, 2).map(g => (
+                  <span key={g} style={{ background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 6, padding: "2px 8px", color: C2.textDim, fontSize: 11 }}>{g}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Scheduled queue */}
+        {queue.length > 0 && (
+          <div style={{ marginTop: 32 }}>
+            <div style={{ fontWeight: 700, color: C2.text, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Scheduled Posts</div>
+            {queue.map(item => {
+              const npc = NPCS[item.npc_id];
+              return (
+                <div key={item.id} style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <Avatar initials={npc?.avatar || "?"} size={32} isNPC={true} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, color: C2.gold, fontSize: 13 }}>{npc?.name}</span>
+                      <span style={{ color: C2.textDim, fontSize: 11 }}>{new Date(item.scheduled_for).toLocaleString()}</span>
+                    </div>
+                    <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5 }}>{item.content}</div>
+                    {item.reply_to_post_id && <div style={{ color: C2.textDim, fontSize: 11, marginTop: 4 }}>↩ reply to post</div>}
+                  </div>
+                  <button onClick={() => deleteScheduled(item.id)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 16, cursor: "pointer", padding: "0 4px", flexShrink: 0 }}>×</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const npc = NPCS[selectedNPC];
+
+  return (
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: pad }}>
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+
+        {/* Character sidebar */}
+        <div style={{ width: 240, flexShrink: 0 }}>
+          <button onClick={() => { setSelectedNPC(null); setSelectedPost(null); setComposeText(""); }}
+            style={{ background: "none", border: "none", color: C2.textDim, fontSize: 13, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
+            ← All characters
+          </button>
+
+          {/* NPC card */}
+          <div style={{ background: C2.goldGlow, border: `1px solid ${C2.goldBorder}`, borderRadius: 16, padding: 18, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <Avatar initials={npc.avatar} size={44} isNPC={true} status={npc.status} />
+              <div>
+                <div style={{ fontWeight: 800, color: C2.gold, fontSize: 15 }}>{npc.name}</div>
+                <div style={{ color: C2.textDim, fontSize: 11 }}>{npc.handle}</div>
+              </div>
+            </div>
+
+            <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7, marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>{npc.bio}</div>
+
+            <div style={{ marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>
+              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Background</div>
+              <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7 }}>{npc.lore}</div>
+            </div>
+
+            <div style={{ marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>
+              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Role</div>
+              <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.role}</div>
+              <div style={{ color: C2.textDim, fontSize: 11, marginTop: 2 }}>{npc.location}</div>
+            </div>
+
+            <div style={{ marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>
+              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Universe</div>
+              <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.universeIcon} {npc.universe}</div>
+            </div>
+
+            <div>
+              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Games</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {npc.games.map(g => (
+                  <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${C2.goldBorder}`, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 14, padding: 16 }}>
+            <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Stats</div>
+            {npc.stats.map(s => (
+              <div key={s.label} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: C2.textMuted, fontSize: 12 }}>{s.label}</span>
+                  <span style={{ color: C2.text, fontSize: 12, fontWeight: 700 }}>{s.value}</span>
+                </div>
+                <div style={{ color: C2.textDim, fontSize: 10, marginTop: 1 }}>{s.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main panel */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Mode toggle */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 20, background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 12, padding: 4 }}>
+            {[{ id: "respond", label: "Respond" }, { id: "post", label: "Post" }].map(m => (
+              <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setComposeText(""); }}
+                style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: `1px solid ${mode === m.id ? C2.accentDim : "transparent"}`, borderRadius: 8, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Respond mode */}
+          {mode === "respond" && (
+            <div>
+              {loadingCandidates ? (
+                <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading candidate posts…</div>
+              ) : candidates.length === 0 ? (
+                <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>No new candidates right now.</div>
+              ) : (
+                candidates.map(post => {
+                  const isSelected = selectedPost?.id === post.id;
+                  return (
+                    <div key={post.id} style={{ background: isSelected ? C2.accentGlow : C2.surface, border: `1px solid ${isSelected ? C2.accentDim : C2.border}`, borderRadius: 14, padding: 16, marginBottom: 12, transition: "all 0.15s" }}>
+                      {/* Post header */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={30} />
+                          <div>
+                            <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{post.profiles?.username || "Unknown"}</span>
+                            <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{post.profiles?.handle}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          {post.newUser && <span style={{ background: `${C2.accent}22`, border: `1px solid ${C2.accentDim}`, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW</span>}
+                          <span style={{ color: C2.textDim, fontSize: 11 }}>♥ {post.likes || 0} · 💬 {post.commentCount}</span>
+                        </div>
+                      </div>
+                      <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>{post.content}</div>
+
+                      {/* Inline composer when selected */}
+                      {isSelected ? (
+                        <div style={{ borderTop: `1px solid ${C2.accentDim}`, paddingTop: 12 }}>
+                          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                            <Avatar initials={npc.avatar} size={28} isNPC={true} />
+                            <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
+                              placeholder={`Reply as ${npc.name}…`}
+                              style={{ flex: 1, background: C2.bg, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
+                              autoFocus
+                            />
+                          </div>
+                          {renderScheduler()}
+                          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                            <button onClick={() => { setSelectedPost(null); setComposeText(""); setScheduleMode(false); }}
+                              style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                            <button onClick={handleSend} disabled={!composeText.trim() || sending}
+                              style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
+                              {sending ? "Sending…" : sent ? "✓ Sent" : scheduleMode ? "Schedule" : "Reply Now"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setSelectedPost(post); setComposeText(""); }}
+                          style={{ background: C2.accentGlow, border: `1px solid ${C2.accentDim}`, borderRadius: 8, padding: "6px 14px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          Reply as {npc.name.split(" ")[0]}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* Post mode */}
+          {mode === "post" && (
+            <div style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 14, padding: 20 }}>
+              <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                <Avatar initials={npc.avatar} size={38} isNPC={true} status={npc.status} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: C2.text, fontSize: 14 }}>{npc.name}</div>
+                  <div style={{ color: C2.textDim, fontSize: 12 }}>{npc.handle}</div>
+                </div>
+              </div>
+              <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
+                placeholder={`What's ${npc.name.split(" ")[0]} thinking?`}
+                style={{ width: "100%", background: C2.surfaceHover, border: `1px solid ${C2.border}`, borderRadius: 10, padding: "12px 16px", color: C2.text, fontSize: 14, resize: "none", outline: "none", minHeight: 120, boxSizing: "border-box", lineHeight: 1.6 }}
+              />
+              <div style={{ color: C2.textDim, fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 14 }}>{composeText.length} chars</div>
+              {renderScheduler()}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button onClick={() => setComposeText("")}
+                  style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 18px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
+                <button onClick={handleSend} disabled={!composeText.trim() || sending}
+                  style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 14, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
+                  {sending ? "Sending…" : sent ? "✓ Posted" : scheduleMode ? "Schedule" : "Post Now"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  function renderScheduler() {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: scheduleMode ? 10 : 0 }}>
+          <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)}
+            style={{ accentColor: C2.accent }} />
+          <span style={{ color: C2.textMuted, fontSize: 13 }}>Schedule for later</span>
+        </label>
+        {scheduleMode && (
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
+              style={{ background: C2.surfaceHover, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
+            <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
+              style={{ background: C2.surfaceHover, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
+
 
 function SquadPage({ isMobile }) {
   const [filter, setFilter] = useState("All");
@@ -4126,6 +4513,7 @@ export default function GuildLink() {
       `}</style>
       <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} />
       {activePage === "admin" && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
+      {activePage === "npc-studio" && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
