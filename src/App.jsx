@@ -1695,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-32</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-33</span>
       </div>
     </nav>
   );
@@ -3895,6 +3895,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const [candidates, setCandidates] = useState([]);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [replyToComment, setReplyToComment] = useState(null); // { id, name } for reply threading
   const [expandedComments, setExpandedComments] = useState({}); // postId -> comments[]
   const [loadingComments, setLoadingComments] = useState({});
   const [composeText, setComposeText] = useState("");
@@ -3904,6 +3905,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [queue, setQueue] = useState([]);
+  const [threads, setThreads] = useState([]);
+  const [loadingThreads, setLoadingThreads] = useState(false);
+  const [closedThreads, setClosedThreads] = useState(new Set());
 
   const npcList = Object.values(NPCS);
 
@@ -3962,6 +3966,18 @@ function NPCStudioPage({ isMobile, currentUser }) {
     const replyThreadCounts = {};
     (replyComments || []).forEach(c => { replyThreadCounts[c.post_id] = (replyThreadCounts[c.post_id] || 0) + 1; });
 
+    // Fetch last comment per post to detect if user replied after NPC
+    const { data: lastComments } = await supabase
+      .from("comments")
+      .select("post_id, npc_id, created_at")
+      .in("post_id", postIds)
+      .order("created_at", { ascending: false });
+    // For each post, find the most recent comment
+    const lastCommentByPost = {};
+    (lastComments || []).forEach(c => {
+      if (!lastCommentByPost[c.post_id]) lastCommentByPost[c.post_id] = c;
+    });
+
     const now = Date.now();
     const scored = posts
       .map(p => {
@@ -3975,10 +3991,13 @@ function NPCStudioPage({ isMobile, currentUser }) {
           : 999;
         const newUserBonus = accountAgeDays < 7 ? 1 : 0;
         const npcReplied = npcRepliedIds.has(p.id);
-        // Replied posts score lower unless they have fresh thread activity
+        const lastComment = lastCommentByPost[p.id];
+        // "Needs Reply" = NPC has engaged but user replied since — highest priority
+        const needsReply = npcReplied && lastComment && !lastComment.npc_id;
         const baseScore = newUserBonus * 0.35 + engagementScore * 0.30 + threadScore * 0.20 + recencyScore * 0.15;
-        const score = npcReplied ? baseScore * 0.4 + threadScore * 0.3 : baseScore;
-        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, hasThread: (replyThreadCounts[p.id] || 0) > 0, npcReplied, score };
+        // needsReply: boost to top. npcReplied but last was NPC: de-prioritise. fresh: normal score.
+        const score = needsReply ? 0.8 + baseScore * 0.2 : npcReplied ? baseScore * 0.3 : baseScore;
+        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, hasThread: (replyThreadCounts[p.id] || 0) > 0, npcReplied, needsReply, score };
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
@@ -3989,7 +4008,57 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
   useEffect(() => {
     if (selectedNPC && mode === "respond") loadCandidates();
+    if (selectedNPC && mode === "threads") loadThreads();
   }, [selectedNPC, mode]);
+
+  const loadThreads = async () => {
+    setLoadingThreads(true);
+    // Find posts where this NPC has commented
+    const { data: npcComments } = await supabase
+      .from("comments")
+      .select("post_id")
+      .eq("npc_id", selectedNPC);
+    if (!npcComments || npcComments.length === 0) { setThreads([]); setLoadingThreads(false); return; }
+
+    const postIds = [...new Set(npcComments.map(c => c.post_id))];
+
+    // Fetch those posts with author info
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, content, created_at, likes, user_id, profiles(username, handle, avatar_initials)")
+      .in("id", postIds)
+      .order("created_at", { ascending: false });
+
+    // Fetch all comments for those posts
+    const { data: allComments } = await supabase
+      .from("comments")
+      .select("*, profiles(username, handle, avatar_initials)")
+      .in("post_id", postIds)
+      .order("created_at", { ascending: true });
+
+    const commentsByPost = {};
+    (allComments || []).forEach(c => {
+      if (!commentsByPost[c.post_id]) commentsByPost[c.post_id] = [];
+      commentsByPost[c.post_id].push(c);
+    });
+
+    const enriched = (posts || []).map(p => {
+      const comments = commentsByPost[p.id] || [];
+      const lastComment = comments[comments.length - 1];
+      const needsReply = lastComment && !lastComment.npc_id;
+      return { ...p, comments, needsReply };
+    }).sort((a, b) => {
+      // Needs reply first, then by most recent activity
+      if (a.needsReply && !b.needsReply) return -1;
+      if (!a.needsReply && b.needsReply) return 1;
+      const aLast = a.comments[a.comments.length - 1]?.created_at || a.created_at;
+      const bLast = b.comments[b.comments.length - 1]?.created_at || b.created_at;
+      return new Date(bLast) - new Date(aLast);
+    });
+
+    setThreads(enriched);
+    setLoadingThreads(false);
+  };
 
   // Load scheduled queue
   const loadQueue = async () => {
@@ -4024,6 +4093,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
           content: composeText.trim(),
           npc_id: selectedNPC,
           user_id: writerUser.id,
+          reply_to_comment_id: replyToComment?.id || null,
         });
         if (!error) {
           // Update comment_count on the post
@@ -4049,6 +4119,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
     setComposeText("");
     setSelectedPost(null);
+    setReplyToComment(null);
     setSending(false);
     setSent(true);
     setTimeout(() => setSent(false), 2500);
@@ -4191,8 +4262,8 @@ function NPCStudioPage({ isMobile, currentUser }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
           <div style={{ display: "flex", gap: 4, marginBottom: 20, background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 12, padding: 4 }}>
-            {[{ id: "respond", label: "Respond" }, { id: "post", label: "Post" }].map(m => (
-              <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setComposeText(""); }}
+            {[{ id: "respond", label: "Respond" }, { id: "threads", label: "Threads" }, { id: "post", label: "Post" }].map(m => (
+              <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
                 style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: `1px solid ${mode === m.id ? C2.accentDim : "transparent"}`, borderRadius: 8, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {m.label}
               </button>
@@ -4279,16 +4350,25 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             const isNPC = !!npcData;
                             const name = npcData?.name || c.profiles?.username || "Unknown";
                             const avatar = npcData?.avatar || c.profiles?.avatar_initials || "?";
+                            const isReplyTarget = replyToComment?.id === c.id;
                             return (
                               <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < postComments.length - 1 ? 10 : 0 }}>
                                 <Avatar initials={avatar.slice(0,2).toUpperCase()} size={26} isNPC={isNPC} />
-                                <div style={{ flex: 1, background: C2.surfaceRaised, border: `1px solid ${isNPC ? C2.goldBorder : C2.border}`, borderRadius: 8, padding: "7px 12px" }}>
-                                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
-                                    <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
-                                    {isNPC && <NPCBadge />}
-                                    <span style={{ color: C2.textDim, fontSize: 10, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: `1px solid ${isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border}`, borderRadius: 8, padding: "7px 12px" }}>
+                                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
+                                      <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
+                                      {isNPC && <NPCBadge />}
+                                      <span style={{ color: C2.textDim, fontSize: 10, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
+                                    </div>
+                                    <p style={{ color: C2.text, fontSize: 12, lineHeight: 1.5, margin: 0 }}>{c.content}</p>
                                   </div>
-                                  <p style={{ color: C2.text, fontSize: 12, lineHeight: 1.5, margin: 0 }}>{c.content}</p>
+                                  {!isNPC && isSelected && (
+                                    <button onClick={() => setReplyToComment(isReplyTarget ? null : { id: c.id, name })}
+                                      style={{ background: "none", border: "none", color: isReplyTarget ? C2.accentSoft : C2.textDim, fontSize: 11, cursor: "pointer", padding: "3px 2px", marginTop: 2 }}>
+                                      {isReplyTarget ? "↩ Replying…" : "↩ Reply to this"}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -4299,17 +4379,23 @@ function NPCStudioPage({ isMobile, currentUser }) {
                       {/* Inline composer when selected */}
                       {isSelected && (
                         <div style={{ borderTop: `1px solid ${C2.accentDim}`, padding: "12px 16px", background: C2.accentGlow }}>
+                          {replyToComment && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "5px 10px" }}>
+                              <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
+                              <button onClick={() => setReplyToComment(null)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", padding: 0 }}>×</button>
+                            </div>
+                          )}
                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                             <Avatar initials={npc.avatar} size={28} isNPC={true} />
                             <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
-                              placeholder={`Reply as ${npc.name}…`}
+                              placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
                               style={{ flex: 1, background: C2.bg, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
                               autoFocus
                             />
                           </div>
                           {renderScheduler()}
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                            <button onClick={() => { setSelectedPost(null); setComposeText(""); setScheduleMode(false); }}
+                            <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); setScheduleMode(false); }}
                               style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                             <button onClick={handleSend} disabled={!composeText.trim() || sending}
                               style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
@@ -4322,6 +4408,136 @@ function NPCStudioPage({ isMobile, currentUser }) {
                   );
                 })
               )}
+            </div>
+          )}
+
+          {/* Threads mode */}
+          {mode === "threads" && (
+            <div>
+              {loadingThreads ? (
+                <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading threads…</div>
+              ) : threads.filter(t => !closedThreads.has(t.id)).length === 0 ? (
+                <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>
+                  {closedThreads.size > 0 ? `All ${closedThreads.size} thread${closedThreads.size > 1 ? "s" : ""} closed. ` : ""}
+                  {npc.name.split(" ")[0]} hasn't engaged any posts yet.
+                </div>
+              ) : threads.filter(t => !closedThreads.has(t.id)).map(thread => {
+                const lastComment = thread.comments[thread.comments.length - 1];
+                const statusLabel = thread.needsReply ? "Needs Reply" : "Replied";
+                const statusColor = thread.needsReply ? C2.gold : "#22c55e";
+                const statusBg = thread.needsReply ? "#f59e0b18" : "#22c55e18";
+                const statusBorder = thread.needsReply ? "#f59e0b44" : "#22c55e44";
+                const isSelected = selectedPost?.id === thread.id;
+                return (
+                  <div key={thread.id} style={{ background: C2.surface, border: `1px solid ${thread.needsReply ? "#f59e0b44" : C2.border}`, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
+                    {/* Thread header */}
+                    <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C2.border}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <Avatar initials={(thread.profiles?.avatar_initials || "?").slice(0,2).toUpperCase()} size={28} />
+                          <div>
+                            <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{thread.profiles?.username}</span>
+                            <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{timeAgo(thread.created_at)}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <span style={{ background: statusBg, border: `1px solid ${statusBorder}`, borderRadius: 6, padding: "2px 8px", color: statusColor, fontSize: 10, fontWeight: 700 }}>{statusLabel}</span>
+                          <button onClick={() => setClosedThreads(prev => new Set([...prev, thread.id]))}
+                            style={{ background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            Close ✓
+                          </button>
+                        </div>
+                      </div>
+                      <p style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5, margin: 0 }}>{thread.content}</p>
+                    </div>
+
+                    {/* Full comment thread */}
+                    <div style={{ padding: "12px 16px", background: C2.surfaceHover }}>
+                      {thread.comments.map((c, i) => {
+                        const npcData = c.npc_id ? NPCS[c.npc_id] : null;
+                        const isNPC = !!npcData;
+                        const name = npcData?.name || c.profiles?.username || "Unknown";
+                        const avatar = npcData?.avatar || c.profiles?.avatar_initials || "?";
+                        const parentComment = c.reply_to_comment_id ? thread.comments.find(x => x.id === c.reply_to_comment_id) : null;
+                        const parentName = parentComment ? (NPCS[parentComment.npc_id]?.name || parentComment.profiles?.username) : null;
+                        const isReplyTarget = replyToComment?.id === c.id;
+                        return (
+                          <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < thread.comments.length - 1 ? 10 : 0 }}>
+                            <Avatar initials={avatar.slice(0,2).toUpperCase()} size={26} isNPC={isNPC} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: `1px solid ${isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border}`, borderRadius: 8, padding: "7px 12px" }}>
+                                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
+                                  <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
+                                  {isNPC && <NPCBadge />}
+                                  <span style={{ color: C2.textDim, fontSize: 10, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
+                                </div>
+                                {parentName && <div style={{ color: C2.textDim, fontSize: 11, marginBottom: 3 }}>↩ <span style={{ color: C2.accentSoft }}>{parentName}</span></div>}
+                                <p style={{ color: C2.text, fontSize: 12, lineHeight: 1.5, margin: 0 }}>{c.content}</p>
+                              </div>
+                              {!isNPC && (
+                                <button onClick={() => { setSelectedPost(thread); setReplyToComment(isReplyTarget ? null : { id: c.id, name }); if (!isSelected) setComposeText(""); }}
+                                  style={{ background: "none", border: "none", color: isReplyTarget ? C2.accentSoft : C2.textDim, fontSize: 11, cursor: "pointer", padding: "3px 2px", marginTop: 2 }}>
+                                  {isReplyTarget ? "↩ Replying…" : "↩ Reply to this"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Inline composer */}
+                    {isSelected && (
+                      <div style={{ borderTop: `1px solid ${C2.accentDim}`, padding: "12px 16px", background: C2.accentGlow }}>
+                        {replyToComment && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "5px 10px" }}>
+                            <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
+                            <button onClick={() => setReplyToComment(null)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", padding: 0 }}>×</button>
+                          </div>
+                        )}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                          <Avatar initials={npc.avatar} size={28} isNPC={true} />
+                          <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
+                            placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
+                            style={{ flex: 1, background: C2.bg, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70 }}
+                            autoFocus
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
+                            style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                          <button onClick={async () => {
+                            if (!composeText.trim()) return;
+                            setSending(true);
+                            const { data: { user: writerUser } } = await supabase.auth.getUser();
+                            await supabase.from("comments").insert({
+                              post_id: thread.id,
+                              content: composeText.trim(),
+                              npc_id: selectedNPC,
+                              user_id: writerUser.id,
+                              reply_to_comment_id: replyToComment?.id || null,
+                            });
+                            setComposeText(""); setReplyToComment(null); setSelectedPost(null); setSending(false);
+                            setSent(true); setTimeout(() => setSent(false), 2000);
+                            loadThreads();
+                          }} disabled={!composeText.trim() || sending}
+                            style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
+                            {sending ? "Sending…" : sent ? "✓ Sent" : "Reply Now"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {!isSelected && (
+                      <div style={{ padding: "10px 16px", borderTop: `1px solid ${C2.border}` }}>
+                        <button onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }}
+                          style={{ background: C2.accentGlow, border: `1px solid ${C2.accentDim}`, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          Reply as {npc.name.split(" ")[0]}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
