@@ -1514,6 +1514,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
+    { id: "charts", icon: "📈", label: "Charts" },
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "Squad" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
@@ -1695,7 +1696,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-34</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-35</span>
       </div>
     </nav>
   );
@@ -1881,6 +1882,309 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             </button>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CHARTS PAGE ──────────────────────────────────────────────────────────────
+
+function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
+  const [window, setWindow] = useState("7d");
+  const [loading, setLoading] = useState(true);
+  const [overall, setOverall] = useState([]);
+  const [byGenre, setByGenre] = useState({});
+  const [expanded, setExpanded] = useState(null); // game id
+  const [sparklines, setSparklines] = useState({}); // game id -> weekly score array
+  const [loadingSparkline, setLoadingSparkline] = useState({});
+
+  const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+
+  const getWindowWeeks = (w) => w === "now" ? 1 : w === "7d" ? 1 : w === "30d" ? 4 : 1;
+
+  const getWeekStarts = (count) => {
+    const starts = [];
+    const base = new Date(getWeekStart());
+    for (let i = 0; i < count; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() - i * 7);
+      starts.push(d.toISOString().split("T")[0]);
+    }
+    return starts;
+  };
+
+  const scoreEvents = (events) => {
+    const scoreMap = {}, countMap = {}, userMap = {};
+    events.forEach(e => {
+      if (!e.games) return;
+      const id = e.game_id;
+      if (!scoreMap[id]) {
+        scoreMap[id] = 0;
+        countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 };
+        userMap[id] = new Set();
+      }
+      userMap[id].add(e.user_id);
+      if (e.event_type === "post") {
+        const seq = e.post_sequence || 1;
+        scoreMap[id] += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
+        countMap[id].post++;
+      } else {
+        scoreMap[id] += WEIGHTS[e.event_type] || 0;
+        if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++;
+      }
+    });
+    return Object.entries(scoreMap).map(([id, rawScore]) => {
+      const uniqueUsers = userMap[id].size;
+      const finalScore = rawScore * (1 + Math.log(Math.max(uniqueUsers, 1)) * 0.2);
+      const g = countMap[id].game;
+      return { id, finalScore, uniqueUsers, ...countMap[id], name: g?.name, genre: g?.genre, icon: g?.icon };
+    }).sort((a, b) => b.finalScore - a.finalScore);
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const weeks = getWindowWeeks(window);
+      const weekStarts = getWeekStarts(weeks);
+
+      const { data: events } = await supabase
+        .from("chart_events")
+        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
+        .in("week_start", weekStarts);
+
+      if (!events) { setLoading(false); return; }
+
+      const scored = scoreEvents(events);
+      setOverall(scored.slice(0, 10));
+
+      // Group by genre
+      const genres = {};
+      scored.forEach(g => {
+        const genreRaw = g.genre;
+        const primaryGenre = Array.isArray(genreRaw) ? genreRaw[0] : (genreRaw || "Other");
+        if (!genres[primaryGenre]) genres[primaryGenre] = [];
+        if (genres[primaryGenre].length < 5) genres[primaryGenre].push(g);
+      });
+      setByGenre(genres);
+      setLoading(false);
+    };
+    load();
+  }, [window]);
+
+  const loadSparkline = async (gameId) => {
+    if (sparklines[gameId]) return;
+    setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
+    // Get last 8 weeks of data for this game
+    const weekStarts = getWeekStarts(8);
+    const { data: events } = await supabase
+      .from("chart_events")
+      .select("event_type, post_sequence, user_id, week_start")
+      .eq("game_id", gameId)
+      .in("week_start", weekStarts);
+
+    // Score per week
+    const weekScores = {};
+    weekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+    (events || []).forEach(e => {
+      if (!weekScores[e.week_start]) return;
+      weekScores[e.week_start].users.add(e.user_id);
+      if (e.event_type === "post") {
+        const seq = e.post_sequence || 1;
+        weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
+      } else {
+        weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0;
+      }
+    });
+
+    // Apply breadth multiplier and reverse so oldest is first
+    const points = weekStarts.slice().reverse().map(w => {
+      const { score, users } = weekScores[w];
+      return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
+    });
+
+    setSparklines(prev => ({ ...prev, [gameId]: points }));
+    setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
+  };
+
+  const handleExpand = (gameId) => {
+    if (expanded === gameId) { setExpanded(null); return; }
+    setExpanded(gameId);
+    loadSparkline(gameId);
+  };
+
+  const Sparkline = ({ points, color = C.accent }) => {
+    if (!points || points.length === 0) return null;
+    const w = 260, h = 60, pad = 4;
+    const max = Math.max(...points, 0.1);
+    const pts = points.map((v, i) => {
+      const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+      const y = h - pad - (v / max) * (h - pad * 2);
+      return `${x},${y}`;
+    }).join(" ");
+    const areaPath = `M ${pad},${h - pad} ` +
+      points.map((v, i) => {
+        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+        const y = h - pad - (v / max) * (h - pad * 2);
+        return `L ${x},${y}`;
+      }).join(" ") +
+      ` L ${w - pad},${h - pad} Z`;
+
+    const labels = ["8w", "7w", "6w", "5w", "4w", "3w", "2w", "Now"];
+    return (
+      <div style={{ marginTop: 8 }}>
+        <svg width={w} height={h} style={{ display: "block" }}>
+          <defs>
+            <linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
+          <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          {points.map((v, i) => {
+            const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+            const y = h - pad - (v / max) * (h - pad * 2);
+            return <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />;
+          })}
+        </svg>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2, paddingLeft: pad, paddingRight: pad }}>
+          {labels.map((l, i) => (
+            <span key={i} style={{ color: C.textDim, fontSize: 9, width: w / labels.length, textAlign: "center" }}>{l}</span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const getDominantSignal = (entry) => {
+    if (entry.shelf_playing > 0) return `${entry.shelf_playing} playing`;
+    if (entry.review > 0) return `${entry.review} review${entry.review > 1 ? "s" : ""}`;
+    if (entry.comment > 0) return `${entry.comment} comment${entry.comment > 1 ? "s" : ""}`;
+    if (entry.shelf_want > 0) return `${entry.shelf_want} want to play`;
+    if (entry.post > 0) return `${entry.post} post${entry.post > 1 ? "s" : ""}`;
+    return `${entry.uniqueUsers} player${entry.uniqueUsers > 1 ? "s" : ""}`;
+  };
+
+  const ChartRow = ({ entry, rank, showRank = true }) => {
+    const isExpanded = expanded === entry.id;
+    const sp = sparklines[entry.id];
+    const isLoadingSp = loadingSparkline[entry.id];
+    const hardcoded = GAMES[entry.id];
+    const icon = hardcoded?.icon || "🎮";
+    const momentum = sp ? (() => {
+      const last = sp[sp.length - 1] || 0;
+      const prev = sp[sp.length - 2] || 0;
+      if (prev === 0) return null;
+      const pct = Math.round(((last - prev) / prev) * 100);
+      return { pct, up: pct >= 0 };
+    })() : null;
+
+    return (
+      <div style={{ borderBottom: `1px solid ${C.border}`, overflow: "hidden" }}>
+        <div onClick={() => handleExpand(entry.id)}
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", cursor: "pointer", transition: "background 0.1s", background: isExpanded ? C.accentGlow : "transparent" }}
+          onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = C.surfaceHover; }}
+          onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = "transparent"; }}
+        >
+          {showRank && (
+            <div style={{ width: 24, textAlign: "center", fontWeight: 800, fontSize: rank <= 3 ? 16 : 13, color: rank === 1 ? C.gold : rank === 2 ? "#c0c0c0" : rank === 3 ? "#cd7f32" : C.textDim, flexShrink: 0 }}>
+              {rank}
+            </div>
+          )}
+          <div style={{ fontSize: 22, flexShrink: 0 }}>{icon}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{entry.name}</div>
+            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{getDominantSignal(entry)} · {entry.uniqueUsers} player{entry.uniqueUsers !== 1 ? "s" : ""}</div>
+          </div>
+          {momentum && (
+            <div style={{ color: momentum.up ? "#22c55e" : "#ef4444", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+              {momentum.up ? "▲" : "▼"} {Math.abs(momentum.pct)}%
+            </div>
+          )}
+          <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
+        </div>
+
+        {isExpanded && (
+          <div style={{ padding: "4px 20px 18px", borderTop: `1px solid ${C.border}`, background: C.accentGlow }}>
+            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
+            {isLoadingSp ? (
+              <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
+            ) : sp ? (
+              <Sparkline points={sp} color={C.accent} />
+            ) : (
+              <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>
+            )}
+            <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
+              {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
+              {entry.comment > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.comment}</div><div style={{ color: C.textDim, fontSize: 10 }}>comments</div></div>}
+              {entry.shelf_playing > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: "#22c55e", fontSize: 16 }}>{entry.shelf_playing}</div><div style={{ color: C.textDim, fontSize: 10 }}>playing</div></div>}
+              {entry.shelf_want > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accentSoft, fontSize: 16 }}>{entry.shelf_want}</div><div style={{ color: C.textDim, fontSize: 10 }}>want to play</div></div>}
+              {entry.review > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 16 }}>{entry.review}</div><div style={{ color: C.textDim, fontSize: 10 }}>reviews</div></div>}
+              <div style={{ marginLeft: "auto", alignSelf: "flex-end" }}>
+                <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); }}
+                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  View Game →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const windowLabel = { now: "Right Now", "7d": "This Week", "30d": "This Month" };
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "60px 12px 80px" : "80px 24px 40px" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontWeight: 800, fontSize: 28, color: C.text, letterSpacing: "-0.5px", marginBottom: 6 }}>The Charts</div>
+        <div style={{ color: C.textMuted, fontSize: 14 }}>What the community is actually playing, posting, and adding to their shelves.</div>
+      </div>
+
+      {/* Time window selector */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
+        {[{ id: "now", label: "Right Now" }, { id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
+          <button key={w.id} onClick={() => { setWindow(w.id); setExpanded(null); }}
+            style={{ background: window === w.id ? C.accentGlow : C.surface, border: `1px solid ${window === w.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "6px 16px", color: window === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: window === w.id ? 700 : 500, cursor: "pointer" }}>
+            {w.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ color: C.textDim, fontSize: 14, textAlign: "center", padding: 60 }}>Loading charts…</div>
+      ) : overall.length === 0 ? (
+        <div style={{ color: C.textDim, fontSize: 14, textAlign: "center", padding: 60, lineHeight: 1.8 }}>
+          No chart data for this window yet.<br />
+          <span style={{ fontSize: 12 }}>Charts fill up as the community posts, plays, and reviews games.</span>
+        </div>
+      ) : (
+        <>
+          {/* Top 10 Overall */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "baseline", gap: 10 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
+              <div style={{ color: C.textDim, fontSize: 12 }}>{windowLabel[window]}</div>
+            </div>
+            {overall.map((entry, i) => (
+              <ChartRow key={entry.id} entry={entry} rank={i + 1} />
+            ))}
+          </div>
+
+          {/* Genre breakdowns */}
+          {Object.entries(byGenre).filter(([, games]) => games.length >= 2).map(([genre, games]) => (
+            <div key={genre} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 20, overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px 10px", borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
+              </div>
+              {games.map((entry, i) => (
+                <ChartRow key={entry.id} entry={entry} rank={i + 1} />
+              ))}
+            </div>
+          ))}
+        </>
       )}
     </div>
   );
@@ -5118,6 +5422,7 @@ export default function GuildLink() {
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "charts" && <ChartsPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
