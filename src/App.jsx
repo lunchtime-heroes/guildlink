@@ -1696,7 +1696,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-51</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-52</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3467,7 +3467,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
-function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab }) {
+function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab, onProfileSaved }) {
   const user = currentUser;
   if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
@@ -3650,7 +3650,14 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       ...(yearNum && yearNum > 1900 && yearNum < new Date().getFullYear() ? { birth_year: yearNum } : {}),
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
-    if (!error) { setEditing(false); window.location.reload(); }
+    if (!error) {
+      setEditing(false);
+      onProfileSaved?.();
+      // Re-check gamertag eligibility after birth year may have changed
+      loadIncomingRequests();
+      loadApprovedConnections();
+      loadGamertags();
+    }
     setSaving(false);
   };
 
@@ -3837,17 +3844,19 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
 
             {/* Add tag form */}
             {addingTag && isAdult && (
-              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-                <div style={{ flex: "0 0 140px" }}>
-                  <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Platform</div>
-                  <select value={gamertagForm.platform} onChange={e => setGamertagForm(f => ({ ...f, platform: e.target.value }))}
-                    style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: gamertagForm.platform ? C.text : C.textDim, fontSize: 13, outline: "none" }}>
-                    <option value="">Select…</option>
+              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8 }}>Platform</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {PLATFORMS.filter(p => !gamertags.find(t => t.platform === p.id)).map(p => (
-                      <option key={p.id} value={p.id}>{p.label}</option>
+                      <button key={p.id} onClick={() => setGamertagForm(f => ({ ...f, platform: p.id }))}
+                        style={{ background: gamertagForm.platform === p.id ? C.accentGlow : C.surface, border: `1px solid ${gamertagForm.platform === p.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "6px 14px", color: gamertagForm.platform === p.id ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        {p.label}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Gamertag</div>
                   <input value={gamertagForm.tag} onChange={e => setGamertagForm(f => ({ ...f, tag: e.target.value }))}
@@ -3862,6 +3871,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                   style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                   Cancel
                 </button>
+                </div>
               </div>
             )}
 
@@ -6090,7 +6100,7 @@ export default function GuildLink() {
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} />)}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
