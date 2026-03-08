@@ -1708,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-42</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-43</span>
       </div>
     </nav>
   );
@@ -2236,7 +2236,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
   );
 }
 
-function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn }) {
+function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab }) {
   const user = currentUser || mockUser;
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
@@ -2630,12 +2630,12 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 3 }}>Currently Playing</div>
-            <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage your shelf →</span>
+            <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage your shelf →</span>
           </div>
           {playingGames.length === 0 ? (
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
               Nothing on your shelf yet.{" "}
-              <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, cursor: "pointer" }}>Add games →</span>
+              <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, cursor: "pointer" }}>Add games →</span>
             </div>
           ) : playingGames.map((g, i) => (
             <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
@@ -3474,9 +3474,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
-function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
+function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab }) {
   const user = currentUser || mockUser;
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState(defaultTab || "posts");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
   const [saving, setSaving] = useState(false);
@@ -5376,6 +5376,7 @@ export default function GuildLink() {
   const [currentGame, setCurrentGame] = useState("elden-ring");
   const [currentNPC, setCurrentNPC] = useState("merv");
   const [currentPlayer, setCurrentPlayer] = useState(null);
+  const [profileDefaultTab, setProfileDefaultTab] = useState("posts");
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -5496,12 +5497,12 @@ export default function GuildLink() {
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "charts" && <ChartsPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
-      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
+      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />)}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <SquadPage isMobile={isMobile} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
