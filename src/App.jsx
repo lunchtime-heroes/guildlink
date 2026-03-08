@@ -1356,7 +1356,151 @@ function SignInPrompt({ onClose, onSignIn, message }) {
 }
 
 
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, notifications, onMarkAllRead }) {
+// ─── POST MODAL ───────────────────────────────────────────────────────────────
+
+function PostModal({ postId, onClose, currentUser }) {
+  const [post, setPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: p } = await supabase
+        .from("posts")
+        .select("*, profiles(username, handle, avatar_initials)")
+        .eq("id", postId)
+        .single();
+      const { data: c } = await supabase
+        .from("comments")
+        .select("*, profiles(username, handle, avatar_initials)")
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true });
+      if (p) setPost(p);
+      if (c) setComments(c);
+      setLoading(false);
+    };
+    load();
+  }, [postId]);
+
+  const submitComment = async () => {
+    if (!commentText.trim() || submitting) return;
+    setSubmitting(true);
+    const { data: { user: au } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from("comments").insert({
+      post_id: postId,
+      user_id: au.id,
+      content: commentText.trim(),
+      reply_to_comment_id: replyTo?.id || null,
+    }).select("*, profiles(username, handle, avatar_initials)").single();
+    if (!error && data) {
+      setComments(prev => [...prev, data]);
+      setCommentText("");
+      setReplyTo(null);
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, width: "100%", maxWidth: 580, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Post</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>Loading…</div>
+          ) : !post ? (
+            <div style={{ padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>Post not found.</div>
+          ) : (
+            <>
+              {/* The post */}
+              <div style={{ padding: 20, borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                  <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={38} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{post.profiles?.username || "Unknown"}</div>
+                    <div style={{ color: C.textDim, fontSize: 12 }}>{post.profiles?.handle} · {timeAgo(post.created_at)}</div>
+                  </div>
+                </div>
+                <p style={{ color: C.text, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{post.content}</p>
+                <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>♥ {post.likes || 0} · 💬 {comments.length}</div>
+              </div>
+
+              {/* Comments */}
+              <div style={{ padding: "14px 20px" }}>
+                {comments.length === 0 ? (
+                  <div style={{ color: C.textDim, fontSize: 13, marginBottom: 16 }}>No comments yet. Be first.</div>
+                ) : comments.map((c, i) => {
+                  const npcData = c.npc_id ? NPCS[c.npc_id] : null;
+                  const isNPC = !!npcData;
+                  const name = npcData?.name || c.profiles?.username || "Unknown";
+                  const avatar = npcData?.avatar || c.profiles?.avatar_initials || "?";
+                  const parentComment = c.reply_to_comment_id ? comments.find(x => x.id === c.reply_to_comment_id) : null;
+                  const parentName = parentComment ? (NPCS[parentComment.npc_id]?.name || parentComment.profiles?.username || "someone") : null;
+                  return (
+                    <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                      <Avatar initials={avatar.slice(0,2).toUpperCase()} size={30} isNPC={isNPC} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ background: C.surface, border: `1px solid ${isNPC ? C.goldBorder : C.border}`, borderRadius: 10, padding: "9px 13px" }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                            <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name}</span>
+                            {isNPC && <NPCBadge />}
+                            <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
+                          </div>
+                          {parentName && (
+                            <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>↩ <span style={{ color: C.accentSoft }}>@{parentName}</span></div>
+                          )}
+                          <p style={{ color: C.text, fontSize: 13, lineHeight: 1.5, margin: 0 }}>{c.content}</p>
+                        </div>
+                        {currentUser && (
+                          <button onClick={() => setReplyTo({ id: c.id, name })}
+                            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px", marginTop: 2 }}>↩ Reply</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Comment input */}
+        {currentUser && (
+          <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+            {replyTo && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 10px" }}>
+                <span style={{ color: C.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyTo.name}</strong></span>
+                <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto" }}>×</button>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10 }}>
+              <Avatar initials={currentUser.avatar || "GL"} size={32} />
+              <input value={commentText} onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && submitComment()}
+                placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
+                style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+              />
+              <button onClick={submitComment} disabled={submitting || !commentText.trim()}
+                style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 16px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                {submitting ? "…" : "Reply"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── NAV BAR ──────────────────────────────────────────────────────────────────
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, notifications, onMarkAllRead, onClearAll, onOpenPost }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
   const isAdmin = currentUser?.is_admin;
@@ -1488,25 +1632,41 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden" }}>
                   <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
-                    <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      {notifications?.length > 0 && (
+                        <button onClick={() => { onClearAll?.(); }}
+                          style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: 0 }}>
+                          Clear all
+                        </button>
+                      )}
+                      <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 0 }}>×</button>
+                    </div>
                   </div>
-                  <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                  <div style={{ maxHeight: 420, overflowY: "auto" }}>
                     {(!notifications || notifications.length === 0) ? (
                       <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
                     ) : notifications.map((n, i) => {
                       const actor = n.actor;
-                      const label = notifLabel(n);
                       const isUnread = !n.read;
+                      const hasPost = !!n.post_id;
                       return (
-                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? `1px solid ${C.border}` : "none", background: isUnread ? `${C.accent}0a` : "transparent", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <div key={n.id}
+                          onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
+                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? `1px solid ${C.border}` : "none", background: isUnread ? `${C.accent}0a` : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default", transition: "background 0.1s" }}
+                          onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = isUnread ? `${C.accent}0a` : "transparent"; }}
+                        >
                           <Avatar initials={(actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase()} size={30} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ color: C.text, fontSize: 13, lineHeight: 1.5 }}>
-                              <strong>{actor?.username || "Someone"}</strong> {label}
+                              <strong>{actor?.username || "Someone"}</strong> {notifLabel(n)}
                             </div>
                             <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{timeAgo(n.created_at)}</div>
                           </div>
-                          {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, flexShrink: 0, marginTop: 4 }} />}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                            {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent }} />}
+                            {hasPost && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
+                          </div>
                         </div>
                       );
                     })}
@@ -1520,7 +1680,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-30</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-31</span>
       </div>
     </nav>
   );
@@ -4646,6 +4806,13 @@ export default function GuildLink() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const clearAllNotifications = async (userId) => {
+    await supabase.from("notifications").delete().eq("user_id", userId);
+    setNotifications([]);
+  };
+
+  const [postModal, setPostModal] = useState(null); // post_id to show in modal
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -4711,7 +4878,8 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} />
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} />
+      {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
