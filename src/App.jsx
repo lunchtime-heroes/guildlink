@@ -1442,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-21</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-22</span>
       </div>
     </nav>
   );
@@ -1642,8 +1642,9 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [livePosts, setLivePosts] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [following, setFollowing] = useState([]);
-  const [feedTab, setFeedTab] = useState("forYou"); // "forYou" | "following"
+  const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
+  const [playingGames, setPlayingGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
@@ -1706,8 +1707,22 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
   useEffect(() => {
     loadPosts();
-    if (!isGuest) loadFollowing();
+    if (!isGuest) {
+      loadFollowing();
+      loadPlayingGames();
+    }
   }, []);
+
+  const loadPlayingGames = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("user_games")
+      .select("games(id, name, genre)")
+      .eq("user_id", user.id)
+      .eq("status", "playing");
+    if (data) setPlayingGames(data.map(d => d.games).filter(Boolean));
+  };
 
   const loadFollowing = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1924,26 +1939,35 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         {/* The Charts */}
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
 
-        {/* Data promise */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔒 Our Promise</div>
-          <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Your personal data is never sold. Ads are based on games you play — nothing else.</div>
-        </div>
-
-        {/* Your games */}
+        {/* Currently Playing */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
-          {user.games.map(g => {
-            const gData = Object.values(GAMES).find(x => x.name === g);
-            return (
-              <div key={g} onClick={() => { if (gData) { setCurrentGame(gData.id); setActivePage("game"); } }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", cursor: gData ? "pointer" : "default", borderBottom: `1px solid ${C.border}` }}>
-                <span style={{ fontSize: 15 }}>{gData?.icon || "🎮"}</span>
-                <span style={{ color: C.textMuted, fontSize: 13 }}>{g}</span>
-                {gData && <span style={{ marginLeft: "auto", color: C.textDim, fontSize: 11 }}>→</span>}
-              </div>
-            );
-          })}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>🎮 Currently Playing</div>
+            <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage →</span>
+          </div>
+          {playingGames.length === 0 ? (
+            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
+              No games on your shelf yet.{" "}
+              <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, cursor: "pointer" }}>Add some →</span>
+            </div>
+          ) : (
+            playingGames.map(g => {
+              const ICONS = { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽' };
+              const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name?.toLowerCase());
+              const icon = hard?.icon || ICONS[g.genre] || '🎮';
+              return (
+                <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                >
+                  <span style={{ fontSize: 16 }}>{icon}</span>
+                  <span style={{ color: C.textMuted, fontSize: 13, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+                  <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
       )}
@@ -2102,6 +2126,11 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       {/* Right sidebar — desktop only */}
       {!isMobile && (
       <div style={{ width: 210, flexShrink: 0 }}>
+
+        {/* The Charts */}
+        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
+
+        {/* Connect */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Connect</div>
           {[
@@ -2153,9 +2182,9 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
                 <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
                 <div style={{ color: C.textDim, fontSize: 10 }}>{(npc.followers / 1000).toFixed(1)}k followers</div>
               </div>
+              <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
           ))}
-          <button onClick={() => setActivePage("npcs")} style={{ width: "100%", background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 12, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>View All</button>
         </div>
       </div>
       )}
