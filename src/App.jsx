@@ -1471,7 +1471,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-28</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-29</span>
       </div>
     </nav>
   );
@@ -3667,10 +3667,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
 function NPCStudioPage({ isMobile, currentUser }) {
   const [selectedNPC, setSelectedNPC] = useState(null);
-  const [mode, setMode] = useState("respond"); // "respond" | "post"
+  const [mode, setMode] = useState("respond");
   const [candidates, setCandidates] = useState([]);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [expandedComments, setExpandedComments] = useState({}); // postId -> comments[]
+  const [loadingComments, setLoadingComments] = useState({});
   const [composeText, setComposeText] = useState("");
   const [scheduleMode, setScheduleMode] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
@@ -3681,8 +3683,24 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
   const npcList = Object.values(NPCS);
 
-  // Load candidate posts for Respond mode
-  const loadCandidates = async () => {
+  const loadPostComments = async (postId) => {
+    setLoadingComments(prev => ({ ...prev, [postId]: true }));
+    const { data } = await supabase
+      .from("comments")
+      .select("*, profiles(username, handle, avatar_initials)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
+    setExpandedComments(prev => ({ ...prev, [postId]: data || [] }));
+    setLoadingComments(prev => ({ ...prev, [postId]: false }));
+  };
+
+  const togglePostComments = (postId) => {
+    if (expandedComments[postId] !== undefined) {
+      setExpandedComments(prev => { const n = { ...prev }; delete n[postId]; return n; });
+    } else {
+      loadPostComments(postId);
+    }
+  };
     setLoadingCandidates(true);
     // Fetch recent posts with author info, likes, comments
     const { data: posts } = await supabase
@@ -3703,12 +3721,12 @@ function NPCStudioPage({ isMobile, currentUser }) {
     const commentCounts = {};
     (comments || []).forEach(c => { commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1; });
 
-    // Fetch already-replied post IDs by any NPC
+    // Fetch NPC-replied post IDs — keep in list but score lower
     const { data: npcReplies } = await supabase
       .from("comments")
       .select("post_id")
       .not("npc_id", "is", null);
-    const repliedIds = new Set((npcReplies || []).map(r => r.post_id));
+    const npcRepliedIds = new Set((npcReplies || []).map(r => r.post_id));
 
     // Fetch posts that have replies (someone replied to someone) — engagement signal
     const { data: replyComments } = await supabase
@@ -3720,19 +3738,21 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
     const now = Date.now();
     const scored = posts
-      .filter(p => !repliedIds.has(p.id))
       .map(p => {
         const profile = p.profiles;
         const ageHours = (now - new Date(p.created_at).getTime()) / 3600000;
         const recencyScore = Math.max(0, 1 - ageHours / 72);
         const engagementScore = Math.min(1, ((p.likes || 0) + (commentCounts[p.id] || 0) * 1.5) / 50);
-        const threadScore = Math.min(1, (replyThreadCounts[p.id] || 0) / 5); // active reply thread bonus
+        const threadScore = Math.min(1, (replyThreadCounts[p.id] || 0) / 5);
         const accountAgeDays = profile?.created_at
           ? (now - new Date(profile.created_at).getTime()) / 86400000
           : 999;
         const newUserBonus = accountAgeDays < 7 ? 1 : 0;
-        const score = newUserBonus * 0.35 + engagementScore * 0.30 + threadScore * 0.20 + recencyScore * 0.15;
-        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, hasThread: (replyThreadCounts[p.id] || 0) > 0, score };
+        const npcReplied = npcRepliedIds.has(p.id);
+        // Replied posts score lower unless they have fresh thread activity
+        const baseScore = newUserBonus * 0.35 + engagementScore * 0.30 + threadScore * 0.20 + recencyScore * 0.15;
+        const score = npcReplied ? baseScore * 0.4 + threadScore * 0.3 : baseScore;
+        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, hasThread: (replyThreadCounts[p.id] || 0) > 0, npcReplied, score };
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
@@ -3758,7 +3778,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const handleSend = async () => {
     if (!composeText.trim() || !selectedNPC) return;
     setSending(true);
-    const npc = NPCS[selectedNPC];
+    const { data: { user: writerUser } } = await supabase.auth.getUser();
 
     if (scheduleMode && scheduleDate && scheduleTime) {
       const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
@@ -3771,23 +3791,33 @@ function NPCStudioPage({ isMobile, currentUser }) {
       });
       await loadQueue();
     } else {
-      // Post now
-      const postData = {
-        content: composeText.trim(),
-        npc_id: selectedNPC,
-        user_id: null,
-        game_tag: null,
-      };
       if (mode === "respond" && selectedPost) {
-        // Insert as comment on the selected post
-        await supabase.from("comments").insert({
+        // Insert as comment — use writer's user_id so RLS passes, npc_id marks it as NPC
+        const { error } = await supabase.from("comments").insert({
           post_id: selectedPost.id,
           content: composeText.trim(),
           npc_id: selectedNPC,
-          user_id: null,
+          user_id: writerUser.id,
         });
+        if (!error) {
+          // Update comment_count on the post
+          const newCount = (selectedPost.commentCount || 0) + 1;
+          await supabase.from("posts")
+            .update({ comment_count: newCount })
+            .eq("id", selectedPost.id);
+          // Mark this candidate as NPC-replied so it drops off the list
+          setCandidates(prev => prev.filter(p => p.id !== selectedPost.id));
+          // Refresh comments if expanded
+          if (expandedComments[selectedPost.id] !== undefined) {
+            loadPostComments(selectedPost.id);
+          }
+        }
       } else {
-        await supabase.from("posts").insert(postData);
+        await supabase.from("posts").insert({
+          content: composeText.trim(),
+          npc_id: selectedNPC,
+          user_id: writerUser.id,
+        });
       }
     }
 
@@ -3796,7 +3826,6 @@ function NPCStudioPage({ isMobile, currentUser }) {
     setSending(false);
     setSent(true);
     setTimeout(() => setSent(false), 2500);
-    if (mode === "respond") loadCandidates();
   };
 
   const deleteScheduled = async (id) => {
@@ -3954,28 +3983,96 @@ function NPCStudioPage({ isMobile, currentUser }) {
               ) : (
                 candidates.map(post => {
                   const isSelected = selectedPost?.id === post.id;
+                  const postComments = expandedComments[post.id];
+                  const commentsExpanded = postComments !== undefined;
+                  const isLoading = loadingComments[post.id];
+
+                  // Derive status from comment data
+                  const npcComments = (postComments || []).filter(c => c.npc_id);
+                  const hasNpcReply = npcComments.length > 0;
+                  const lastComment = postComments?.length > 0 ? postComments[postComments.length - 1] : null;
+                  const lastIsUser = lastComment && !lastComment.npc_id;
+                  const status = hasNpcReply
+                    ? (lastIsUser ? "needs_reply" : "replied")
+                    : "fresh";
+
+                  const statusStyles = {
+                    fresh:       { bg: `${C2.accent}18`, border: `${C2.accentDim}`, label: "Fresh", color: C2.accentSoft },
+                    replied:     { bg: `#22c55e18`,      border: `#22c55e44`,       label: "Replied",      color: "#22c55e" },
+                    needs_reply: { bg: `#f59e0b18`,      border: `#f59e0b44`,       label: "Needs Reply",  color: C2.gold },
+                  };
+                  const st = statusStyles[status];
+
                   return (
-                    <div key={post.id} style={{ background: isSelected ? C2.accentGlow : C2.surface, border: `1px solid ${isSelected ? C2.accentDim : C2.border}`, borderRadius: 14, padding: 16, marginBottom: 12, transition: "all 0.15s" }}>
-                      {/* Post header */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={30} />
-                          <div>
-                            <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{post.profiles?.username || "Unknown"}</span>
-                            <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{post.profiles?.handle}</span>
+                    <div key={post.id} style={{ background: isSelected ? C2.accentGlow : C2.surface, border: `1px solid ${isSelected ? C2.accentDim : C2.border}`, borderRadius: 14, marginBottom: 12, overflow: "hidden", transition: "all 0.15s" }}>
+                      <div style={{ padding: 16 }}>
+                        {/* Post header with status */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={30} />
+                            <div>
+                              <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{post.profiles?.username || "Unknown"}</span>
+                              <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{post.profiles?.handle}</span>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                            {/* Status pill */}
+                            <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
+                            {post.newUser && <span style={{ background: `${C2.accent}22`, border: `1px solid ${C2.accentDim}`, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
+                            {post.hasThread && <span style={{ background: `#f59e0b22`, border: `1px solid #f59e0b44`, borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          {post.newUser && <span style={{ background: `${C2.accent}22`, border: `1px solid ${C2.accentDim}`, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW</span>}
-                          {post.hasThread && <span style={{ background: `#f59e0b22`, border: `1px solid #f59e0b44`, borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
-                          <span style={{ color: C2.textDim, fontSize: 11 }}>♥ {post.likes || 0} · 💬 {post.commentCount}</span>
+
+                        <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>{post.content}</div>
+
+                        {/* Action row */}
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <span style={{ color: C2.textDim, fontSize: 11 }}>♥ {post.likes || 0}</span>
+                          <button onClick={() => togglePostComments(post.id)}
+                            style={{ background: commentsExpanded ? C2.surfaceRaised : "none", border: `1px solid ${commentsExpanded ? C2.border : "transparent"}`, borderRadius: 6, padding: "3px 10px", color: commentsExpanded ? C2.text : C2.textDim, fontSize: 11, cursor: "pointer" }}>
+                            💬 {post.commentCount} {isLoading ? "…" : commentsExpanded ? "▲" : "▼"}
+                          </button>
+                          <div style={{ marginLeft: "auto" }}>
+                            {!isSelected && (
+                              <button onClick={() => { setSelectedPost(post); setComposeText(""); if (!commentsExpanded) loadPostComments(post.id); }}
+                                style={{ background: C2.accentGlow, border: `1px solid ${C2.accentDim}`, borderRadius: 8, padding: "5px 14px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                                Reply as {npc.name.split(" ")[0]}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>{post.content}</div>
+
+                      {/* Expanded comments */}
+                      {commentsExpanded && (
+                        <div style={{ background: C2.surfaceHover, borderTop: `1px solid ${C2.border}`, padding: "12px 16px" }}>
+                          {postComments.length === 0 ? (
+                            <div style={{ color: C2.textDim, fontSize: 12 }}>No comments yet.</div>
+                          ) : postComments.map((c, i) => {
+                            const npcData = c.npc_id ? NPCS[c.npc_id] : null;
+                            const isNPC = !!npcData;
+                            const name = npcData?.name || c.profiles?.username || "Unknown";
+                            const avatar = npcData?.avatar || c.profiles?.avatar_initials || "?";
+                            return (
+                              <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < postComments.length - 1 ? 10 : 0 }}>
+                                <Avatar initials={avatar.slice(0,2).toUpperCase()} size={26} isNPC={isNPC} />
+                                <div style={{ flex: 1, background: C2.surfaceRaised, border: `1px solid ${isNPC ? C2.goldBorder : C2.border}`, borderRadius: 8, padding: "7px 12px" }}>
+                                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
+                                    <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
+                                    {isNPC && <NPCBadge />}
+                                    <span style={{ color: C2.textDim, fontSize: 10, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
+                                  </div>
+                                  <p style={{ color: C2.text, fontSize: 12, lineHeight: 1.5, margin: 0 }}>{c.content}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {/* Inline composer when selected */}
-                      {isSelected ? (
-                        <div style={{ borderTop: `1px solid ${C2.accentDim}`, paddingTop: 12 }}>
+                      {isSelected && (
+                        <div style={{ borderTop: `1px solid ${C2.accentDim}`, padding: "12px 16px", background: C2.accentGlow }}>
                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                             <Avatar initials={npc.avatar} size={28} isNPC={true} />
                             <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
@@ -3994,11 +4091,6 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <button onClick={() => { setSelectedPost(post); setComposeText(""); }}
-                          style={{ background: C2.accentGlow, border: `1px solid ${C2.accentDim}`, borderRadius: 8, padding: "6px 14px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                          Reply as {npc.name.split(" ")[0]}
-                        </button>
                       )}
                     </div>
                   );
