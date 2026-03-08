@@ -1280,6 +1280,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
 
 
 function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn }) {
+  const isAdmin = currentUser?.is_admin;
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
@@ -1292,6 +1293,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "Squad" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
+    ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
   ];
 
   if (isMobile) {
@@ -1374,13 +1376,13 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
         {desktopItems.map(item => (
           <button key={item.id} onClick={() => setActivePage(item.id)} style={{
-            background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
-            border: item.gold ? activePage === item.id ? `1px solid ${C.goldBorder}` : "1px solid transparent" : activePage === item.id ? `1px solid ${C.accentDim}` : "1px solid transparent",
+            background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : item.admin ? activePage === item.id ? "#ef444420" : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
+            border: item.gold ? activePage === item.id ? `1px solid ${C.goldBorder}` : "1px solid transparent" : item.admin ? activePage === item.id ? "1px solid #ef444440" : "1px solid transparent" : activePage === item.id ? `1px solid ${C.accentDim}` : "1px solid transparent",
             borderRadius: 8, padding: "6px 14px",
-            color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : activePage === item.id ? C.accentSoft : C.textMuted,
+            color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : item.admin ? "#ef4444" : activePage === item.id ? C.accentSoft : C.textMuted,
             cursor: "pointer", fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5,
-          }}><span>{item.icon}</span>{item.label}</button>
+          }}><span>{item.admin ? "⚡" : item.icon}</span>{item.label}</button>
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
@@ -1400,7 +1402,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-16</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-17</span>
       </div>
     </nav>
   );
@@ -3112,6 +3114,257 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   );
 }
 
+// ─── ADMIN PAGE ───────────────────────────────────────────────────────────────
+
+const ADMIN_USER_IDS = []; // Populated at runtime from session
+
+function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
+  const [tab, setTab] = useState("overview");
+  const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [chartEvents, setChartEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Check if this user has is_admin flag in profiles
+      const { data: profile } = await supabase.from("profiles").select("is_admin, username").eq("id", user.id).single();
+      if (profile?.is_admin) {
+        setAuthorized(true);
+        loadAll();
+      } else {
+        setAuthorized(false);
+        setLoading(false);
+      }
+    };
+    check();
+  }, []);
+
+  const loadAll = async () => {
+    setLoading(true);
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes] = await Promise.all([
+      supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
+      supabase.from("posts").select("*, profiles(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
+      supabase.from("reviews").select("*, profiles(username), games(name)").order("created_at", { ascending: false }).limit(20),
+      supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
+      supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
+      supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
+    ]);
+
+    if (usersRes.data) setUsers(usersRes.data);
+    if (postsRes.data) setPosts(postsRes.data);
+    if (reviewsRes.data) setReviews(reviewsRes.data);
+
+    // Aggregate chart events by game
+    if (chartRes.data) {
+      const byGame = {};
+      chartRes.data.forEach(e => {
+        const name = e.games?.name || e.game_id;
+        if (!byGame[name]) byGame[name] = { name, total: 0, types: {} };
+        byGame[name].total++;
+        byGame[name].types[e.event_type] = (byGame[name].types[e.event_type] || 0) + 1;
+      });
+      setChartEvents(Object.values(byGame).sort((a, b) => b.total - a.total).slice(0, 15));
+    }
+
+    const newUsersWeek = usersRes.data?.filter(u => new Date(u.created_at) > new Date(oneWeekAgo)).length || 0;
+    setStats({
+      totalUsers: usersRes.data?.length || 0,
+      newUsersWeek,
+      postsWeek: weekPostsRes.count || 0,
+      postsToday: dayPostsRes.count || 0,
+      totalReviews: reviewsRes.data?.length || 0,
+    });
+    setLoading(false);
+  };
+
+  if (loading) return <div style={{ maxWidth: 900, margin: "0 auto", padding: "100px 20px", textAlign: "center", color: C.textMuted }}>Loading admin data...</div>;
+
+  if (!authorized) return (
+    <div style={{ maxWidth: 500, margin: "100px auto", textAlign: "center", padding: 40 }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+      <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 8 }}>Access Denied</div>
+      <div style={{ color: C.textMuted, fontSize: 14, marginBottom: 24 }}>You need admin privileges to view this page.</div>
+      <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
+    </div>
+  );
+
+  const tabs = [
+    { id: "overview", label: "📊 Overview" },
+    { id: "users", label: "👤 Users" },
+    { id: "posts", label: "📝 Posts" },
+    { id: "charts", label: "🏆 Chart Activity" },
+    { id: "reviews", label: "⭐ Reviews" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text }}>⚡ Admin Dashboard</h2>
+          <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink Activity Monitor</div>
+        </div>
+        <button onClick={loadAll} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 24, overflowX: "auto", paddingBottom: 4 }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ background: tab === t.id ? C.accentGlow : C.surface, border: `1px solid ${tab === t.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 14px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* Overview */}
+      {tab === "overview" && stats && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)", gap: 12, marginBottom: 28 }}>
+            {[
+              { label: "Total Users", value: stats.totalUsers, color: C.accent, icon: "👤" },
+              { label: "New This Week", value: stats.newUsersWeek, color: C.online, icon: "🆕" },
+              { label: "Posts This Week", value: stats.postsWeek, color: C.accentSoft, icon: "📝" },
+              { label: "Posts Today", value: stats.postsToday, color: C.gold, icon: "🔥" },
+              { label: "Reviews", value: stats.totalReviews, color: "#a855f7", icon: "⭐" },
+            ].map(s => (
+              <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+                <div style={{ fontWeight: 800, fontSize: 26, color: s.color, marginBottom: 4 }}>{s.value}</div>
+                <div style={{ color: C.textDim, fontSize: 11 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Recent signups preview */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Recent Signups</div>
+            {users.slice(0, 5).map(u => (
+              <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
+                <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={32} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{u.username || "—"} <span style={{ color: C.textDim, fontWeight: 400 }}>{u.handle}</span></div>
+                  <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                </div>
+                {u.is_founding && <Badge small color={C.gold}>⚔️ Founding</Badge>}
+                {u.is_admin && <Badge small color={C.accent}>Admin</Badge>}
+              </div>
+            ))}
+            <button onClick={() => setTab("users")} style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, cursor: "pointer", marginTop: 10, padding: 0 }}>View all users →</button>
+          </div>
+        </div>
+      )}
+
+      {/* Users tab */}
+      {tab === "users" && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+            {users.length} users (most recent first)
+          </div>
+          {users.map((u, i) => (
+            <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: i < users.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <div style={{ color: C.textDim, fontSize: 12, width: 24, textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
+              <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={34} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{u.username || "—"} <span style={{ color: C.textDim, fontWeight: 400, fontSize: 12 }}>{u.handle}</span></div>
+                <div style={{ color: C.textDim, fontSize: 11 }}>Joined {new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {u.is_founding && <Badge small color={C.gold}>⚔️</Badge>}
+                {u.is_admin && <Badge small color={C.accent}>Admin</Badge>}
+              </div>
+              <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>→</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Posts tab */}
+      {tab === "posts" && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+            Last 30 posts
+          </div>
+          {posts.map((p, i) => {
+            const author = p.profiles?.username || p.npcs?.name || "Unknown";
+            const isNPC = !!p.npc_id;
+            return (
+              <div key={p.id} style={{ padding: "12px 20px", borderBottom: i < posts.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ color: isNPC ? C.gold : C.accent, fontSize: 12, fontWeight: 600 }}>{author}</span>
+                  {isNPC && <Badge small color={C.gold}>NPC</Badge>}
+                  <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(p.created_at)}</span>
+                  <span style={{ color: C.red, fontSize: 12 }}>♥ {p.likes || 0}</span>
+                </div>
+                <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{p.content}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Chart Activity tab */}
+      {tab === "charts" && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+            Chart events this week — top 15 games
+          </div>
+          {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet this week.</div>}
+          {chartEvents.map((g, i) => (
+            <div key={g.name} style={{ padding: "12px 20px", borderBottom: i < chartEvents.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <span style={{ color: C.textDim, fontSize: 12, width: 20 }}>#{i + 1}</span>
+                <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1 }}>{g.name}</span>
+                <span style={{ color: C.accent, fontSize: 13, fontWeight: 700 }}>{g.total} events</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingLeft: 30 }}>
+                {Object.entries(g.types).map(([type, count]) => (
+                  <span key={type} style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reviews tab */}
+      {tab === "reviews" && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+            Last 20 reviews
+          </div>
+          {reviews.map((r, i) => (
+            <div key={r.id} style={{ padding: "12px 20px", borderBottom: i < reviews.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                <span style={{ color: C.accent, fontSize: 12, fontWeight: 600 }}>{r.profiles?.username || "—"}</span>
+                <span style={{ color: C.textDim, fontSize: 12 }}>reviewed</span>
+                <span style={{ color: C.text, fontSize: 12, fontWeight: 600 }}>{r.games?.name || "—"}</span>
+                <span style={{ color: C.gold, fontSize: 12, marginLeft: "auto" }}>{"★".repeat(r.rating || 0)}</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(r.created_at)}</span>
+              </div>
+              {r.headline && <div style={{ color: C.textMuted, fontSize: 13, fontStyle: "italic" }}>"{r.headline}"</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── SQUAD PAGE ───────────────────────────────────────────────────────────────
 
 function SquadPage({ isMobile }) {
@@ -3553,6 +3806,7 @@ export default function GuildLink() {
     status: "online",
     isFounding: profile.is_founding || false,
     activeRing: profile.active_ring || "none",
+    is_admin: profile.is_admin || false,
   } : null;
 
   return (
@@ -3578,6 +3832,7 @@ export default function GuildLink() {
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
       <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} />
+      {activePage === "admin" && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
