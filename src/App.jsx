@@ -3701,6 +3701,8 @@ function NPCStudioPage({ isMobile, currentUser }) {
       loadPostComments(postId);
     }
   };
+
+  const loadCandidates = async () => {
     setLoadingCandidates(true);
     // Fetch recent posts with author info, likes, comments
     const { data: posts } = await supabase
