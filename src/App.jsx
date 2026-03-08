@@ -1690,7 +1690,14 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-48</span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-49</span>
+          <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
+            feedback
+          </a>
+        </div>
       </div>
     </nav>
   );
