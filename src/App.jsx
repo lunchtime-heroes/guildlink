@@ -69,6 +69,16 @@ function timeAgo(timestamp) {
   return new Date(timestamp).toLocaleDateString();
 }
 
+function notifLabel(n) {
+  switch (n.type) {
+    case "like":    return "liked your post";
+    case "comment": return "commented on your post";
+    case "reply":   return "replied to your comment";
+    case "follow":  return "started following you";
+    default:        return "interacted with you";
+  }
+}
+
 function useWindowSize() {
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
   useEffect(() => {
@@ -1346,7 +1356,9 @@ function SignInPrompt({ onClose, onSignIn, message }) {
 }
 
 
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn }) {
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, notifications, onMarkAllRead }) {
+  const [showNotifs, setShowNotifs] = useState(false);
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
   const isAdmin = currentUser?.is_admin;
   const isWriter = currentUser?.is_admin || currentUser?.is_writer;
   const mobileItems = [
@@ -1462,16 +1474,53 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         ) : (
           <>
-            <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px 6px" }}>
-              🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
-            </button>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => { setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
+                style={{ background: showNotifs ? C.accentGlow : "transparent", border: `1px solid ${showNotifs ? C.accentDim : "transparent"}`, borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "4px 8px", display: "flex", alignItems: "center" }}>
+                🔔
+                {unreadCount > 0 && (
+                  <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifs && (
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden" }}>
+                  <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
+                    <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+                  </div>
+                  <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                    {(!notifications || notifications.length === 0) ? (
+                      <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
+                    ) : notifications.map((n, i) => {
+                      const actor = n.actor;
+                      const label = notifLabel(n);
+                      const isUnread = !n.read;
+                      return (
+                        <div key={n.id} style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? `1px solid ${C.border}` : "none", background: isUnread ? `${C.accent}0a` : "transparent", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <Avatar initials={(actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase()} size={30} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ color: C.text, fontSize: 13, lineHeight: 1.5 }}>
+                              <strong>{actor?.username || "Someone"}</strong> {label}
+                            </div>
+                            <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{timeAgo(n.created_at)}</div>
+                          </div>
+                          {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, flexShrink: 0, marginTop: 4 }} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
               <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
             </div>
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-29</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-30</span>
       </div>
     </nav>
   );
@@ -4557,6 +4606,7 @@ export default function GuildLink() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [showAuth, setShowAuth] = useState(false);
   const [signInPromptMsg, setSignInPromptMsg] = useState(null);
   const width = useWindowSize();
@@ -4578,12 +4628,29 @@ export default function GuildLink() {
   const fetchProfile = async (userId) => {
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
     if (data) setProfile(data);
+    fetchNotifications(userId);
+  };
+
+  const fetchNotifications = async (userId) => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("*, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (data) setNotifications(data);
+  };
+
+  const markAllRead = async (userId) => {
+    await supabase.from("notifications").update({ read: true }).eq("user_id", userId).eq("read", false);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
     setProfile(null);
+    setNotifications([]);
   };
 
   const openSignIn = (msg) => {
@@ -4644,7 +4711,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} />
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} />
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
