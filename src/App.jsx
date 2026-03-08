@@ -3636,6 +3636,8 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
     }
     setFollowLoading(false);
   };
+
+  const SHELF_COLUMNS = [
     { id: "want_to_play", label: "Want to Play", color: C.accent },
     { id: "playing", label: "Playing Now", color: C.green },
     { id: "have_played", label: "Have Played", color: C.gold },
