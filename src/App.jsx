@@ -1442,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-24</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-25</span>
       </div>
     </nav>
   );
@@ -1641,7 +1641,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
-  const [following, setFollowing] = useState([]);
+  const [following, setFollowing] = useState([]); // combined users + NPCs
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
@@ -1776,10 +1776,19 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
     if (!user) return;
     const { data } = await supabase
       .from("follows")
-      .select("followed_user_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials)")
-      .eq("follower_id", user.id)
-      .not("followed_user_id", "is", null);
-    if (data) setFollowing(data.map(f => f.profiles).filter(Boolean));
+      .select("followed_user_id, followed_npc_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials)")
+      .eq("follower_id", user.id);
+    if (!data) return;
+    const users = data
+      .filter(f => f.followed_user_id && f.profiles)
+      .map(f => ({ ...f.profiles, type: "user" }));
+    const npcFollows = data.filter(f => f.followed_npc_id);
+    const npcs = npcFollows.map(f => {
+      const npc = NPCS[f.followed_npc_id] || Object.values(NPCS).find(n => n.id === f.followed_npc_id);
+      if (!npc) return null;
+      return { id: f.followed_npc_id, username: npc.name, avatar_initials: npc.avatar, type: "npc" };
+    }).filter(Boolean);
+    setFollowing([...users, ...npcs]);
   };
 
   const loadFollowingPosts = async () => {
@@ -1957,17 +1966,28 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
                 <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Following</div>
                 {following.length === 0 ? (
-                  <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Follow players to see them here.</div>
+                  <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Follow players and NPCs to see them here.</div>
                 ) : (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {following.slice(0, 12).map(p => (
-                      <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
-                        title={p.username}
-                        style={{ cursor: "pointer", opacity: 0.9 }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                        onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}
+                      <div key={p.id}
+                        title={`${p.username} — click to unfollow`}
+                        onClick={async () => {
+                          const { data: { user: au } } = await supabase.auth.getUser();
+                          if (!au) return;
+                          if (p.type === "npc") {
+                            await supabase.from("follows").delete().eq("follower_id", au.id).eq("followed_npc_id", p.id);
+                          } else {
+                            await supabase.from("follows").delete().eq("follower_id", au.id).eq("followed_user_id", p.id);
+                          }
+                          setFollowing(prev => prev.filter(x => x.id !== p.id));
+                        }}
+                        style={{ cursor: "pointer", opacity: 0.9, position: "relative" }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.querySelector(".unfollow-x").style.display = "flex"; }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = "0.9"; e.currentTarget.querySelector(".unfollow-x").style.display = "none"; }}
                       >
-                        <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={28} />
+                        <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={28} isNPC={p.type === "npc"} />
+                        <div className="unfollow-x" style={{ display: "none", position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", fontWeight: 700 }}>×</div>
                       </div>
                     ))}
                     {following.length > 12 && (
