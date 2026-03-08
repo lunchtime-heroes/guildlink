@@ -474,16 +474,6 @@ const GAMES = {
   },
 };
 
-const BROWSE_GAMES = [
-  { id: "elden-ring", name: "Elden Ring", icon: "🗡️", followers: 48200, genre: "Action RPG", hot: true },
-  { id: "hollow-knight", name: "Hollow Knight", icon: "🦋", followers: 31400, genre: "Metroidvania", hot: true },
-  { id: "valorant", name: "Valorant", icon: "🎯", followers: 92100, genre: "FPS", hot: false },
-  { id: "stardew-valley", name: "Stardew Valley", icon: "🌱", followers: 28900, genre: "Simulation", hot: false },
-  { id: "overwatch", name: "Overwatch 2", icon: "🦸", followers: 61200, genre: "Hero Shooter", hot: false },
-  { id: "dark-souls", name: "Dark Souls III", icon: "🔥", followers: 39400, genre: "Souls-like", hot: false },
-  { id: "animal-crossing", name: "Animal Crossing", icon: "🏝️", followers: 44800, genre: "Life Sim", hot: false },
-  { id: "celeste", name: "Celeste", icon: "🏔️", followers: 18200, genre: "Platformer", hot: false },
-];
 
 const mockUser = {
   name: "Alex Chen", handle: "@axelstrike", avatar: "AC",
@@ -1718,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-41</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-42</span>
       </div>
     </nav>
   );
@@ -2258,6 +2248,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
+  const [followedGames, setFollowedGames] = useState([]);
   const [suggestedGamers, setSuggestedGamers] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
@@ -2324,6 +2315,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
     if (!isGuest) {
       loadFollowing();
       loadPlayingGames();
+      loadFollowedGames();
       loadSuggestedGamers();
     }
   }, []);
@@ -2384,7 +2376,16 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
     if (data) setPlayingGames(data.map(d => d.games).filter(Boolean));
   };
 
-  const loadFollowing = async () => {
+  const loadFollowedGames = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("follows")
+      .select("games(id, name, genre)")
+      .eq("follower_id", user.id)
+      .not("followed_game_id", "is", null);
+    if (data) setFollowedGames(data.map(d => d.games).filter(Boolean));
+  };
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase
@@ -2523,21 +2524,28 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
           <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
-          {isGuest && (
+          {isGuest ? (
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔥 Trending</div>
-              {[
-                { tag: "SilksongRelease", game: "Hollow Knight", gameIcon: "🦋", hot: true },
-                { tag: "MaleniaBuild", game: "Elden Ring", gameIcon: "🗡️", hot: true },
-                { tag: "ValoBugReport", game: "Valorant", gameIcon: "🎯", hot: false },
-                { tag: "StardewUpdate", game: "Stardew Valley", gameIcon: "🌱", hot: false },
-              ].map((t, i, arr) => (
-                <div key={t.tag} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: i < arr.length - 1 ? 8 : 0, marginBottom: i < arr.length - 1 ? 8 : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 13 }}>{t.gameIcon}</span>
-                    <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600 }}>#{t.tag}</span>
-                    {t.hot && <span style={{ fontSize: 10 }}>🔥</span>}
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
+              <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
+                <span onClick={() => onSignIn?.("Follow games to see them here.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to follow games and see them here.
+              </div>
+            </div>
+          ) : followedGames.length > 0 && (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
+                <span onClick={() => setActivePage("games")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Browse →</span>
+              </div>
+              {followedGames.map((g, i) => (
+                <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < followedGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                    {g.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{g.genre}</div>}
                   </div>
+                  <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
                 </div>
               ))}
             </div>
@@ -2845,25 +2853,32 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       <div style={{ width: 210, flexShrink: 0 }}>
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
 
-        {/* Trending */}
+        {/* Your Games */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Trending</div>
-          {[
-            { tag: "SilksongRelease", game: "Hollow Knight", posts: 8900, hot: true },
-            { tag: "MaleniaBuild", game: "Elden Ring", posts: 4200, hot: true },
-            { tag: "ValoBugReport", game: "Valorant", posts: 2100, hot: false },
-            { tag: "StardewUpdate", game: "Stardew Valley", posts: 1840, hot: false },
-            { tag: "SoulslikeOfTheYear", game: "All Games", posts: 1200, hot: false },
-          ].map((t, i, arr) => (
-            <div key={t.tag} style={{ paddingBottom: i < arr.length - 1 ? 12 : 0, marginBottom: i < arr.length - 1 ? 12 : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 2 }}>
-                <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>#{t.tag}</span>
-                {t.hot && <span style={{ fontSize: 10 }}>🔥</span>}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
+            <span onClick={() => setActivePage("games")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Browse →</span>
+          </div>
+          {isGuest ? (
+            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
+              <span onClick={() => onSignIn?.("Follow games to see them here.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to follow games and build your feed.
+            </div>
+          ) : followedGames.length === 0 ? (
+            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
+              No games followed yet.{" "}
+              <span onClick={() => setActivePage("games")} style={{ color: C.accentSoft, cursor: "pointer" }}>Find your games →</span>
+            </div>
+          ) : followedGames.map((g, i) => (
+            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < followedGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                {g.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{g.genre}</div>}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: C.textDim, fontSize: 11 }}>{t.game}</span>
-                <span style={{ color: C.textDim, fontSize: 11 }}>{(t.posts / 1000).toFixed(1)}k</span>
-              </div>
+              <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
           ))}
         </div>
