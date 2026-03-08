@@ -1695,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-37</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-38</span>
       </div>
     </nav>
   );
@@ -1893,13 +1893,14 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
   const [loading, setLoading] = useState(true);
   const [overall, setOverall] = useState([]);
   const [byGenre, setByGenre] = useState({});
-  const [expanded, setExpanded] = useState(null); // game id
+  const [expandedOverall, setExpandedOverall] = useState(null);
+  const [expandedGenre, setExpandedGenre] = useState({}); // genre -> game id
   const [sparklines, setSparklines] = useState({}); // game id -> weekly score array
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
   const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
 
-  const getWindowWeeks = (w) => w === "now" ? 1 : w === "7d" ? 1 : w === "30d" ? 4 : 1;
+  const getWindowWeeks = (w) => w === "7d" ? 1 : w === "30d" ? 4 : 1;
 
   const getWeekStarts = (count) => {
     const starts = [];
@@ -2005,9 +2006,12 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
-  const handleExpand = (gameId) => {
-    if (expanded === gameId) { setExpanded(null); return; }
-    setExpanded(gameId);
+  const handleExpand = (gameId, section) => {
+    if (section === "overall") {
+      setExpandedOverall(prev => prev === gameId ? null : gameId);
+    } else {
+      setExpandedGenre(prev => ({ ...prev, [section]: prev[section] === gameId ? null : gameId }));
+    }
     loadSparkline(gameId);
   };
 
@@ -2064,8 +2068,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     return `${entry.uniqueUsers} player${entry.uniqueUsers > 1 ? "s" : ""}`;
   };
 
-  const ChartRow = ({ entry, rank, showRank = true }) => {
-    const isExpanded = expanded === entry.id;
+  const ChartRow = ({ entry, rank, showRank = true, section }) => {
+    const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
     const sp = sparklines[entry.id];
     const isLoadingSp = loadingSparkline[entry.id];
     const momentum = sp ? (() => {
@@ -2078,7 +2082,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
 
     return (
       <div style={{ borderBottom: `1px solid ${C.border}`, overflow: "hidden" }}>
-        <div onClick={() => handleExpand(entry.id)}
+        <div onClick={() => handleExpand(entry.id, section)}
           style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", cursor: "pointer", transition: "background 0.1s", background: isExpanded ? C.accentGlow : "transparent" }}
           onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = C.surfaceHover; }}
           onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = "transparent"; }}
@@ -2129,7 +2133,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     );
   };
 
-  const windowLabel = { now: "Right Now", "7d": "This Week", "30d": "This Month" };
+  const windowLabel = { "7d": "This Week", "30d": "This Month" };
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "60px 12px 80px" : "80px 24px 40px" }}>
@@ -2141,8 +2145,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
 
       {/* Time window selector */}
       <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
-        {[{ id: "now", label: "Right Now" }, { id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
-          <button key={w.id} onClick={() => { setWindow(w.id); setExpanded(null); }}
+        {[{ id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
+          <button key={w.id} onClick={() => { setWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); }}
             style={{ background: window === w.id ? C.accentGlow : C.surface, border: `1px solid ${window === w.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "6px 16px", color: window === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: window === w.id ? 700 : 500, cursor: "pointer" }}>
             {w.label}
           </button>
@@ -2165,7 +2169,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
               <div style={{ color: C.textDim, fontSize: 12 }}>{windowLabel[window]}</div>
             </div>
             {overall.map((entry, i) => (
-              <ChartRow key={entry.id} entry={entry} rank={i + 1} />
+              <ChartRow key={entry.id} entry={entry} rank={i + 1} section="overall" />
             ))}
           </div>
 
@@ -2176,7 +2180,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
                 <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
               </div>
               {games.map((entry, i) => (
-                <ChartRow key={entry.id} entry={entry} rank={i + 1} />
+                <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />
               ))}
             </div>
           ))}
