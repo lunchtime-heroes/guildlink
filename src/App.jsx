@@ -786,8 +786,35 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
   const npc = NPCS[npcId];
   const [activeTab, setActiveTab] = useState("posts");
   const [followed, setFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [liveNPC, setLiveNPC] = useState(null);
   const [npcPosts, setNpcPosts] = useState([]);
+
+  useEffect(() => {
+    loadNPCData();
+    // Check if already following
+    const checkFollow = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !npcId) return;
+      const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("followed_npc_id", npcId).maybeSingle();
+      setFollowed(!!data);
+    };
+    checkFollow();
+  }, [npcId]);
+
+  const toggleFollow = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setFollowLoading(true);
+    if (followed) {
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("followed_npc_id", npcId);
+      setFollowed(false);
+    } else {
+      await supabase.from("follows").insert({ follower_id: user.id, followed_npc_id: npcId });
+      setFollowed(true);
+    }
+    setFollowLoading(false);
+  };
 
   useEffect(() => {
     loadNPCData();
@@ -875,7 +902,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               {!isMobile && <div style={{ color: `${C.gold}55`, fontSize: 12, marginBottom: 14 }}>📍 {displayNPC.location}</div>}
               <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 14px", lineHeight: 1.65 }}>{displayNPC.bio}</p>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setFollowed(!followed)} style={{ background: followed ? C.goldGlow : C.gold, border: `1px solid ${C.gold}`, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followed ? "✓ Following" : "+ Follow"}</button>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.goldGlow : C.gold, border: `1px solid ${C.gold}`, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
                 <button style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 14px", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Share</button>
               </div>
             </div>
@@ -1415,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-18</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-19</span>
       </div>
     </nav>
   );
@@ -2131,6 +2158,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
   const hardcoded = GAMES[gameId];
   const [activeTab, setActiveTab] = useState("pulse");
   const [followed, setFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [dbGame, setDbGame] = useState(null);
   const [gamePosts, setGamePosts] = useState([]);
   const [topVoices, setTopVoices] = useState([]);
@@ -2213,6 +2241,30 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
     load();
   }, [gameId]);
 
+  useEffect(() => {
+    const checkFollow = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !dbGame) return;
+      const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("followed_game_id", dbGame.id).maybeSingle();
+      setFollowed(!!data);
+    };
+    if (dbGame) checkFollow();
+  }, [dbGame]);
+
+  const toggleFollow = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !dbGame) return;
+    setFollowLoading(true);
+    if (followed) {
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("followed_game_id", dbGame.id);
+      setFollowed(false);
+    } else {
+      await supabase.from("follows").insert({ follower_id: user.id, followed_game_id: dbGame.id });
+      setFollowed(true);
+    }
+    setFollowLoading(false);
+  };
+
   const submitReview = async () => {
     if (!reviewForm.rating || submittingReview) return;
     setSubmittingReview(true);
@@ -2291,7 +2343,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: isMobile ? 8 : 10 }}>{game.developer} · {game.year}</div>
               {!isMobile && <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: "0 0 16px", maxWidth: 540, lineHeight: 1.6 }}>{game.description}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0 }}>
-                <button onClick={() => setFollowed(!followed)} style={{ background: followed ? `${game.color}33` : game.color, border: `1px solid ${game.color}`, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followed ? "✓ Following" : "+ Follow"}</button>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? `${game.color}33` : game.color, border: `1px solid ${game.color}`, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start" }}>
@@ -3492,9 +3544,19 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
   const [activeTab, setActiveTab] = useState("posts");
   const [compatibility, setCompatibility] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [followed, setFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
+    // Check follow status
+    const checkFollow = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || user.id === userId) return;
+      const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("followed_user_id", userId).maybeSingle();
+      setFollowed(!!data);
+    };
+    checkFollow();
     const load = async () => {
       setLoading(true);
 
@@ -3561,7 +3623,19 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
     load();
   }, [userId]);
 
-  const SHELF_COLUMNS = [
+  const toggleFollow = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setFollowLoading(true);
+    if (followed) {
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("followed_user_id", userId);
+      setFollowed(false);
+    } else {
+      await supabase.from("follows").insert({ follower_id: user.id, followed_user_id: userId });
+      setFollowed(true);
+    }
+    setFollowLoading(false);
+  };
     { id: "want_to_play", label: "Want to Play", color: C.accent },
     { id: "playing", label: "Playing Now", color: C.green },
     { id: "have_played", label: "Have Played", color: C.gold },
@@ -3615,8 +3689,8 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", alignItems: isMobile ? "center" : "flex-end", gap: 8, width: isMobile ? "100%" : "auto" }}>
               {!isOwnProfile && (
-                <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
-                  Follow
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.accentGlow : C.accent, border: `1px solid ${followed ? C.accentDim : C.accent}`, borderRadius: 8, padding: "8px 22px", color: followed ? C.accentSoft : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
+                  {followLoading ? "..." : followed ? "✓ Following" : "Follow"}
                 </button>
               )}
               {compatibilityText && (
