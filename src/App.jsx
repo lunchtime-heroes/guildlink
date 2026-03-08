@@ -1708,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-43</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-44</span>
       </div>
     </nav>
   );
@@ -3671,7 +3671,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
 
   const tabs = [
     { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
-    { id: "games", label: `Games${gameLibrary.length > 0 ? ` (${gameLibrary.length})` : ""}` },
+    { id: "games", label: `Games${(userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length) > 0 ? ` (${userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length})` : ""}` },
     { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
     { id: "achievements", label: "Achievements" },
     { id: "quests", label: "Quests" },
