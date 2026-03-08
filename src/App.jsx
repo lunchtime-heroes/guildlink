@@ -714,7 +714,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 8, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
           <button onClick={toggleLike} style={{
             background: localPost.liked ? `${C.red}18` : "transparent",
             border: `1px solid ${localPost.liked ? C.red + "44" : C.border}`,
@@ -722,14 +722,27 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
           }}>{localPost.liked ? "❤️" : "🤍"} {localPost.likes}</button>
-          <button onClick={toggleComments} style={{
-            background: showComments ? C.accentGlow : "transparent",
-            border: `1px solid ${showComments ? C.accentDim : C.border}`,
-            borderRadius: 8, padding: "5px 14px", cursor: "pointer",
-            color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 5,
-          }}>💬 {liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)} {showComments ? "▲" : "▼"}</button>
-          <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 14px", cursor: "pointer", color: C.textMuted, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>↗ {localPost.shares || 0}</button>
+          {(liveComments?.length > 0 || (localPost.comment_count || localPost.comments || 0) > 0) && (
+            <button onClick={toggleComments} style={{
+              background: "transparent", border: `1px solid ${C.border}`,
+              borderRadius: 8, padding: "5px 14px", cursor: "pointer",
+              color: C.textMuted, fontSize: 13, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 5,
+            }}>💬 {liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</button>
+          )}
+          {!isGuest && (
+            <button onClick={() => {
+              if (!showComments) {
+                if (liveComments === null) loadComments();
+                setShowComments(true);
+              }
+              setTimeout(() => commentInputRef.current?.focus(), 50);
+            }} style={{
+              background: "transparent", border: `1px solid ${C.border}`,
+              borderRadius: 8, padding: "5px 14px", cursor: "pointer",
+              color: C.textMuted, fontSize: 13, fontWeight: 600,
+            }}>↩ Reply</button>
+          )}
         </div>
       </div>
 
@@ -1705,7 +1718,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-40</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-41</span>
       </div>
     </nav>
   );
