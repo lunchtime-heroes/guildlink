@@ -71,11 +71,12 @@ function timeAgo(timestamp) {
 
 function notifLabel(n) {
   switch (n.type) {
-    case "like":    return "liked your post";
-    case "comment": return "commented on your post";
-    case "reply":   return "replied to your comment";
-    case "follow":  return "started following you";
-    default:        return "interacted with you";
+    case "like":             return "liked your post";
+    case "comment":          return "commented on your post";
+    case "reply":            return "replied to your comment";
+    case "follow":           return "started following you";
+    case "gamertag_request": return `wants your ${n.meta || "gamertag"}`;
+    default:                 return "interacted with you";
   }
 }
 
@@ -1646,14 +1647,18 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       const isNPC = !!npcData;
                       const isUnread = !n.read;
                       const hasPost = !!n.post_id;
+                      const isGamertagRequest = n.type === "gamertag_request";
                       const avatarInitials = isNPC
                         ? (npcData.avatar || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                       return (
                         <div key={n.id}
-                          onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
-                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? `1px solid ${C.border}` : "none", background: isUnread ? `${C.accent}0a` : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default", transition: "background 0.1s" }}
-                          onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
+                          onClick={() => {
+                            if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); }
+                            else if (isGamertagRequest) { setActivePage("profile"); setShowNotifs(false); }
+                          }}
+                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? `1px solid ${C.border}` : "none", background: isUnread ? `${C.accent}0a` : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost || isGamertagRequest) ? "pointer" : "default", transition: "background 0.1s" }}
+                          onMouseEnter={e => { if (hasPost || isGamertagRequest) e.currentTarget.style.background = C.surfaceHover; }}
                           onMouseLeave={e => { e.currentTarget.style.background = isUnread ? `${C.accent}0a` : "transparent"; }}
                         >
                           <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
@@ -1675,7 +1680,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                             {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: isNPC ? C.gold : C.accent }} />}
-                            {hasPost && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
+                            {(hasPost || isGamertagRequest) && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
                           </div>
                         </div>
                       );
@@ -1691,7 +1696,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-50</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-51</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3537,6 +3542,24 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
   };
 
+  // Approved connections (for revoke UI)
+  const [approvedConnections, setApprovedConnections] = useState([]);
+
+  const loadApprovedConnections = async () => {
+    if (!isAdult) return;
+    const { data } = await supabase
+      .from("gamertag_requests")
+      .select("*, profiles!gamertag_requests_requester_id_fkey(id, username, handle, avatar_initials)")
+      .eq("target_id", user.id)
+      .eq("status", "approved");
+    if (data) setApprovedConnections(data);
+  };
+
+  const revokeConnection = async (requestId) => {
+    await supabase.from("gamertag_requests").update({ status: "revoked" }).eq("id", requestId);
+    setApprovedConnections(prev => prev.filter(r => r.id !== requestId));
+  };
+
   useEffect(() => {
     const load = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -3601,6 +3624,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     load();
     loadGamertags();
     loadIncomingRequests();
+    loadApprovedConnections();
   }, []);
 
   const startEdit = () => {
@@ -3875,6 +3899,33 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Approved connections — revoke UI */}
+          {isAdult && approvedConnections.length > 0 && (
+            <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Shared Gamertags</div>
+              {approvedConnections.map(req => {
+                const plat = PLATFORMS.find(p => p.id === req.platform);
+                const requester = req.profiles;
+                return (
+                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                    <Avatar initials={(requester?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={30} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{requester?.username || "Someone"}</span>
+                      <span style={{ color: C.textDim, fontSize: 12 }}> · </span>
+                      <span style={{ fontWeight: 600, color: plat?.color || C.textMuted, fontSize: 12 }}>{plat?.label || req.platform}</span>
+                    </div>
+                    <button onClick={() => revokeConnection(req.id)}
+                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}
+                      title="Revoke access — permanent">
+                      Revoke
+                    </button>
+                  </div>
+                );
+              })}
+              <div style={{ color: C.textDim, fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>Revoking is permanent and cannot be undone by either party.</div>
             </div>
           )}
 
@@ -5571,6 +5622,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
       requester_id: currentUser.id,
       target_id: userId,
       platform,
+    });
+    // Notify the target
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      actor_id: currentUser.id,
+      type: "gamertag_request",
+      meta: platform,
     });
     loadGamertagVisibility();
     setRequestLoading(r => ({ ...r, [platform]: false }));
