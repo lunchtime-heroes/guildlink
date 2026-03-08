@@ -1442,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-19</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-20</span>
       </div>
     </nav>
   );
@@ -1641,6 +1641,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
+  const [following, setFollowing] = useState([]); // profiles the user follows
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
@@ -1703,7 +1704,19 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
   useEffect(() => {
     loadPosts();
+    if (!isGuest) loadFollowing();
   }, []);
+
+  const loadFollowing = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("follows")
+      .select("followed_user_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials)")
+      .eq("follower_id", user.id)
+      .not("followed_user_id", "is", null);
+    if (data) setFollowing(data.map(f => f.profiles).filter(Boolean));
+  };
 
   const loadPosts = async () => {
     if (isGuest) {
@@ -1856,9 +1869,30 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
                 <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
               </div>
+              {/* Following grid */}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Following</div>
+                {following.length === 0 ? (
+                  <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Follow players to see them here.</div>
+                ) : (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {following.slice(0, 12).map(p => (
+                      <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+                        title={p.username}
+                        style={{ cursor: "pointer", opacity: 0.9 }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                        onMouseLeave={e => e.currentTarget.style.opacity = "0.9"}
+                      >
+                        <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={28} />
+                      </div>
+                    ))}
+                    {following.length > 12 && (
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 10, fontWeight: 700 }}>+{following.length - 12}</div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{user.connections}</div><div style={{ color: C.textDim, fontSize: 10 }}>Connections</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accent, fontSize: 14 }}>{(user.followers / 1000).toFixed(1)}k</div><div style={{ color: C.textDim, fontSize: 10 }}>Followers</div></div>
                 <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{user.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
               </div>
             </div>
