@@ -1442,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-22</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-24</span>
       </div>
     </nav>
   );
@@ -1645,6 +1645,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
+  const [suggestedGamers, setSuggestedGamers] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
@@ -1710,8 +1711,54 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
     if (!isGuest) {
       loadFollowing();
       loadPlayingGames();
+      loadSuggestedGamers();
     }
   }, []);
+
+  const loadSuggestedGamers = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    // Get current user's shelf
+    const { data: myShelf } = await supabase
+      .from("user_games").select("game_id, status").eq("user_id", user.id);
+    if (!myShelf || myShelf.length === 0) return;
+    const myGameIds = myShelf.map(g => g.game_id);
+    const statusWeight = { playing: 3, want_to_play: 2, have_played: 1 };
+    // Find other users who share shelf games
+    const { data: others } = await supabase
+      .from("user_games")
+      .select("user_id, game_id, status, profiles(id, username, handle, avatar_initials)")
+      .in("game_id", myGameIds)
+      .neq("user_id", user.id);
+    if (!others) return;
+    // Score each user by shelf overlap weight
+    const scores = {};
+    others.forEach(row => {
+      if (!row.profiles) return;
+      const uid = row.user_id;
+      if (!scores[uid]) scores[uid] = { profile: row.profiles, score: 0, sharedGame: null };
+      const w = statusWeight[row.status] || 1;
+      if (w > (scores[uid].topWeight || 0)) {
+        scores[uid].topWeight = w;
+        scores[uid].sharedGame = row.game_id;
+      }
+      scores[uid].score += w;
+    });
+    // Sort by score, exclude already-followed users
+    const { data: followData } = await supabase
+      .from("follows").select("followed_user_id").eq("follower_id", user.id);
+    const followedIds = new Set((followData || []).map(f => f.followed_user_id));
+    const sorted = Object.values(scores)
+      .filter(s => !followedIds.has(s.profile.id))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    // Resolve shared game names
+    const sharedGameIds = [...new Set(sorted.map(s => s.sharedGame).filter(Boolean))];
+    const { data: gameNames } = await supabase.from("games").select("id, name").in("id", sharedGameIds);
+    const gameMap = {};
+    (gameNames || []).forEach(g => gameMap[g.id] = g.name);
+    setSuggestedGamers(sorted.map(s => ({ ...s.profile, sharedGame: gameMap[s.sharedGame] || null })));
+  };
 
   const loadPlayingGames = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1936,38 +1983,75 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           </div>
         )}
 
-        {/* The Charts */}
-        <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
-
         {/* Currently Playing */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>🎮 Currently Playing</div>
-            <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage →</span>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 3 }}>Currently Playing</div>
+            <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage your shelf →</span>
           </div>
           {playingGames.length === 0 ? (
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
-              No games on your shelf yet.{" "}
-              <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, cursor: "pointer" }}>Add some →</span>
+              Nothing on your shelf yet.{" "}
+              <span onClick={() => setActivePage("profile")} style={{ color: C.accentSoft, cursor: "pointer" }}>Add games →</span>
             </div>
-          ) : (
-            playingGames.map(g => {
-              const ICONS = { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽' };
-              const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name?.toLowerCase());
-              const icon = hard?.icon || ICONS[g.genre] || '🎮';
-              return (
-                <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                >
-                  <span style={{ fontSize: 16 }}>{icon}</span>
-                  <span style={{ color: C.textMuted, fontSize: 13, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
-                  <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
+          ) : playingGames.map((g, i) => (
+            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < playingGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <span style={{ color: C.textMuted, fontSize: 13, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+              <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Gamers — shelf-based suggestions */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Gamers</div>
+          {suggestedGamers.length === 0 ? (
+            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Add games to your shelf to find players like you.</div>
+          ) : suggestedGamers.map((p, i) => (
+            <div key={p.id} style={{ marginBottom: i < suggestedGamers.length - 1 ? 14 : 0 }}>
+              <div onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+                style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
+                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
+                  {p.sharedGame && <div style={{ color: C.textDim, fontSize: 11 }}>Also plays {p.sharedGame}</div>}
                 </div>
-              );
-            })
-          )}
+              </div>
+              <button onClick={async () => {
+                const { data: { user: au } } = await supabase.auth.getUser();
+                if (!au) return;
+                await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
+                setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
+                loadFollowing();
+              }} style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Follow</button>
+            </div>
+          ))}
+        </div>
+
+        {/* NPCs */}
+        <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16, marginTop: 14 }}>
+          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
+          {Object.values(NPCS).slice(0, 3).map((npc, i, arr) => (
+            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
+              style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.goldBorder}` : "none", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <Avatar initials={npc.avatar} size={30} isNPC={true} status={npc.status} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
+                <div style={{ color: C.textDim, fontSize: 10 }}>{npc.role}</div>
+              </div>
+              <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
+            </div>
+          ))}
         </div>
       </div>
       )}
@@ -2126,63 +2210,27 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       {/* Right sidebar — desktop only */}
       {!isMobile && (
       <div style={{ width: 210, flexShrink: 0 }}>
-
-        {/* The Charts */}
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
 
-        {/* Connect */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Connect</div>
+        {/* Trending */}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Trending</div>
           {[
-            { name: "Kai Nakamura", handle: "@kai_pro", avatar: "KN", mutual: 8, game: "Valorant" },
-            { name: "Zoe Patel", handle: "@zoeplays", avatar: "ZP", mutual: 3, game: "Hollow Knight" },
-            { name: "Dev Santos", handle: "@dev_games", avatar: "DS", mutual: 12, game: "Elden Ring" },
-          ].map(p => (
-            <div key={p.name} style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                <Avatar initials={p.avatar} size={34} />
-                <div><div style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{p.name}</div><div style={{ color: C.textDim, fontSize: 11 }}>{p.mutual} mutual · {p.game}</div></div>
-              </div>
-              <button style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Connect</button>
-            </div>
-          ))}
-        </div>
-
-        {/* Trending across GuildLink */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>🔥 Trending</div>
-          {[
-            { tag: "SilksongRelease", game: "Hollow Knight", gameIcon: "🦋", posts: 8900, hot: true },
-            { tag: "MaleniaBuild", game: "Elden Ring", gameIcon: "🗡️", posts: 4200, hot: true },
-            { tag: "ValoBugReport", game: "Valorant", gameIcon: "🎯", posts: 2100, hot: false },
-            { tag: "StardewUpdate", game: "Stardew Valley", gameIcon: "🌱", posts: 1840, hot: false },
-            { tag: "SoulslikeOfTheYear", game: "All Games", gameIcon: "🎮", posts: 1200, hot: false },
-          ].map((t, i) => (
-            <div key={t.tag} style={{ paddingBottom: i < 4 ? 12 : 0, marginBottom: i < 4 ? 12 : 0, borderBottom: i < 4 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 3 }}>
+            { tag: "SilksongRelease", game: "Hollow Knight", posts: 8900, hot: true },
+            { tag: "MaleniaBuild", game: "Elden Ring", posts: 4200, hot: true },
+            { tag: "ValoBugReport", game: "Valorant", posts: 2100, hot: false },
+            { tag: "StardewUpdate", game: "Stardew Valley", posts: 1840, hot: false },
+            { tag: "SoulslikeOfTheYear", game: "All Games", posts: 1200, hot: false },
+          ].map((t, i, arr) => (
+            <div key={t.tag} style={{ paddingBottom: i < arr.length - 1 ? 12 : 0, marginBottom: i < arr.length - 1 ? 12 : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 2 }}>
                 <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>#{t.tag}</span>
-                {t.hot && <span style={{ fontSize: 10, color: C.red }}>🔥</span>}
+                {t.hot && <span style={{ fontSize: 10 }}>🔥</span>}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: C.textDim, fontSize: 11 }}>{t.gameIcon} {t.game}</span>
-                <span style={{ color: C.textDim, fontSize: 11 }}>{(t.posts / 1000).toFixed(1)}k posts</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{t.game}</span>
+                <span style={{ color: C.textDim, fontSize: 11 }}>{(t.posts / 1000).toFixed(1)}k</span>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* NPC Spotlight */}
-        <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPC Spotlight</div>
-          {Object.values(NPCS).slice(0, 3).map(npc => (
-            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
-              style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, cursor: "pointer" }}>
-              <Avatar initials={npc.avatar} size={30} isNPC={true} status={npc.status} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
-                <div style={{ color: C.textDim, fontSize: 10 }}>{(npc.followers / 1000).toFixed(1)}k followers</div>
-              </div>
-              <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
           ))}
         </div>
