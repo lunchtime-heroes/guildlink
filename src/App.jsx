@@ -1695,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-36</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-37</span>
       </div>
     </nav>
   );
@@ -1874,7 +1874,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
               </div>
             );
           })}
-          {limit && charts.length >= limit && (
+          {limit && (
             <button onClick={() => setActivePage("charts")}
               style={{ width: "100%", marginTop: 10, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               See Full Charts →
