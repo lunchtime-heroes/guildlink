@@ -1695,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-38</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-39</span>
       </div>
     </nav>
   );
@@ -1893,6 +1893,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
   const [loading, setLoading] = useState(true);
   const [overall, setOverall] = useState([]);
   const [byGenre, setByGenre] = useState({});
+  const [byGenreFull, setByGenreFull] = useState({});
+  const [expandedGenreAll, setExpandedGenreAll] = useState(new Set());
   const [expandedOverall, setExpandedOverall] = useState(null);
   const [expandedGenre, setExpandedGenre] = useState({}); // genre -> game id
   const [sparklines, setSparklines] = useState({}); // game id -> weekly score array
@@ -1957,15 +1959,18 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       const scored = scoreEvents(events);
       setOverall(scored.slice(0, 10));
 
-      // Group by genre
+      // Group by genre — preview (top 5) and full list
       const genres = {};
+      const genresFull = {};
       scored.forEach(g => {
-        const genreRaw = g.genre;
-        const primaryGenre = Array.isArray(genreRaw) ? genreRaw[0] : (genreRaw || "Other");
-        if (!genres[primaryGenre]) genres[primaryGenre] = [];
+        const primaryGenre = Array.isArray(g.genre) ? g.genre[0] : (g.genre || "Other");
+        if (!genres[primaryGenre]) { genres[primaryGenre] = []; genresFull[primaryGenre] = []; }
+        genresFull[primaryGenre].push(g);
         if (genres[primaryGenre].length < 5) genres[primaryGenre].push(g);
       });
       setByGenre(genres);
+      setByGenreFull(genresFull);
+      setExpandedGenreAll(new Set());
       setLoading(false);
     };
     load();
@@ -2146,7 +2151,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       {/* Time window selector */}
       <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
         {[{ id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
-          <button key={w.id} onClick={() => { setWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); }}
+          <button key={w.id} onClick={() => { setWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); setExpandedGenreAll(new Set()); }}
             style={{ background: window === w.id ? C.accentGlow : C.surface, border: `1px solid ${window === w.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "6px 16px", color: window === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: window === w.id ? 700 : 500, cursor: "pointer" }}>
             {w.label}
           </button>
@@ -2173,17 +2178,45 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
             ))}
           </div>
 
-          {/* Genre breakdowns */}
-          {Object.entries(byGenre).filter(([, games]) => games.length >= 2).map(([genre, games]) => (
-            <div key={genre} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 20, overflow: "hidden" }}>
-              <div style={{ padding: "14px 20px 10px", borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
-              </div>
-              {games.map((entry, i) => (
-                <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />
-              ))}
-            </div>
-          ))}
+          {/* Genre breakdowns — 2 columns */}
+          {(() => {
+            const genreEntries = Object.entries(byGenre).filter(([, games]) => games.length >= 2);
+            if (genreEntries.length === 0) return null;
+            return (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 14 }}>By Genre</div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
+                {genreEntries.map(([genre, games]) => {
+                  const fullList = byGenreFull[genre] || games;
+                  const isExpanded = expandedGenreAll.has(genre);
+                  const displayList = isExpanded ? fullList : games;
+                  const hasMore = fullList.length > games.length;
+                  return (
+                    <div key={genre} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <div style={{ padding: "14px 18px 10px", borderBottom: `1px solid ${C.border}` }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
+                      </div>
+                      {displayList.map((entry, i) => (
+                        <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />
+                      ))}
+                      {(hasMore || isExpanded) && (
+                        <button
+                          onClick={() => setExpandedGenreAll(prev => {
+                            const next = new Set(prev);
+                            isExpanded ? next.delete(genre) : next.add(genre);
+                            return next;
+                          })}
+                          style={{ margin: "10px 16px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          {isExpanded ? `Show less` : `See all ${fullList.length} in ${genre} →`}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                </div>
+              </>
+            );
+          })()}
         </>
       )}
     </div>
