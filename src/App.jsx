@@ -1503,14 +1503,14 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
-    { id: "squad", icon: "⚡", label: "Squad" },
+    { id: "squad", icon: "⚡", label: "LFG" },
     { id: "npcs", icon: "⚙", label: "NPCs" },
   ];
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
-    { id: "squad", icon: "⚡", label: "Squad" },
+    { id: "squad", icon: "⚡", label: "LFG" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
     ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
     ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
@@ -1690,7 +1690,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-46</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-48</span>
       </div>
     </nav>
   );
@@ -3470,10 +3470,65 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
-  const [mobileMoveCard, setMobileMoveCard] = useState(null); // { gameId, fromStatus } for tap-to-move on mobile
+  const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [addingGame, setAddingGame] = useState(false);
   const [gameSearch, setGameSearch] = useState("");
   const [gameSearchResults, setGameSearchResults] = useState([]);
+  // Gamertag state
+  const [gamertags, setGamertags] = useState([]);
+  const [gamertagForm, setGamertagForm] = useState({ platform: "", tag: "" });
+  const [addingTag, setAddingTag] = useState(false);
+  const [tagSaving, setTagSaving] = useState(false);
+  const PLATFORMS = [
+    { id: "xbox", label: "Xbox", color: "#107C10" },
+    { id: "psn", label: "PlayStation", color: "#003087" },
+    { id: "steam", label: "Steam", color: "#1b2838" },
+    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
+    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
+  ];
+  const isAdult = user.birth_year && (new Date().getFullYear() - user.birth_year) >= 18;
+
+  const loadGamertags = async () => {
+    const { data } = await supabase.from("gamertags").select("*").eq("user_id", user.id);
+    if (data) setGamertags(data);
+  };
+
+  const saveGamertag = async () => {
+    if (!gamertagForm.platform || !gamertagForm.tag.trim() || tagSaving) return;
+    setTagSaving(true);
+    await supabase.from("gamertags").upsert({
+      user_id: user.id,
+      platform: gamertagForm.platform,
+      tag: gamertagForm.tag.trim(),
+    }, { onConflict: "user_id,platform" });
+    setGamertagForm({ platform: "", tag: "" });
+    setAddingTag(false);
+    setTagSaving(false);
+    loadGamertags();
+  };
+
+  const deleteGamertag = async (platform) => {
+    await supabase.from("gamertags").delete().eq("user_id", user.id).eq("platform", platform);
+    setGamertags(prev => prev.filter(t => t.platform !== platform));
+  };
+
+  // Incoming gamertag requests
+  const [incomingRequests, setIncomingRequests] = useState([]);
+
+  const loadIncomingRequests = async () => {
+    if (!isAdult) return;
+    const { data } = await supabase
+      .from("gamertag_requests")
+      .select("*, profiles!gamertag_requests_requester_id_fkey(id, username, handle, avatar_initials)")
+      .eq("target_id", user.id)
+      .eq("status", "pending");
+    if (data) setIncomingRequests(data);
+  };
+
+  const respondToRequest = async (requestId, newStatus) => {
+    await supabase.from("gamertag_requests").update({ status: newStatus }).eq("id", requestId);
+    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -3537,6 +3592,8 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       setGameLibrary(Object.values(gamesMap));
     };
     load();
+    loadGamertags();
+    loadIncomingRequests();
   }, []);
 
   const startEdit = () => {
@@ -3544,6 +3601,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       username: user.name || "",
       bio: user.bio || "",
       games: Array.isArray(user.games) ? user.games.join(", ") : user.games || "",
+      birth_year: user.birth_year ? String(user.birth_year) : "",
     });
     setEditing(true);
   };
@@ -3551,12 +3609,14 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   const saveProfile = async () => {
     setSaving(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const yearNum = editForm.birth_year ? parseInt(editForm.birth_year) : null;
     const updates = {
       username: editForm.username.trim(),
       handle: "@" + editForm.username.trim().toLowerCase().replace(/\s+/g, "_"),
       bio: editForm.bio.trim(),
       games: editForm.games.trim(),
       avatar_initials: editForm.username.trim().slice(0, 2).toUpperCase(),
+      ...(yearNum && yearNum > 1900 && yearNum < new Date().getFullYear() ? { birth_year: yearNum } : {}),
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
     if (!error) { setEditing(false); window.location.reload(); }
@@ -3701,10 +3761,113 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
                 <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
+              {!user.birth_year && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Birth Year <span style={{ color: C.textDim, fontWeight: 400 }}>(optional — unlocks gamertag sharing and LFG for 18+)</span></div>
+                  <input value={editForm.birth_year || ""} onChange={e => setEditForm(f => ({ ...f, birth_year: e.target.value }))} placeholder="e.g. 1990" maxLength={4} style={{ width: 120, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+                </div>
+              )}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving..." : "Save"}</button>
                 <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
+            </div>
+          )}
+
+          {/* Gamertag Management */}
+          <div style={{ marginTop: 20, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gamertags.length > 0 || addingTag ? 14 : 0 }}>
+              <div>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Gamertags</div>
+                {!isAdult && !user.birth_year && (
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Add your birth year in Edit Profile to enable gamertag sharing.</div>
+                )}
+                {user.birth_year && !isAdult && (
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Gamertag sharing is available at 18.</div>
+                )}
+              </div>
+              {isAdult && gamertags.length < 5 && !addingTag && (
+                <button onClick={() => setAddingTag(true)} style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
+              )}
+            </div>
+
+            {/* Existing tags */}
+            {gamertags.map(t => {
+              const plat = PLATFORMS.find(p => p.id === t.platform);
+              return (
+                <div key={t.platform} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: plat?.color || C.textDim, flexShrink: 0 }} />
+                  <span style={{ color: C.textMuted, fontSize: 12, fontWeight: 600, width: 90, flexShrink: 0 }}>{plat?.label || t.platform}</span>
+                  <span style={{ color: C.text, fontSize: 13, flex: 1 }}>{t.tag}</span>
+                  <button onClick={() => deleteGamertag(t.platform)} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px" }} title="Remove">×</button>
+                </div>
+              );
+            })}
+
+            {/* Add tag form */}
+            {addingTag && isAdult && (
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div style={{ flex: "0 0 140px" }}>
+                  <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Platform</div>
+                  <select value={gamertagForm.platform} onChange={e => setGamertagForm(f => ({ ...f, platform: e.target.value }))}
+                    style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: gamertagForm.platform ? C.text : C.textDim, fontSize: 13, outline: "none" }}>
+                    <option value="">Select…</option>
+                    {PLATFORMS.filter(p => !gamertags.find(t => t.platform === p.id)).map(p => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Gamertag</div>
+                  <input value={gamertagForm.tag} onChange={e => setGamertagForm(f => ({ ...f, tag: e.target.value }))}
+                    placeholder="Your tag on this platform"
+                    style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <button onClick={saveGamertag} disabled={!gamertagForm.platform || !gamertagForm.tag.trim() || tagSaving}
+                  style={{ background: gamertagForm.platform && gamertagForm.tag.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 16px", color: gamertagForm.platform && gamertagForm.tag.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  {tagSaving ? "Saving…" : "Save"}
+                </button>
+                <button onClick={() => { setAddingTag(false); setGamertagForm({ platform: "", tag: "" }); }}
+                  style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {isAdult && gamertags.length === 0 && !addingTag && (
+              <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>No gamertags added yet. Tags are only visible to approved followers.</div>
+            )}
+          </div>
+
+          {/* Incoming gamertag requests */}
+          {isAdult && incomingRequests.length > 0 && (
+            <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 12, padding: 16 }}>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>
+                Gamertag Requests <span style={{ background: C.accent, color: "#fff", borderRadius: 10, padding: "2px 8px", fontSize: 11, marginLeft: 6 }}>{incomingRequests.length}</span>
+              </div>
+              {incomingRequests.map(req => {
+                const plat = PLATFORMS.find(p => p.id === req.platform);
+                const requester = req.profiles;
+                return (
+                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                    <Avatar initials={(requester?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={32} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{requester?.username || "Someone"}</span>
+                      <span style={{ color: C.textDim, fontSize: 12 }}> wants your </span>
+                      <span style={{ fontWeight: 600, color: plat?.color || C.textMuted, fontSize: 12 }}>{plat?.label || req.platform}</span>
+                      <span style={{ color: C.textDim, fontSize: 12 }}> gamertag</span>
+                    </div>
+                    <button onClick={() => respondToRequest(req.id, "approved")}
+                      style={{ background: C.accent, border: "none", borderRadius: 7, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      Approve
+                    </button>
+                    <button onClick={() => respondToRequest(req.id, "denied")}
+                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 12px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>
+                      Deny
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -4975,43 +5138,221 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
 
 
-function SquadPage({ isMobile }) {
-  const [filter, setFilter] = useState("All");
-  const squadPosts = []; // TODO: load from DB (squads table)
+function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [gameFilter, setGameFilter] = useState("all");
+  const [filterGames, setFilterGames] = useState([]); // games that have LFG posts
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
+  const [gameSearch, setGameSearch] = useState("");
+  const [gameResults, setGameResults] = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
+
+  const loadPosts = async () => {
+    setLoading(true);
+    let query = supabase
+      .from("lfg_posts")
+      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false });
+    if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
+    const { data } = await query;
+    if (data) {
+      setPosts(data);
+      // Build filter game list from results
+      const seen = {};
+      data.forEach(p => { if (p.games && !seen[p.games.id]) { seen[p.games.id] = p.games; } });
+      setFilterGames(Object.values(seen));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadPosts(); }, [gameFilter]);
+
+  const searchGames = async (q) => {
+    setGameSearch(q);
+    if (!q.trim()) { setGameResults([]); return; }
+    const { data } = await supabase.from("games").select("id, name, genre").ilike("name", `%${q}%`).limit(6);
+    setGameResults(data || []);
+  };
+
+  const submitPost = async () => {
+    if (!selectedGame || !form.looking_for.trim() || submitting) return;
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSubmitting(false); return; }
+    const tags = form.tags.split(",").map(t => t.trim()).filter(Boolean);
+    await supabase.from("lfg_posts").insert({
+      user_id: user.id,
+      game_id: selectedGame.id,
+      looking_for: form.looking_for.trim(),
+      play_style: form.play_style.trim() || null,
+      rank: form.rank.trim() || null,
+      note: form.note.trim() || null,
+      tags,
+    });
+    setForm({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
+    setSelectedGame(null);
+    setGameSearch("");
+    setGameResults([]);
+    setShowForm(false);
+    setSubmitting(false);
+    loadPosts();
+  };
+
+  const deletePost = async (id) => {
+    await supabase.from("lfg_posts").delete().eq("id", id);
+    setPosts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const inputStyle = { width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
-      <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 24, color: C.text }}>Find Your Squad</h2>
-      <p style={{ margin: "0 0 20px", color: C.textMuted, fontSize: 14 }}>Connect with players who match your style and rank.</p>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {["All", "Valorant", "Overwatch 2", "Elden Ring"].map(g => (
-          <button key={g} onClick={() => setFilter(g)} style={{ background: filter === g ? C.accentGlow : C.surface, border: `1px solid ${filter === g ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: filter === g ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g}</button>
-        ))}
-        <button style={{ marginLeft: "auto", background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Post LFG</button>
-      </div>
-      {squadPosts.filter(p => filter === "All" || p.game === filter).map(post => (
-        <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, display: "flex", gap: 18, marginBottom: 12 }}>
-          <Avatar initials={post.user.avatar} size={46} />
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{post.user.name}</span>
-              <Badge color={C.accent}>{post.gameIcon} {post.game}</Badge>
-              <Badge color={C.textMuted} small>{post.rank}</Badge>
-              <span style={{ color: C.textDim, fontSize: 12, marginLeft: "auto" }}>{post.time}</span>
-            </div>
-            <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
-              <span style={{ color: C.textDim, fontSize: 13 }}>Looking for <strong style={{ color: C.text }}>{post.looking}</strong></span>
-              <span style={{ color: C.textDim, fontSize: 13 }}>Style: <strong style={{ color: C.text }}>{post.style}</strong></span>
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {post.tags.map(tag => <Badge key={tag} small color={C.textMuted}>{tag}</Badge>)}
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join</button>
-            <button style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Profile</button>
-          </div>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Looking for Group</h2>
+          <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Find players who match your style, game, and schedule.</p>
         </div>
-      ))}
+        {!currentUser ? null : (
+          <button onClick={() => setShowForm(f => !f)} style={{ background: showForm ? C.surfaceRaised : C.accent, border: `1px solid ${showForm ? C.border : "transparent"}`, borderRadius: 10, padding: "9px 20px", color: showForm ? C.textMuted : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            {showForm ? "Cancel" : "+ Post LFG"}
+          </button>
+        )}
+      </div>
+
+      {/* Post LFG form */}
+      {showForm && (
+        <div style={{ background: C.surface, border: `1px solid ${C.accentDim}`, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Post a Looking for Group</div>
+
+          {/* Game search */}
+          <div style={{ marginBottom: 12, position: "relative" }}>
+            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Game *</div>
+            {selectedGame ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "8px 12px" }}>
+                <span style={{ color: C.accentSoft, fontWeight: 600, fontSize: 13 }}>{selectedGame.name}</span>
+                <button onClick={() => { setSelectedGame(null); setGameSearch(""); }} style={{ marginLeft: "auto", background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+              </div>
+            ) : (
+              <>
+                <input value={gameSearch} onChange={e => searchGames(e.target.value)} placeholder="Search for a game..." style={inputStyle} autoFocus />
+                {gameResults.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, zIndex: 50, overflow: "hidden", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                    {gameResults.map(g => (
+                      <div key={g.id} onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
+                        style={{ padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid ${C.border}` }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <span style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{g.name}</span>
+                        {g.genre && <span style={{ color: C.textDim, fontSize: 11, marginLeft: 8 }}>{g.genre}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div>
+              <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Looking for *</div>
+              <input value={form.looking_for} onChange={e => setForm(f => ({ ...f, looking_for: e.target.value }))} placeholder="e.g. 2 players, Full team" style={inputStyle} />
+            </div>
+            <div>
+              <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Play style</div>
+              <input value={form.play_style} onChange={e => setForm(f => ({ ...f, play_style: e.target.value }))} placeholder="e.g. Competitive, Casual" style={inputStyle} />
+            </div>
+            <div>
+              <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Rank / Skill</div>
+              <input value={form.rank} onChange={e => setForm(f => ({ ...f, rank: e.target.value }))} placeholder="e.g. Diamond II, NG+3" style={inputStyle} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Tags <span style={{ color: C.textDim, fontWeight: 400 }}>(comma separated)</span></div>
+            <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="e.g. Evenings PST, 18+, Voice chat" style={inputStyle} />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Note</div>
+            <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder="Anything else players should know..." style={{ ...inputStyle, resize: "none", minHeight: 60 }} />
+          </div>
+
+          <button onClick={submitPost} disabled={!selectedGame || !form.looking_for.trim() || submitting}
+            style={{ background: selectedGame && form.looking_for.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 10, padding: "10px 24px", color: selectedGame && form.looking_for.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            {submitting ? "Posting…" : "Post LFG"}
+          </button>
+        </div>
+      )}
+
+      {/* Game filters */}
+      {filterGames.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+          <button onClick={() => setGameFilter("all")} style={{ background: gameFilter === "all" ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === "all" ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>All</button>
+          {filterGames.map(g => (
+            <button key={g.id} onClick={() => setGameFilter(g.id)} style={{ background: gameFilter === g.id ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === g.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === g.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g.name}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Posts */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>Loading…</div>
+      ) : posts.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>No LFG posts yet</div>
+          <div style={{ fontSize: 14 }}>{currentUser ? "Be the first to post." : "Sign in to post a LFG."}</div>
+        </div>
+      ) : posts.map(post => {
+        const profile = post.profiles;
+        const game = post.games;
+        const isOwn = currentUser?.id === profile?.id;
+        return (
+          <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
+            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={44} founding={profile?.is_founding} ring={profile?.active_ring} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
+                <span style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: "pointer" }}
+                  onClick={() => { setCurrentPlayer(profile?.id); setActivePage("player"); }}
+                >{profile?.username || "Gamer"}</span>
+                {game && <Badge color={C.accent}>{game.name}</Badge>}
+                {post.rank && <Badge color={C.textMuted} small>{post.rank}</Badge>}
+                <span style={{ color: C.textDim, fontSize: 12, marginLeft: "auto" }}>{timeAgo(post.created_at)}</span>
+              </div>
+              <div style={{ display: "flex", gap: 16, marginBottom: post.tags?.length || post.note ? 10 : 0, flexWrap: "wrap" }}>
+                <span style={{ color: C.textDim, fontSize: 13 }}>Looking for <strong style={{ color: C.text }}>{post.looking_for}</strong></span>
+                {post.play_style && <span style={{ color: C.textDim, fontSize: 13 }}>Style: <strong style={{ color: C.text }}>{post.play_style}</strong></span>}
+              </div>
+              {post.note && <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", lineHeight: 1.5 }}>{post.note}</p>}
+              {post.tags?.length > 0 && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {post.tags.map(tag => <Badge key={tag} small color={C.textMuted}>{tag}</Badge>)}
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+              {!isOwn && (
+                <button onClick={() => { setCurrentPlayer(profile?.id); setActivePage("player"); }}
+                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Profile
+                </button>
+              )}
+              {isOwn && (
+                <button onClick={() => deletePost(post.id)}
+                  style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 18px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -5022,9 +5363,13 @@ function AuthPage({ onBack }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  const currentYear = new Date().getFullYear();
 
   const handle = async () => {
     setLoading(true);
@@ -5034,9 +5379,29 @@ function AuthPage({ onBack }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setError(error.message);
-      else setMessage("Check your email to confirm your account, then log in.");
+      // Validate birth year if provided
+      const yearNum = birthYear ? parseInt(birthYear) : null;
+      if (birthYear && (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear - 5)) {
+        setError("Please enter a valid birth year.");
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) { setError(error.message); setLoading(false); return; }
+      // Write extra fields to profile if user was created
+      if (data?.user) {
+        const profileUpdates = {};
+        if (username.trim()) {
+          profileUpdates.username = username.trim();
+          profileUpdates.handle = "@" + username.trim().toLowerCase().replace(/\s+/g, "_");
+          profileUpdates.avatar_initials = username.trim().slice(0, 2).toUpperCase();
+        }
+        if (yearNum) profileUpdates.birth_year = yearNum;
+        if (Object.keys(profileUpdates).length > 0) {
+          await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
+        }
+      }
+      setMessage("Check your email to confirm your account, then log in.");
     }
     setLoading(false);
   };
@@ -5060,10 +5425,23 @@ function AuthPage({ onBack }) {
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
             <input value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
           </div>
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: mode === "signup" ? 16 : 24 }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} onKeyDown={e => e.key === "Enter" && handle()} />
           </div>
+          {mode === "signup" && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username <span style={{ color: C.textDim, fontWeight: 400 }}>(optional, can set later)</span></div>
+                <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Birth Year <span style={{ color: C.textDim, fontWeight: 400 }}>(optional)</span></div>
+                <input value={birthYear} onChange={e => setBirthYear(e.target.value)} placeholder="e.g. 1990" maxLength={4} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                <div style={{ color: C.textDim, fontSize: 11, marginTop: 5, lineHeight: 1.5 }}>Unlocks gamertag sharing and LFG for users 18+. You can add this later in your profile.</div>
+              </div>
+            </>
+          )}
           {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {message && <div style={{ color: C.green, fontSize: 13, marginBottom: 16 }}>{message}</div>}
           <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
@@ -5093,6 +5471,46 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
   const [loading, setLoading] = useState(true);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  // Gamertag request state
+  const [gamertagVisibility, setGamertagVisibility] = useState([]); // from get_gamertag_visibility()
+  const [requestLoading, setRequestLoading] = useState({});
+  const PLATFORMS = [
+    { id: "xbox", label: "Xbox", color: "#107C10" },
+    { id: "psn", label: "PlayStation", color: "#003087" },
+    { id: "steam", label: "Steam", color: "#1b2838" },
+    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
+    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
+  ];
+
+  // Incoming gamertag requests — belongs on ProfilePage, not here, but loaded via useEffect
+  const loadGamertagVisibility = async () => {
+    if (!currentUser || !userId || currentUser.id === userId) return;
+    const { data, error } = await supabase.rpc("get_gamertag_visibility", { target_user_id: userId });
+    if (!error && data) setGamertagVisibility(data);
+  };
+
+  const sendRequest = async (platform) => {
+    setRequestLoading(r => ({ ...r, [platform]: true }));
+    await supabase.from("gamertag_requests").insert({
+      requester_id: currentUser.id,
+      target_id: userId,
+      platform,
+    });
+    loadGamertagVisibility();
+    setRequestLoading(r => ({ ...r, [platform]: false }));
+  };
+
+  const cancelRequest = async (platform) => {
+    setRequestLoading(r => ({ ...r, [platform]: true }));
+    await supabase.from("gamertag_requests")
+      .update({ status: "cancelled" })
+      .eq("requester_id", currentUser.id)
+      .eq("target_id", userId)
+      .eq("platform", platform)
+      .eq("status", "pending");
+    loadGamertagVisibility();
+    setRequestLoading(r => ({ ...r, [platform]: false }));
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -5104,6 +5522,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
       setFollowed(!!data);
     };
     checkFollow();
+    loadGamertagVisibility();
     const load = async () => {
       setLoading(true);
 
@@ -5263,6 +5682,40 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
               </div>
             ))}
           </div>
+
+          {/* Gamertag requests — only shown to 18+ followers who have tags themselves */}
+          {gamertagVisibility.length > 0 && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ color: C.textDim, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10, fontWeight: 600 }}>Gamertags</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {gamertagVisibility.map(({ platform, request_status, tag }) => {
+                  const plat = PLATFORMS.find(p => p.id === platform);
+                  return (
+                    <div key={platform} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: plat?.color || C.textDim, flexShrink: 0 }} />
+                      <span style={{ color: C.textMuted, fontSize: 13, fontWeight: 600, width: 100, flexShrink: 0 }}>{plat?.label || platform}</span>
+                      {request_status === "approved" && tag ? (
+                        <span style={{ color: C.text, fontSize: 13, fontFamily: "monospace" }}>{tag}</span>
+                      ) : request_status === "pending" ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ color: C.textDim, fontSize: 12 }}>Request sent</span>
+                          <button onClick={() => cancelRequest(platform)} disabled={requestLoading[platform]}
+                            style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 10px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => sendRequest(platform)} disabled={requestLoading[platform]}
+                          style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          {requestLoading[platform] ? "…" : "Request gamertag"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -5450,6 +5903,7 @@ export default function GuildLink() {
   const isGuest = !session;
 
   const liveUser = profile ? {
+    id: profile.id,
     name: profile.username || "Gamer",
     handle: profile.handle || "@gamer",
     avatar: profile.avatar_initials || "GL",
@@ -5467,6 +5921,7 @@ export default function GuildLink() {
     activeRing: profile.active_ring || "none",
     is_admin: profile.is_admin || false,
     is_writer: profile.is_writer || false,
+    birth_year: profile.birth_year || null,
   } : null;
 
   return (
@@ -5503,7 +5958,7 @@ export default function GuildLink() {
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
-      {activePage === "squad" && <SquadPage isMobile={isMobile} />}
+      {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
     </div>
   );
