@@ -1708,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-44</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-45</span>
       </div>
     </nav>
   );
@@ -3669,10 +3669,12 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     { icon: "⚡", name: "Early Adopter", desc: "GuildLink Beta", color: C.teal },
   ];
 
+  const shelfCount = userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length;
   const tabs = [
     { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
-    { id: "games", label: `Games${(userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length) > 0 ? ` (${userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length})` : ""}` },
     { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
+    { id: "games", label: `Games${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
+    { id: "groups", label: "Groups" },
     { id: "achievements", label: "Achievements" },
     { id: "quests", label: "Quests" },
     { id: "rings", label: "Rings" },
@@ -3727,13 +3729,18 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
           {/* Stats row */}
           <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center", flexWrap: "wrap" }}>
             {[
-              { label: "Posts", val: postCount || 0, color: C.accent },
-              { label: "Reviews", val: userReviews.length, color: C.teal },
-              { label: "Games", val: userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length || gameLibrary.length, color: C.gold },
+              { label: "Posts", val: postCount || 0, color: C.accent, tab: "posts" },
+              { label: "Reviews", val: userReviews.length, color: C.teal, tab: "reviews" },
+              { label: "Games", val: shelfCount || 0, color: C.gold, tab: "games" },
+              { label: "Groups", val: 0, color: C.purple, tab: "groups" },
             ].map(s => (
-              <div key={s.label}>
+              <div key={s.label} onClick={() => setActiveTab(s.tab)}
+                style={{ cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
                 <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.val}</div>
-                <div style={{ color: C.textDim, fontSize: 12 }}>{s.label}</div>
+                <div style={{ color: activeTab === s.tab ? s.color : C.textDim, fontSize: 12, fontWeight: activeTab === s.tab ? 700 : 400 }}>{s.label}</div>
               </div>
             ))}
             <div style={{ marginLeft: "auto", minWidth: 160 }}>
@@ -3917,6 +3924,15 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
               <div style={{ fontSize: 14 }}>No reviews yet. Visit a game page to write your first.</div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Groups */}
+      {activeTab === "groups" && (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>Groups coming soon</div>
+          <div style={{ fontSize: 14 }}>Join guilds, clans, and communities built around the games you love.</div>
         </div>
       )}
 
