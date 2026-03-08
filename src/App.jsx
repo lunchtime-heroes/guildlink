@@ -1442,7 +1442,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-20</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-21</span>
       </div>
     </nav>
   );
@@ -1641,7 +1641,9 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
-  const [following, setFollowing] = useState([]); // profiles the user follows
+  const [following, setFollowing] = useState([]);
+  const [feedTab, setFeedTab] = useState("forYou"); // "forYou" | "following"
+  const [followingPosts, setFollowingPosts] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
@@ -1716,6 +1718,26 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       .eq("follower_id", user.id)
       .not("followed_user_id", "is", null);
     if (data) setFollowing(data.map(f => f.profiles).filter(Boolean));
+  };
+
+  const loadFollowingPosts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    // Get all user IDs the current user follows
+    const { data: followData } = await supabase
+      .from("follows")
+      .select("followed_user_id")
+      .eq("follower_id", user.id)
+      .not("followed_user_id", "is", null);
+    if (!followData || followData.length === 0) { setFollowingPosts([]); return; }
+    const followedIds = followData.map(f => f.followed_user_id);
+    const { data } = await supabase
+      .from("posts")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+      .in("user_id", followedIds)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (data) setFollowingPosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0 })));
   };
 
   const loadPosts = async () => {
@@ -1928,7 +1950,17 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Composer — members only */}
+        {/* Feed tabs — members only */}
+        {!isGuest && (
+          <div style={{ display: "flex", gap: 4, marginBottom: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4 }}>
+            {[{ id: "forYou", label: "For You" }, { id: "following", label: "Following" }].map(tab => (
+              <button key={tab.id} onClick={() => { setFeedTab(tab.id); if (tab.id === "following") loadFollowingPosts(); }}
+                style={{ flex: 1, background: feedTab === tab.id ? C.accentGlow : "transparent", border: `1px solid ${feedTab === tab.id ? C.accentDim : "transparent"}`, borderRadius: 8, padding: "7px", color: feedTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: feedTab === tab.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
         {!isGuest && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
@@ -1973,7 +2005,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         </div>
         )}
 
-        {livePosts.map(post => {
+        {/* For You feed */}
+        {(isGuest || feedTab === "forYou") && livePosts.map(post => {
           const isNPC = !!post.npc_id;
           const author = isNPC ? post.npcs : post.profiles;
           if (!author) return null;
@@ -1999,9 +2032,52 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
             }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
           );
         })}
-        {FEED_POSTS.map(post => (
+        {(isGuest || feedTab === "forYou") && FEED_POSTS.map(post => (
           !isGuest && <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
         ))}
+
+        {/* Following feed */}
+        {!isGuest && feedTab === "following" && (
+          followingPosts.length === 0 ? (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 36, marginBottom: 14 }}>👥</div>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>
+                {following.length === 0 ? "You're not following anyone yet." : "No posts from people you follow yet."}
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.7, maxWidth: 300, margin: "0 auto 20px" }}>
+                {following.length === 0
+                  ? "Follow players from the feed or their profiles and their posts will show up here."
+                  : "The people you follow haven't posted yet this week. Check back soon."}
+              </div>
+              {following.length === 0 && (
+                <button onClick={() => setFeedTab("forYou")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "9px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse For You</button>
+              )}
+            </div>
+          ) : followingPosts.map(post => {
+            const author = post.profiles;
+            if (!author) return null;
+            return (
+              <FeedPostCard key={post.id} post={{
+                id: post.id,
+                game_tag: post.game_tag,
+                user_id: post.user_id,
+                user: {
+                  name: author.username || "Gamer",
+                  handle: author.handle || "@gamer",
+                  avatar: author.avatar_initials || "GL",
+                  status: "online",
+                  isNPC: false,
+                  isFounding: author.is_founding || false,
+                },
+                content: post.content,
+                time: timeAgo(post.created_at),
+                likes: post.likes || 0,
+                comment_count: post.comment_count || 0,
+                commentList: [],
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+            );
+          })
+        )}
 
         {/* Guest sign-up wall after feed */}
         {isGuest && guestFeedDone && (
