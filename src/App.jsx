@@ -1691,7 +1691,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-49</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-50</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5149,13 +5149,37 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [gameFilter, setGameFilter] = useState("all");
-  const [filterGames, setFilterGames] = useState([]); // games that have LFG posts
+  const [platformFilter, setPlatformFilter] = useState("all");
+  const [filterGames, setFilterGames] = useState([]);
+  const [myGamertags, setMyGamertags] = useState([]); // platforms this user has entered
+  const [exclusions, setExclusions] = useState([]); // user_ids who have denied/revoked viewer
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
   const [gameSearch, setGameSearch] = useState("");
   const [gameResults, setGameResults] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
+
+  const PLATFORMS = [
+    { id: "xbox", label: "Xbox", color: "#107C10" },
+    { id: "psn", label: "PlayStation", color: "#003087" },
+    { id: "steam", label: "Steam", color: "#1b2838" },
+    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
+    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
+  ];
+
+  const isAdult = currentUser?.birth_year && (new Date().getFullYear() - currentUser.birth_year) >= 18;
+
+  // Load viewer's own gamertags and exclusion list
+  const loadViewerContext = async () => {
+    if (!currentUser?.id) return;
+    const [{ data: tags }, { data: excl }] = await Promise.all([
+      supabase.from("gamertags").select("platform").eq("user_id", currentUser.id),
+      supabase.from("my_lfg_exclusions").select("excluded_user_id"),
+    ]);
+    if (tags) setMyGamertags(tags.map(t => t.platform));
+    if (excl) setExclusions(excl.map(e => e.excluded_user_id));
+  };
 
   const loadPosts = async () => {
     setLoading(true);
@@ -5167,16 +5191,26 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
     if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
     const { data } = await query;
     if (data) {
-      setPosts(data);
-      // Build filter game list from results
+      // Filter out excluded users client-side (exclusions list is personal, can't do in RLS easily)
+      const filtered = data.filter(p => !exclusions.includes(p.profiles?.id));
+      // Apply platform filter if set
+      const platFiltered = platformFilter === "all" ? filtered : filtered.filter(p => p.platforms?.includes(platformFilter));
+      setPosts(platFiltered);
+      // Build game filter list from unfiltered results (so game tabs don't disappear when platform filtered)
       const seen = {};
-      data.forEach(p => { if (p.games && !seen[p.games.id]) { seen[p.games.id] = p.games; } });
+      filtered.forEach(p => { if (p.games && !seen[p.games.id]) seen[p.games.id] = p.games; });
       setFilterGames(Object.values(seen));
     }
     setLoading(false);
   };
 
-  useEffect(() => { loadPosts(); }, [gameFilter]);
+  useEffect(() => {
+    loadViewerContext();
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    loadPosts();
+  }, [gameFilter, platformFilter, exclusions]);
 
   const searchGames = async (q) => {
     setGameSearch(q);
@@ -5224,7 +5258,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
           <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Looking for Group</h2>
           <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Find players who match your style, game, and schedule.</p>
         </div>
-        {!currentUser ? null : (
+        {currentUser && myGamertags.length > 0 && (
           <button onClick={() => setShowForm(f => !f)} style={{ background: showForm ? C.surfaceRaised : C.accent, border: `1px solid ${showForm ? C.border : "transparent"}`, borderRadius: 10, padding: "9px 20px", color: showForm ? C.textMuted : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             {showForm ? "Cancel" : "+ Post LFG"}
           </button>
@@ -5297,10 +5331,39 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
         </div>
       )}
 
+      {/* Locked state — no gamertags entered */}
+      {currentUser && !loading && myGamertags.length === 0 && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 32, textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>Add a gamertag to unlock LFG</div>
+          <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, maxWidth: 400, margin: "0 auto 16px" }}>
+            LFG is built around mutual platform sharing. Add at least one gamertag to your profile to browse and post.
+            {!isAdult && <span style={{ display: "block", marginTop: 6, color: C.textDim, fontSize: 12 }}>You'll need to add your birth year first — gamertag sharing is available at 18.</span>}
+          </div>
+          <button onClick={() => setActivePage("profile")}
+            style={{ background: C.accent, border: "none", borderRadius: 10, padding: "9px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Go to Profile →
+          </button>
+        </div>
+      )}
+
+      {/* Platform filters — only platforms the viewer has */}
+      {currentUser && myGamertags.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+          <button onClick={() => setPlatformFilter("all")} style={{ background: platformFilter === "all" ? C.accentGlow : C.surface, border: `1px solid ${platformFilter === "all" ? C.accentDim : C.border}`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600 }}>All Platforms</button>
+          {PLATFORMS.filter(p => myGamertags.includes(p.id)).map(p => (
+            <button key={p.id} onClick={() => setPlatformFilter(p.id)}
+              style={{ background: platformFilter === p.id ? `${p.color}22` : C.surface, border: `1px solid ${platformFilter === p.id ? p.color : C.border}`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === p.id ? p.color : C.textMuted, fontSize: 12, fontWeight: 600 }}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Game filters */}
-      {filterGames.length > 0 && (
+      {filterGames.length > 0 && myGamertags.length > 0 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-          <button onClick={() => setGameFilter("all")} style={{ background: gameFilter === "all" ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === "all" ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>All</button>
+          <button onClick={() => setGameFilter("all")} style={{ background: gameFilter === "all" ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === "all" ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>All Games</button>
           {filterGames.map(g => (
             <button key={g.id} onClick={() => setGameFilter(g.id)} style={{ background: gameFilter === g.id ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === g.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === g.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g.name}</button>
           ))}
@@ -5310,13 +5373,19 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
       {/* Posts */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>Loading…</div>
-      ) : posts.length === 0 ? (
+      ) : !currentUser ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sign in to see LFG posts</div>
+          <div style={{ fontSize: 14 }}>LFG is available to members with gamertags on file.</div>
+        </div>
+      ) : myGamertags.length > 0 && posts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>No LFG posts yet</div>
-          <div style={{ fontSize: 14 }}>{currentUser ? "Be the first to post." : "Sign in to post a LFG."}</div>
+          <div style={{ fontSize: 14 }}>Be the first to post.</div>
         </div>
-      ) : posts.map(post => {
+      ) : myGamertags.length > 0 ? posts.map(post => {
         const profile = post.profiles;
         const game = post.games;
         const isOwn = currentUser?.id === profile?.id;
