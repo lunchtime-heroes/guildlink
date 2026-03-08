@@ -1695,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-33</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-34</span>
       </div>
     </nav>
   );
@@ -3908,6 +3908,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const [threads, setThreads] = useState([]);
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [closedThreads, setClosedThreads] = useState(new Set());
+  const [closedCandidates, setClosedCandidates] = useState(new Set());
 
   const npcList = Object.values(NPCS);
 
@@ -4275,10 +4276,10 @@ function NPCStudioPage({ isMobile, currentUser }) {
             <div>
               {loadingCandidates ? (
                 <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading candidate posts…</div>
-              ) : candidates.length === 0 ? (
+              ) : candidates.filter(p => !closedCandidates.has(p.id)).length === 0 ? (
                 <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>No new candidates right now.</div>
               ) : (
-                candidates.map(post => {
+                candidates.filter(p => !closedCandidates.has(p.id)).map(post => {
                   const isSelected = selectedPost?.id === post.id;
                   const postComments = expandedComments[post.id];
                   const commentsExpanded = postComments !== undefined;
@@ -4317,6 +4318,10 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
                             {post.newUser && <span style={{ background: `${C2.accent}22`, border: `1px solid ${C2.accentDim}`, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
                             {post.hasThread && <span style={{ background: `#f59e0b22`, border: `1px solid #f59e0b44`, borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
+                            <button onClick={e => { e.stopPropagation(); setClosedCandidates(prev => new Set([...prev, post.id])); if (selectedPost?.id === post.id) { setSelectedPost(null); setReplyToComment(null); setComposeText(""); } }}
+                              style={{ background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              Close ✓
+                            </button>
                           </div>
                         </div>
 
