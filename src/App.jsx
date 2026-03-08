@@ -1321,6 +1321,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
 
 function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn }) {
   const isAdmin = currentUser?.is_admin;
+  const isWriter = currentUser?.is_admin || currentUser?.is_writer;
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
@@ -1333,7 +1334,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "Squad" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
-    ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }, { id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
+    ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
+    ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
   ];
 
   if (isMobile) {
@@ -1442,7 +1444,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-26</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-27</span>
       </div>
     </nav>
   );
@@ -3402,7 +3404,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       // Check if this user has is_admin flag in profiles
-      const { data: profile } = await supabase.from("profiles").select("is_admin, username").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("is_admin, is_writer, username").eq("id", user.id).single();
       if (profile?.is_admin) {
         setAuthorized(true);
         loadAll();
@@ -4487,6 +4489,7 @@ export default function GuildLink() {
     isFounding: profile.is_founding || false,
     activeRing: profile.active_ring || "none",
     is_admin: profile.is_admin || false,
+    is_writer: profile.is_writer || false,
   } : null;
 
   return (
@@ -4512,8 +4515,8 @@ export default function GuildLink() {
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
       <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} />
-      {activePage === "admin" && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
-      {activePage === "npc-studio" && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
+      {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
