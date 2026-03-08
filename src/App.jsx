@@ -590,6 +590,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [submittingComment, setSubmittingComment] = useState(false);
   const [liveComments, setLiveComments] = useState(null);
   const [replyTo, setReplyTo] = useState(null); // { id, name }
+  const commentInputRef = useRef(null);
+
+  useEffect(() => {
+    if (replyTo) commentInputRef.current?.focus();
+  }, [replyTo]);
   const [taggedGameName, setTaggedGameName] = useState(null);
 
   useEffect(() => {
@@ -795,12 +800,12 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 <div style={{ display: "flex", gap: 10 }}>
                   <Avatar initials={currentUser?.avatar || "GL"} size={32} />
                   <input
+                    ref={commentInputRef}
                     value={commentText}
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && submitComment()}
                     placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
                     style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
-                    autoFocus={!!replyTo}
                   />
                   <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     {submittingComment ? "…" : "Reply"}
@@ -1365,6 +1370,11 @@ function PostModal({ postId, onClose, currentUser }) {
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
+  const modalInputRef = useRef(null);
+
+  useEffect(() => {
+    if (replyTo) modalInputRef.current?.focus();
+  }, [replyTo]);
 
   useEffect(() => {
     const load = async () => {
@@ -1482,7 +1492,7 @@ function PostModal({ postId, onClose, currentUser }) {
             )}
             <div style={{ display: "flex", gap: 10 }}>
               <Avatar initials={currentUser.avatar || "GL"} size={32} />
-              <input value={commentText} onChange={e => setCommentText(e.target.value)}
+              <input ref={modalInputRef} value={commentText} onChange={e => setCommentText(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && submitComment()}
                 placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
                 style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
@@ -1695,7 +1705,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-39</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-40</span>
       </div>
     </nav>
   );
