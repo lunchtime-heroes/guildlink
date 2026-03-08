@@ -1647,8 +1647,13 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
                     ) : notifications.map((n, i) => {
                       const actor = n.actor;
+                      const npcData = n.npc_id ? NPCS[n.npc_id] : null;
+                      const isNPC = !!npcData;
                       const isUnread = !n.read;
                       const hasPost = !!n.post_id;
+                      const avatarInitials = isNPC
+                        ? (npcData.avatar || npcData.name || "NPC").slice(0,2).toUpperCase()
+                        : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                       return (
                         <div key={n.id}
                           onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
@@ -1656,15 +1661,25 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
                           onMouseLeave={e => { e.currentTarget.style.background = isUnread ? `${C.accent}0a` : "transparent"; }}
                         >
-                          <Avatar initials={(actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase()} size={30} />
+                          <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ color: C.text, fontSize: 13, lineHeight: 1.5 }}>
-                              <strong>{actor?.username || "Someone"}</strong> {notifLabel(n)}
+                            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+                              {isNPC ? (
+                                <>
+                                  <strong style={{ color: C.gold }}>{npcData.name}</strong>
+                                  {" "}<NPCBadge />{" "}
+                                  <span style={{ color: C.gold }}>{notifLabel(n)}</span>
+                                </>
+                              ) : (
+                                <span style={{ color: C.text }}>
+                                  <strong>{actor?.username || "Someone"}</strong> {notifLabel(n)}
+                                </span>
+                              )}
                             </div>
                             <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{timeAgo(n.created_at)}</div>
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                            {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent }} />}
+                            {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: isNPC ? C.gold : C.accent }} />}
                             {hasPost && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
                           </div>
                         </div>
@@ -1680,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-31</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-32</span>
       </div>
     </nav>
   );
@@ -4794,7 +4809,7 @@ export default function GuildLink() {
   const fetchNotifications = async (userId) => {
     const { data } = await supabase
       .from("notifications")
-      .select("*, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials)")
+      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30);
