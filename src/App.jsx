@@ -6,12 +6,25 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwYWxrcGNxaWh4YW1lZHltbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NDc3MTQsImV4cCI6MjA4ODQyMzcxNH0.8V9MEXpcCH8dibm65PVtaPZseDbPvYCwSPJQ-9Cu-Zo"
 );
 
-// Week start helper — Monday of current week
+// Week start helper — Sunday 12:00am Pacific time
+// Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
+// We detect DST automatically via Intl
 function getWeekStart() {
-  const d = new Date();
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff)).toISOString().split('T')[0];
+  const now = new Date();
+  // Get current Pacific offset in minutes
+  const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+    .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+  // Shift now to Pacific time
+  const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
+  // Roll back to the most recent Sunday
+  const dayOfWeek = pacificNow.getDay(); // 0 = Sunday
+  const sunday = new Date(pacificNow);
+  sunday.setDate(pacificNow.getDate() - dayOfWeek);
+  // Return as YYYY-MM-DD using Pacific date components
+  const y = sunday.getFullYear();
+  const m = String(sunday.getMonth() + 1).padStart(2, '0');
+  const d = String(sunday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 async function logChartEvent(gameId, eventType, userId) {
@@ -1402,7 +1415,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-17</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-18</span>
       </div>
     </nav>
   );
@@ -1453,11 +1466,8 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get current week start
-      const d = new Date();
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const weekStart = new Date(new Date().setDate(diff)).toISOString().split('T')[0];
+      // Get current week start (Sunday midnight Pacific)
+      const weekStart = getWeekStart();
 
       // Live scores from chart_events this week
       let query = supabase
