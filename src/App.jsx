@@ -1514,7 +1514,6 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
-    { id: "charts", icon: "📈", label: "Charts" },
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "Squad" },
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
@@ -1608,7 +1607,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : item.admin ? "#ef4444" : activePage === item.id ? C.accentSoft : C.textMuted,
             cursor: "pointer", fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5,
-          }}><span>{item.admin ? "⚡" : item.icon}</span>{item.label}</button>
+          }}>{item.label}</button>
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
@@ -1696,7 +1695,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-35</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-36</span>
       </div>
     </nav>
   );
@@ -1708,7 +1707,7 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
   return (
     <div style={{ maxWidth: 700, margin: "0 auto", padding: "70px 16px 80px" }}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: 22, color: C.text }}>⚙ GuildLink NPCs</h2>
+        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: 22, color: C.text }}>GuildLink NPCs</h2>
         <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Original characters from the GuildLink universe. They're out here living their best lives.</p>
       </div>
       {Object.values(NPCS).map(npc => (
@@ -2069,8 +2068,6 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     const isExpanded = expanded === entry.id;
     const sp = sparklines[entry.id];
     const isLoadingSp = loadingSparkline[entry.id];
-    const hardcoded = GAMES[entry.id];
-    const icon = hardcoded?.icon || "🎮";
     const momentum = sp ? (() => {
       const last = sp[sp.length - 1] || 0;
       const prev = sp[sp.length - 2] || 0;
@@ -2091,7 +2088,6 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
               {rank}
             </div>
           )}
-          <div style={{ fontSize: 22, flexShrink: 0 }}>{icon}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{entry.name}</div>
             <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{getDominantSignal(entry)} · {entry.uniqueUsers} player{entry.uniqueUsers !== 1 ? "s" : ""}</div>
@@ -2855,7 +2851,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>🎮 Game Communities</h2>
+        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Game Communities</h2>
         <p style={{ margin: "0 0 16px", color: C.textMuted, fontSize: 14 }}>Find your people. Every game has a home here.</p>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -3137,7 +3133,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
               {/* The Charts card */}
               <div style={{ background: C.surface, border: `1px solid ${game.color}44`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>📊 The Charts</div>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>The Charts</div>
                   <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
@@ -4036,7 +4032,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       {/* Header */}
       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text }}>⚡ Admin Dashboard</h2>
+          <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text }}>Admin Dashboard</h2>
           <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink Activity Monitor</div>
         </div>
         <button onClick={loadAll} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
@@ -4908,7 +4904,7 @@ function SquadPage({ isMobile }) {
   const [filter, setFilter] = useState("All");
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
-      <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 24, color: C.text }}>⚡ Find Your Squad</h2>
+      <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 24, color: C.text }}>Find Your Squad</h2>
       <p style={{ margin: "0 0 20px", color: C.textMuted, fontSize: 14 }}>Connect with players who match your style and rank.</p>
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {["All", "Valorant", "Overwatch 2", "Elden Ring"].map(g => (
