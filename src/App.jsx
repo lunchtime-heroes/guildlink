@@ -475,24 +475,6 @@ const GAMES = {
 };
 
 
-const mockUser = {
-  name: "Alex Chen", handle: "@axelstrike", avatar: "AC",
-  level: 47, xp: 82400, xpNext: 90000,
-  title: "Apex Predator · FPS Specialist",
-  location: "San Francisco, CA",
-  connections: 312, followers: 1840,
-  bio: "Competitive FPS player & indie game enthusiast. Top 500 Overwatch. Always looking for serious teammates.",
-  games: ["Arc Raiders", "Elden Ring", "Hollow Knight", "Valorant"],
-  status: "online",
-  isFounding: true,
-  activeRing: "founding",
-};
-
-const squadPosts = [
-  { id: 1, user: { name: "Morgan Lee", avatar: "ML" }, game: "Valorant", gameIcon: "🎯", rank: "Diamond II", looking: "2 players", style: "Competitive", time: "10m ago", tags: ["Evenings PST", "18+", "Chill vibes"] },
-  { id: 2, user: { name: "Chris Wang", avatar: "CW" }, game: "Overwatch 2", gameIcon: "🦸", rank: "Platinum", looking: "Full team", style: "Casual", time: "1h ago", tags: ["Weekends", "Voice chat", "Learning"] },
-  { id: 3, user: { name: "Priya Nair", avatar: "PN" }, game: "Elden Ring", gameIcon: "🗡️", rank: "NG+3", looking: "1 player", style: "Co-op", time: "3h ago", tags: ["Bosses only", "No summons", "Patient"] },
-];
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
@@ -1708,7 +1690,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
-        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-45</span>
+        <span style={{ color: C.textDim, fontSize: 10, opacity: 0.5, userSelect: "none" }}>b0307-46</span>
       </div>
     </nav>
   );
@@ -2237,7 +2219,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
 }
 
 function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab }) {
-  const user = currentUser || mockUser;
+  const user = currentUser;
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -2490,10 +2472,10 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       const newPost = {
         ...data,
         profiles: {
-          username: user.name,
-          handle: user.handle,
-          avatar_initials: user.avatar,
-          is_founding: user.isFounding,
+          username: user?.name,
+          handle: user?.handle,
+          avatar_initials: user?.avatar,
+          is_founding: user?.isFounding,
         }
       };
       setLivePosts(prev => [newPost, ...prev]);
@@ -2575,7 +2557,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               </button>
             </div>
           </div>
-        ) : (
+        ) : user ? (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
@@ -2624,9 +2606,8 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* Currently Playing */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 3 }}>Currently Playing</div>
@@ -2715,7 +2696,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         {!isGuest && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
-            <Avatar initials={user.avatar} size={isMobile ? 32 : 38} status="online" founding={user.isFounding} ring={user.activeRing} />
+            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
@@ -3475,7 +3456,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
 function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab }) {
-  const user = currentUser || mockUser;
+  const user = currentUser;
+  if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
@@ -4995,6 +4977,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
 function SquadPage({ isMobile }) {
   const [filter, setFilter] = useState("All");
+  const squadPosts = []; // TODO: load from DB (squads table)
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 24, color: C.text }}>Find Your Squad</h2>
