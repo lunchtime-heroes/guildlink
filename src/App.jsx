@@ -1159,7 +1159,6 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
   const perks = [
     { icon: "⚔️", title: "GuildLink Pro — $5/mo. Forever.", desc: "Pro launches publicly at $9.99/mo. Founding members pay $5/mo for life. You're not getting a discount — you're locking in a price before it exists." },
     { icon: "🏰", title: "Guild Hubs", desc: "Run your own private community space with custom branding, member management, and events. Included in Pro. Launch price for everyone else: $9.99/mo." },
-    { icon: "🎮", title: "Achievement Sync — Coming Soon", desc: "Connect your Xbox, PlayStation, and Steam accounts. Your real achievements populate your profile automatically. Verified bragging rights." },
     { icon: "📊", title: "Gaming Report — Coming Soon", desc: "A monthly breakdown of your gaming life — hours played, completions, taste shifts, how you rank on GuildLink. Think Spotify Wrapped, but for games." },
     { icon: "🔒", title: "Your Data Stays Yours", desc: "GuildLink never sells your personal data. Not now, not ever. If you see an ad, it's because you play that game — not because we built a profile on you." },
     { icon: "🎯", title: "Ads Based on Games, Not You", desc: "We show game-relevant ads based on what you play, nothing else. No behavioral tracking, no demographic targeting, no data brokers. Just: you like Elden Ring, here's a FromSoftware ad." },
@@ -1753,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-64</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-65</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3908,22 +3907,12 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     { id: "have_played", label: "Have Played", color: C.gold, emptyText: "Your completed games" },
   ];
 
-  const achievements = [
-    { icon: "🏆", name: "Top 500", desc: "Overwatch 2 Season 12", color: C.gold },
-    { icon: "💎", name: "Radiant", desc: "Valorant Act 3", color: C.purple },
-    { icon: "🔥", name: "Elden Lord", desc: "Elden Ring NG+5", color: C.red },
-    { icon: "⭐", name: "Speedrunner", desc: "Hollow Knight sub-30m", color: C.green },
-    { icon: "🎯", name: "Sharpshooter", desc: "95%+ HS rate", color: C.accent },
-    { icon: "⚡", name: "Early Adopter", desc: "GuildLink Beta", color: C.teal },
-  ];
-
   const shelfCount = userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length;
   const tabs = [
     { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
     { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
     { id: "games", label: `Games${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
     { id: "groups", label: "Groups" },
-    { id: "achievements", label: "Achievements" },
     { id: "quests", label: "Quests" },
     { id: "rings", label: "Rings" },
   ];
@@ -4472,19 +4461,6 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
           <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>Groups coming soon</div>
           <div style={{ fontSize: 14 }}>Join guilds, clans, and communities built around the games you love.</div>
-        </div>
-      )}
-
-      {/* Achievements */}
-      {activeTab === "achievements" && (
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
-          {achievements.map(a => (
-            <div key={a.name} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, textAlign: "center" }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>{a.icon}</div>
-              <div style={{ fontWeight: 700, color: a.color, fontSize: 14 }}>{a.name}</div>
-              <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{a.desc}</div>
-            </div>
-          ))}
         </div>
       )}
 
