@@ -16,7 +16,7 @@ function getWeekStart() {
     .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
   // Shift now to Pacific time
   const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-  // Roll back to the most recent Sunday
+  // Roll back to the most recent Sundayå
   const dayOfWeek = pacificNow.getDay(); // 0 = Sunday
   const sunday = new Date(pacificNow);
   sunday.setDate(pacificNow.getDate() - dayOfWeek);
@@ -106,6 +106,7 @@ const THEMES = {
     bg: "#080e1a", surface: "#0d1424", surfaceHover: "#111c30", surfaceRaised: "#162035",
     border: "#1e2d45", borderHover: "#2a3f5f",
     accent: "#0ea5e9", accentGlow: "#0ea5e922", accentSoft: "#38bdf8", accentDim: "#0ea5e944",
+    accentText: "#ffffff",
     green: "#22c55e", gold: "#f59e0b", goldDim: "#f59e0b22", goldBorder: "#f59e0b33", goldGlow: "#f59e0b15",
     red: "#ef4444", teal: "#0d9488", purple: "#818cf8",
     text: "#e2e8f4", textMuted: "#7d90ad", textDim: "#3d5068", online: "#22c55e",
@@ -114,25 +115,28 @@ const THEMES = {
     bg: "#f4f6fa", surface: "#ffffff", surfaceHover: "#eef1f7", surfaceRaised: "#e8ecf4",
     border: "#d1d9e6", borderHover: "#b0bcd4",
     accent: "#0284c7", accentGlow: "#0284c722", accentSoft: "#0369a1", accentDim: "#0284c744",
+    accentText: "#ffffff",
     green: "#16a34a", gold: "#d97706", goldDim: "#d9770622", goldBorder: "#d9770633", goldGlow: "#d9770615",
     red: "#dc2626", teal: "#0f766e", purple: "#7c3aed",
     text: "#0f172a", textMuted: "#475569", textDim: "#94a3b8", online: "#16a34a",
   },
   "high-contrast": {
     bg: "#000000", surface: "#0a0a0a", surfaceHover: "#141414", surfaceRaised: "#1a1a1a",
-    border: "#333333", borderHover: "#555555",
+    border: "#555555", borderHover: "#888888",
     accent: "#ffffff", accentGlow: "#ffffff22", accentSoft: "#eeeeee", accentDim: "#ffffff44",
+    accentText: "#000000",
     green: "#00ff00", gold: "#ffdd00", goldDim: "#ffdd0022", goldBorder: "#ffdd0033", goldGlow: "#ffdd0015",
-    red: "#ff3333", teal: "#00dddd", purple: "#cc99ff",
+    red: "#ff5555", teal: "#00dddd", purple: "#cc99ff",
     text: "#ffffff", textMuted: "#cccccc", textDim: "#888888", online: "#00ff00",
   },
   "colorblind": {
-    bg: "#080e1a", surface: "#0d1424", surfaceHover: "#111c30", surfaceRaised: "#162035",
-    border: "#1e2d45", borderHover: "#2a3f5f",
-    accent: "#60a5fa", accentGlow: "#60a5fa22", accentSoft: "#93c5fd", accentDim: "#60a5fa44",
-    green: "#f59e0b", gold: "#fbbf24", goldDim: "#fbbf2422", goldBorder: "#fbbf2433", goldGlow: "#fbbf2415",
-    red: "#f97316", teal: "#38bdf8", purple: "#a78bfa",
-    text: "#e2e8f4", textMuted: "#7d90ad", textDim: "#3d5068", online: "#f59e0b",
+    bg: "#0f0a00", surface: "#1a1200", surfaceHover: "#221800", surfaceRaised: "#2a1e00",
+    border: "#3d2e00", borderHover: "#5c4500",
+    accent: "#f97316", accentGlow: "#f9731622", accentSoft: "#fb923c", accentDim: "#f9731644",
+    accentText: "#000000",
+    green: "#22c55e", gold: "#facc15", goldDim: "#facc1522", goldBorder: "#facc1533", goldGlow: "#facc1515",
+    red: "#ef4444", teal: "#34d399", purple: "#a78bfa",
+    text: "#fef3e2", textMuted: "#c4a882", textDim: "#6b5a3e", online: "#22c55e",
   },
 };
 
@@ -1360,7 +1364,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
         <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
           {message || "Create a free account to post, review games, and build your shelf."}
         </div>
-        <button onClick={onSignIn} style={{ width: "100%", background: C.accent, border: "none", borderRadius: 10, padding: "12px", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>
+        <button onClick={onSignIn} style={{ width: "100%", background: C.accent, border: "none", borderRadius: 10, padding: "12px", color: C.accentText, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>
           Create Free Account
         </button>
         <button onClick={onSignIn} style={{ width: "100%", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
@@ -1565,11 +1569,11 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGuest ? (
-              <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Sign In</button>
+              <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Sign In</button>
             ) : (
               <>
                 <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px" }}>
-                  🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+                  🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: C.accentText, borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
                 </button>
                 <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
                   <Avatar initials={currentUser?.avatar || "GL"} size={30} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
@@ -1638,7 +1642,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         {isGuest ? (
           <>
             <button onClick={onSignIn} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
-            <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
+            <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
           </>
         ) : (
           <>
@@ -1647,7 +1651,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 style={{ background: showNotifs ? C.accentGlow : "transparent", border: `1px solid ${showNotifs ? C.accentDim : "transparent"}`, borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "4px 8px", display: "flex", alignItems: "center" }}>
                 🔔
                 {unreadCount > 0 && (
-                  <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                  <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: C.accentText, borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -1724,7 +1728,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-56</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-57</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2162,7 +2166,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
               {entry.review > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 16 }}>{entry.review}</div><div style={{ color: C.textDim, fontSize: 10 }}>reviews</div></div>}
               <div style={{ marginLeft: "auto", alignSelf: "flex-end" }}>
                 <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); }}
-                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   View Game →
                 </button>
               </div>
@@ -2540,7 +2544,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
             <div style={{ color: C.textMuted, fontSize: isMobile ? 12 : 13, lineHeight: 1.6 }}>Build your shelf, influence The Charts, complete quests, and meet some of the local NPCs.</div>
           </div>
           <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
-            style={{ background: C.accent, border: "none", borderRadius: 10, padding: isMobile ? "9px 18px" : "10px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+            style={{ background: C.accent, border: "none", borderRadius: 10, padding: isMobile ? "9px 18px" : "10px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
             Join Free
           </button>
         </div>
@@ -2592,7 +2596,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
                 <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6 }}>This profile grid is waiting to be claimed. Will you be the proud new owner?</div>
               </div>
               <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
-                style={{ width: "100%", background: C.accent, border: "none", borderRadius: 8, padding: "8px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ width: "100%", background: C.accent, border: "none", borderRadius: 8, padding: "8px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 Join Free
               </button>
             </div>
@@ -2822,7 +2826,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
                   : "The people you follow haven't posted yet this week. Check back soon."}
               </div>
               {following.length === 0 && (
-                <button onClick={() => setFeedTab("forYou")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "9px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse For You</button>
+                <button onClick={() => setFeedTab("forYou")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "9px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse For You</button>
               )}
             </div>
           ) : followingPosts.map(post => {
@@ -2860,7 +2864,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               Create a free account to see the full feed, post your own takes, build your shelf, and influence The Charts.
             </div>
             <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
-              style={{ background: C.accent, border: "none", borderRadius: 10, padding: "12px 32px", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "block", width: "100%", maxWidth: 280, margin: "0 auto 12px" }}>
+              style={{ background: C.accent, border: "none", borderRadius: 10, padding: "12px 32px", color: C.accentText, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "block", width: "100%", maxWidth: 280, margin: "0 auto 12px" }}>
               Create Free Account
             </button>
             <button onClick={() => onSignIn?.()}
@@ -3181,7 +3185,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
     <div style={{ maxWidth: 800, margin: "100px auto", textAlign: "center", color: C.textMuted }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
       <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>Loading...</div>
-      <button onClick={() => setActivePage("games")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Browse Games</button>
+      <button onClick={() => setActivePage("games")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Browse Games</button>
     </div>
   );
 
@@ -3500,6 +3504,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
   const [editing, setEditing] = useState(false);
+  const [previewThemeId, setPreviewThemeId] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
   const [saving, setSaving] = useState(false);
   const [userPosts, setUserPosts] = useState([]);
@@ -3706,7 +3711,15 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       games: Array.isArray(user.games) ? user.games.join(", ") : user.games || "",
       theme: user.theme || "deep-space",
     });
+    setPreviewThemeId(user.theme || "deep-space");
     setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    // Revert live preview back to saved theme
+    applyTheme(user.theme || "deep-space");
+    setPreviewThemeId(null);
+    setEditing(false);
   };
 
   const saveProfile = async () => {
@@ -3858,11 +3871,11 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
             </div>
             {editing ? (
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
+                <button onClick={cancelEdit} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
-              <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+              <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
             )}
           </div>
 
@@ -3886,11 +3899,11 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                     { id: "deep-space", label: "Deep Space", bg: "#080e1a", accent: "#0ea5e9" },
                     { id: "light", label: "Light", bg: "#f4f6fa", accent: "#0284c7" },
                     { id: "high-contrast", label: "High Contrast", bg: "#000000", accent: "#ffffff" },
-                    { id: "colorblind", label: "Colorblind Safe", bg: "#0a0c1a", accent: "#60a5fa" },
+                    { id: "colorblind", label: "Colorblind Safe", bg: "#0f0a00", accent: "#f97316" },
                   ].map(theme => {
                     const isActive = (editForm.theme || "deep-space") === theme.id;
                     return (
-                      <button key={theme.id} onClick={() => setEditForm(f => ({ ...f, theme: theme.id }))}
+                      <button key={theme.id} onClick={() => { setEditForm(f => ({ ...f, theme: theme.id })); applyTheme(theme.id); setPreviewThemeId(theme.id); }}
                         title={theme.label}
                         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                         <div style={{ width: 40, height: 40, borderRadius: 10, background: theme.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive ? `0 0 0 2px ${C.accentDim}` : "none", transition: "all 0.15s" }}>
@@ -3910,8 +3923,8 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
               </div>
 
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
+                <button onClick={cancelEdit} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             </div>
           )}
@@ -3985,7 +3998,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                 {dobError && <div style={{ color: C.red, fontSize: 12, marginBottom: 8 }}>{dobError}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={saveDob} disabled={dobSaving}
-                    style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     {dobSaving ? "Saving…" : "Save Birthday"}
                   </button>
                   <button onClick={() => { setEditingDob(false); setDobForm({ month: "", day: "", year: "" }); setDobError(""); }}
@@ -4070,7 +4083,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
           {isAdult && incomingRequests.length > 0 && (
             <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>
-                Gamertag Requests <span style={{ background: C.accent, color: "#fff", borderRadius: 10, padding: "2px 8px", fontSize: 11, marginLeft: 6 }}>{incomingRequests.length}</span>
+                Gamertag Requests <span style={{ background: C.accent, color: C.accentText, borderRadius: 10, padding: "2px 8px", fontSize: 11, marginLeft: 6 }}>{incomingRequests.length}</span>
               </div>
               {incomingRequests.map(req => {
                 const plat = PLATFORMS.find(p => p.id === req.platform);
@@ -4085,7 +4098,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                       <span style={{ color: C.textDim, fontSize: 12 }}> gamertag</span>
                     </div>
                     <button onClick={() => respondToRequest(req.id, "approved")}
-                      style={{ background: C.accent, border: "none", borderRadius: 7, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: C.accent, border: "none", borderRadius: 7, padding: "5px 14px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                       Approve
                     </button>
                     <button onClick={() => respondToRequest(req.id, "denied")}
@@ -4192,7 +4205,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
           {/* Add game bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ color: C.textDim, fontSize: 13 }}>Drag games between columns to update status.</div>
-            <button onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
+            <button onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
           </div>
 
           {/* Search to add */}
@@ -4507,7 +4520,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
       <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 8 }}>Access Denied</div>
       <div style={{ color: C.textMuted, fontSize: 14, marginBottom: 24 }}>You need admin privileges to view this page.</div>
-      <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
+      <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
     </div>
   );
 
@@ -5588,7 +5601,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
             {!isAdult && <span style={{ display: "block", marginTop: 6, color: C.textDim, fontSize: 12 }}>You'll need to add your birth year first — gamertag sharing is available at 18.</span>}
           </div>
           <button onClick={() => setActivePage("profile")}
-            style={{ background: C.accent, border: "none", borderRadius: 10, padding: "9px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            style={{ background: C.accent, border: "none", borderRadius: 10, padding: "9px 24px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             Go to Profile →
           </button>
         </div>
@@ -5662,7 +5675,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
               {!isOwn && (
                 <button onClick={() => { setCurrentPlayer(profile?.id); setActivePage("player"); }}
-                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                   Profile
                 </button>
               )}
@@ -5777,7 +5790,7 @@ function AuthPage({ onBack }) {
           )}
           {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {message && <div style={{ color: C.green, fontSize: 13, marginBottom: 16 }}>{message}</div>}
-          <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+          <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
             {loading ? "..." : mode === "login" ? "Log In" : "Create Account"}
           </button>
           {onBack && (
