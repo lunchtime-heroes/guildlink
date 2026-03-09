@@ -1545,22 +1545,32 @@ function PostModal({ postId, onClose, currentUser }) {
 }
 
 // ─── NAV BAR ──────────────────────────────────────────────────────────────────
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, notifications, onMarkAllRead, onClearAll, onOpenPost }) {
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
   const isAdmin = currentUser?.is_admin;
   const isWriter = currentUser?.is_admin || currentUser?.is_writer;
+
+  const handleNavClick = (id) => {
+    if (id === "reviews-nav") {
+      setProfileDefaultTab?.("reviews");
+      setActivePage("profile");
+    } else {
+      setActivePage(id);
+    }
+  };
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
     { id: "squad", icon: "⚡", label: "LFG" },
-    { id: "npcs", icon: "⚙", label: "NPCs" },
+    ...(!isGuest ? [{ id: "reviews-nav", icon: "⭐", label: "Reviews" }] : [{ id: "npcs", icon: "⚙", label: "NPCs" }]),
   ];
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
     ...(!isGuest ? [{ id: "profile", icon: "◉", label: "Profile" }] : []),
     { id: "squad", icon: "⚡", label: "LFG" },
+    ...(!isGuest ? [{ id: "reviews-nav", icon: "⭐", label: "Reviews" }] : []),
     { id: "founding", icon: "⚔️", label: "Founding", gold: true },
     ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
     ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
@@ -1611,10 +1621,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           {mobileItems.map(item => {
             const active = activePage === item.id || (item.id === "npcs" && activePage === "npc");
             return (
-              <button key={item.id} onClick={() => setActivePage(item.id)} style={{
-                flex: 1, background: "transparent", border: "none",
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 3, cursor: "pointer", padding: "8px 0",
+              <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
                 color: active ? C.accentSoft : C.textDim,
               }}>
                 <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
@@ -1645,7 +1652,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       </div>
       <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
         {desktopItems.map(item => (
-          <button key={item.id} onClick={() => setActivePage(item.id)} style={{
+          <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
             background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : item.admin ? activePage === item.id ? "#ef444420" : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
             border: item.gold ? activePage === item.id ? `1px solid ${C.goldBorder}` : "1px solid transparent" : item.admin ? activePage === item.id ? "1px solid #ef444440" : "1px solid transparent" : activePage === item.id ? `1px solid ${C.accentDim}` : "1px solid transparent",
             borderRadius: 8, padding: "6px 14px",
@@ -1745,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-59</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-62</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2787,9 +2794,6 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
                   {taggedGames.length === 0 && (
                     <span style={{ color: C.textDim, fontSize: 12 }}>@ a game to tag it</span>
                   )}
-                  {(isMobile ? ["⭐", "⚡"] : ["⭐ Review", "⚡ LFG"]).map((tag, i) => (
-                    <button key={i} style={{ background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 6, padding: isMobile ? "6px 10px" : "4px 10px", color: C.textMuted, fontSize: isMobile ? 16 : 12, cursor: "pointer" }}>{tag}</button>
-                  ))}
                 </div>
                 <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
               </div>
@@ -3523,6 +3527,11 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   const user = currentUser;
   if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
+
+  // Re-sync if parent changes the default tab (e.g. from quest banner)
+  useEffect(() => {
+    if (defaultTab) setActiveTab(defaultTab);
+  }, [defaultTab]);
   const [editing, setEditing] = useState(false);
   const [previewThemeId, setPreviewThemeId] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
@@ -6506,7 +6515,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} />
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} />
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
