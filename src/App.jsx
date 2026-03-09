@@ -101,30 +101,47 @@ function useWindowSize() {
   return width;
 }
 
-const C = {
-  bg: "#080e1a",
-  surface: "#0d1424",
-  surfaceHover: "#111c30",
-  surfaceRaised: "#162035",
-  border: "#1e2d45",
-  borderHover: "#2a3f5f",
-  accent: "#0ea5e9",
-  accentGlow: "#0ea5e922",
-  accentSoft: "#38bdf8",
-  accentDim: "#0ea5e944",
-  green: "#22c55e",
-  gold: "#f59e0b",
-  goldDim: "#f59e0b22",
-  goldBorder: "#f59e0b33",
-  goldGlow: "#f59e0b15",
-  red: "#ef4444",
-  teal: "#0d9488",
-  purple: "#818cf8",
-  text: "#e2e8f4",
-  textMuted: "#7d90ad",
-  textDim: "#3d5068",
-  online: "#22c55e",
+const THEMES = {
+  "deep-space": {
+    bg: "#080e1a", surface: "#0d1424", surfaceHover: "#111c30", surfaceRaised: "#162035",
+    border: "#1e2d45", borderHover: "#2a3f5f",
+    accent: "#0ea5e9", accentGlow: "#0ea5e922", accentSoft: "#38bdf8", accentDim: "#0ea5e944",
+    green: "#22c55e", gold: "#f59e0b", goldDim: "#f59e0b22", goldBorder: "#f59e0b33", goldGlow: "#f59e0b15",
+    red: "#ef4444", teal: "#0d9488", purple: "#818cf8",
+    text: "#e2e8f4", textMuted: "#7d90ad", textDim: "#3d5068", online: "#22c55e",
+  },
+  "light": {
+    bg: "#f4f6fa", surface: "#ffffff", surfaceHover: "#eef1f7", surfaceRaised: "#e8ecf4",
+    border: "#d1d9e6", borderHover: "#b0bcd4",
+    accent: "#0284c7", accentGlow: "#0284c722", accentSoft: "#0369a1", accentDim: "#0284c744",
+    green: "#16a34a", gold: "#d97706", goldDim: "#d9770622", goldBorder: "#d9770633", goldGlow: "#d9770615",
+    red: "#dc2626", teal: "#0f766e", purple: "#7c3aed",
+    text: "#0f172a", textMuted: "#475569", textDim: "#94a3b8", online: "#16a34a",
+  },
+  "high-contrast": {
+    bg: "#000000", surface: "#0a0a0a", surfaceHover: "#141414", surfaceRaised: "#1a1a1a",
+    border: "#333333", borderHover: "#555555",
+    accent: "#ffffff", accentGlow: "#ffffff22", accentSoft: "#eeeeee", accentDim: "#ffffff44",
+    green: "#00ff00", gold: "#ffdd00", goldDim: "#ffdd0022", goldBorder: "#ffdd0033", goldGlow: "#ffdd0015",
+    red: "#ff3333", teal: "#00dddd", purple: "#cc99ff",
+    text: "#ffffff", textMuted: "#cccccc", textDim: "#888888", online: "#00ff00",
+  },
+  "colorblind": {
+    bg: "#080e1a", surface: "#0d1424", surfaceHover: "#111c30", surfaceRaised: "#162035",
+    border: "#1e2d45", borderHover: "#2a3f5f",
+    accent: "#60a5fa", accentGlow: "#60a5fa22", accentSoft: "#93c5fd", accentDim: "#60a5fa44",
+    green: "#f59e0b", gold: "#fbbf24", goldDim: "#fbbf2422", goldBorder: "#fbbf2433", goldGlow: "#fbbf2415",
+    red: "#f97316", teal: "#38bdf8", purple: "#a78bfa",
+    text: "#e2e8f4", textMuted: "#7d90ad", textDim: "#3d5068", online: "#f59e0b",
+  },
 };
+
+const C = { ...THEMES["deep-space"] };
+
+function applyTheme(themeId) {
+  const palette = THEMES[themeId] || THEMES["deep-space"];
+  Object.assign(C, palette);
+}
 
 // ─── FOUNDING / RING / QUEST DATA ────────────────────────────────────────────
 
@@ -1707,7 +1724,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-55</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-56</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3478,7 +3495,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
-function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab, onProfileSaved }) {
+function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab, onProfileSaved, onThemeChange }) {
   const user = currentUser;
   if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
@@ -3705,6 +3722,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
     if (!error) {
+      onThemeChange?.(editForm.theme || "deep-space");
       setEditing(false);
       onProfileSaved?.();
       loadIncomingRequests();
@@ -3898,8 +3916,9 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
             </div>
           )}
 
-          {/* Birthday / DOB Section */}
-          <div style={{ marginTop: 16, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+          {/* Birthday / DOB Section — only visible while editing */}
+          {editing && (
+          <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: user.date_of_birth || editingDob ? 12 : 0 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Birthday</div>
               {user.date_of_birth && !editingDob && canChangeDob && (
@@ -3977,6 +3996,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
               </div>
             )}
           </div>
+          )} {/* end editing Birthday section */}
 
           {/* Gamertag Management */}
           <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
@@ -3984,7 +4004,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
               <div>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Gamertags</div>
                 {!user.date_of_birth && (
-                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Add your birthday above to enable gamertag sharing.</div>
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Add your birthday in Edit Profile to enable gamertag sharing.</div>
                 )}
                 {user.date_of_birth && !isAdult && (
                   <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Gamertag sharing is available at 18.</div>
@@ -6155,10 +6175,19 @@ export default function GuildLink() {
   const [notifications, setNotifications] = useState([]);
   const [showAuth, setShowAuth] = useState(false);
   const [signInPromptMsg, setSignInPromptMsg] = useState(null);
+  const [themeKey, setThemeKey] = useState("deep-space");
   const width = useWindowSize();
   const isMobile = width < 768;
 
+  const applyAndSetTheme = (themeId) => {
+    applyTheme(themeId);
+    setThemeKey(themeId);
+    try { localStorage.setItem("gl-theme", themeId); } catch(e) {}
+  };
+
   useEffect(() => {
+    // Apply any locally saved theme immediately on load
+    try { const saved = localStorage.getItem("gl-theme"); if (saved) applyAndSetTheme(saved); } catch(e) {}
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
@@ -6173,7 +6202,10 @@ export default function GuildLink() {
 
   const fetchProfile = async (userId) => {
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-    if (data) setProfile(data);
+    if (data) {
+      setProfile(data);
+      if (data.theme) applyAndSetTheme(data.theme);
+    }
     fetchNotifications(userId);
   };
 
@@ -6279,7 +6311,7 @@ export default function GuildLink() {
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} />)}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
