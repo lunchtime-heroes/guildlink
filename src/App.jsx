@@ -102,27 +102,27 @@ function useWindowSize() {
 }
 
 const C = {
-  bg: "#0a0c12",
-  surface: "#13161f",
-  surfaceHover: "#1a1d2a",
-  surfaceRaised: "#1e2130",
-  border: "#252836",
-  borderHover: "#353849",
-  accent: "#6c63ff",
-  accentGlow: "#6c63ff22",
-  accentSoft: "#9b94ff",
-  accentDim: "#6c63ff44",
+  bg: "#080e1a",
+  surface: "#0d1424",
+  surfaceHover: "#111c30",
+  surfaceRaised: "#162035",
+  border: "#1e2d45",
+  borderHover: "#2a3f5f",
+  accent: "#0ea5e9",
+  accentGlow: "#0ea5e922",
+  accentSoft: "#38bdf8",
+  accentDim: "#0ea5e944",
   green: "#22c55e",
   gold: "#f59e0b",
   goldDim: "#f59e0b22",
   goldBorder: "#f59e0b33",
   goldGlow: "#f59e0b15",
   red: "#ef4444",
-  teal: "#06b6d4",
-  purple: "#a855f7",
-  text: "#e8eaf2",
-  textMuted: "#8b8fa8",
-  textDim: "#4a4d63",
+  teal: "#0d9488",
+  purple: "#818cf8",
+  text: "#e2e8f4",
+  textMuted: "#7d90ad",
+  textDim: "#3d5068",
   online: "#22c55e",
 };
 
@@ -1539,7 +1539,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           height: 52, display: "flex", alignItems: "center", padding: "0 16px", gap: 10,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setActivePage("feed")}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: `linear-gradient(135deg, ${C.accent}, #a855f7)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>G</div>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>G</div>
             <span style={{ fontWeight: 800, fontSize: 16, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
           </div>
           <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
@@ -1598,7 +1598,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       height: 60, display: "flex", alignItems: "center", padding: "0 24px", gap: 8,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 20, cursor: "pointer" }} onClick={() => setActivePage("feed")}>
-        <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${C.accent}, #a855f7)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>G</div>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>G</div>
         <span style={{ fontWeight: 800, fontSize: 18, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
       </div>
       <div style={{ flex: 1, maxWidth: 300, position: "relative", display: "flex", alignItems: "center" }}>
@@ -1707,7 +1707,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-53</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-54</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2515,7 +2515,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       {showBanner && !isGuest && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
       {/* Guest welcome banner */}
       {isGuest && showBanner && (
-        <div style={{ background: `linear-gradient(135deg, ${C.accent}22, #a855f722)`, border: `1px solid ${C.accentDim}`, borderRadius: 14, padding: isMobile ? "16px" : "18px 24px", marginBottom: 14, display: "flex", alignItems: "center", gap: isMobile ? 12 : 20, flexWrap: isMobile ? "wrap" : "nowrap", position: "relative" }}>
+        <div style={{ background: `linear-gradient(135deg, ${C.accent}22, ${C.teal}22)`, border: `1px solid ${C.accentDim}`, borderRadius: 14, padding: isMobile ? "16px" : "18px 24px", marginBottom: 14, display: "flex", alignItems: "center", gap: isMobile ? 12 : 20, flexWrap: isMobile ? "wrap" : "nowrap", position: "relative" }}>
           <button onClick={() => setShowBanner(false)} style={{ position: "absolute", top: 10, right: 12, background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
           <div style={{ fontSize: isMobile ? 28 : 36, flexShrink: 0 }}>⚔️</div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -2567,7 +2567,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         {/* User block — real profile or guest "unclaimed" card */}
         {isGuest ? (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}22, #a855f722)` }} />
+            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}22, ${C.teal}22)` }} />
             <div style={{ padding: "0 16px 18px", marginTop: -22 }}>
               {/* Question mark avatar */}
               <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
@@ -2582,7 +2582,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           </div>
         ) : user ? (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, #a855f744)` }} />
+            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)` }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
               <Avatar initials={user.avatar} size={44} status="online" />
               <div style={{ marginTop: 8 }}>
@@ -2914,12 +2914,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
     const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name.toLowerCase());
     if (hard) return { color: hard.color, gradient: hard.gradient, icon: hard.icon };
     const ICONS = { 'MMO': '🌐', 'MOBA': '⚔️', 'Battle Royale': '🎯', 'Action RPG': '🗡️', 'RPG': '📖', 'Roguelike': '🎲', 'Tactical Shooter': '🔫', 'Hero Shooter': '🦸', 'Looter Shooter': '💥', 'Soulslike': '💀', 'Fighting': '🥊', 'Farming Sim': '🌱', 'Life Simulation': '🏡', 'City Builder': '🏙️', 'Sandbox Survival': '⛏️', 'Survival': '🪓', 'Racing': '🏎️', 'Sports': '⚽', 'Platformer': '🕹️', 'Auto Battler': '♟️', 'RTS': '🏰', 'Turn-Based Strategy': '🎖️', 'Simulation RPG': '🎭', 'Puzzle Adventure': '🔍', 'Open World': '🗺️' };
-    const COLORS = ['#6c63ff','#f59e0b','#10b981','#ef4444','#3b82f6','#a855f7','#f97316','#06b6d4'];
+    const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
     const colorIndex = g.name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % COLORS.length;
     const color = COLORS[colorIndex];
     return {
       color,
-      gradient: `linear-gradient(135deg, ${color}22 0%, #0a0c12 100%)`,
+      gradient: `linear-gradient(135deg, ${color}22 0%, #080e1a 100%)`,
       icon: ICONS[g.genre] || '🎮',
     };
   };
@@ -3153,8 +3153,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
     description: dbGame.description,
     followers: dbGame.followers,
     genre: dbGame.genre ? [dbGame.genre] : (hardcoded?.genre || []),
-    color: hardcoded?.color || (() => { const COLORS = ['#6c63ff','#f59e0b','#10b981','#ef4444','#3b82f6','#a855f7','#f97316','#06b6d4']; return COLORS[(dbGame.name || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length]; })(),
-    gradient: hardcoded?.gradient || (() => { const COLORS = ['#6c63ff','#f59e0b','#10b981','#ef4444','#3b82f6','#a855f7','#f97316','#06b6d4']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return `linear-gradient(135deg, ${c}22 0%, #0a0c12 100%)`; })(),
+    color: hardcoded?.color || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; return COLORS[(dbGame.name || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length]; })(),
+    gradient: hardcoded?.gradient || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return `linear-gradient(135deg, ${c}22 0%, #080e1a 100%)`; })(),
     icon: hardcoded?.icon || { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽','Platformer':'🕹️','Auto Battler':'♟️','RTS':'🏰','Turn-Based Strategy':'🎖️' }[dbGame.genre] || '🎮',
     claimed: dbGame.is_claimed,
     id: gameId,
@@ -4485,7 +4485,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               { label: "New This Week", value: stats.newUsersWeek, color: C.online, icon: "🆕" },
               { label: "Posts This Week", value: stats.postsWeek, color: C.accentSoft, icon: "📝" },
               { label: "Posts Today", value: stats.postsToday, color: C.gold, icon: "🔥" },
-              { label: "Reviews", value: stats.totalReviews, color: "#a855f7", icon: "⭐" },
+              { label: "Reviews", value: stats.totalReviews, color: "#0d9488", icon: "⭐" },
             ].map(s => (
               <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
@@ -5679,7 +5679,7 @@ function AuthPage({ onBack }) {
       <style>{"@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,700;9..40,900&display=swap'); * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }"}</style>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #6c63ff, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24, fontWeight: 900, color: "#fff" }}>GL</div>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, " + C.accent + ", " + C.teal + ")", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 24, fontWeight: 900, color: "#fff" }}>GL</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: C.text }}>GuildLink</div>
           <div style={{ color: C.textMuted, fontSize: 14, marginTop: 4 }}>The town square for gamers</div>
         </div>
@@ -6218,7 +6218,7 @@ export default function GuildLink() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
         * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #0a0c12; }
+        ::-webkit-scrollbar-track { background: #080e1a; }
         ::-webkit-scrollbar-thumb { background: #252836; border-radius: 3px; }
         button { font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; }
         button:hover { opacity: 0.85; }
