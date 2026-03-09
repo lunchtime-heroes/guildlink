@@ -56,6 +56,17 @@ async function logChartEvent(gameId, eventType, userId) {
   }
 }
 
+// Returns age in years from a date string, or null if not set
+function getAge(dob) {
+  if (!dob) return null;
+  const today = new Date();
+  const birth = new Date(dob);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 function timeAgo(timestamp) {
   if (!timestamp) return "Just now";
   const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
@@ -1696,7 +1707,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-52</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-53</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3498,7 +3509,51 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     { id: "nintendo", label: "Nintendo", color: "#E4000F" },
     { id: "battlenet", label: "Battle.net", color: "#148EFF" },
   ];
-  const isAdult = user.birth_year && (new Date().getFullYear() - user.birth_year) >= 18;
+  const isAdult = getAge(user.date_of_birth) >= 18;
+
+  // DOB management — separate from main profile edit
+  const [editingDob, setEditingDob] = useState(false);
+  const [dobForm, setDobForm] = useState({ month: "", day: "", year: "" });
+  const [dobSaving, setDobSaving] = useState(false);
+  const [dobError, setDobError] = useState("");
+  const canChangeDob = (user.dob_changes || 0) < 1;
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  const formatDob = (dob) => {
+    if (!dob) return null;
+    const d = new Date(dob + "T00:00:00"); // force local parse
+    return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  };
+
+  const saveDob = async () => {
+    setDobError("");
+    const m = parseInt(dobForm.month), d = parseInt(dobForm.day), y = parseInt(dobForm.year);
+    if (!m || !d || !y || isNaN(m) || isNaN(d) || isNaN(y)) { setDobError("Please fill in all fields."); return; }
+    if (y < 1900 || y > new Date().getFullYear() - 5) { setDobError("Please enter a valid year."); return; }
+    if (m < 1 || m > 12) { setDobError("Please enter a valid month."); return; }
+    if (d < 1 || d > 31) { setDobError("Please enter a valid day."); return; }
+    const dateStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const test = new Date(dateStr);
+    if (isNaN(test.getTime())) { setDobError("That date doesn't look right."); return; }
+    setDobSaving(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const newChanges = (user.dob_changes || 0) + (user.date_of_birth ? 1 : 0);
+    const { error } = await supabase.from("profiles").update({
+      date_of_birth: dateStr,
+      dob_changes: newChanges,
+    }).eq("id", authUser.id);
+    if (!error) {
+      setEditingDob(false);
+      setDobForm({ month: "", day: "", year: "" });
+      onProfileSaved?.();
+      loadIncomingRequests();
+      loadApprovedConnections();
+      loadGamertags();
+    } else {
+      setDobError("Something went wrong. Please try again.");
+    }
+    setDobSaving(false);
+  };
 
   const loadGamertags = async () => {
     const { data } = await supabase.from("gamertags").select("*").eq("user_id", user.id);
@@ -3632,7 +3687,6 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       username: user.name || "",
       bio: user.bio || "",
       games: Array.isArray(user.games) ? user.games.join(", ") : user.games || "",
-      birth_year: user.birth_year ? String(user.birth_year) : "",
     });
     setEditing(true);
   };
@@ -3640,20 +3694,17 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   const saveProfile = async () => {
     setSaving(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    const yearNum = editForm.birth_year ? parseInt(editForm.birth_year) : null;
     const updates = {
       username: editForm.username.trim(),
       handle: "@" + editForm.username.trim().toLowerCase().replace(/\s+/g, "_"),
       bio: editForm.bio.trim(),
       games: editForm.games.trim(),
       avatar_initials: editForm.username.trim().slice(0, 2).toUpperCase(),
-      ...(yearNum && yearNum > 1900 && yearNum < new Date().getFullYear() ? { birth_year: yearNum } : {}),
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
     if (!error) {
       setEditing(false);
       onProfileSaved?.();
-      // Re-check gamertag eligibility after birth year may have changed
       loadIncomingRequests();
       loadApprovedConnections();
       loadGamertags();
@@ -3799,12 +3850,6 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
                 <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
-              {!user.birth_year && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Birth Year <span style={{ color: C.textDim, fontWeight: 400 }}>(optional — unlocks gamertag sharing and LFG for 18+)</span></div>
-                  <input value={editForm.birth_year || ""} onChange={e => setEditForm(f => ({ ...f, birth_year: e.target.value }))} placeholder="e.g. 1990" maxLength={4} style={{ width: 120, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
-                </div>
-              )}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving..." : "Save"}</button>
                 <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
@@ -3812,15 +3857,95 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
             </div>
           )}
 
+          {/* Birthday / DOB Section */}
+          <div style={{ marginTop: 16, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: user.date_of_birth || editingDob ? 12 : 0 }}>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Birthday</div>
+              {user.date_of_birth && !editingDob && canChangeDob && (
+                <button onClick={() => { setEditingDob(true); setDobError(""); }} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>Change</button>
+              )}
+            </div>
+
+            {!user.date_of_birth && !editingDob && (
+              <div>
+                <div style={{ color: C.textDim, fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
+                  Add your birthday to unlock gamertag sharing and LFG at 18+.
+                </div>
+                <button onClick={() => { setEditingDob(true); setDobError(""); }}
+                  style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  Add Birthday
+                </button>
+              </div>
+            )}
+
+            {user.date_of_birth && !editingDob && (
+              <div>
+                <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{formatDob(user.date_of_birth)}</div>
+                {!canChangeDob ? (
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 6, lineHeight: 1.5 }}>
+                    Need to correct this?{" "}
+                    <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer"
+                      style={{ color: C.accentSoft, textDecoration: "none", fontWeight: 600 }}>Message a mod →</a>
+                  </div>
+                ) : (
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>You can change this once if you made a mistake.</div>
+                )}
+              </div>
+            )}
+
+            {editingDob && (
+              <div>
+                <div style={{ color: C.textDim, fontSize: 11, marginBottom: 10, lineHeight: 1.5 }}>
+                  {user.date_of_birth
+                    ? "This is your one allowed change. After this, contact a mod."
+                    : "Never shown publicly. Used only for age-based features and birthday celebrations."}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  <div style={{ flex: "0 0 110px" }}>
+                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Month</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <input value={dobForm.month} onChange={e => setDobForm(f => ({ ...f, month: e.target.value }))}
+                        placeholder="1–12" maxLength={2}
+                        style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                  </div>
+                  <div style={{ flex: "0 0 80px" }}>
+                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Day</div>
+                    <input value={dobForm.day} onChange={e => setDobForm(f => ({ ...f, day: e.target.value }))}
+                      placeholder="1–31" maxLength={2}
+                      style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ flex: "0 0 90px" }}>
+                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Year</div>
+                    <input value={dobForm.year} onChange={e => setDobForm(f => ({ ...f, year: e.target.value }))}
+                      placeholder="e.g. 1990" maxLength={4}
+                      style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+                {dobError && <div style={{ color: C.red, fontSize: 12, marginBottom: 8 }}>{dobError}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={saveDob} disabled={dobSaving}
+                    style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    {dobSaving ? "Saving…" : "Save Birthday"}
+                  </button>
+                  <button onClick={() => { setEditingDob(false); setDobForm({ month: "", day: "", year: "" }); setDobError(""); }}
+                    style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Gamertag Management */}
-          <div style={{ marginTop: 20, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+          <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gamertags.length > 0 || addingTag ? 14 : 0 }}>
               <div>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Gamertags</div>
-                {!isAdult && !user.birth_year && (
-                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Add your birth year in Edit Profile to enable gamertag sharing.</div>
+                {!user.date_of_birth && (
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Add your birthday above to enable gamertag sharing.</div>
                 )}
-                {user.birth_year && !isAdult && (
+                {user.date_of_birth && !isAdult && (
                   <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Gamertag sharing is available at 18.</div>
                 )}
               </div>
@@ -5229,7 +5354,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
     { id: "battlenet", label: "Battle.net", color: "#148EFF" },
   ];
 
-  const isAdult = currentUser?.birth_year && (new Date().getFullYear() - currentUser.birth_year) >= 18;
+  const isAdult = getAge(currentUser?.date_of_birth) >= 18;
 
   // Load viewer's own gamertags and exclusion list
   const loadViewerContext = async () => {
@@ -5501,7 +5626,9 @@ function AuthPage({ onBack }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [birthYear, setBirthYear] = useState("");
+  const [dobMonth, setDobMonth] = useState("");
+  const [dobDay, setDobDay] = useState("");
+  const [dobYear, setDobYear] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -5516,16 +5643,20 @@ function AuthPage({ onBack }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
     } else {
-      // Validate birth year if provided
-      const yearNum = birthYear ? parseInt(birthYear) : null;
-      if (birthYear && (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear - 5)) {
-        setError("Please enter a valid birth year.");
-        setLoading(false);
-        return;
+      // Validate DOB if provided
+      let dobStr = null;
+      const hasAnyDob = dobMonth || dobDay || dobYear;
+      if (hasAnyDob) {
+        const m = parseInt(dobMonth), d = parseInt(dobDay), y = parseInt(dobYear);
+        if (!m || !d || !y || m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > currentYear - 5) {
+          setError("Please enter a valid birthday, or leave all fields blank to set later.");
+          setLoading(false);
+          return;
+        }
+        dobStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
       }
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) { setError(error.message); setLoading(false); return; }
-      // Write extra fields to profile if user was created
       if (data?.user) {
         const profileUpdates = {};
         if (username.trim()) {
@@ -5533,7 +5664,7 @@ function AuthPage({ onBack }) {
           profileUpdates.handle = "@" + username.trim().toLowerCase().replace(/\s+/g, "_");
           profileUpdates.avatar_initials = username.trim().slice(0, 2).toUpperCase();
         }
-        if (yearNum) profileUpdates.birth_year = yearNum;
+        if (dobStr) profileUpdates.date_of_birth = dobStr;
         if (Object.keys(profileUpdates).length > 0) {
           await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
         }
@@ -5573,9 +5704,13 @@ function AuthPage({ onBack }) {
                 <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
               </div>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Birth Year <span style={{ color: C.textDim, fontWeight: 400 }}>(optional)</span></div>
-                <input value={birthYear} onChange={e => setBirthYear(e.target.value)} placeholder="e.g. 1990" maxLength={4} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
-                <div style={{ color: C.textDim, fontSize: 11, marginTop: 5, lineHeight: 1.5 }}>Unlocks gamertag sharing and LFG for users 18+. You can add this later in your profile.</div>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Birthday <span style={{ color: C.textDim, fontWeight: 400 }}>(optional)</span></div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={dobMonth} onChange={e => setDobMonth(e.target.value)} placeholder="MM" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
+                  <input value={dobDay} onChange={e => setDobDay(e.target.value)} placeholder="DD" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
+                  <input value={dobYear} onChange={e => setDobYear(e.target.value)} placeholder="YYYY" maxLength={4} style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                </div>
+                <div style={{ color: C.textDim, fontSize: 11, marginTop: 5, lineHeight: 1.5 }}>Unlocks gamertag sharing and LFG at 18+. You can add this later in your profile.</div>
               </div>
             </>
           )}
@@ -6066,6 +6201,8 @@ export default function GuildLink() {
     is_admin: profile.is_admin || false,
     is_writer: profile.is_writer || false,
     birth_year: profile.birth_year || null,
+    date_of_birth: profile.date_of_birth || null,
+    dob_changes: profile.dob_changes || 0,
   } : null;
 
   return (
