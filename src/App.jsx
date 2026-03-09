@@ -16,7 +16,7 @@ function getWeekStart() {
     .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
   // Shift now to Pacific time
   const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-  // Roll back to the most recent Sundayå
+  // Roll back to the most recent Sunday
   const dayOfWeek = pacificNow.getDay(); // 0 = Sunday
   const sunday = new Date(pacificNow);
   sunday.setDate(pacificNow.getDate() - dayOfWeek);
@@ -619,6 +619,13 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLocalPost(p => ({ ...p, liked: newLiked, likes: newLikes }));
     if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
       await supabase.from("posts").update({ likes: newLikes }).eq("id", post.id);
+      // Quest trigger for post author receiving a like
+      if (newLiked && post.user_id) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser && post.user_id !== authUser.id) {
+          await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "like_received" });
+        }
+      }
     }
   };
 
@@ -655,6 +662,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       const gameId = post.game_tag || post.gameId;
       if (gameId && gameId.includes('-') && authUser) logChartEvent(gameId, 'comment', authUser.id);
+      // Quest triggers
+      if (localPost.user.isNPC) {
+        await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "npc_replied" });
+      }
+      // Notify post author (if not own post and not NPC post)
+      if (!localPost.user.isNPC && post.user_id && post.user_id !== authUser.id) {
+        await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "comment_received" });
+      }
       setLiveComments(prev => [...(prev || []), data]);
       setCommentText("");
       setReplyTo(null);
@@ -872,6 +887,8 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
     } else {
       await supabase.from("follows").insert({ follower_id: user.id, followed_npc_id: npcId });
       setFollowed(true);
+      // Quest trigger
+      await supabase.rpc("increment_quest_progress", { p_user_id: user.id, p_trigger: "npc_followed" });
     }
     setFollowLoading(false);
   };
@@ -1728,7 +1745,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-57</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-58</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3145,6 +3162,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
     });
     if (!error) {
       logChartEvent(dbGame.id, 'review', authUser.id);
+      // Quest trigger
+      await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "review_written" });
       // Refresh reviews and charts
       const { data: reviews } = await supabase.from("reviews").select("*, profiles(username, handle, avatar_initials)").eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(5);
       if (reviews) setLatestReviews(reviews);
@@ -3757,6 +3776,9 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     });
     const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
     if (eventMap[toStatus]) logChartEvent(gameId, eventMap[toStatus], authUser.id);
+    // Quest triggers — only fire for the destination status
+    if (toStatus === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
+    if (toStatus === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
     setUserShelf(prev => {
       const entry = prev[fromStatus].find(e => e.game_id === gameId);
       if (!entry) return prev;
@@ -3780,6 +3802,10 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     if (!error) {
       const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
       if (eventMap[status]) logChartEvent(game.id, eventMap[status], authUser.id);
+      // Quest triggers
+      await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
+      if (status === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
+      if (status === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
       setUserShelf(prev => {
         const cleaned = {
           want_to_play: prev.want_to_play.filter(e => e.game_id !== game.id),
