@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-65</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-66</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3914,7 +3914,6 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     { id: "games", label: `Games${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
     { id: "groups", label: "Groups" },
     { id: "quests", label: "Quests" },
-    { id: "rings", label: "Rings" },
   ];
 
   return (
@@ -4528,54 +4527,6 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
         </div>
       )}
 
-      {/* Rings */}
-      {activeTab === "rings" && (
-        <div>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 4 }}>Active Ring</div>
-            <div style={{ color: C.textDim, fontSize: 13, marginBottom: 16 }}>Your ring shows on your avatar everywhere on GuildLink.</div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <Avatar initials={user.avatar} size={56} founding={user.isFounding} ring={user.activeRing} />
-              <div>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{PROFILE_RINGS.find(r => r.id === user.activeRing)?.label}</div>
-                <div style={{ color: C.textDim, fontSize: 13 }}>{PROFILE_RINGS.find(r => r.id === user.activeRing)?.description}</div>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 12 }}>
-            {PROFILE_RINGS.map(ring => (
-              <div key={ring.id} style={{ background: C.surface, border: `1px solid ${ring.unlocked ? ring.color + "44" : C.border}`, borderRadius: 14, padding: 18, opacity: ring.unlocked ? 1 : 0.6, position: "relative" }}>
-                {ring.special && <div style={{ position: "absolute", top: 12, right: 12 }}><Badge small color={C.gold}>Exclusive</Badge></div>}
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                  <div style={{ position: "relative", width: 44, height: 44 }}>
-                    {ring.id !== "none" && <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `3px solid ${ring.color}`, boxShadow: `0 0 12px ${ring.glow || ring.color + "44"}` }} />}
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: `${ring.color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                      {ring.id === "none" ? "○" : ring.id === "founding" ? "⚔️" : ring.id === "platinum" ? "📝" : ring.id === "crimson" ? "🏆" : ring.id === "void" ? "💯" : ring.id === "emerald" ? "🤝" : ring.id === "celestial" ? "⭐" : "🕯️"}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ fontWeight: 700, color: ring.unlocked ? ring.color : C.textMuted, fontSize: 13, marginBottom: 4, textAlign: "center" }}>{ring.label}</div>
-                <div style={{ color: C.textDim, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>{ring.unlocked ? ring.description : ring.how}</div>
-                {ring.unlocked && ring.id !== "none" && (
-                  <button onClick={() => ring.id !== user.activeRing && equipRing(ring.id)} style={{ width: "100%", marginTop: 10, background: ring.id === user.activeRing ? `${ring.color}22` : "transparent", border: `1px solid ${ring.color}44`, borderRadius: 8, padding: "6px", color: ring.id === user.activeRing ? ring.color : C.textMuted, fontSize: 12, fontWeight: 600, cursor: ring.id === user.activeRing ? "default" : "pointer" }}>
-                    {ring.id === user.activeRing ? "Active ✓" : "Equip"}
-                  </button>
-                )}
-                {!ring.unlocked && <div style={{ marginTop: 10, textAlign: "center", color: C.textDim, fontSize: 11 }}>🔒 Locked</div>}
-              </div>
-            ))}
-          </div>
-          {!user.isFounding && (
-            <div style={{ marginTop: 16, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 4 }}>Want the Founding Ring?</div>
-                <div style={{ color: C.textDim, fontSize: 13 }}>The only ring you can't earn through quests. Founding members only.</div>
-              </div>
-              <button onClick={() => setActivePage("founding")} style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Become a Founding Member</button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
