@@ -1707,7 +1707,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-54</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-55</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3687,6 +3687,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       username: user.name || "",
       bio: user.bio || "",
       games: Array.isArray(user.games) ? user.games.join(", ") : user.games || "",
+      theme: user.theme || "deep-space",
     });
     setEditing(true);
   };
@@ -3700,6 +3701,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       bio: editForm.bio.trim(),
       games: editForm.games.trim(),
       avatar_initials: editForm.username.trim().slice(0, 2).toUpperCase(),
+      theme: editForm.theme || "deep-space",
     };
     const { error } = await supabase.from("profiles").update(updates).eq("id", authUser.id);
     if (!error) {
@@ -3836,7 +3838,14 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle}</div>
               <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
             </div>
-            <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+            {editing ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
+                <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              </div>
+            ) : (
+              <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+            )}
           </div>
 
           {editing && (
@@ -3846,12 +3855,44 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Display Name</div>
                 <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </div>
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 16 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
                 <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
+
+              {/* Theme picker */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 8 }}>Theme</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {[
+                    { id: "deep-space", label: "Deep Space", bg: "#080e1a", accent: "#0ea5e9" },
+                    { id: "light", label: "Light", bg: "#f4f6fa", accent: "#0284c7" },
+                    { id: "high-contrast", label: "High Contrast", bg: "#000000", accent: "#ffffff" },
+                    { id: "colorblind", label: "Colorblind Safe", bg: "#0a0c1a", accent: "#60a5fa" },
+                  ].map(theme => {
+                    const isActive = (editForm.theme || "deep-space") === theme.id;
+                    return (
+                      <button key={theme.id} onClick={() => setEditForm(f => ({ ...f, theme: theme.id }))}
+                        title={theme.label}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: theme.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive ? `0 0 0 2px ${C.accentDim}` : "none", transition: "all 0.15s" }}>
+                          <div style={{ width: 16, height: 16, borderRadius: 4, background: theme.accent }} />
+                        </div>
+                        <span style={{ color: isActive ? C.accentSoft : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap" }}>{theme.label}</span>
+                      </button>
+                    );
+                  })}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: C.surface, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 16 }}>🔒</span>
+                    </div>
+                    <span style={{ color: C.textDim, fontSize: 10, whiteSpace: "nowrap" }}>More via quests</span>
+                  </div>
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving..." : "Save"}</button>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
                 <button onClick={() => setEditing(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             </div>
@@ -6203,6 +6244,7 @@ export default function GuildLink() {
     birth_year: profile.birth_year || null,
     date_of_birth: profile.date_of_birth || null,
     dob_changes: profile.dob_changes || 0,
+    theme: profile.theme || "deep-space",
   } : null;
 
   return (
