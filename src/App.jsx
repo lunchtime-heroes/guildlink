@@ -1745,7 +1745,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-58</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-59</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3164,6 +3164,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
       logChartEvent(dbGame.id, 'review', authUser.id);
       // Quest trigger
       await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "review_written" });
+      onQuestComplete?.();
       // Refresh reviews and charts
       const { data: reviews } = await supabase.from("reviews").select("*, profiles(username, handle, avatar_initials)").eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(5);
       if (reviews) setLatestReviews(reviews);
@@ -3518,7 +3519,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
 
 // ─── PROFILE PAGE ─────────────────────────────────────────────────────────────
 
-function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab, onProfileSaved, onThemeChange }) {
+function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, defaultTab, onProfileSaved, onThemeChange, onQuestComplete }) {
   const user = currentUser;
   if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
@@ -3538,7 +3539,10 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   const [addingGame, setAddingGame] = useState(false);
   const [gameSearch, setGameSearch] = useState("");
   const [gameSearchResults, setGameSearchResults] = useState([]);
-  // Gamertag state
+  // Quest state
+  const [userQuests, setUserQuests] = useState([]);
+  const [userRewards, setUserRewards] = useState([]);
+  const [questsLoaded, setQuestsLoaded] = useState(false);
   const [gamertags, setGamertags] = useState([]);
   const [gamertagForm, setGamertagForm] = useState({ platform: "", tag: "" });
   const [addingTag, setAddingTag] = useState(false);
@@ -3656,6 +3660,21 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     setApprovedConnections(prev => prev.filter(r => r.id !== requestId));
   };
 
+  const loadQuests = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { data: quests } = await supabase.rpc("get_user_quests", { p_user_id: authUser.id });
+    if (quests) {
+      setUserQuests(quests);
+      setQuestsLoaded(true);
+    }
+    const { data: rewards } = await supabase
+      .from("user_rewards")
+      .select("*, quest_rewards(*)")
+      .eq("user_id", authUser.id);
+    if (rewards) setUserRewards(rewards);
+  };
+
   useEffect(() => {
     const load = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -3721,6 +3740,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     loadGamertags();
     loadIncomingRequests();
     loadApprovedConnections();
+    loadQuests();
   }, []);
 
   const startEdit = () => {
@@ -3779,6 +3799,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     // Quest triggers — only fire for the destination status
     if (toStatus === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
     if (toStatus === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
+    onQuestComplete?.();
     setUserShelf(prev => {
       const entry = prev[fromStatus].find(e => e.game_id === gameId);
       if (!entry) return prev;
@@ -3806,6 +3827,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
       if (status === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
       if (status === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
+      onQuestComplete?.();
       setUserShelf(prev => {
         const cleaned = {
           want_to_play: prev.want_to_play.filter(e => e.game_id !== game.id),
@@ -3939,6 +3961,23 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                       </button>
                     );
                   })}
+                  {/* Quest-unlocked themes */}
+                  {userRewards.filter(r => r.quest_rewards?.type === "theme").map(r => {
+                    const tid = r.quest_rewards.value;
+                    const palette = THEMES[tid];
+                    if (!palette) return null;
+                    const isActive = (editForm.theme || "deep-space") === tid;
+                    return (
+                      <button key={tid} onClick={() => { setEditForm(f => ({ ...f, theme: tid })); applyTheme(tid); setPreviewThemeId(tid); }}
+                        title={r.quest_rewards.label}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: palette.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive ? `0 0 0 2px ${C.accentDim}` : "none", transition: "all 0.15s" }}>
+                          <div style={{ width: 16, height: 16, borderRadius: 4, background: palette.accent }} />
+                        </div>
+                        <span style={{ color: isActive ? C.accentSoft : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap" }}>{r.quest_rewards.label}</span>
+                      </button>
+                    );
+                  })}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: C.surface, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontSize: 16 }}>🔒</span>
@@ -3947,6 +3986,32 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                   </div>
                 </div>
               </div>
+
+              {/* Unlocked Rewards */}
+              {userRewards.filter(r => r.quest_rewards?.type === "ring").length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 8 }}>Unlocked Rings</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {userRewards.filter(r => r.quest_rewards?.type === "ring").map(r => {
+                      const ring = PROFILE_RINGS.find(pr => pr.id === r.quest_rewards.value);
+                      const isActive = user.activeRing === r.quest_rewards.value;
+                      if (!ring) return null;
+                      return (
+                        <button key={r.reward_id} title={ring.label}
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          <div style={{ position: "relative", width: 40, height: 40 }}>
+                            <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `2px solid ${ring.color}`, boxShadow: isActive ? `0 0 10px ${ring.color}66` : "none" }} />
+                            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `${ring.color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                              {isActive ? "✓" : "○"}
+                            </div>
+                          </div>
+                          <span style={{ color: isActive ? ring.color : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap" }}>{ring.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
@@ -4389,29 +4454,65 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
 
       {/* Quests */}
       {activeTab === "quests" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {QUESTS.map(quest => (
-            <div key={quest.id} style={{ background: C.surface, border: `1px solid ${quest.done ? C.green + "44" : C.border}`, borderRadius: 14, padding: 20, display: "flex", gap: 16, alignItems: "center" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: quest.done ? `${C.green}22` : C.surfaceRaised, border: `1px solid ${quest.done ? C.green + "44" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-                {quest.done ? "✓" : "🎯"}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                  <span style={{ fontWeight: 700, color: quest.done ? C.green : C.text, fontSize: 14 }}>{quest.title}</span>
-                  {quest.ring && <span style={{ background: PROFILE_RINGS.find(r => r.id === quest.ring)?.color + "22", color: PROFILE_RINGS.find(r => r.id === quest.ring)?.color, border: `1px solid ${PROFILE_RINGS.find(r => r.id === quest.ring)?.color}44`, borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>RING</span>}
-                </div>
-                <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>{quest.desc}</div>
-                <div style={{ height: 5, background: C.surfaceRaised, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min((quest.progress / quest.total) * 100, 100)}%`, background: quest.done ? C.green : C.accent, borderRadius: 3 }} />
-                </div>
-                <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{quest.progress}{quest.unit ? " " + quest.unit : ""} / {quest.total}{quest.unit ? " " + quest.unit : ""}</div>
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ color: quest.done ? C.green : C.textMuted, fontSize: 12, fontWeight: 700 }}>{quest.reward}</div>
-                {quest.done && <div style={{ color: C.green, fontSize: 11, marginTop: 4 }}>Claimed ✓</div>}
-              </div>
+        <div>
+          {!questsLoaded ? (
+            <div style={{ textAlign: "center", padding: 40, color: C.textMuted, fontSize: 14 }}>Loading quests…</div>
+          ) : userQuests.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 40 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+              <div style={{ color: C.text, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>No quests yet</div>
+              <div style={{ color: C.textMuted, fontSize: 13 }}>Start playing, reviewing, and exploring to unlock quests.</div>
             </div>
-          ))}
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* Completed quests first */}
+              {userQuests.filter(q => q.completed).length > 0 && (
+                <div style={{ color: C.green, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4, paddingLeft: 4 }}>
+                  Completed — {userQuests.filter(q => q.completed).length}
+                </div>
+              )}
+              {[...userQuests].sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? -1 : 1;
+                return a.sort_order - b.sort_order;
+              }).map(quest => {
+                const pct = Math.min((quest.progress / quest.threshold) * 100, 100);
+                const rewardColor = quest.reward_type === "ring" ? C.gold : quest.reward_type === "theme" ? C.accent : C.teal;
+                return (
+                  <div key={quest.quest_id} style={{
+                    background: C.surface,
+                    border: `1px solid ${quest.completed ? C.green + "44" : C.border}`,
+                    borderRadius: 14, padding: "16px 20px",
+                    display: "flex", gap: 16, alignItems: "center",
+                    opacity: quest.completed ? 0.85 : 1,
+                  }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: quest.completed ? `${C.green}18` : C.surfaceRaised, border: `1px solid ${quest.completed ? C.green + "33" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                      {quest.completed ? "✓" : quest.is_onboarding ? "🗺️" : "🎯"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: quest.completed ? C.green : C.text, fontSize: 14 }}>{quest.title}</span>
+                        {quest.is_onboarding && !quest.completed && <span style={{ background: C.accentGlow, color: C.accentSoft, border: `1px solid ${C.accentDim}`, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>INTRO</span>}
+                        {quest.reward_id && <span style={{ background: rewardColor + "18", color: rewardColor, border: `1px solid ${rewardColor}33`, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{quest.reward_label}</span>}
+                      </div>
+                      <div style={{ color: C.textMuted, fontSize: 12, marginBottom: quest.completed ? 0 : 8 }}>{quest.description}</div>
+                      {!quest.completed && (
+                        <>
+                          <div style={{ height: 4, background: C.surfaceRaised, borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct}%`, background: C.accent, borderRadius: 2, transition: "width 0.3s" }} />
+                          </div>
+                          <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{quest.progress} / {quest.threshold}</div>
+                        </>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>+{quest.xp_reward} XP</div>
+                      {quest.completed && <div style={{ color: C.green, fontSize: 11, marginTop: 2 }}>Earned ✓</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -6239,6 +6340,35 @@ export default function GuildLink() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Poll for quest completions every 30s while logged in
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const interval = setInterval(() => checkQuestCompletions(session.user.id), 30000);
+    return () => clearInterval(interval);
+  }, [session?.user?.id]);
+
+  const checkQuestCompletions = async (userId) => {
+    const { data } = await supabase
+      .from("user_quests")
+      .select("*, quests(title, xp_reward, reward_id, quest_rewards(label))")
+      .eq("user_id", userId)
+      .eq("completed", true)
+      .eq("notified", false)
+      .order("completed_at", { ascending: true })
+      .limit(1);
+    if (data && data.length > 0) {
+      const uq = data[0];
+      setQuestBanner({
+        quest_id: uq.quest_id,
+        title: uq.quests?.title || "Quest Complete",
+        xp_reward: uq.quests?.xp_reward || 0,
+        reward_label: uq.quests?.quest_rewards?.label || null,
+      });
+      // Mark as notified immediately
+      await supabase.rpc("mark_quest_notified", { p_user_id: userId, p_quest_id: uq.quest_id });
+    }
+  };
+
   const fetchProfile = async (userId) => {
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
     if (data) {
@@ -6246,6 +6376,7 @@ export default function GuildLink() {
       if (data.theme) applyAndSetTheme(data.theme);
     }
     fetchNotifications(userId);
+    checkQuestCompletions(userId);
   };
 
   const fetchNotifications = async (userId) => {
@@ -6269,6 +6400,7 @@ export default function GuildLink() {
   };
 
   const [postModal, setPostModal] = useState(null); // post_id to show in modal
+  const [questBanner, setQuestBanner] = useState(null); // { quest_id, title, xp_reward, reward_label }
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -6327,6 +6459,40 @@ export default function GuildLink() {
           onSignIn={() => { setSignInPromptMsg(null); setShowAuth(true); }}
         />
       )}
+
+      {/* Quest completion banner */}
+      {questBanner && (
+        <div style={{
+          position: "fixed", bottom: isMobile ? 72 : 24, left: "50%", transform: "translateX(-50%)",
+          zIndex: 9999, width: isMobile ? "calc(100vw - 32px)" : 420,
+          background: `linear-gradient(135deg, ${C.surface}, ${C.surfaceRaised})`,
+          border: `1px solid ${C.green}44`, borderRadius: 16,
+          padding: "16px 20px", boxShadow: `0 8px 32px #00000066, 0 0 0 1px ${C.green}22`,
+          display: "flex", alignItems: "center", gap: 16,
+          animation: "slideUp 0.3s ease",
+        }}>
+          <style>{`@keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: `${C.green}18`, border: `1px solid ${C.green}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎯</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: C.green, fontWeight: 800, fontSize: 13, marginBottom: 2 }}>Quest Complete!</div>
+            <div style={{ color: C.text, fontWeight: 700, fontSize: 14, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questBanner.title}</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>+{questBanner.xp_reward} XP</span>
+              {questBanner.reward_label && <span style={{ color: C.accentSoft, fontSize: 12 }}>· {questBanner.reward_label} unlocked</span>}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+            <button onClick={() => { setQuestBanner(null); setActivePage("profile"); setProfileDefaultTab("quests"); }}
+              style={{ background: C.green, border: "none", borderRadius: 8, padding: "6px 12px", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+              View Quests
+            </button>
+            <button onClick={() => setQuestBanner(null)}
+              style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 12px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
         * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
@@ -6350,7 +6516,7 @@ export default function GuildLink() {
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} />)}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
