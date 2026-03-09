@@ -588,7 +588,7 @@ function Badge({ children, color = C.accent, small }) {
 
 // ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -624,6 +624,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser && post.user_id !== authUser.id) {
           await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "like_received" });
+          onQuestTrigger?.();
         }
       }
     }
@@ -665,10 +666,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       // Quest triggers
       if (localPost.user.isNPC) {
         await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "npc_replied" });
+        onQuestTrigger?.();
       }
-      // Notify post author (if not own post and not NPC post)
       if (!localPost.user.isNPC && post.user_id && post.user_id !== authUser.id) {
         await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "comment_received" });
+        onQuestTrigger?.();
       }
       setLiveComments(prev => [...(prev || []), data]);
       setCommentText("");
@@ -857,7 +859,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
 // ─── NPC PROFILE PAGE ─────────────────────────────────────────────────────────
 
-function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, setCurrentPlayer, isMobile, currentUser }) {
+function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, setCurrentPlayer, isMobile, currentUser, onQuestTrigger }) {
   const npc = NPCS[npcId];
   const [activeTab, setActiveTab] = useState("posts");
   const [followed, setFollowed] = useState(false);
@@ -887,8 +889,8 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
     } else {
       await supabase.from("follows").insert({ follower_id: user.id, followed_npc_id: npcId });
       setFollowed(true);
-      // Quest trigger
       await supabase.rpc("increment_quest_progress", { p_user_id: user.id, p_trigger: "npc_followed" });
+      onQuestTrigger?.();
     }
     setFollowLoading(false);
   };
@@ -1751,7 +1753,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-63</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-64</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2285,7 +2287,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
   );
 }
 
-function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab }) {
+function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger }) {
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
@@ -2829,7 +2831,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           );
         })}
         {(isGuest || feedTab === "forYou") && FEED_POSTS.map(post => (
-          !isGuest && <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+          !isGuest && <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onQuestTrigger={onQuestTrigger} />
         ))}
 
         {/* Following feed */}
@@ -3807,6 +3809,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     // Quest triggers — only fire for the destination status
     if (toStatus === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
     if (toStatus === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
+    checkShelfGenres(authUser.id);
     onQuestComplete?.();
     setUserShelf(prev => {
       const entry = prev[fromStatus].find(e => e.game_id === gameId);
@@ -3835,6 +3838,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
       if (status === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
       if (status === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
+      checkShelfGenres(authUser.id);
       onQuestComplete?.();
       setUserShelf(prev => {
         const cleaned = {
@@ -3856,6 +3860,30 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     if (!authUser) return;
     await supabase.from("user_games").delete().eq("user_id", authUser.id).eq("game_id", gameId);
     setUserShelf(prev => ({ ...prev, [status]: prev[status].filter(e => e.game_id !== gameId) }));
+  };
+
+  const equipRing = async (ringId) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("profiles").update({ active_ring: ringId }).eq("id", authUser.id);
+    onProfileSaved?.();
+  };
+
+  const checkShelfGenres = async (authUserId) => {
+    const { data } = await supabase.from("user_games").select("games(genre)").eq("user_id", authUserId);
+    if (!data) return;
+    const genreCount = new Set(data.map(e => e.games?.genre).filter(Boolean)).size;
+    if (genreCount > 0) {
+      await supabase.from("user_quests").upsert(
+        { user_id: authUserId, quest_id: "genre_explorer", progress: genreCount, completed: genreCount >= 5, completed_at: genreCount >= 5 ? new Date().toISOString() : null },
+        { onConflict: "user_id,quest_id" }
+      );
+      await supabase.from("user_quests").upsert(
+        { user_id: authUserId, quest_id: "genre_master", progress: genreCount, completed: genreCount >= 10, completed_at: genreCount >= 10 ? new Date().toISOString() : null },
+        { onConflict: "user_id,quest_id" }
+      );
+      onQuestComplete?.();
+    }
   };
 
   const searchGames = async (q) => {
@@ -4553,7 +4581,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
                 <div style={{ fontWeight: 700, color: ring.unlocked ? ring.color : C.textMuted, fontSize: 13, marginBottom: 4, textAlign: "center" }}>{ring.label}</div>
                 <div style={{ color: C.textDim, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>{ring.unlocked ? ring.description : ring.how}</div>
                 {ring.unlocked && ring.id !== "none" && (
-                  <button style={{ width: "100%", marginTop: 10, background: ring.id === user.activeRing ? `${ring.color}22` : "transparent", border: `1px solid ${ring.color}44`, borderRadius: 8, padding: "6px", color: ring.id === user.activeRing ? ring.color : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={() => ring.id !== user.activeRing && equipRing(ring.id)} style={{ width: "100%", marginTop: 10, background: ring.id === user.activeRing ? `${ring.color}22` : "transparent", border: `1px solid ${ring.color}44`, borderRadius: 8, padding: "6px", color: ring.id === user.activeRing ? ring.color : C.textMuted, fontSize: 12, fontWeight: 600, cursor: ring.id === user.activeRing ? "default" : "pointer" }}>
                     {ring.id === user.activeRing ? "Active ✓" : "Equip"}
                   </button>
                 )}
@@ -6519,10 +6547,10 @@ export default function GuildLink() {
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "charts" && <ChartsPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
-      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} />}
+      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
-      {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
