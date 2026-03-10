@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-85</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-86</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4854,15 +4854,15 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const [npcUUIDs, setNpcUUIDs] = useState({}); // localId -> supabase UUID
 
   useEffect(() => {
-    // Resolve all NPC handles to their Supabase UUIDs
-    const handles = npcList.map(n => n.handle);
-    console.log("Looking up NPC handles:", handles);
     supabase.from("npcs").select("id, handle, name").then(({ data, error }) => {
-      console.log("All npcs in DB:", data, "error:", error);
+      console.log("NPCs in DB:", JSON.stringify(data));
       if (data) {
         const map = {};
         data.forEach(row => {
-          const local = npcList.find(n => n.handle === row.handle);
+          // Try matching by handle first, then by name
+          let local = npcList.find(n => n.handle === row.handle);
+          if (!local) local = npcList.find(n => n.name === row.name);
+          if (!local) local = npcList.find(n => row.name?.toLowerCase().includes(n.name?.split(" ")[0]?.toLowerCase()));
           if (local) map[local.id] = row.id;
         });
         console.log("Resolved npcUUIDs:", map);
