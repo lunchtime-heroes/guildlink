@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-71</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-72</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6374,33 +6374,46 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     onComplete();
   };
 
-  // Spotlight: find element by data-tour attribute, scroll into view, get rect
-  const BANNER_HEIGHT = 220; // approximate banner height + padding
+  // Spotlight: live-track the element position on scroll/resize so the ring never drifts
   const [spotRect, setSpotRect] = useState(null);
-  useEffect(() => {
-    if (!current.spotlight) { setSpotRect(null); return; }
-    const el = document.querySelector(`[data-tour="${current.spotlight}"]`);
+  const spotlightKey = current.spotlight;
+
+  const measureSpot = useCallback(() => {
+    if (!spotlightKey) { setSpotRect(null); return; }
+    const el = document.querySelector(`[data-tour="${spotlightKey}"]`);
     if (el) {
-      // Scroll element into view with room above it, accounting for banner at bottom
       const r = el.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const idealTop = viewportHeight * 0.25; // put element ~25% from top
-      if (r.top > viewportHeight - BANNER_HEIGHT - 20 || r.top < 60) {
-        window.scrollBy({ top: r.top - idealTop, behavior: "smooth" });
-        // Re-measure after scroll settles
-        setTimeout(() => {
-          const r2 = el.getBoundingClientRect();
-          setSpotRect({ top: r2.top, left: r2.left, width: r2.width, height: r2.height });
-        }, 350);
-      } else {
-        setSpotRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-      }
+      setSpotRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     } else {
       setSpotRect(null);
     }
-  }, [step, current.spotlight]);
+  }, [spotlightKey]);
+
+  useEffect(() => {
+    if (!spotlightKey) { setSpotRect(null); return; }
+    const el = document.querySelector(`[data-tour="${spotlightKey}"]`);
+    if (!el) { setSpotRect(null); return; }
+
+    // Scroll element into view — aim for ~30% from top so banner (now at top) doesn't cover it
+    const r = el.getBoundingClientRect();
+    const idealTop = window.innerHeight * 0.35;
+    if (Math.abs(r.top - idealTop) > 60) {
+      window.scrollTo({ top: window.scrollY + r.top - idealTop, behavior: "smooth" });
+      setTimeout(measureSpot, 380);
+    } else {
+      measureSpot();
+    }
+
+    window.addEventListener("scroll", measureSpot, { passive: true });
+    window.addEventListener("resize", measureSpot, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", measureSpot);
+      window.removeEventListener("resize", measureSpot);
+    };
+  }, [spotlightKey, measureSpot]);
 
   const DECKARD_COLOR = "#a78bfa";
+  const bannerAtTop = !!spotRect; // when spotlighting, move banner to top so it never covers the element
 
   return (
     <>
@@ -6408,13 +6421,13 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       {spotRect && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9990, pointerEvents: "none" }}>
           {/* Top */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: spotRect.top - 8, background: "#00000066" }} />
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.max(0, spotRect.top - 8), background: "#00000077" }} />
           {/* Bottom */}
-          <div style={{ position: "absolute", top: spotRect.top + spotRect.height + 8, left: 0, right: 0, bottom: 0, background: "#00000066" }} />
+          <div style={{ position: "absolute", top: spotRect.top + spotRect.height + 8, left: 0, right: 0, bottom: 0, background: "#00000077" }} />
           {/* Left */}
-          <div style={{ position: "absolute", top: spotRect.top - 8, left: 0, width: spotRect.left - 8, height: spotRect.height + 16, background: "#00000066" }} />
+          <div style={{ position: "absolute", top: spotRect.top - 8, left: 0, width: Math.max(0, spotRect.left - 8), height: spotRect.height + 16, background: "#00000077" }} />
           {/* Right */}
-          <div style={{ position: "absolute", top: spotRect.top - 8, left: spotRect.left + spotRect.width + 8, right: 0, height: spotRect.height + 16, background: "#00000066" }} />
+          <div style={{ position: "absolute", top: spotRect.top - 8, left: spotRect.left + spotRect.width + 8, right: 0, height: spotRect.height + 16, background: "#00000077" }} />
           {/* Glowing ring around target */}
           <div style={{
             position: "absolute",
@@ -6428,9 +6441,12 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
         </div>
       )}
 
-      {/* Bottom banner */}
+      {/* Banner — bottom by default, flips to top when spotlighting so it never covers the element */}
       <div style={{
-        position: "fixed", bottom: isMobile ? 68 : 24,
+        position: "fixed",
+        ...(bannerAtTop
+          ? { top: isMobile ? 56 : 16, bottom: "auto" }
+          : { bottom: isMobile ? 68 : 24, top: "auto" }),
         left: "50%", transform: "translateX(-50%)",
         width: isMobile ? "calc(100vw - 24px)" : 560,
         zIndex: 9999,
