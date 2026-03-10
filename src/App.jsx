@@ -612,18 +612,23 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const toggleLike = async () => {
     if (isGuest) { onSignIn?.("Like posts and join the conversation."); return; }
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
     const newLiked = !localPost.liked;
     const newLikes = newLiked ? localPost.likes + 1 : localPost.likes - 1;
+    // Optimistic update
     setLocalPost(p => ({ ...p, liked: newLiked, likes: newLikes }));
     if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
+      if (newLiked) {
+        await supabase.from("post_likes").upsert({ post_id: post.id, user_id: authUser.id });
+      } else {
+        await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
+      }
       await supabase.from("posts").update({ likes: newLikes }).eq("id", post.id);
       // Quest trigger for post author receiving a like
-      if (newLiked && post.user_id) {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser && post.user_id !== authUser.id) {
-          await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "like_received" });
-          onQuestTrigger?.();
-        }
+      if (newLiked && post.user_id && post.user_id !== authUser.id) {
+        await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "like_received" });
+        onQuestTrigger?.();
       }
     }
   };
@@ -1783,7 +1788,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-75</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-76</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2546,12 +2551,24 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       setLivePosts(feed.slice(0, 20));
       setGuestFeedDone(true);
     } else {
-      const { data } = await supabase
-        .from("posts")
-        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (data) setLivePosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0 })));
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const [postsResult, likesResult] = await Promise.all([
+        supabase.from("posts")
+          .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .order("created_at", { ascending: false })
+          .limit(20),
+        authUser
+          ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id)
+          : Promise.resolve({ data: [] }),
+      ]);
+      const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
+      if (postsResult.data) {
+        setLivePosts(postsResult.data.map(p => ({
+          ...p,
+          comment_count: p.comments?.length || 0,
+          liked: likedIds.has(p.id),
+        })));
+      }
     }
   };
 
