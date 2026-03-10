@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-67</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-68</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5787,7 +5787,6 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
 
 function AuthPage({ onBack }) {
   const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [dobMonth, setDobMonth] = useState("");
@@ -5798,16 +5797,19 @@ function AuthPage({ onBack }) {
   const [message, setMessage] = useState("");
 
   const currentYear = new Date().getFullYear();
+  const fakeEmail = (u) => `${u.trim().toLowerCase().replace(/\s+/g, "_")}@guildlink.gg`;
 
   const handle = async () => {
     setLoading(true);
     setError("");
     setMessage("");
+    if (!username.trim()) { setError("Username is required."); setLoading(false); return; }
+    if (!password) { setError("Password is required."); setLoading(false); return; }
+    const email = fakeEmail(username);
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
+      if (error) setError("Username or password incorrect.");
     } else {
-      // Validate DOB if provided
       let dobStr = null;
       const hasAnyDob = dobMonth || dobDay || dobYear;
       if (hasAnyDob) {
@@ -5822,18 +5824,14 @@ function AuthPage({ onBack }) {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
-        const profileUpdates = {};
-        if (username.trim()) {
-          profileUpdates.username = username.trim();
-          profileUpdates.handle = "@" + username.trim().toLowerCase().replace(/\s+/g, "_");
-          profileUpdates.avatar_initials = username.trim().slice(0, 2).toUpperCase();
-        }
+        const profileUpdates = {
+          username: username.trim(),
+          handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
+          avatar_initials: username.trim().slice(0, 2).toUpperCase(),
+        };
         if (dobStr) profileUpdates.date_of_birth = dobStr;
-        if (Object.keys(profileUpdates).length > 0) {
-          await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
-        }
+        await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
       }
-      setMessage("Check your email to confirm your account, then log in.");
     }
     setLoading(false);
   };
@@ -5854,29 +5852,23 @@ function AuthPage({ onBack }) {
             ))}
           </div>
           <div style={{ marginBottom: 16 }}>
-            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username</div>
+            <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
           </div>
           <div style={{ marginBottom: mode === "signup" ? 16 : 24 }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} onKeyDown={e => e.key === "Enter" && handle()} />
           </div>
           {mode === "signup" && (
-            <>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username <span style={{ color: C.textDim, fontWeight: 400 }}>(optional, can set later)</span></div>
-                <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Birthday <span style={{ color: C.textDim, fontWeight: 400 }}>(optional)</span></div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={dobMonth} onChange={e => setDobMonth(e.target.value)} placeholder="MM" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
+                <input value={dobDay} onChange={e => setDobDay(e.target.value)} placeholder="DD" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
+                <input value={dobYear} onChange={e => setDobYear(e.target.value)} placeholder="YYYY" maxLength={4} style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
               </div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Birthday <span style={{ color: C.textDim, fontWeight: 400 }}>(optional)</span></div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input value={dobMonth} onChange={e => setDobMonth(e.target.value)} placeholder="MM" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
-                  <input value={dobDay} onChange={e => setDobDay(e.target.value)} placeholder="DD" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
-                  <input value={dobYear} onChange={e => setDobYear(e.target.value)} placeholder="YYYY" maxLength={4} style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
-                </div>
-                <div style={{ color: C.textDim, fontSize: 11, marginTop: 5, lineHeight: 1.5 }}>Unlocks gamertag sharing and LFG at 18+. You can add this later in your profile.</div>
-              </div>
-            </>
+              <div style={{ color: C.textDim, fontSize: 11, marginTop: 5, lineHeight: 1.5 }}>Unlocks gamertag sharing and LFG at 18+. You can add this later in your profile.</div>
+            </div>
           )}
           {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {message && <div style={{ color: C.green, fontSize: 13, marginBottom: 16 }}>{message}</div>}
