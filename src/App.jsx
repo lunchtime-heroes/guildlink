@@ -620,9 +620,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLocalPost(p => ({ ...p, liked: newLiked, likes: newLikes }));
     if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
       if (newLiked) {
-        await supabase.from("post_likes").upsert({ post_id: post.id, user_id: authUser.id });
+        supabase.from("post_likes").upsert({ post_id: post.id, user_id: authUser.id }).then(() => {});
       } else {
-        await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
+        supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", authUser.id).then(() => {});
       }
       await supabase.from("posts").update({ likes: newLikes }).eq("id", post.id);
       // Quest trigger for post author receiving a like
@@ -1788,7 +1788,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-76</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-77</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2558,7 +2558,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           .order("created_at", { ascending: false })
           .limit(20),
         authUser
-          ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id)
+          ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
       ]);
       const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
@@ -4370,8 +4370,22 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
               <input
                 autoFocus
                 value={gameSearch}
-                onChange={e => searchGames(e.target.value)}
-                placeholder="Search for a game to add..."
+                onChange={e => {
+                  setGameSearch(e.target.value);
+                  const m = e.target.value.match(/@(\w*)$/);
+                  if (m) {
+                    const q = m[1].toLowerCase();
+                    const query = q.length === 0
+                      ? supabase.from("games").select("id, name, developer, genre").order("followers", { ascending: false }).limit(6)
+                      : supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
+                    query.then(({ data }) => setGameSearchResults(data || []));
+                  } else if (e.target.value.length >= 2) {
+                    supabase.from("games").select("id, name, developer, genre").ilike("name", `%${e.target.value}%`).limit(6).then(({ data }) => setGameSearchResults(data || []));
+                  } else {
+                    setGameSearchResults([]);
+                  }
+                }}
+                placeholder="@ to tag a game, or just type to search..."
                 style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
               />
               {gameSearchResults.length > 0 && (
