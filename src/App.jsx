@@ -1788,7 +1788,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-80</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-81</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1826,6 +1826,87 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
             </div>
           </div>
           <span style={{ color: C.textDim, fontSize: 18 }}>→</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── TRENDING WIDGET ──────────────────────────────────────────────────────────
+
+function TrendingWidget({ setActivePage, setCurrentGame }) {
+  const [games, setGames] = useState([]);
+
+  useEffect(() => {
+    supabase.from("games")
+      .select("id, name, genre, followers")
+      .order("followers", { ascending: false })
+      .limit(6)
+      .then(({ data }) => { if (data) setGames(data); });
+  }, []);
+
+  return (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+      <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Trending</div>
+      {games.length === 0 ? (
+        <div style={{ color: C.textDim, fontSize: 12 }}>Loading...</div>
+      ) : games.map((g, i) => (
+        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < games.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+          <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, width: 16, textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+            {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── SHELF SIDEBAR WIDGET ─────────────────────────────────────────────────────
+
+function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTab }) {
+  const [shelfGames, setShelfGames] = useState([]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("user_games")
+        .select("status, games(id, name, genre)")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(6)
+        .then(({ data }) => {
+          if (data) setShelfGames(data.map(d => ({ ...d.games, status: d.status })).filter(Boolean));
+        });
+    });
+  }, []);
+
+  const STATUS_LABEL = { playing: "Playing", want_to_play: "Want to Play", have_played: "Played" };
+  const STATUS_COLOR = { playing: C.green, want_to_play: C.accent, have_played: C.gold };
+
+  if (shelfGames.length === 0) return (
+    <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
+      Nothing on your shelf yet.{" "}
+      <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, cursor: "pointer" }}>Add games →</span>
+    </div>
+  );
+
+  return (
+    <div>
+      {shelfGames.map((g, i) => (
+        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < shelfGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+            <div style={{ color: STATUS_COLOR[g.status] || C.textDim, fontSize: 10, fontWeight: 600 }}>{STATUS_LABEL[g.status] || g.status}</div>
+          </div>
+          <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
         </div>
       ))}
     </div>
@@ -2620,30 +2701,12 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
           {isGuest ? (
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
+              <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Shelf</div>
               <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
-                <span onClick={() => onSignIn?.("Follow games to see them here.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to follow games and see them here.
+                <span onClick={() => onSignIn?.("Sign up to build your shelf.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to build your shelf.
               </div>
             </div>
-          ) : followedGames.length > 0 && (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
-                <span onClick={() => setActivePage("games")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Browse →</span>
-              </div>
-              {followedGames.map((g, i) => (
-                <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < followedGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                    {g.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{g.genre}</div>}
-                  </div>
-                  <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
-                </div>
-              ))}
-            </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>
@@ -2943,35 +3006,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       <div style={{ width: 210, flexShrink: 0 }}>
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
 
-        {/* Your Games */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Games</div>
-            <span onClick={() => setActivePage("games")} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Browse →</span>
-          </div>
-          {isGuest ? (
-            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
-              <span onClick={() => onSignIn?.("Follow games to see them here.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to follow games and build your feed.
-            </div>
-          ) : followedGames.length === 0 ? (
-            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
-              No games followed yet.{" "}
-              <span onClick={() => setActivePage("games")} style={{ color: C.accentSoft, cursor: "pointer" }}>Find your games →</span>
-            </div>
-          ) : followedGames.map((g, i) => (
-            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < followedGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                {g.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{g.genre}</div>}
-              </div>
-              <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
-            </div>
-          ))}
-        </div>
+        <TrendingWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} />
       </div>
       )}
     </div>
