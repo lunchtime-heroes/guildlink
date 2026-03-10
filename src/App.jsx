@@ -150,10 +150,8 @@ function applyTheme(themeId) {
 // ─── FOUNDING / RING / QUEST DATA ────────────────────────────────────────────
 
 const FOUNDING = {
-  total: 10000,
+  total: 5000,
   claimed: 4847,
-  price: 5,
-  closeDate: "Dec 31, 2025",
 };
 
 const PROFILE_RINGS = [
@@ -1151,21 +1149,24 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
 
 // ─── FOUNDING MEMBER PAGE ─────────────────────────────────────────────────────
 
-function FoundingMemberPage({ setActivePage, isMobile }) {
-  const [joined, setJoined] = useState(false);
+function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
+  const [showInvite, setShowInvite] = useState(false);
   const pct = (FOUNDING.claimed / FOUNDING.total) * 100;
   const remaining = FOUNDING.total - FOUNDING.claimed;
 
   const perks = [
-    { icon: "⚔️", title: "GuildLink Pro — $5/mo. Forever.", desc: "Pro launches publicly at $9.99/mo. Founding members pay $5/mo for life. You're not getting a discount — you're locking in a price before it exists." },
-    { icon: "🏰", title: "Guild Hubs", desc: "Run your own private community space with custom branding, member management, and events. Included in Pro. Launch price for everyone else: $9.99/mo." },
+    { icon: "🪙", title: "The Founding Ring", desc: "A permanent gold ring on your profile avatar. Visible to everyone, forever. The only way to get it is to be here first — it can't be earned through quests." },
+    { icon: "🏆", title: "Founding Member Badge", desc: "A permanent badge on your profile marking you as one of the first 5,000. If GuildLink becomes what we think it will, this badge will mean something." },
     { icon: "📊", title: "Gaming Report — Coming Soon", desc: "A monthly breakdown of your gaming life — hours played, completions, taste shifts, how you rank on GuildLink. Think Spotify Wrapped, but for games." },
-    { icon: "🔒", title: "Your Data Stays Yours", desc: "GuildLink never sells your personal data. Not now, not ever. If you see an ad, it's because you play that game — not because we built a profile on you." },
-    { icon: "🎯", title: "Ads Based on Games, Not You", desc: "We show game-relevant ads based on what you play, nothing else. No behavioral tracking, no demographic targeting, no data brokers. Just: you like Elden Ring, here's a FromSoftware ad." },
+    { icon: "🎯", title: "Ads Based on Games, Not You", desc: "GuildLink is free because we sell ads to game studios. If you see an ad, it's because you play that game — not because we profiled you. No behavioral targeting. No data brokers." },
+    { icon: "🏰", title: "Guild Hubs — Coming Soon", desc: "Private community spaces with custom branding and member management. Founding members get first access when it launches." },
+    { icon: "⚔️", title: "Invite Rewards", desc: "Bring in other gamers and earn credit for it. Invite rewards are coming — and founding members will be the first to see them." },
   ];
 
   return (
     <div style={{ minHeight: "100vh", paddingTop: 60, background: C.bg }}>
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+
       {/* Hero */}
       <div style={{
         background: `linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)`,
@@ -1200,51 +1201,39 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
             <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>⚙ Founding Membership</span>
           </div>
 
-          <h1 style={{ margin: "0 0 16px", fontWeight: 900, fontSize: 42, color: "#fff", letterSpacing: "-1px", lineHeight: 1.1, textAlign: "center" }}>
+          <h1 style={{ margin: "0 0 16px", fontWeight: 900, fontSize: isMobile ? 32 : 42, color: "#fff", letterSpacing: "-1px", lineHeight: 1.1, textAlign: "center" }}>
             The town square<br /><span style={{ color: C.gold }}>needs its first citizens.</span>
           </h1>
 
-          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 17, maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.7, textAlign: "center" }}>
-            GuildLink is the town square for gamers. No personal data sold. No behavioral targeting. If you see an ad, it's because you play that game — full stop. Founding members lock in $5/mo forever for everything Pro includes, now and in the future.
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 15 : 17, maxWidth: 520, margin: "0 auto 40px", lineHeight: 1.7, textAlign: "center" }}>
+            GuildLink is free. No subscription, no paywall, no catch. Founding membership is just about being here first — and getting a permanent mark to prove it.
           </p>
 
           {/* Progress bar */}
-          <div style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: "24px 28px", marginBottom: 32, maxWidth: 500, margin: "0 auto 32px" }}>
+          <div style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: "24px 28px", maxWidth: 500, margin: "0 auto 32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
               <span style={{ color: C.gold, fontWeight: 800, fontSize: 22 }}>{FOUNDING.claimed.toLocaleString()}</span>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, alignSelf: "center" }}>of {FOUNDING.total.toLocaleString()} spots</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, alignSelf: "center" }}>of {FOUNDING.total.toLocaleString()} founding spots</span>
             </div>
             <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 5, overflow: "hidden", marginBottom: 10 }}>
-              <div style={{
-                height: "100%", width: `${pct}%`,
-                background: `linear-gradient(90deg, ${C.gold}aa, ${C.gold})`,
-                borderRadius: 5, transition: "width 1s ease",
-              }} />
+              <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}aa, ${C.gold})`, borderRadius: 5, transition: "width 1s ease" }} />
             </div>
             <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 13 }}>
-              <span style={{ color: C.gold, fontWeight: 700 }}>{remaining.toLocaleString()} spots remaining</span> · Closes {FOUNDING.closeDate} or when full
+              <span style={{ color: C.gold, fontWeight: 700 }}>{remaining.toLocaleString()} spots remaining</span> · Closes when full
             </div>
           </div>
 
           {/* CTA */}
-          {!joined ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <button onClick={() => setJoined(true)} style={{
-                background: `linear-gradient(135deg, ${C.gold}, #d97706)`,
-                border: "none", borderRadius: 12, padding: "16px 48px",
-                color: "#000", fontSize: 16, fontWeight: 900, cursor: "pointer",
-                boxShadow: `0 8px 32px ${C.gold}44`,
-                letterSpacing: "-0.3px",
-              }}>Become a Founding Member — $5/mo</button>
-              <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Cancel anytime. No tricks. No dark patterns.</div>
-            </div>
-          ) : (
-            <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: "20px 32px", display: "inline-block" }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>🎉</div>
-              <div style={{ fontWeight: 800, color: C.gold, fontSize: 18 }}>Welcome, Founding Member!</div>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 6 }}>Your gold ring is active. You're #{FOUNDING.claimed + 1} of {FOUNDING.total.toLocaleString()}.</div>
-            </div>
-          )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <button onClick={() => onSignUp?.()} style={{
+              background: `linear-gradient(135deg, ${C.gold}, #d97706)`,
+              border: "none", borderRadius: 12, padding: "16px 48px",
+              color: "#000", fontSize: 16, fontWeight: 900, cursor: "pointer",
+              boxShadow: `0 8px 32px ${C.gold}44`,
+              letterSpacing: "-0.3px",
+            }}>Claim Your Founding Spot — Free</button>
+            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>No credit card. No subscription. Just sign up.</div>
+          </div>
         </div>
       </div>
 
@@ -1252,7 +1241,7 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
       <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "32px 16px 80px" : "56px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 26, marginBottom: 8 }}>What founding members get</div>
-          <div style={{ color: C.textMuted, fontSize: 15 }}>$5/mo locks in everything Pro includes — now and as it grows.</div>
+          <div style={{ color: C.textMuted, fontSize: 15 }}>All of it free, all of it permanent.</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16, marginBottom: 56 }}>
           {perks.map((perk, i) => (
@@ -1268,25 +1257,15 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
         <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: 32, marginBottom: 40 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 6 }}>Profile Rings — Earn Your Mark</div>
-            <div style={{ color: C.textMuted, fontSize: 14 }}>Every ring tells a story. Founding rings are the only ones you can't earn through quests.</div>
+            <div style={{ color: C.textMuted, fontSize: 14 }}>Every ring tells a story. The founding ring is the only one you can't earn through quests.</div>
           </div>
           <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
             {PROFILE_RINGS.filter(r => r.id !== "none").map(ring => (
               <div key={ring.id} style={{ textAlign: "center", width: 100 }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
                   <div style={{ position: "relative", width: 56, height: 56 }}>
-                    <div style={{
-                      position: "absolute", inset: -3, borderRadius: "50%",
-                      border: `3px solid ${ring.color}`,
-                      boxShadow: `0 0 16px ${ring.glow || ring.color + "44"}`,
-                    }} />
-                    <div style={{
-                      width: 56, height: 56, borderRadius: "50%",
-                      background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`,
-                      border: `2px solid ${ring.color}44`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 20,
-                    }}>
+                    <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `3px solid ${ring.color}`, boxShadow: `0 0 16px ${ring.glow || ring.color + "44"}` }} />
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`, border: `2px solid ${ring.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
                       {ring.id === "founding" ? "⚔️" : ring.id === "platinum" ? "📝" : ring.id === "crimson" ? "🏆" : ring.id === "void" ? "💯" : ring.id === "emerald" ? "🤝" : ring.id === "celestial" ? "⭐" : "🕯️"}
                     </div>
                   </div>
@@ -1298,38 +1277,15 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
           </div>
         </div>
 
-        {/* Pricing clarity */}
+        {/* Invite CTA */}
         <div style={{ background: `linear-gradient(135deg, #0f0a00, #1f1500)`, border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: isMobile ? 20 : 32, textAlign: "center" }}>
-          <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 17 : 20, marginBottom: 20 }}>How the pricing works. No surprises.</div>
-          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "center", gap: isMobile ? 10 : 0, maxWidth: 600, margin: "0 auto 24px" }}>
-            {[
-              { label: "Founding Membership", price: "$5/mo", color: C.gold, desc: "Everything Pro includes, forever" },
-              { label: "GuildLink Pro (public)", price: "$9.99/mo", color: C.accentSoft, desc: "Standard price at launch" },
-              { label: "You save", price: "$4.99/mo", color: C.green, desc: "Every month. Forever." },
-            ].map((tier, i) => (
-              <div key={i} style={{
-                flex: 1, padding: isMobile ? "14px 16px" : "20px 16px",
-                background: "rgba(0,0,0,0.3)",
-                border: `1px solid ${tier.color}33`,
-                borderRadius: isMobile ? 10 : i === 0 ? "10px 0 0 10px" : i === 2 ? "0 10px 10px 0" : 0,
-                borderLeft: !isMobile && i !== 0 ? "none" : `1px solid ${tier.color}33`,
-                borderRight: !isMobile && i !== 2 ? "none" : `1px solid ${tier.color}33`,
-              }}>
-                <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{tier.label}</div>
-                <div style={{ fontWeight: 900, color: tier.color, fontSize: isMobile ? 22 : 26, marginBottom: 6 }}>{tier.price}</div>
-                <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{tier.desc}</div>
-              </div>
-            ))}
+          <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 17 : 20, marginBottom: 10 }}>Know a gamer who'd get it?</div>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, marginBottom: 24, lineHeight: 1.7 }}>
+            Founding spots are limited to 5,000. Invite a friend and they'll claim one before it's gone — along with everything that comes with it. Invite rewards are coming soon.
           </div>
-          <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, lineHeight: 1.7 }}>
-            GuildLink Pro launches publicly at $9.99/mo — guild hubs, achievement sync, gaming reports, and everything that follows.<br />
-            Founding members pay $5/mo forever. Your personal data is never sold. Ads are targeted by game, not by you. The founding ring is yours even if you cancel.
-          </div>
-          {!joined && (
-            <button onClick={() => setJoined(true)} style={{ marginTop: 24, background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 10, padding: "12px 36px", color: "#000", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
-              Claim Your Spot — $5/mo
-            </button>
-          )}
+          <button onClick={() => setShowInvite(true)} style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 10, padding: "12px 36px", color: "#000", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
+            Invite a Friend
+          </button>
         </div>
       </div>
       <style>{`@keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }`}</style>
@@ -1339,32 +1295,107 @@ function FoundingMemberPage({ setActivePage, isMobile }) {
 
 // ─── FOUNDING BANNER ──────────────────────────────────────────────────────────
 
-function FoundingBanner({ onDismiss, setActivePage }) {
-  const pct = (FOUNDING.claimed / FOUNDING.total) * 100;
+function InviteModal({ onClose }) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
   return (
-    <div style={{
-      background: `linear-gradient(135deg, #1a1200, #2d2000)`,
-      border: `1px solid ${C.goldBorder}`,
-      borderRadius: 12, padding: "14px 18px", marginBottom: 14,
-      display: "flex", alignItems: "center", gap: 16,
-      boxShadow: `0 0 0 1px ${C.goldGlow}`,
-    }}>
-      <div style={{ fontSize: 24, flexShrink: 0 }}>⚔️</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-          <span style={{ fontWeight: 800, color: C.gold, fontSize: 13 }}>Founding Membership is open</span>
-          <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>{FOUNDING.total - FOUNDING.claimed} spots left</span>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+      onClick={onClose}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 32, maxWidth: 400, width: "100%" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⚔️</div>
+        <div style={{ fontWeight: 800, fontSize: 20, color: C.text, marginBottom: 6, textAlign: "center" }}>Invite a Friend</div>
+        <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 24, textAlign: "center" }}>
+          {FOUNDING.total - FOUNDING.claimed} founding spots left. Invite someone and they'll claim one before it's gone — along with a permanent gold founder ring.
         </div>
-        <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 5, maxWidth: 300 }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}88, ${C.gold})`, borderRadius: 2 }} />
-        </div>
-        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>$5/mo forever · Guild hubs at launch · No personal data sold · Gold ring permanent</div>
+        {sent ? (
+          <div style={{ background: `${C.green}15`, border: `1px solid ${C.green}44`, borderRadius: 12, padding: "16px", textAlign: "center" }}>
+            <div style={{ fontSize: 24, marginBottom: 8 }}>✉️</div>
+            <div style={{ color: C.green, fontWeight: 800, fontSize: 14 }}>Invite sent!</div>
+            <div style={{ color: C.textMuted, fontSize: 12, marginTop: 4 }}>We'll let them know you vouched for them.</div>
+          </div>
+        ) : (
+          <>
+            <input
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="friend@email.com"
+              type="email"
+              style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
+            />
+            <button
+              onClick={() => { if (email.includes("@")) setSent(true); }}
+              style={{ width: "100%", background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 10, padding: "12px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer", marginBottom: 10 }}>
+              Send Invite
+            </button>
+            <div style={{ color: C.textDim, fontSize: 11, textAlign: "center" }}>Invite rewards coming soon — you'll get credit for everyone you bring in.</div>
+          </>
+        )}
+        <button onClick={onClose} style={{ display: "block", margin: "16px auto 0", background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
+          Close
+        </button>
       </div>
-      <button onClick={() => setActivePage("founding")} style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-        Learn More
-      </button>
-      <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.25)", fontSize: 18, cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>×</button>
     </div>
+  );
+}
+
+function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp }) {
+  const [showInvite, setShowInvite] = useState(false);
+  const spotsLeft = FOUNDING.total - FOUNDING.claimed;
+  const pct = (FOUNDING.claimed / FOUNDING.total) * 100;
+
+  return (
+    <>
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+      <div style={{
+        background: `linear-gradient(135deg, #1a1200, #2d2000)`,
+        border: `1px solid ${C.goldBorder}`,
+        borderRadius: 12, padding: isMobile ? "12px 14px" : "14px 18px", marginBottom: 14,
+        display: "flex", alignItems: "center", gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap",
+        boxShadow: `0 0 0 1px ${C.goldGlow}`,
+        position: "relative",
+      }}>
+        <div style={{ fontSize: isMobile ? 20 : 24, flexShrink: 0 }}>⚔️</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 12 : 13 }}>
+              {isGuest ? "Founding membership is free — for now." : "Founding spots are almost gone."}
+            </span>
+            <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>
+              {spotsLeft.toLocaleString()} left
+            </span>
+          </div>
+          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 4, maxWidth: 280 }}>
+            <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}88, ${C.gold})`, borderRadius: 2, transition: "width 0.6s ease" }} />
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: isMobile ? 10 : 11 }}>
+            {isGuest
+              ? "Sign up now and claim a permanent gold founder ring. No payment, no catch."
+              : "Invite friends before spots run out — you'll get credit for everyone you bring in."}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+          {isGuest ? (
+            <button onClick={() => onSignUp?.()}
+              style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: isMobile ? "7px 14px" : "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+              Claim Your Spot
+            </button>
+          ) : (
+            <>
+              <button onClick={() => setShowInvite(true)}
+                style={{ background: `linear-gradient(135deg, ${C.gold}, #d97706)`, border: "none", borderRadius: 8, padding: isMobile ? "7px 14px" : "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+                Invite a Friend
+              </button>
+              <button onClick={() => setActivePage("founding")}
+                style={{ background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: isMobile ? "7px 12px" : "8px 14px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                Details
+              </button>
+            </>
+          )}
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "rgba(255,255,255,0.25)", fontSize: 18, cursor: "pointer", padding: "0 2px", lineHeight: 1 }}>×</button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -1752,7 +1783,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-74</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-75</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2557,21 +2588,14 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   return (
     <>
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: topPad }}>
-      {showBanner && !isGuest && <FoundingBanner onDismiss={() => setShowBanner(false)} setActivePage={setActivePage} />}
-      {/* Guest welcome banner */}
-      {isGuest && showBanner && (
-        <div style={{ background: `linear-gradient(135deg, ${C.accent}22, ${C.teal}22)`, border: `1px solid ${C.accentDim}`, borderRadius: 14, padding: isMobile ? "16px" : "18px 24px", marginBottom: 14, display: "flex", alignItems: "center", gap: isMobile ? 12 : 20, flexWrap: isMobile ? "wrap" : "nowrap", position: "relative" }}>
-          <button onClick={() => setShowBanner(false)} style={{ position: "absolute", top: 10, right: 12, background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
-          <div style={{ fontSize: isMobile ? 28 : 36, flexShrink: 0 }}>⚔️</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, marginBottom: 4 }}>GuildLink is where gamers talk about games... and that's it.</div>
-            <div style={{ color: C.textMuted, fontSize: isMobile ? 12 : 13, lineHeight: 1.6 }}>Build your shelf, influence The Charts, complete quests, and meet some of the local NPCs.</div>
-          </div>
-          <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
-            style={{ background: C.accent, border: "none", borderRadius: 10, padding: isMobile ? "9px 18px" : "10px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
-            Join Free
-          </button>
-        </div>
+      {showBanner && (
+        <FoundingBanner
+          onDismiss={() => setShowBanner(false)}
+          setActivePage={setActivePage}
+          isGuest={isGuest}
+          isMobile={isMobile}
+          onSignUp={() => onSignIn?.("Sign up free and claim your permanent founder ring.")}
+        />
       )}
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
@@ -6837,7 +6861,7 @@ export default function GuildLink() {
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
-      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} />}
+      {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} onSignUp={openSignUp} />}
     </div>
   );
 }
