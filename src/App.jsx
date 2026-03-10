@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-73</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-74</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4357,7 +4357,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
           )}
 
                   {/* Kanban board */}
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
+          <div data-tour="shelf-columns" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
             {SHELF_COLUMNS.map(col => (
               <div key={col.id}
                 onDragOver={e => handleDragOver(e, col.id)}
@@ -6300,7 +6300,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       heading: "Add your first game right now.",
       body: "Start with whatever you launched last week. Don't overthink it — one game is enough to start the engine.",
       cta: null,
-      spotlight: "add-game-btn",
+      spotlight: "shelf-columns",
       showSearch: true,
     },
     {
@@ -6339,11 +6339,10 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
     setAddedGames(prev => [...prev, game]);
-    setGameSearch(""); setGameResults([]);
-    if (!questPopped) {
-      setQuestPopped(true);
-      setTimeout(() => advance(5), 600);  // step 5 = "There it is" — now has a CTA
-    }
+    setQuestPopped(prev => {
+      if (!prev) setTimeout(() => advance(5), 600);
+      return true;
+    });
   };
 
   const advance = (toStep) => {
@@ -6427,11 +6426,11 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     const el = document.querySelector(`[data-tour="${spotlightKey}"]`);
     if (!el) { setSpotRect(null); return; }
 
-    // Target: element should sit ~30% from top, well above the banner
+    // Target: element should sit near top of viewport, well above the banner
     const r = el.getBoundingClientRect();
     const safeZoneBottom = window.innerHeight - BANNER_CLEARANCE - 20;
-    const idealTop = Math.min(window.innerHeight * 0.30, safeZoneBottom - r.height - 40);
-    const needsScroll = r.top < 60 || r.top + r.height > safeZoneBottom;
+    const idealTop = 80; // put element near the top, just below nav
+    const needsScroll = r.top < 60 || r.top > safeZoneBottom || r.bottom > safeZoneBottom;
     if (needsScroll) {
       window.scrollTo({ top: window.scrollY + r.top - idealTop, behavior: "smooth" });
       setTimeout(measureSpot, 400);
