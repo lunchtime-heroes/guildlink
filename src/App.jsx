@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-84</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-85</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4856,13 +4856,16 @@ function NPCStudioPage({ isMobile, currentUser }) {
   useEffect(() => {
     // Resolve all NPC handles to their Supabase UUIDs
     const handles = npcList.map(n => n.handle);
-    supabase.from("npcs").select("id, handle").in("handle", handles).then(({ data }) => {
+    console.log("Looking up NPC handles:", handles);
+    supabase.from("npcs").select("id, handle, name").then(({ data, error }) => {
+      console.log("All npcs in DB:", data, "error:", error);
       if (data) {
         const map = {};
         data.forEach(row => {
           const local = npcList.find(n => n.handle === row.handle);
           if (local) map[local.id] = row.id;
         });
+        console.log("Resolved npcUUIDs:", map);
         setNpcUUIDs(map);
       }
     });
@@ -5068,11 +5071,12 @@ function NPCStudioPage({ isMobile, currentUser }) {
           }
         }
       } else {
-        await supabase.from("posts").insert({
+        const { data: insertData, error: insertError } = await supabase.from("posts").insert({
           content: composeText.trim(),
           npc_id: npcUUID,
           user_id: writerUser.id,
         });
+        console.log("NPC post insert — npcUUID:", npcUUID, "result:", insertData, "error:", insertError);
       }
     }
 
