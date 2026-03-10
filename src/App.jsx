@@ -1546,7 +1546,7 @@ function PostModal({ postId, onClose, currentUser }) {
 }
 
 // ─── NAV BAR ──────────────────────────────────────────────────────────────────
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab }) {
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
   const isAdmin = currentUser?.is_admin;
@@ -1666,7 +1666,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         {isGuest ? (
           <>
             <button onClick={onSignIn} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
-            <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
+            <button onClick={onSignUp} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
           </>
         ) : (
           <>
@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-68</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-69</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5785,8 +5785,8 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 
-function AuthPage({ onBack }) {
-  const [mode, setMode] = useState("login");
+function AuthPage({ onBack, defaultMode = "login" }) {
+  const [mode, setMode] = useState(defaultMode);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [dobMonth, setDobMonth] = useState("");
@@ -6600,8 +6600,10 @@ export default function GuildLink() {
 
   const openSignIn = (msg) => {
     setSignInPromptMsg(msg || null);
-    setShowAuth(true);
+    setShowAuth("login");
   };
+
+  const openSignUp = () => setShowAuth("signup");
 
   if (authLoading) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -6610,7 +6612,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : "login"} />;
 
   const isGuest = !session;
 
@@ -6645,7 +6647,7 @@ export default function GuildLink() {
         <SignInPrompt
           message={signInPromptMsg || undefined}
           onClose={() => setSignInPromptMsg(null)}
-          onSignIn={() => { setSignInPromptMsg(null); setShowAuth(true); }}
+          onSignIn={() => { setSignInPromptMsg(null); setShowAuth("login"); }}
         />
       )}
 
@@ -6704,7 +6706,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} />
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} />
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
