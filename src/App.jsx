@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-86</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-87</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4974,26 +4974,30 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const loadThreads = async () => {
     setLoadingThreads(true);
     const npcUUID = npcUUIDs[selectedNPC] || selectedNPC;
-    // Find posts where this NPC has commented
-    const { data: npcComments } = await supabase
-      .from("comments")
-      .select("post_id")
-      .eq("npc_id", npcUUID);
-    if (!npcComments || npcComments.length === 0) { setThreads([]); setLoadingThreads(false); return; }
 
-    const postIds = [...new Set(npcComments.map(c => c.post_id))];
+    // Find posts where this NPC has commented OR is the author
+    const [commentedRes, authoredRes] = await Promise.all([
+      supabase.from("comments").select("post_id").eq("npc_id", npcUUID),
+      supabase.from("posts").select("id").eq("npc_id", npcUUID),
+    ]);
+
+    const commentedIds = (commentedRes.data || []).map(c => c.post_id);
+    const authoredIds = (authoredRes.data || []).map(p => p.id);
+    const postIds = [...new Set([...commentedIds, ...authoredIds])];
+
+    if (postIds.length === 0) { setThreads([]); setLoadingThreads(false); return; }
 
     // Fetch those posts with author info
     const { data: posts } = await supabase
       .from("posts")
-      .select("id, content, created_at, likes, user_id, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
+      .select("id, content, created_at, likes, user_id, npc_id, profiles!posts_user_id_fkey(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
       .in("id", postIds)
       .order("created_at", { ascending: false });
 
     // Fetch all comments for those posts
     const { data: allComments } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
       .in("post_id", postIds)
       .order("created_at", { ascending: true });
 
@@ -5006,10 +5010,10 @@ function NPCStudioPage({ isMobile, currentUser }) {
     const enriched = (posts || []).map(p => {
       const comments = commentsByPost[p.id] || [];
       const lastComment = comments[comments.length - 1];
-      const needsReply = lastComment && !lastComment.npc_id;
+      // Needs reply if last comment was from a user (not this NPC)
+      const needsReply = lastComment && lastComment.npc_id !== npcUUID;
       return { ...p, comments, needsReply };
     }).sort((a, b) => {
-      // Needs reply first, then by most recent activity
       if (a.needsReply && !b.needsReply) return -1;
       if (!a.needsReply && b.needsReply) return 1;
       const aLast = a.comments[a.comments.length - 1]?.created_at || a.created_at;
@@ -5401,9 +5405,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
                     <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C2.border}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <Avatar initials={(thread.profiles?.avatar_initials || "?").slice(0,2).toUpperCase()} size={28} />
+                          <Avatar initials={((thread.npc_id ? thread.npcs?.avatar_initials : thread.profiles?.avatar_initials) || "?").slice(0,2).toUpperCase()} size={28} isNPC={!!thread.npc_id} />
                           <div>
-                            <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{thread.profiles?.username}</span>
+                            <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{thread.npc_id ? (thread.npcs?.name || "NPC") : thread.profiles?.username}</span>
                             <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{timeAgo(thread.created_at)}</span>
                           </div>
                         </div>
