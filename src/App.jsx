@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-66</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-67</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6265,11 +6265,243 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
   );
 }
 
+// ─── ONBOARDING MODAL ─────────────────────────────────────────────────────────
+
+function OnboardingModal({ currentUser, isMobile, onComplete }) {
+  const [step, setStep] = useState(0);
+  const [gameSearch, setGameSearch] = useState("");
+  const [gameResults, setGameResults] = useState([]);
+  const [addedGames, setAddedGames] = useState([]);
+  const [questPopped, setQuestPopped] = useState(false);
+  const [completing, setCompleting] = useState(false);
+
+  const searchGames = async (q) => {
+    setGameSearch(q);
+    if (q.length < 2) { setGameResults([]); return; }
+    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
+    setGameResults(data || []);
+  };
+
+  const addGame = async (game) => {
+    if (addedGames.find(g => g.id === game.id)) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("user_games").upsert({
+      user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString(),
+    });
+    await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
+    await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
+    const newAdded = [...addedGames, game];
+    setAddedGames(newAdded);
+    setGameSearch("");
+    setGameResults([]);
+    // After first game added, pause then show quest pop
+    if (newAdded.length === 1 && !questPopped) {
+      setTimeout(() => { setQuestPopped(true); setStep(9); }, 800);
+    }
+  };
+
+  const finish = async () => {
+    setCompleting(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      await supabase.from("profiles").update({ onboarded: true }).eq("id", authUser.id);
+    }
+    onComplete();
+  };
+
+  const WIZARD = { name: "Deckard", avatar: "🧙", color: "#a78bfa" };
+
+  const steps = [
+    {
+      heading: "You don't need a cheat code to get the most out of GuildLink.",
+      body: "Most platforms bury the good stuff. We don't. Everything that makes this place work is right on the surface — and I'm going to show you in about two minutes.",
+      cta: "Let's go",
+    },
+    {
+      heading: "Everything revolves around your shelf.",
+      body: "Your shelf is your gaming identity. What you've played. What you're playing right now. What's sitting in your queue. It's your resume, your taste profile, and your signal to everyone else on the platform.",
+      cta: "Got it",
+    },
+    {
+      heading: "When you add games, the magic starts.",
+      body: "The more honest your shelf is, the better GuildLink gets — for you and for everyone whose shelf overlaps with yours. That overlap is how you find people worth following and games worth playing.",
+      cta: "Keep going",
+    },
+    {
+      heading: "This is where I do my magic. ✨",
+      body: "GuildLink doesn't use your age, location, browsing history, or anything personal. Just what you play. Your shelf is the whole signal. That's it. No data deals, no shadow profiles.",
+      wizard: true,
+      cta: "That's refreshing",
+    },
+    {
+      heading: "The more you add, the more magic happens.",
+      body: "Five games is good. Twenty is great. Your feed gets sharper, your discoveries get weirder and better, and the people the platform surfaces for you get more interesting. It compounds.",
+      cta: "Makes sense",
+    },
+    {
+      heading: "Posting and reviewing push the discovery further.",
+      body: "When you write a review or post about a game, you're adding texture to your taste — not just \"I played this\" but \"here's what I thought.\" That helps others find you, and helps you find them.",
+      cta: "I can do that",
+    },
+    {
+      heading: "The feed shows you what your gaming world cares about.",
+      body: "It's not algorithmic noise. It's weighted by taste overlap. Someone who plays the same four games as you talking about a fifth? That's a signal worth seeing. That's how discovery happens here.",
+      cta: "Show me",
+    },
+    {
+      heading: "Start with what you're playing right now.",
+      body: "Don't overthink it. One game. Whatever you've launched in the last week. Add it and watch what happens.",
+      cta: null, // no button — game search takes over
+      showSearch: true,
+    },
+    // step 8 is the waiting state (search active, no game added yet)
+    {
+      heading: "Start with what you're playing right now.",
+      body: "Don't overthink it. One game. Whatever you've launched in the last week. Add it and watch what happens.",
+      cta: null,
+      showSearch: true,
+      waiting: true,
+    },
+    {
+      heading: "Oh! Did you see that? ✨",
+      body: "You just completed a quest. Quests give you unique customizations — rings, themes, profile unlocks — so you can show off your progress to your new friends. Your quests are always right here on your profile.",
+      wizard: true,
+      questPop: true,
+      cta: addedGames.length > 0 ? "Take me to my feed" : "Skip for now",
+    },
+  ];
+
+  const current = steps[step] || steps[steps.length - 1];
+  const progress = Math.min((step / (steps.length - 1)) * 100, 100);
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 10000,
+      background: `${C.bg}f0`, backdropFilter: "blur(12px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: isMobile ? 16 : 40,
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 520,
+        background: C.surface, border: `1px solid ${C.border}`,
+        borderRadius: 20, overflow: "hidden",
+        boxShadow: "0 24px 80px #00000088",
+      }}>
+        {/* Progress bar */}
+        <div style={{ height: 3, background: C.surfaceRaised }}>
+          <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.teal})`, transition: "width 0.4s ease" }} />
+        </div>
+
+        <div style={{ padding: isMobile ? 28 : 40 }}>
+          {/* Wizard avatar */}
+          {current.wizard && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${WIZARD.color}22`, border: `2px solid ${WIZARD.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
+                {WIZARD.avatar}
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, color: WIZARD.color, fontSize: 13 }}>{WIZARD.name}</div>
+                <div style={{ color: C.textDim, fontSize: 11 }}>GuildLink Wizard</div>
+              </div>
+            </div>
+          )}
+
+          {/* Quest pop animation */}
+          {current.questPop && (
+            <div style={{
+              background: `${C.green}12`, border: `1px solid ${C.green}33`,
+              borderRadius: 12, padding: "12px 16px", marginBottom: 20,
+              display: "flex", alignItems: "center", gap: 12,
+              animation: "slideUp 0.4s ease",
+            }}>
+              <div style={{ fontSize: 24 }}>🎯</div>
+              <div>
+                <div style={{ color: C.green, fontWeight: 800, fontSize: 13 }}>Quest Complete!</div>
+                <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>First Game Added</div>
+                <div style={{ color: C.gold, fontSize: 12 }}>+50 XP earned</div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 20 : 24, lineHeight: 1.3, marginBottom: 14 }}>
+            {current.heading}
+          </div>
+          <div style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.7, marginBottom: current.showSearch ? 20 : 32 }}>
+            {current.body}
+          </div>
+
+          {/* Game search */}
+          {current.showSearch && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ position: "relative", marginBottom: 8 }}>
+                <input
+                  value={gameSearch}
+                  onChange={e => searchGames(e.target.value)}
+                  placeholder="Search for a game..."
+                  autoFocus
+                  style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              {gameResults.length > 0 && (
+                <div style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
+                  {gameResults.map(game => (
+                    <div key={game.id} onClick={() => addGame(game)} style={{ padding: "12px 16px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.surface}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
+                      </div>
+                      <div style={{ color: C.accent, fontSize: 12, fontWeight: 700 }}>+ Add</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {addedGames.length > 0 && (
+                <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {addedGames.map(g => (
+                    <div key={g.id} style={{ background: `${C.accent}18`, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700 }}>
+                      ✓ {g.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {addedGames.length === 0 && (
+                <button onClick={() => setStep(9)} style={{ marginTop: 12, background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", padding: 0 }}>
+                  Skip for now →
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* CTA button */}
+          {current.cta && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button
+                onClick={step === steps.length - 1 ? finish : () => setStep(s => s + 1)}
+                disabled={completing}
+                style={{ background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, border: "none", borderRadius: 10, padding: "12px 28px", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                {completing ? "Taking you in…" : step === steps.length - 1 ? (addedGames.length > 0 ? "Take me to my feed →" : "Head to my feed →") : current.cta + " →"}
+              </button>
+              {step < steps.length - 1 && step !== 7 && (
+                <button onClick={finish} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer" }}>
+                  Skip all
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function GuildLink() {
   const [activePage, setActivePage] = useState("feed");
   const [currentGame, setCurrentGame] = useState("elden-ring");
   const [currentNPC, setCurrentNPC] = useState("merv");
+
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [profileDefaultTab, setProfileDefaultTab] = useState("posts");
   const [session, setSession] = useState(null);
@@ -6279,6 +6511,7 @@ export default function GuildLink() {
   const [showAuth, setShowAuth] = useState(false);
   const [signInPromptMsg, setSignInPromptMsg] = useState(null);
   const [themeKey, setThemeKey] = useState("deep-space");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const width = useWindowSize();
   const isMobile = width < 768;
 
@@ -6337,6 +6570,7 @@ export default function GuildLink() {
     if (data) {
       setProfile(data);
       if (data.theme) applyAndSetTheme(data.theme);
+      if (!data.onboarded) setShowOnboarding(true);
     }
     fetchNotifications(userId);
     checkQuestCompletions(userId);
@@ -6456,8 +6690,17 @@ export default function GuildLink() {
           </div>
         </div>
       )}
+      {showOnboarding && liveUser && (
+        <OnboardingModal
+          currentUser={liveUser}
+          isMobile={isMobile}
+          onComplete={() => {
+            setShowOnboarding(false);
+            session?.user?.id && fetchProfile(session.user.id);
+          }}
+        />
+      )}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
         * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #080e1a; }
