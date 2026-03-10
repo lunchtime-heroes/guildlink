@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-70</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-71</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6310,7 +6310,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       speaker: "deckard",
       heading: "There it is. ✨",
       body: "Your shelf just got its first entry. And you just completed your first quest.",
-      cta: null,
+      cta: "See my quests →",
       spotlight: "quests-tab",
       questPop: true,
     },
@@ -6318,7 +6318,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       speaker: "deckard",
       heading: "Quests reward how you use the platform.",
       body: "Reviews, posts, follows — every action that builds your taste profile earns you something. Rings, themes, profile unlocks. Check your Quests tab anytime to see what's next.",
-      cta: "Nice",
+      cta: "Got it",
       spotlight: "quests-tab",
     },
     {
@@ -6352,7 +6352,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     setGameSearch(""); setGameResults([]);
     if (!questPopped) {
       setQuestPopped(true);
-      setTimeout(() => advance(5), 600);
+      setTimeout(() => advance(5), 600);  // step 5 = "There it is" — now has a CTA
     }
   };
 
@@ -6374,14 +6374,27 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     onComplete();
   };
 
-  // Spotlight: find element by data-tour attribute and get its bounding rect
+  // Spotlight: find element by data-tour attribute, scroll into view, get rect
+  const BANNER_HEIGHT = 220; // approximate banner height + padding
   const [spotRect, setSpotRect] = useState(null);
   useEffect(() => {
     if (!current.spotlight) { setSpotRect(null); return; }
     const el = document.querySelector(`[data-tour="${current.spotlight}"]`);
     if (el) {
+      // Scroll element into view with room above it, accounting for banner at bottom
       const r = el.getBoundingClientRect();
-      setSpotRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      const viewportHeight = window.innerHeight;
+      const idealTop = viewportHeight * 0.25; // put element ~25% from top
+      if (r.top > viewportHeight - BANNER_HEIGHT - 20 || r.top < 60) {
+        window.scrollBy({ top: r.top - idealTop, behavior: "smooth" });
+        // Re-measure after scroll settles
+        setTimeout(() => {
+          const r2 = el.getBoundingClientRect();
+          setSpotRect({ top: r2.top, left: r2.left, width: r2.width, height: r2.height });
+        }, 350);
+      } else {
+        setSpotRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      }
     } else {
       setSpotRect(null);
     }
@@ -6509,7 +6522,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                       ))}
                     </div>
                   )}
-                  <button onClick={() => advance(5)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "6px 0 0", display: "block" }}>
+                  <button onClick={() => advance(6)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "6px 0 0", display: "block" }}>
                     Skip for now →
                   </button>
                 </div>
