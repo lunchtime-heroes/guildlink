@@ -1788,7 +1788,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-77</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-78</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5863,7 +5863,16 @@ function AuthPage({ onBack, defaultMode = "login" }) {
     const email = fakeEmail(username);
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError("Username or password incorrect.");
+      if (error) {
+        // Fall back: if username looks like a real email, try it directly
+        // (supports accounts created before the username-only auth change)
+        if (username.includes("@") && username.includes(".")) {
+          const { error: error2 } = await supabase.auth.signInWithPassword({ email: username.trim(), password });
+          if (error2) { setError("Username or password incorrect."); }
+        } else {
+          setError("Username or password incorrect.");
+        }
+      }
     } else {
       let dobStr = null;
       const hasAnyDob = dobMonth || dobDay || dobYear;
@@ -5907,8 +5916,8 @@ function AuthPage({ onBack, defaultMode = "login" }) {
             ))}
           </div>
           <div style={{ marginBottom: 16 }}>
-            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username</div>
-            <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>{mode === "login" ? "Username or Email" : "Username"}</div>
+            <input value={username} onChange={e => setUsername(e.target.value)} placeholder={mode === "login" ? "YourGamerName or email" : "YourGamerName"} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
           </div>
           <div style={{ marginBottom: mode === "signup" ? 16 : 24 }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
