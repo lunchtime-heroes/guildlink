@@ -950,7 +950,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
         {/* POSTS TAB */}
         {activeTab === "posts" && (
           <div>
-            {(npcPosts.length > 0 ? npcPosts : (npc?.posts || [])).map(post => {
+            {(npcPosts).map(post => {
               const isLivePost = !!post.created_at;
               const feedPost = isLivePost ? {
                 id: post.id,
@@ -973,7 +973,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               };
               return <FeedPostCard key={post.id} post={feedPost} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} />;
             })}
-            {npcPosts.length === 0 && (npc?.posts || []).length === 0 && (
+            {npcPosts.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🕯️</div>
                 <div style={{ fontSize: 14 }}>No posts yet. They're thinking about it.</div>
@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-82</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-83</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4845,6 +4845,22 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const [closedCandidates, setClosedCandidates] = useState(new Set());
 
   const npcList = Object.values(NPCS);
+  const [npcUUIDs, setNpcUUIDs] = useState({}); // localId -> supabase UUID
+
+  useEffect(() => {
+    // Resolve all NPC handles to their Supabase UUIDs
+    const handles = npcList.map(n => n.handle);
+    supabase.from("npcs").select("id, handle").in("handle", handles).then(({ data }) => {
+      if (data) {
+        const map = {};
+        data.forEach(row => {
+          const local = npcList.find(n => n.handle === row.handle);
+          if (local) map[local.id] = row.id;
+        });
+        setNpcUUIDs(map);
+      }
+    });
+  }, []);
 
   const loadPostComments = async (postId) => {
     setLoadingComments(prev => ({ ...prev, [postId]: true }));
@@ -5009,11 +5025,12 @@ function NPCStudioPage({ isMobile, currentUser }) {
     if (!composeText.trim() || !selectedNPC) return;
     setSending(true);
     const { data: { user: writerUser } } = await supabase.auth.getUser();
+    const npcUUID = npcUUIDs[selectedNPC] || selectedNPC; // fall back to selectedNPC if already UUID
 
     if (scheduleMode && scheduleDate && scheduleTime) {
       const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
       await supabase.from("npc_scheduled_posts").insert({
-        npc_id: selectedNPC,
+        npc_id: npcUUID,
         content: composeText.trim(),
         reply_to_post_id: selectedPost?.id || null,
         scheduled_for: scheduledFor,
@@ -5026,7 +5043,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
         const { error } = await supabase.from("comments").insert({
           post_id: selectedPost.id,
           content: composeText.trim(),
-          npc_id: selectedNPC,
+          npc_id: npcUUID,
           user_id: writerUser.id,
           reply_to_comment_id: replyToComment?.id || null,
         });
@@ -5046,7 +5063,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
       } else {
         await supabase.from("posts").insert({
           content: composeText.trim(),
-          npc_id: selectedNPC,
+          npc_id: npcUUID,
           user_id: writerUser.id,
         });
       }
@@ -5449,10 +5466,11 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             if (!composeText.trim()) return;
                             setSending(true);
                             const { data: { user: writerUser } } = await supabase.auth.getUser();
+                            const npcUUID = npcUUIDs[selectedNPC] || selectedNPC;
                             await supabase.from("comments").insert({
                               post_id: thread.id,
                               content: composeText.trim(),
-                              npc_id: selectedNPC,
+                              npc_id: npcUUID,
                               user_id: writerUser.id,
                               reply_to_comment_id: replyToComment?.id || null,
                             });
