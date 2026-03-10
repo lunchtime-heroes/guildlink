@@ -1788,7 +1788,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-78</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-79</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2561,6 +2561,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
       ]);
+      if (postsResult.error) console.error("Feed load error:", postsResult.error);
       const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
       if (postsResult.data) {
         setLivePosts(postsResult.data.map(p => ({
@@ -3731,12 +3732,13 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       if (!authUser) return;
 
       // Real posts
-      const { data: posts } = await supabase
+      const { data: posts, error: postsError } = await supabase
         .from("posts")
         .select("*, profiles(username, handle, avatar_initials)")
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(20);
+      if (postsError) console.error("Profile posts error:", postsError);
       if (posts) {
         setUserPosts(posts);
         setPostCount(posts.length);
