@@ -359,85 +359,7 @@ const NPCS = {
 
 // ─── FEED POSTS WITH COMMENTS ─────────────────────────────────────────────────
 
-const FEED_POSTS = [
-  {
-    id: 1,
-    user: { name: "Jordan Park", handle: "@jpark_gamer", avatar: "JP", status: "online", isNPC: false },
-    time: "2h ago", game: "Elden Ring", gameId: "elden-ring", gameIcon: "🗡️",
-    content: "Finally beat Malenia after 47 attempts. The feeling when she finally went down... absolutely unreal. If anyone's struggling, happy to share my build — bleed arcane was the key 🗡️",
-    likes: 284, comments: 4, shares: 12, liked: false,
-    commentList: [
-      { id: "c1", user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true }, time: "1h ago", content: "I sell Preserving Boluses from a cave 40 feet from her arena. I have Preserving Boluses in stock at all times. Nobody has ever asked.", likes: 1847 },
-      { id: "c2", user: { name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true }, time: "1h ago", content: "I stood outside that arena for 6 years. Not one person said hello. Congratulations on your victory. Sincerely.", likes: 2104 },
-      { id: "c3", user: { name: "Sam Rivera", handle: "@sam_fps", avatar: "SR", isNPC: false }, time: "58m ago", content: "wait are you two in the same game?? 😭", likes: 847 },
-      { id: "c4", user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true }, time: "55m ago", content: "We met at a trade guild mixer. It was sparsely attended. There were refreshments. Merv brought the arrows.", likes: 3921 },
-    ],
-  },
-  {
-    id: 2,
-    user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", status: "online", isNPC: true },
-    time: "3h ago", game: null, gameId: null, gameIcon: null,
-    content: "Inventory update: 847 arrows, 12 health potions, one sword of unclear origin. I have been in this cave since the Third Age. Business is steady. The lantern is on.",
-    likes: 4821, comments: 5, shares: 892, liked: false,
-    commentList: [
-      { id: "c5", user: { name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true }, time: "2h ago", content: "I have a quest that requires 400 arrows. I have mentioned this to no one.", likes: 5204 },
-      { id: "c6", user: { name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true }, time: "2h ago", content: "I could have told people about the quest. I stand near the entrance to this entire region.", likes: 2847 },
-      { id: "c7", user: { name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true }, time: "1h ago", content: "Why didn't you?", likes: 1923 },
-      { id: "c8", user: { name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true }, time: "1h ago", content: "Nobody asks me anything. I mentioned the knee situation once and they all walked past.", likes: 8847 },
-      { id: "c9", user: { name: "Priya Nair", handle: "@priya_plays", avatar: "PN", isNPC: false }, time: "45m ago", content: "I am genuinely losing my mind at this thread. I came here to talk about games.", likes: 4102 },
-    ],
-  },
-  {
-    id: 3,
-    user: { name: "Taylor Kim", handle: "@taylorplays", avatar: "TK", status: "ingame", isNPC: false },
-    time: "4h ago", game: "Stardew Valley", gameId: null, gameIcon: "🌱",
-    content: "just cried because my favorite villager said something nice to me in Stardew 🌱 I need help. I am a grown adult.",
-    likes: 3847, comments: 4, shares: 204, liked: true,
-    commentList: [
-      { id: "c10", user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true }, time: "3h ago", content: "We notice everything. We just don't always say it. You're doing great out there. Genuinely.", likes: 6847 },
-      { id: "c11", user: { name: "Alex Chen", handle: "@axelstrike", avatar: "AC", isNPC: false }, time: "3h ago", content: "this reply just made it worse im crying harder what is happening", likes: 2904 },
-      { id: "c12", user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true }, time: "2h ago", content: "That was the intended outcome. Have a good Tuesday.", likes: 11203 },
-      { id: "c13", user: { name: "BeeKeeper Nan", handle: "@BeeKeeperNan_NPC", avatar: "BN", isNPC: true }, time: "2h ago", content: "The flowers near Plot 4 are also doing well, for what it's worth. It's worth something.", likes: 3847 },
-    ],
-  },
-  {
-    id: 4,
-    user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", status: "online", isNPC: true },
-    time: "5h ago", game: null, gameId: null, gameIcon: null,
-    content: "A new resident moved into town today. They immediately started chopping down trees. I have filed nothing. I feel nothing. Welcome.",
-    likes: 12847, comments: 4, shares: 1847, liked: false,
-    commentList: [
-      { id: "c14", user: { name: "BeeKeeper Nan", handle: "@BeeKeeperNan_NPC", avatar: "BN", isNPC: true }, time: "4h ago", content: "The flowers near plot 4 are gone. I noticed. I have been noticing.", likes: 4821 },
-      { id: "c15", user: { name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true }, time: "4h ago", content: "We all noticed, Nan.", likes: 7203 },
-      { id: "c16", user: { name: "Mayor Whistle", handle: "@MayorWhistle_NPC", avatar: "MW", isNPC: true }, time: "3h ago", content: "I've received 3 formal complaints and 47 informal ones. I am handling it. Please stop sending complaints. I am one person.", likes: 9847 },
-      { id: "c17", user: { name: "Jordan Park", handle: "@jpark_gamer", avatar: "JP", isNPC: false }, time: "2h ago", content: "the maplewood valley lore is getting DEEP and I am here for every second of it", likes: 5204 },
-    ],
-  },
-  {
-    id: 5,
-    user: { name: "Sam Rivera", handle: "@sam_fps", avatar: "SR", status: "away", isNPC: false },
-    time: "6h ago", game: "Valorant", gameId: null, gameIcon: "🎯",
-    content: "lost 8 ranked games in a row. I am cooked. genuinely considering touching grass for the first time in weeks 💀",
-    likes: 521, comments: 3, shares: 31, liked: false,
-    commentList: [
-      { id: "c18", user: { name: "Just A Minion", handle: "@JustAMinion_NPC", avatar: "JM", isNPC: true }, time: "5h ago", content: "I have died 14,847 times this season. Ranked or casual, the result is the same. You respawn. You try again. This is the way. Also the grass is fine.", likes: 8204 },
-      { id: "c19", user: { name: "Sam Rivera", handle: "@sam_fps", avatar: "SR", isNPC: false }, time: "5h ago", content: "a level 1 minion just gave me better life advice than my actual therapist. incredible platform.", likes: 6847 },
-      { id: "c20", user: { name: "Just A Minion", handle: "@JustAMinion_NPC", avatar: "JM", isNPC: true }, time: "4h ago", content: "I charge nothing. My rates are very competitive. I am also available to be defeated if that would help.", likes: 12903 },
-    ],
-  },
-  {
-    id: 6,
-    user: { name: "Alex Chen", handle: "@axelstrike", avatar: "AC", status: "online", isNPC: false },
-    time: "8h ago", game: "Hollow Knight", gameId: "hollow-knight", gameIcon: "🦋",
-    content: "Silksong just dropped and I have cleared my entire weekend. Family has been notified. The fridge is stocked. I am ready.",
-    likes: 2104, comments: 3, shares: 847, liked: false,
-    commentList: [
-      { id: "c21", user: { name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true }, time: "7h ago", content: "I have a quest in a kingdom very similar to this one. It has been pending for 200 years. No rush. Enjoy your weekend.", likes: 7821 },
-      { id: "c22", user: { name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true }, time: "7h ago", content: "I have supplies available if needed. I am near the Eastern Pass. I am always near the Eastern Pass.", likes: 3204 },
-      { id: "c23", user: { name: "Taylor Kim", handle: "@taylorplays", avatar: "TK", isNPC: false }, time: "6h ago", content: "same. my out of office is on. I have no regrets.", likes: 1847 },
-    ],
-  },
-];
+
 
 // ─── GAME DATA ────────────────────────────────────────────────────────────────
 
@@ -1788,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-81</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-82</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2410,6 +2332,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   const [posting, setPosting] = useState(false);
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [following, setFollowing] = useState([]); // combined users + NPCs
   const [feedTab, setFeedTab] = useState("forYou");
@@ -2595,6 +2518,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
   };
 
   const loadPosts = async () => {
+    setFeedLoading(true);
     if (isGuest) {
       // Fetch top 2 NPC posts and top real posts separately
       const [npcResult, realResult] = await Promise.all([
@@ -2631,6 +2555,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
 
       setLivePosts(feed.slice(0, 20));
       setGuestFeedDone(true);
+      setFeedLoading(false);
     } else {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const [postsResult, likesResult] = await Promise.all([
@@ -2651,6 +2576,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           liked: likedIds.has(p.id),
         })));
       }
+      setFeedLoading(false);
     }
   };
 
@@ -2908,7 +2834,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         )}
 
         {/* For You feed */}
-        {(isGuest || feedTab === "forYou") && livePosts.map(post => {
+        {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.map(post => {
           const isNPC = !!post.npc_id;
           const author = isNPC ? post.npcs : post.profiles;
           if (!author) return null;
@@ -2934,9 +2860,30 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
             }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
           );
         })}
-        {(isGuest || feedTab === "forYou") && FEED_POSTS.map(post => (
-          !isGuest && <FeedPostCard key={post.id} post={post} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onQuestTrigger={onQuestTrigger} />
+        {/* Loading skeleton */}
+        {(isGuest || feedTab === "forYou") && feedLoading && [1,2,3].map(i => (
+          <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 10 }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: C.surfaceRaised, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ height: 12, width: "40%", background: C.surfaceRaised, borderRadius: 6, marginBottom: 6 }} />
+                <div style={{ height: 10, width: "25%", background: C.surfaceHover, borderRadius: 6 }} />
+              </div>
+            </div>
+            <div style={{ height: 12, width: "90%", background: C.surfaceRaised, borderRadius: 6, marginBottom: 6 }} />
+            <div style={{ height: 12, width: "70%", background: C.surfaceRaised, borderRadius: 6, marginBottom: 6 }} />
+            <div style={{ height: 12, width: "50%", background: C.surfaceHover, borderRadius: 6 }} />
+          </div>
         ))}
+
+        {/* Empty state once loaded */}
+        {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.length === 0 && (
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: 14 }}>🎮</div>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>The feed is empty right now.</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>Be the first to post something.</div>
+          </div>
+        )}
 
         {/* Following feed */}
         {!isGuest && feedTab === "following" && (
