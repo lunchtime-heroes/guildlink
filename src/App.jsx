@@ -1452,7 +1452,7 @@ function PostModal({ postId, onClose, currentUser }) {
     const load = async () => {
       const { data: p } = await supabase
         .from("posts")
-        .select("*, profiles(username, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
         .eq("id", postId)
         .single();
       const { data: c } = await supabase
@@ -1788,7 +1788,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-79</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-80</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2554,7 +2554,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const [postsResult, likesResult] = await Promise.all([
         supabase.from("posts")
-          .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .order("created_at", { ascending: false })
           .limit(20),
         authUser
@@ -3109,7 +3109,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
       // Posts
       const { data: posts } = await supabase
         .from("posts")
-        .select("*, profiles(username, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -3118,7 +3118,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, isMobile }) {
       // Top Voices — users with most likes on posts for this game
       const { data: voicePosts } = await supabase
         .from("posts")
-        .select("user_id, likes, profiles(username, handle, avatar_initials, is_founding)")
+        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding)")
         .eq("game_tag", dbId)
         .not("user_id", "is", null);
       if (voicePosts) {
@@ -3734,7 +3734,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       // Real posts
       const { data: posts, error: postsError } = await supabase
         .from("posts")
-        .select("*, profiles(username, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -4626,7 +4626,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
     const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
-      supabase.from("posts").select("*, profiles(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
       supabase.from("reviews").select("*, profiles(username), games(name)").order("created_at", { ascending: false }).limit(20),
       supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
@@ -4888,7 +4888,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
     // Fetch recent posts with author info, likes, comments
     const { data: posts } = await supabase
       .from("posts")
-      .select("id, content, created_at, likes, user_id, game_tag, profiles(username, handle, avatar_initials, created_at)")
+      .select("id, content, created_at, likes, user_id, game_tag, profiles!posts_user_id_fkey(username, handle, avatar_initials, created_at)")
       .is("npc_id", null)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -4978,7 +4978,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
     // Fetch those posts with author info
     const { data: posts } = await supabase
       .from("posts")
-      .select("id, content, created_at, likes, user_id, profiles(username, handle, avatar_initials)")
+      .select("id, content, created_at, likes, user_id, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
       .in("id", postIds)
       .order("created_at", { ascending: false });
 
