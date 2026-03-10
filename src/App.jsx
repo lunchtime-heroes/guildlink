@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-72</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-73</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6262,10 +6262,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
 function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, setProfileDefaultTab }) {
   const [step, setStep] = useState(0);
   const [addedGames, setAddedGames] = useState([]);
-  const [gameSearch, setGameSearch] = useState("");
-  const [gameResults, setGameResults] = useState([]);
   const [questPopped, setQuestPopped] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
 
   // Each step: what to say, which element to spotlight (by data-tour attr), cta label
@@ -6334,13 +6331,6 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
   const current = STEPS[step] || STEPS[STEPS.length - 1];
   const progress = ((step) / (STEPS.length - 1)) * 100;
 
-  const searchGames = async (q) => {
-    setGameSearch(q);
-    if (q.length < 2) { setGameResults([]); return; }
-    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(5);
-    setGameResults(data || []);
-  };
-
   const addGame = async (game) => {
     if (addedGames.find(g => g.id === game.id)) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -6374,7 +6364,50 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     onComplete();
   };
 
-  // Spotlight: live-track the element position on scroll/resize so the ring never drifts
+  // @ mention tagging — mirrors post composer behavior
+  const [atText, setAtText] = useState("");
+  const [atResults, setAtResults] = useState([]);
+  const [atIndex, setAtIndex] = useState(0);
+  const atInputRef = useRef(null);
+
+  const handleAtInput = async (e) => {
+    const val = e.target.value;
+    setAtText(val);
+    const m = val.match(/@(\w*)$/);
+    if (m) {
+      const q = m[1].toLowerCase();
+      if (q.length === 0) {
+        const { data } = await supabase.from("games").select("id, name, developer, genre, followers").order("followers", { ascending: false }).limit(6);
+        setAtResults(data || []);
+      } else {
+        const { data } = await supabase.from("games").select("id, name, developer, genre, followers").ilike("name", `%${q}%`).order("followers", { ascending: false }).limit(6);
+        setAtResults(data || []);
+      }
+    } else {
+      setAtResults([]);
+    }
+  };
+
+  const handleAtKeyDown = (e) => {
+    if (atResults.length === 0) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setAtIndex(i => Math.min(i + 1, atResults.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setAtIndex(i => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); selectAtGame(atResults[atIndex]); }
+    else if (e.key === "Escape") { setAtResults([]); }
+  };
+
+  const selectAtGame = async (game) => {
+    if (addedGames.find(g => g.id === game.id)) { setAtResults([]); setAtText(""); return; }
+    const replaced = atText.replace(/@\w*$/, `@${game.name.replace(/\s+/g, "")} `);
+    setAtText(replaced);
+    setAtResults([]);
+    setAtIndex(0);
+    await addGame(game);
+    setTimeout(() => atInputRef.current?.focus(), 0);
+  };
+
+  // Spotlight: always-bottom banner — scroll the PAGE so the element is in the upper portion
+  const BANNER_CLEARANCE = isMobile ? 220 : 200; // px reserved for banner at bottom
   const [spotRect, setSpotRect] = useState(null);
   const spotlightKey = current.spotlight;
 
@@ -6394,12 +6427,14 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     const el = document.querySelector(`[data-tour="${spotlightKey}"]`);
     if (!el) { setSpotRect(null); return; }
 
-    // Scroll element into view — aim for ~30% from top so banner (now at top) doesn't cover it
+    // Target: element should sit ~30% from top, well above the banner
     const r = el.getBoundingClientRect();
-    const idealTop = window.innerHeight * 0.35;
-    if (Math.abs(r.top - idealTop) > 60) {
+    const safeZoneBottom = window.innerHeight - BANNER_CLEARANCE - 20;
+    const idealTop = Math.min(window.innerHeight * 0.30, safeZoneBottom - r.height - 40);
+    const needsScroll = r.top < 60 || r.top + r.height > safeZoneBottom;
+    if (needsScroll) {
       window.scrollTo({ top: window.scrollY + r.top - idealTop, behavior: "smooth" });
-      setTimeout(measureSpot, 380);
+      setTimeout(measureSpot, 400);
     } else {
       measureSpot();
     }
@@ -6413,22 +6448,16 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
   }, [spotlightKey, measureSpot]);
 
   const DECKARD_COLOR = "#a78bfa";
-  const bannerAtTop = !!spotRect; // when spotlighting, move banner to top so it never covers the element
 
   return (
     <>
-      {/* Spotlight overlay — dims everything except the target element */}
+      {/* Spotlight overlay */}
       {spotRect && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9990, pointerEvents: "none" }}>
-          {/* Top */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.max(0, spotRect.top - 8), background: "#00000077" }} />
-          {/* Bottom */}
           <div style={{ position: "absolute", top: spotRect.top + spotRect.height + 8, left: 0, right: 0, bottom: 0, background: "#00000077" }} />
-          {/* Left */}
           <div style={{ position: "absolute", top: spotRect.top - 8, left: 0, width: Math.max(0, spotRect.left - 8), height: spotRect.height + 16, background: "#00000077" }} />
-          {/* Right */}
           <div style={{ position: "absolute", top: spotRect.top - 8, left: spotRect.left + spotRect.width + 8, right: 0, height: spotRect.height + 16, background: "#00000077" }} />
-          {/* Glowing ring around target */}
           <div style={{
             position: "absolute",
             top: spotRect.top - 6, left: spotRect.left - 6,
@@ -6441,12 +6470,9 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
         </div>
       )}
 
-      {/* Banner — bottom by default, flips to top when spotlighting so it never covers the element */}
+      {/* Banner — always anchored to bottom, page scrolls around it */}
       <div style={{
-        position: "fixed",
-        ...(bannerAtTop
-          ? { top: isMobile ? 56 : 16, bottom: "auto" }
-          : { bottom: isMobile ? 68 : 24, top: "auto" }),
+        position: "fixed", bottom: isMobile ? 68 : 24, top: "auto",
         left: "50%", transform: "translateX(-50%)",
         width: isMobile ? "calc(100vw - 24px)" : 560,
         zIndex: 9999,
@@ -6505,28 +6531,31 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                 {current.body}
               </div>
 
-              {/* Inline game search */}
+              {/* @ game tagging */}
               {current.showSearch && (
-                <div style={{ marginTop: 10 }}>
-                  <input
-                    value={gameSearch}
-                    onChange={e => searchGames(e.target.value)}
-                    placeholder="Search for a game..."
-                    autoFocus
-                    style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
-                  />
-                  {gameResults.length > 0 && (
-                    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 4, overflow: "hidden", maxHeight: 180, overflowY: "auto" }}>
-                      {gameResults.map(game => (
-                        <div key={game.id} onClick={() => addGame(game)}
-                          style={{ padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                          onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <div style={{ marginTop: 10, position: "relative" }}>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      ref={atInputRef}
+                      value={atText}
+                      onChange={handleAtInput}
+                      onKeyDown={handleAtKeyDown}
+                      placeholder="Type @ to tag a game, like tagging a friend"
+                      autoFocus
+                      style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                    />
+                  </div>
+                  {atResults.length > 0 && (
+                    <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", zIndex: 10001, boxShadow: "0 -8px 24px #00000066" }}>
+                      {atResults.map((game, idx) => (
+                        <div key={game.id} onClick={() => selectAtGame(game)}
+                          style={{ padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: idx === atIndex ? C.surfaceRaised : "transparent" }}
+                          onMouseEnter={() => setAtIndex(idx)}>
                           <div>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>@{game.name.replace(/\s+/g, "")}</div>
                             <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
                           </div>
-                          <div style={{ color: C.accent, fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>+ Add</div>
+                          <div style={{ color: C.accent, fontSize: 11, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>+ Add</div>
                         </div>
                       ))}
                     </div>
@@ -6534,7 +6563,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                   {addedGames.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                       {addedGames.map(g => (
-                        <div key={g.id} style={{ background: `${C.accent}18`, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ {g.name}</div>
+                        <div key={g.id} style={{ background: `${C.accent}18`, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ @{g.name.replace(/\s+/g, "")}</div>
                       ))}
                     </div>
                   )}
