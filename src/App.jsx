@@ -1752,7 +1752,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-69</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-70</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4286,7 +4286,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
         {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
+          <button key={tab.id} data-tour={`${tab.id}-tab`} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
         ))}
       </div>
 
@@ -4320,7 +4320,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
           {/* Add game bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ color: C.textDim, fontSize: 13 }}>Drag games between columns to update status.</div>
-            <button onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
+            <button data-tour="add-game-btn" onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
           </div>
 
           {/* Search to add */}
@@ -6257,20 +6257,87 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
   );
 }
 
-// ─── ONBOARDING MODAL ─────────────────────────────────────────────────────────
+// ─── ONBOARDING TUTORIAL ──────────────────────────────────────────────────────
 
-function OnboardingModal({ currentUser, isMobile, onComplete }) {
+function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, setProfileDefaultTab }) {
   const [step, setStep] = useState(0);
+  const [addedGames, setAddedGames] = useState([]);
   const [gameSearch, setGameSearch] = useState("");
   const [gameResults, setGameResults] = useState([]);
-  const [addedGames, setAddedGames] = useState([]);
   const [questPopped, setQuestPopped] = useState(false);
-  const [completing, setCompleting] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
+
+  // Each step: what to say, which element to spotlight (by data-tour attr), cta label
+  const STEPS = [
+    {
+      speaker: "deckard",
+      heading: "Welcome. I'm Deckard.",
+      body: "I'll be your guide for the next couple minutes. No cheat codes needed — GuildLink is built to be figured out. But a little tour never hurt anyone.",
+      cta: "Let's do it",
+      spotlight: null,
+    },
+    {
+      speaker: "deckard",
+      heading: "Everything starts with your shelf.",
+      body: "See that Games tab up there? That's your shelf. What you've played, what you're playing now, what's waiting in the queue. It's your gaming identity — and it's what makes everything else on this platform work.",
+      cta: "Makes sense",
+      spotlight: "games-tab",
+    },
+    {
+      speaker: "deckard",
+      heading: "Your shelf is your signal.",
+      body: "GuildLink doesn't know your age, location, or browsing habits. It only knows what you play. The more honest your shelf is, the better your feed gets — for you and for everyone whose taste overlaps with yours.",
+      cta: "That's refreshing",
+      spotlight: "games-tab",
+    },
+    {
+      speaker: "deckard",
+      heading: "The overlap is where the magic happens.",
+      body: "When your shelf overlaps with someone else's, you both get a signal. They might be playing something you haven't heard of yet. That's discovery — not an algorithm, just taste.",
+      cta: "Got it",
+      spotlight: null,
+    },
+    {
+      speaker: "deckard",
+      heading: "Add your first game right now.",
+      body: "Start with whatever you launched last week. Don't overthink it — one game is enough to start the engine.",
+      cta: null,
+      spotlight: "add-game-btn",
+      showSearch: true,
+    },
+    {
+      speaker: "deckard",
+      heading: "There it is. ✨",
+      body: "Your shelf just got its first entry. And you just completed your first quest.",
+      cta: null,
+      spotlight: "quests-tab",
+      questPop: true,
+    },
+    {
+      speaker: "deckard",
+      heading: "Quests reward how you use the platform.",
+      body: "Reviews, posts, follows — every action that builds your taste profile earns you something. Rings, themes, profile unlocks. Check your Quests tab anytime to see what's next.",
+      cta: "Nice",
+      spotlight: "quests-tab",
+    },
+    {
+      speaker: "deckard",
+      heading: "One more thing — the feed.",
+      body: "Posts tagged to games you play show up in your feed. The more games on your shelf, the richer it gets. Go add a few more games, then head to the feed and see what's waiting.",
+      cta: "Take me to my feed →",
+      spotlight: null,
+      last: true,
+    },
+  ];
+
+  const current = STEPS[step] || STEPS[STEPS.length - 1];
+  const progress = ((step) / (STEPS.length - 1)) * 100;
 
   const searchGames = async (q) => {
     setGameSearch(q);
     if (q.length < 2) { setGameResults([]); return; }
-    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
+    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(5);
     setGameResults(data || []);
   };
 
@@ -6278,214 +6345,201 @@ function OnboardingModal({ currentUser, isMobile, onComplete }) {
     if (addedGames.find(g => g.id === game.id)) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    await supabase.from("user_games").upsert({
-      user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString(),
-    });
+    await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString() });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
-    const newAdded = [...addedGames, game];
-    setAddedGames(newAdded);
-    setGameSearch("");
-    setGameResults([]);
-    // After first game added, pause then show quest pop
-    if (newAdded.length === 1 && !questPopped) {
-      setTimeout(() => { setQuestPopped(true); setStep(9); }, 800);
+    setAddedGames(prev => [...prev, game]);
+    setGameSearch(""); setGameResults([]);
+    if (!questPopped) {
+      setQuestPopped(true);
+      setTimeout(() => advance(5), 600);
     }
+  };
+
+  const advance = (toStep) => {
+    setTransitioning(true);
+    setTimeout(() => { setStep(toStep !== undefined ? toStep : s => s + 1); setTransitioning(false); }, 200);
   };
 
   const finish = async () => {
-    setCompleting(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      await supabase.from("profiles").update({ onboarded: true }).eq("id", authUser.id);
-    }
+    if (authUser) await supabase.from("profiles").update({ onboarded: true }).eq("id", authUser.id);
+    setProfileDefaultTab?.("games");
     onComplete();
   };
 
-  const WIZARD = { name: "Deckard", avatar: "🧙", color: "#a78bfa" };
+  const skip = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) await supabase.from("profiles").update({ onboarded: true }).eq("id", authUser.id);
+    onComplete();
+  };
 
-  const steps = [
-    {
-      heading: "You don't need a cheat code to get the most out of GuildLink.",
-      body: "Most platforms bury the good stuff. We don't. Everything that makes this place work is right on the surface — and I'm going to show you in about two minutes.",
-      cta: "Let's go",
-    },
-    {
-      heading: "Everything revolves around your shelf.",
-      body: "Your shelf is your gaming identity. What you've played. What you're playing right now. What's sitting in your queue. It's your resume, your taste profile, and your signal to everyone else on the platform.",
-      cta: "Got it",
-    },
-    {
-      heading: "When you add games, the magic starts.",
-      body: "The more honest your shelf is, the better GuildLink gets — for you and for everyone whose shelf overlaps with yours. That overlap is how you find people worth following and games worth playing.",
-      cta: "Keep going",
-    },
-    {
-      heading: "This is where I do my magic. ✨",
-      body: "GuildLink doesn't use your age, location, browsing history, or anything personal. Just what you play. Your shelf is the whole signal. That's it. No data deals, no shadow profiles.",
-      wizard: true,
-      cta: "That's refreshing",
-    },
-    {
-      heading: "The more you add, the more magic happens.",
-      body: "Five games is good. Twenty is great. Your feed gets sharper, your discoveries get weirder and better, and the people the platform surfaces for you get more interesting. It compounds.",
-      cta: "Makes sense",
-    },
-    {
-      heading: "Posting and reviewing push the discovery further.",
-      body: "When you write a review or post about a game, you're adding texture to your taste — not just \"I played this\" but \"here's what I thought.\" That helps others find you, and helps you find them.",
-      cta: "I can do that",
-    },
-    {
-      heading: "The feed shows you what your gaming world cares about.",
-      body: "It's not algorithmic noise. It's weighted by taste overlap. Someone who plays the same four games as you talking about a fifth? That's a signal worth seeing. That's how discovery happens here.",
-      cta: "Show me",
-    },
-    {
-      heading: "Start with what you're playing right now.",
-      body: "Don't overthink it. One game. Whatever you've launched in the last week. Add it and watch what happens.",
-      cta: null, // no button — game search takes over
-      showSearch: true,
-    },
-    // step 8 is the waiting state (search active, no game added yet)
-    {
-      heading: "Start with what you're playing right now.",
-      body: "Don't overthink it. One game. Whatever you've launched in the last week. Add it and watch what happens.",
-      cta: null,
-      showSearch: true,
-      waiting: true,
-    },
-    {
-      heading: "Oh! Did you see that? ✨",
-      body: "You just completed a quest. Quests give you unique customizations — rings, themes, profile unlocks — so you can show off your progress to your new friends. Your quests are always right here on your profile.",
-      wizard: true,
-      questPop: true,
-      cta: addedGames.length > 0 ? "Take me to my feed" : "Skip for now",
-    },
-  ];
+  // Spotlight: find element by data-tour attribute and get its bounding rect
+  const [spotRect, setSpotRect] = useState(null);
+  useEffect(() => {
+    if (!current.spotlight) { setSpotRect(null); return; }
+    const el = document.querySelector(`[data-tour="${current.spotlight}"]`);
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setSpotRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+    } else {
+      setSpotRect(null);
+    }
+  }, [step, current.spotlight]);
 
-  const current = steps[step] || steps[steps.length - 1];
-  const progress = Math.min((step / (steps.length - 1)) * 100, 100);
+  const DECKARD_COLOR = "#a78bfa";
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 10000,
-      background: `${C.bg}f0`, backdropFilter: "blur(12px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: isMobile ? 16 : 40,
-    }}>
+    <>
+      {/* Spotlight overlay — dims everything except the target element */}
+      {spotRect && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9990, pointerEvents: "none" }}>
+          {/* Top */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: spotRect.top - 8, background: "#00000066" }} />
+          {/* Bottom */}
+          <div style={{ position: "absolute", top: spotRect.top + spotRect.height + 8, left: 0, right: 0, bottom: 0, background: "#00000066" }} />
+          {/* Left */}
+          <div style={{ position: "absolute", top: spotRect.top - 8, left: 0, width: spotRect.left - 8, height: spotRect.height + 16, background: "#00000066" }} />
+          {/* Right */}
+          <div style={{ position: "absolute", top: spotRect.top - 8, left: spotRect.left + spotRect.width + 8, right: 0, height: spotRect.height + 16, background: "#00000066" }} />
+          {/* Glowing ring around target */}
+          <div style={{
+            position: "absolute",
+            top: spotRect.top - 6, left: spotRect.left - 6,
+            width: spotRect.width + 12, height: spotRect.height + 12,
+            borderRadius: 12,
+            border: `2px solid ${C.accent}`,
+            boxShadow: `0 0 0 4px ${C.accent}22, 0 0 20px ${C.accent}44`,
+            animation: "tourPulse 1.5s ease-in-out infinite",
+          }} />
+        </div>
+      )}
+
+      {/* Bottom banner */}
       <div style={{
-        width: "100%", maxWidth: 520,
-        background: C.surface, border: `1px solid ${C.border}`,
-        borderRadius: 20, overflow: "hidden",
-        boxShadow: "0 24px 80px #00000088",
+        position: "fixed", bottom: isMobile ? 68 : 24,
+        left: "50%", transform: "translateX(-50%)",
+        width: isMobile ? "calc(100vw - 24px)" : 560,
+        zIndex: 9999,
+        background: `linear-gradient(135deg, ${C.surface} 0%, ${C.surfaceRaised} 100%)`,
+        border: `1px solid ${C.border}`,
+        borderTop: `3px solid ${DECKARD_COLOR}`,
+        borderRadius: 16,
+        boxShadow: "0 -4px 40px #00000077, 0 8px 32px #00000055",
+        overflow: "hidden",
+        opacity: transitioning ? 0 : 1,
+        transform: `translateX(-50%) translateY(${transitioning ? "8px" : "0"})`,
+        transition: "opacity 0.2s ease, transform 0.2s ease",
       }}>
         {/* Progress bar */}
-        <div style={{ height: 3, background: C.surfaceRaised }}>
-          <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.teal})`, transition: "width 0.4s ease" }} />
+        <div style={{ height: 2, background: C.surfaceRaised }}>
+          <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${DECKARD_COLOR}, ${C.accent})`, transition: "width 0.4s ease" }} />
         </div>
 
-        <div style={{ padding: isMobile ? 28 : 40 }}>
-          {/* Wizard avatar */}
-          {current.wizard && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${WIZARD.color}22`, border: `2px solid ${WIZARD.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
-                {WIZARD.avatar}
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, color: WIZARD.color, fontSize: 13 }}>{WIZARD.name}</div>
-                <div style={{ color: C.textDim, fontSize: 11 }}>GuildLink Wizard</div>
-              </div>
+        <div style={{ padding: isMobile ? "16px 18px" : "20px 24px" }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+            {/* Deckard portrait */}
+            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div style={{
+                width: isMobile ? 44 : 52, height: isMobile ? 44 : 52,
+                borderRadius: 12,
+                background: `linear-gradient(135deg, ${DECKARD_COLOR}33, ${DECKARD_COLOR}11)`,
+                border: `2px solid ${DECKARD_COLOR}55`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: isMobile ? 22 : 26,
+                boxShadow: `0 0 16px ${DECKARD_COLOR}33`,
+              }}>🧙</div>
+              <div style={{ color: DECKARD_COLOR, fontSize: 9, fontWeight: 700, letterSpacing: "0.05em" }}>DECKARD</div>
             </div>
-          )}
 
-          {/* Quest pop animation */}
-          {current.questPop && (
-            <div style={{
-              background: `${C.green}12`, border: `1px solid ${C.green}33`,
-              borderRadius: 12, padding: "12px 16px", marginBottom: 20,
-              display: "flex", alignItems: "center", gap: 12,
-              animation: "slideUp 0.4s ease",
-            }}>
-              <div style={{ fontSize: 24 }}>🎯</div>
-              <div>
-                <div style={{ color: C.green, fontWeight: 800, fontSize: 13 }}>Quest Complete!</div>
-                <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>First Game Added</div>
-                <div style={{ color: C.gold, fontSize: 12 }}>+50 XP earned</div>
-              </div>
-            </div>
-          )}
-
-          <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 20 : 24, lineHeight: 1.3, marginBottom: 14 }}>
-            {current.heading}
-          </div>
-          <div style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.7, marginBottom: current.showSearch ? 20 : 32 }}>
-            {current.body}
-          </div>
-
-          {/* Game search */}
-          {current.showSearch && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ position: "relative", marginBottom: 8 }}>
-                <input
-                  value={gameSearch}
-                  onChange={e => searchGames(e.target.value)}
-                  placeholder="Search for a game..."
-                  autoFocus
-                  style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
-                />
-              </div>
-              {gameResults.length > 0 && (
-                <div style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-                  {gameResults.map(game => (
-                    <div key={game.id} onClick={() => addGame(game)} style={{ padding: "12px 16px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                      onMouseEnter={e => e.currentTarget.style.background = C.surface}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
-                      </div>
-                      <div style={{ color: C.accent, fontSize: 12, fontWeight: 700 }}>+ Add</div>
-                    </div>
-                  ))}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Quest pop */}
+              {current.questPop && (
+                <div style={{
+                  background: `${C.green}15`, border: `1px solid ${C.green}44`,
+                  borderRadius: 8, padding: "8px 12px", marginBottom: 10,
+                  display: "flex", alignItems: "center", gap: 10,
+                  animation: "slideUp 0.3s ease",
+                }}>
+                  <span style={{ fontSize: 18 }}>🎯</span>
+                  <div>
+                    <div style={{ color: C.green, fontWeight: 800, fontSize: 12 }}>Quest Complete — First Game Added</div>
+                    <div style={{ color: C.gold, fontSize: 11 }}>+50 XP earned</div>
+                  </div>
                 </div>
               )}
-              {addedGames.length > 0 && (
-                <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {addedGames.map(g => (
-                    <div key={g.id} style={{ background: `${C.accent}18`, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700 }}>
-                      ✓ {g.name}
+
+              <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, marginBottom: 5, lineHeight: 1.3 }}>
+                {current.heading}
+              </div>
+              <div style={{ color: C.textMuted, fontSize: isMobile ? 12 : 13, lineHeight: 1.6, marginBottom: current.showSearch ? 12 : 0 }}>
+                {current.body}
+              </div>
+
+              {/* Inline game search */}
+              {current.showSearch && (
+                <div style={{ marginTop: 10 }}>
+                  <input
+                    value={gameSearch}
+                    onChange={e => searchGames(e.target.value)}
+                    placeholder="Search for a game..."
+                    autoFocus
+                    style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  />
+                  {gameResults.length > 0 && (
+                    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 4, overflow: "hidden", maxHeight: 180, overflowY: "auto" }}>
+                      {gameResults.map(game => (
+                        <div key={game.id} onClick={() => addGame(game)}
+                          style={{ padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                          onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <div>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
+                            <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
+                          </div>
+                          <div style={{ color: C.accent, fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>+ Add</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  {addedGames.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                      {addedGames.map(g => (
+                        <div key={g.id} style={{ background: `${C.accent}18`, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ {g.name}</div>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => advance(5)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "6px 0 0", display: "block" }}>
+                    Skip for now →
+                  </button>
                 </div>
               )}
-              {addedGames.length === 0 && (
-                <button onClick={() => setStep(9)} style={{ marginTop: 12, background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", padding: 0 }}>
-                  Skip for now →
-                </button>
-              )}
             </div>
-          )}
+          </div>
 
-          {/* CTA button */}
+          {/* CTA row */}
           {current.cta && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
               <button
-                onClick={step === steps.length - 1 ? finish : () => setStep(s => s + 1)}
-                disabled={completing}
-                style={{ background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, border: "none", borderRadius: 10, padding: "12px 28px", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-                {completing ? "Taking you in…" : step === steps.length - 1 ? (addedGames.length > 0 ? "Take me to my feed →" : "Head to my feed →") : current.cta + " →"}
+                onClick={current.last ? finish : () => advance()}
+                style={{ background: `linear-gradient(135deg, ${DECKARD_COLOR}, ${C.accent})`, border: "none", borderRadius: 8, padding: isMobile ? "9px 18px" : "10px 22px", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                {current.cta}
               </button>
-              {step < steps.length - 1 && step !== 7 && (
-                <button onClick={finish} style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer" }}>
-                  Skip all
-                </button>
-              )}
+              <button onClick={skip} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer" }}>
+                Skip tutorial
+              </button>
             </div>
           )}
         </div>
       </div>
-    </div>
+
+      <style>{`
+        @keyframes tourPulse {
+          0%, 100% { box-shadow: 0 0 0 4px ${C.accent}22, 0 0 20px ${C.accent}33; }
+          50% { box-shadow: 0 0 0 6px ${C.accent}33, 0 0 32px ${C.accent}55; }
+        }
+      `}</style>
+    </>
   );
 }
 
@@ -6562,7 +6616,11 @@ export default function GuildLink() {
     if (data) {
       setProfile(data);
       if (data.theme) applyAndSetTheme(data.theme);
-      if (!data.onboarded) setShowOnboarding(true);
+      if (!data.onboarded) {
+        setActivePage("profile");
+        setProfileDefaultTab("games");
+        setShowOnboarding(true);
+      }
     }
     fetchNotifications(userId);
     checkQuestCompletions(userId);
@@ -6688,8 +6746,11 @@ export default function GuildLink() {
         <OnboardingModal
           currentUser={liveUser}
           isMobile={isMobile}
+          setActivePage={setActivePage}
+          setProfileDefaultTab={setProfileDefaultTab}
           onComplete={() => {
             setShowOnboarding(false);
+            setActivePage("feed");
             session?.user?.id && fetchProfile(session.user.id);
           }}
         />
