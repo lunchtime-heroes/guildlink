@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-83</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-84</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2568,6 +2568,7 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
           : Promise.resolve({ data: [] }),
       ]);
       if (postsResult.error) console.error("Feed load error:", postsResult.error);
+      if (postsResult.data) console.log("Feed posts:", postsResult.data.length, "NPC posts:", postsResult.data.filter(p=>p.npc_id).length, "sample NPC:", postsResult.data.find(p=>p.npc_id));
       const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
       if (postsResult.data) {
         setLivePosts(postsResult.data.map(p => ({
@@ -2837,7 +2838,12 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
         {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.map(post => {
           const isNPC = !!post.npc_id;
           const author = isNPC ? post.npcs : post.profiles;
-          if (!author) return null;
+          if (!author && !isNPC) return null; // drop real posts with no profile
+          // For NPC posts with missing join, look up from NPCS by npc_id or use placeholder
+          const npcFallback = isNPC && !author ? (
+            Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" }
+          ) : null;
+          const displayAuthor = author || npcFallback;
           return (
             <FeedPostCard key={post.id} post={{
               id: post.id,
@@ -2845,12 +2851,12 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
               game_tag: post.game_tag,
               user_id: post.user_id,
               user: {
-                name: author.name || author.username || "Gamer",
-                handle: author.handle || "@gamer",
-                avatar: author.avatar_initials || "GL",
+                name: displayAuthor.name || displayAuthor.username || "Gamer",
+                handle: displayAuthor.handle || "@gamer",
+                avatar: displayAuthor.avatar_initials || displayAuthor.avatar || "GL",
                 status: "online",
                 isNPC: isNPC,
-                isFounding: !isNPC && (author.is_founding || false),
+                isFounding: !isNPC && (displayAuthor.is_founding || false),
               },
               content: post.content,
               time: timeAgo(post.created_at),
@@ -4964,11 +4970,12 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
   const loadThreads = async () => {
     setLoadingThreads(true);
+    const npcUUID = npcUUIDs[selectedNPC] || selectedNPC;
     // Find posts where this NPC has commented
     const { data: npcComments } = await supabase
       .from("comments")
       .select("post_id")
-      .eq("npc_id", selectedNPC);
+      .eq("npc_id", npcUUID);
     if (!npcComments || npcComments.length === 0) { setThreads([]); setLoadingThreads(false); return; }
 
     const postIds = [...new Set(npcComments.map(c => c.post_id))];
