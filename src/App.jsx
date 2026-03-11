@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-88</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-89</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2667,42 +2667,15 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
                 <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
               </div>
-              {/* Following grid */}
+              {/* XP + Level */}
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Following</div>
-                {following.length === 0 ? (
-                  <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Follow players and NPCs to see them here.</div>
-                ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {following.slice(0, 12).map(p => (
-                      <div key={p.id}
-                        title={`${p.username} — click to unfollow`}
-                        onClick={async () => {
-                          const { data: { user: au } } = await supabase.auth.getUser();
-                          if (!au) return;
-                          if (p.type === "npc") {
-                            await supabase.from("follows").delete().eq("follower_id", au.id).eq("followed_npc_id", p.id);
-                          } else {
-                            await supabase.from("follows").delete().eq("follower_id", au.id).eq("followed_user_id", p.id);
-                          }
-                          setFollowing(prev => prev.filter(x => x.id !== p.id));
-                        }}
-                        style={{ cursor: "pointer", opacity: 0.9, position: "relative" }}
-                        onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.querySelector(".unfollow-x").style.display = "flex"; }}
-                        onMouseLeave={e => { e.currentTarget.style.opacity = "0.9"; e.currentTarget.querySelector(".unfollow-x").style.display = "none"; }}
-                      >
-                        <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={28} isNPC={p.type === "npc"} />
-                        <div className="unfollow-x" style={{ display: "none", position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", fontWeight: 700 }}>×</div>
-                      </div>
-                    ))}
-                    {following.length > 12 && (
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 10, fontWeight: 700 }}>+{following.length - 12}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 14 }}>Lv.{user.level}</div><div style={{ color: C.textDim, fontSize: 10 }}>Level</div></div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ fontWeight: 700, color: C.gold, fontSize: 13 }}>Lv.{user.level}</div>
+                  <div style={{ color: C.textDim, fontSize: 10 }}>{user.xp} / {user.xpNext} XP</div>
+                </div>
+                <div style={{ height: 4, background: C.surfaceRaised, borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, Math.round((user.xp / user.xpNext) * 100))}%`, background: `linear-gradient(90deg, ${C.gold}, ${C.accent})`, borderRadius: 4, transition: "width 0.4s ease" }} />
+                </div>
               </div>
             </div>
           </div>
@@ -3582,6 +3555,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
   const [userQuests, setUserQuests] = useState([]);
   const [userRewards, setUserRewards] = useState([]);
   const [questsLoaded, setQuestsLoaded] = useState(false);
+  const [profileFollowing, setProfileFollowing] = useState([]);
   const [gamertags, setGamertags] = useState([]);
   const [gamertagForm, setGamertagForm] = useState({ platform: "", tag: "" });
   const [addingTag, setAddingTag] = useState(false);
@@ -3775,6 +3749,20 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
         }
       }
       setGameLibrary(Object.values(gamesMap));
+
+      // Following — users and NPCs
+      const { data: followData } = await supabase
+        .from("follows")
+        .select("followed_user_id, followed_npc_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials)")
+        .eq("follower_id", authUser.id);
+      if (followData) {
+        const users = followData.filter(f => f.followed_user_id && f.profiles).map(f => ({ ...f.profiles, type: "user" }));
+        const npcs = followData.filter(f => f.followed_npc_id).map(f => {
+          const npc = Object.values(NPCS).find(n => n.id === f.followed_npc_id) || null;
+          return npc ? { id: f.followed_npc_id, username: npc.name, handle: npc.handle, avatar_initials: npc.avatar, type: "npc" } : null;
+        }).filter(Boolean);
+        setProfileFollowing([...users, ...npcs]);
+      }
     };
     load();
     loadGamertags();
@@ -3943,6 +3931,7 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
     { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
     { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
     { id: "games", label: `Games${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
+    { id: "following", label: `Following${profileFollowing.length > 0 ? ` (${profileFollowing.length})` : ""}` },
     { id: "groups", label: "Groups" },
     { id: "quests", label: "Quests" },
   ];
@@ -4500,6 +4489,33 @@ function ProfilePage({ setActivePage, setCurrentGame, isMobile, currentUser, def
       )}
 
       {/* Groups */}
+      {activeTab === "following" && (
+        <div>
+          {profileFollowing.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>Not following anyone yet</div>
+              <div style={{ fontSize: 14 }}>Follow players and NPCs from the feed to see them here.</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
+              {profileFollowing.map(p => (
+                <div key={p.id} onClick={() => { if (p.type === "npc") { setCurrentGame?.(null); setActivePage("npc"); } else { setActivePage("player"); } }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: p.type === "npc" ? C.gold : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
+                    <div style={{ color: C.textDim, fontSize: 11 }}>{p.handle}{p.type === "npc" ? " · NPC" : ""}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === "groups" && (
         <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
