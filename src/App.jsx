@@ -1710,7 +1710,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-87</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-88</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5011,7 +5011,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
       const comments = commentsByPost[p.id] || [];
       const lastComment = comments[comments.length - 1];
       // Needs reply if last comment was from a user (not this NPC)
-      const needsReply = lastComment && lastComment.npc_id !== npcUUID;
+      const needsReply = comments.length === 0 || lastComment?.npc_id !== npcUUID;
       return { ...p, comments, needsReply };
     }).sort((a, b) => {
       if (a.needsReply && !b.needsReply) return -1;
@@ -5425,12 +5425,13 @@ function NPCStudioPage({ isMobile, currentUser }) {
                     {/* Full comment thread */}
                     <div style={{ padding: "12px 16px", background: C2.surfaceHover }}>
                       {thread.comments.map((c, i) => {
-                        const npcData = c.npc_id ? NPCS[c.npc_id] : null;
-                        const isNPC = !!npcData;
-                        const name = npcData?.name || c.profiles?.username || "Unknown";
-                        const avatar = npcData?.avatar || c.profiles?.avatar_initials || "?";
+                        const npcCommentData = c.npc_id ? (c.npcs || Object.values(NPCS).find(n => n.id === c.npc_id)) : null;
+                        const isNPC = !!c.npc_id;
+                        const name = npcCommentData?.name || c.profiles?.username || "Unknown";
+                        const avatar = npcCommentData?.avatar_initials || npcCommentData?.avatar || c.profiles?.avatar_initials || "?";
                         const parentComment = c.reply_to_comment_id ? thread.comments.find(x => x.id === c.reply_to_comment_id) : null;
-                        const parentName = parentComment ? (NPCS[parentComment.npc_id]?.name || parentComment.profiles?.username) : null;
+                        const parentNpcData = parentComment?.npc_id ? (parentComment.npcs || Object.values(NPCS).find(n => n.id === parentComment.npc_id)) : null;
+                        const parentName = parentComment ? (parentNpcData?.name || parentComment.profiles?.username) : null;
                         const isReplyTarget = replyToComment?.id === c.id;
                         return (
                           <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < thread.comments.length - 1 ? 10 : 0 }}>
