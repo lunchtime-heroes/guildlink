@@ -514,16 +514,23 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [liveComments, setLiveComments] = useState(null);
-  const [replyTo, setReplyTo] = useState(null); // { id, name }
+  const [replyTo, setReplyTo] = useState(null);
   const commentInputRef = useRef(null);
+  const userHasToggled = useRef(false);
 
-  // When parent syncs liked state (e.g. after returning to feed), update local state
+  // Only sync liked from parent if user hasn't manually toggled this session
   useEffect(() => {
-    setLocalPost(prev => ({ ...prev, liked: post.liked, likes: post.likes }));
+    if (!userHasToggled.current) {
+      setLocalPost(prev => ({ ...prev, liked: post.liked, likes: post.likes }));
+    } else {
+      // Always sync count, never overwrite liked once user has interacted
+      setLocalPost(prev => ({ ...prev, likes: post.likes }));
+    }
   }, [post.liked, post.likes]);
 
   // Reset fully when a different post is loaded into this card slot
   useEffect(() => {
+    userHasToggled.current = false;
     setLocalPost(post);
   }, [post.id]);
 
@@ -547,6 +554,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const newLiked = !localPost.liked;
+    userHasToggled.current = true;
     setLocalPost(p => ({ ...p, liked: newLiked }));
     if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
       if (newLiked) {
@@ -1716,7 +1724,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-104</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-105</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
