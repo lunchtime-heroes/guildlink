@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-107</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-108</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4554,7 +4554,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
               {profileFollowing.map(p => (
-                <div key={p.id} onClick={() => { if (p.type === "npc") { setCurrentGame?.(null); setActivePage("npc"); } else { setActivePage("player"); } }}
+                <div key={p.id} onClick={() => { if (p.type === "npc") { setCurrentNPC?.(p.id); setActivePage("npc"); } else { setCurrentPlayer?.(p.id); setActivePage("player"); } }}
                   style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
@@ -6112,14 +6112,14 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
     loadGamertagVisibility();
     const load = async () => {
       setLoading(true);
-
+      try {
       // Profile
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
       if (prof) setProfile(prof);
 
       // Posts + liked state
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const [{ data: userPosts }, likesRes, likeCountsRes] = await Promise.all([
+      const [{ data: userPosts }, likesRes] = await Promise.all([
         supabase.from("posts").select("*").eq("user_id", userId)
           .order("created_at", { ascending: false }).limit(20),
         authUser
@@ -6178,6 +6178,10 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       }
 
       setLoading(false);
+      } catch(e) {
+        console.error("PlayerProfilePage load error:", e);
+        setLoading(false);
+      }
     };
     load();
   }, [userId]);
