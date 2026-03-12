@@ -2986,14 +2986,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const [gamesLoading, setGamesLoading] = useState(true);
   const [userShelf, setUserShelf] = useState(new Set());
 
-  // ── Filter panel ──
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filterGenreIs, setFilterGenreIs] = useState(new Set());
-  const [filterGenreIsnt, setFilterGenreIsnt] = useState(new Set());
-  const [filterSortBy, setFilterSortBy] = useState(null); // "most_played"|"most_wanted"|"highest_rated"|"trending"|"most_reviewed"
-  const [filterShelf, setFilterShelf] = useState(null); // "on"|"off"
-  const [filterResults, setFilterResults] = useState(null); // null = not searched yet
-  const [filterLoading, setFilterLoading] = useState(false);
+  // ── Discovery state ──
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const [activeInsight, setActiveInsight] = useState(null);
+  const [nameSearch, setNameSearch] = useState("");
+  const [discoveryResults, setDiscoveryResults] = useState(null);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryLabel, setDiscoveryLabel] = useState("");
 
   // ── Charts data (absorbed from ChartsPage) ──
   const [chartWindow, setChartWindow] = useState("7d");
@@ -3007,17 +3006,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
   const [sparklines, setSparklines] = useState({});
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
-  const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
-  const ALL_GENRES = ['Action RPG','Battle Royale','City Builder','Farming Sim','Fighting','Hero Shooter','Life Simulation','Looter Shooter','MMO','MOBA','Open World','Platformer','Puzzle Adventure','Racing','Roguelike','RPG','RTS','Sandbox Survival','Simulation RPG','Soulslike','Sports','Survival','Tactical Shooter','Turn-Based Strategy'];
-  const GENRE_ICONS = { 'MMO': '🌐', 'MOBA': '⚔️', 'Battle Royale': '🎯', 'Action RPG': '🗡️', 'RPG': '📖', 'Roguelike': '🎲', 'Tactical Shooter': '🔫', 'Hero Shooter': '🦸', 'Looter Shooter': '💥', 'Soulslike': '💀', 'Fighting': '🥊', 'Farming Sim': '🌱', 'Life Simulation': '🏡', 'City Builder': '🏙️', 'Sandbox Survival': '⛏️', 'Survival': '🪓', 'Racing': '🏎️', 'Sports': '⚽', 'Platformer': '🕹️', 'Auto Battler': '♟️', 'RTS': '🏰', 'Turn-Based Strategy': '🎖️', 'Simulation RPG': '🎭', 'Puzzle Adventure': '🔍', 'Open World': '🗺️' };
   const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
 
   const gameVisuals = (g) => {
     const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name?.toLowerCase());
-    if (hard) return { color: hard.color, gradient: hard.gradient, icon: hard.icon };
+    if (hard) return { color: hard.color };
     const colorIndex = (g.name || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % COLORS.length;
-    const color = COLORS[colorIndex];
-    return { color, gradient: `linear-gradient(135deg, ${color}22 0%, #080e1a 100%)`, icon: GENRE_ICONS[g.genre] || '🎮' };
+    return { color: COLORS[colorIndex] };
   };
 
   const getWeekStart = () => {
@@ -3111,42 +3106,200 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
     loadSparkline(gameId);
   };
 
-  // Run filter search
-  const runFilter = async () => {
-    setFilterLoading(true);
-    let query = supabase.from("games").select("*, user_games(game_id, status)");
-    const results = await query;
-    let games = results.data || [];
+  // Insight definitions — each knows how to query and describe itself
+  const INSIGHTS = [
+    {
+      id: "most_talked_about",
+      label: "Most Talked About",
+      desc: "Highest combined posts and comments this week",
+      run: async () => {
+        const weekStarts = getWeekStarts(1);
+        const { data } = await supabase.from("chart_events")
+          .select("game_id, event_type, games(id, name, genre)")
+          .in("week_start", weekStarts)
+          .in("event_type", ["post", "comment"]);
+        const counts = {};
+        (data || []).forEach(e => {
+          if (!e.games) return;
+          if (!counts[e.game_id]) counts[e.game_id] = { game: e.games, count: 0 };
+          counts[e.game_id].count++;
+        });
+        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `${r.count} post${r.count !== 1 ? "s" : ""} & comments` }));
+      }
+    },
+    {
+      id: "everyone_playing",
+      label: "Everyone's Playing",
+      desc: "Most added to playing shelves recently",
+      run: async () => {
+        const { data } = await supabase.from("user_games")
+          .select("game_id, games(id, name, genre)")
+          .eq("status", "playing");
+        const counts = {};
+        (data || []).forEach(r => {
+          if (!r.games) return;
+          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+          counts[r.game_id].count++;
+        });
+        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `${r.count} playing now` }));
+      }
+    },
+    {
+      id: "hidden_gems",
+      label: "Hidden Gems",
+      desc: "Highly reviewed but not widely followed",
+      run: async () => {
+        const { data } = await supabase.from("games")
+          .select("id, name, genre, avg_rating, review_count, followers")
+          .gte("avg_rating", 7)
+          .gte("review_count", 2)
+          .order("avg_rating", { ascending: false });
+        return (data || [])
+          .filter(g => (g.followers || 0) < 500)
+          .slice(0, 12)
+          .map(g => ({ ...g, _stat: `${g.avg_rating?.toFixed(1)} avg · ${g.review_count} review${g.review_count !== 1 ? "s" : ""}` }));
+      }
+    },
+    {
+      id: "blowing_up",
+      label: "Blowing Up",
+      desc: "Biggest week-over-week momentum spike",
+      run: async () => {
+        const [thisWeek, lastWeek] = [getWeekStarts(1)[0], getWeekStarts(2)[1]];
+        const [thisData, lastData] = await Promise.all([
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre)").eq("week_start", thisWeek),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", lastWeek),
+        ]);
+        const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+        const score = (events) => {
+          const s = {};
+          (events || []).forEach(e => {
+            if (!s[e.game_id]) s[e.game_id] = 0;
+            s[e.game_id] += e.event_type === "post" ? (e.post_sequence === 1 ? 1 : 0.3) : (WEIGHTS[e.event_type] || 0);
+          });
+          return s;
+        };
+        const thisScores = score(thisData.data);
+        const lastScores = score(lastData.data);
+        const gameMap = {};
+        (thisData.data || []).forEach(e => { if (e.games) gameMap[e.game_id] = e.games; });
+        return Object.entries(thisScores)
+          .map(([id, s]) => {
+            const prev = lastScores[id] || 0;
+            const pct = prev > 0 ? Math.round(((s - prev) / prev) * 100) : 100;
+            return { id, pct, game: gameMap[id] };
+          })
+          .filter(r => r.game && r.pct > 0)
+          .sort((a, b) => b.pct - a.pct)
+          .slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `+${r.pct}% this week` }));
+      }
+    },
+    {
+      id: "most_wanted",
+      label: "Most Wanted",
+      desc: "Highest want-to-play across the community",
+      run: async () => {
+        const { data } = await supabase.from("user_games")
+          .select("game_id, games(id, name, genre)")
+          .eq("status", "want_to_play");
+        const counts = {};
+        (data || []).forEach(r => {
+          if (!r.games) return;
+          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+          counts[r.game_id].count++;
+        });
+        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `${r.count} want to play` }));
+      }
+    },
+    {
+      id: "critics_choice",
+      label: "Critic's Choice",
+      desc: "Highest rated with meaningful review volume",
+      run: async () => {
+        const { data } = await supabase.from("games")
+          .select("id, name, genre, avg_rating, review_count")
+          .gte("review_count", 3)
+          .order("avg_rating", { ascending: false })
+          .limit(12);
+        return (data || []).map(g => ({ ...g, _stat: `${g.avg_rating?.toFixed(1)} avg · ${g.review_count} reviews` }));
+      }
+    },
+    ...(currentUser ? [{
+      id: "your_people",
+      label: "Your People Are Playing",
+      desc: "On the shelves of people you follow",
+      run: async () => {
+        const { data: follows } = await supabase.from("follows")
+          .select("followed_user_id").eq("follower_id", currentUser.id);
+        if (!follows?.length) return [];
+        const followIds = follows.map(f => f.followed_user_id);
+        const { data } = await supabase.from("user_games")
+          .select("game_id, status, games(id, name, genre)")
+          .in("user_id", followIds)
+          .in("status", ["playing", "have_played"]);
+        const counts = {};
+        (data || []).forEach(r => {
+          if (!r.games || userShelf.has(r.game_id)) return;
+          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+          counts[r.game_id].count++;
+        });
+        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `${r.count} of your people played it` }));
+      }
+    },
+    {
+      id: "not_on_shelf",
+      label: "Not on Your Shelf Yet",
+      desc: "Community favorites you haven't picked up",
+      run: async () => {
+        const { data } = await supabase.from("user_games")
+          .select("game_id, games(id, name, genre)")
+          .in("status", ["playing", "have_played"]);
+        const counts = {};
+        (data || []).forEach(r => {
+          if (!r.games || userShelf.has(r.game_id)) return;
+          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+          counts[r.game_id].count++;
+        });
+        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `${r.count} players` }));
+      }
+    }] : []),
+  ];
 
-    // Genre filters
-    if (filterGenreIs.size > 0) games = games.filter(g => filterGenreIs.has(g.genre));
-    if (filterGenreIsnt.size > 0) games = games.filter(g => !filterGenreIsnt.has(g.genre));
-
-    // Shelf filters
-    if (filterShelf === "on") games = games.filter(g => userShelf.has(g.id));
-    if (filterShelf === "off") games = games.filter(g => !userShelf.has(g.id));
-
-    // Sorting
-    const sortFns = {
-      most_played: (a, b) => ((b.user_games?.filter(r => r.status === "playing" || r.status === "have_played").length || 0) - (a.user_games?.filter(r => r.status === "playing" || r.status === "have_played").length || 0)),
-      most_wanted: (a, b) => ((b.user_games?.filter(r => r.status === "want_to_play").length || 0) - (a.user_games?.filter(r => r.status === "want_to_play").length || 0)),
-      most_reviewed: (a, b) => ((b.review_count || 0) - (a.review_count || 0)),
-      highest_rated: (a, b) => ((b.avg_rating || 0) - (a.avg_rating || 0)),
-      trending: (a, b) => ((b.followers || 0) - (a.followers || 0)),
-    };
-    if (filterSortBy && sortFns[filterSortBy]) games = [...games].sort(sortFns[filterSortBy]);
-
-    setFilterResults(games);
-    setFilterLoading(false);
+  const runInsight = async (insight) => {
+    if (activeInsight === insight.id && discoveryResults !== null) {
+      setActiveInsight(null); setDiscoveryResults(null); setDiscoveryLabel(""); return;
+    }
+    setActiveInsight(insight.id);
+    setDiscoveryLoading(true);
+    setDiscoveryResults(null);
+    setDiscoveryLabel(insight.label);
+    setNameSearch("");
+    const results = await insight.run();
+    setDiscoveryResults(results);
+    setDiscoveryLoading(false);
   };
 
-  const clearFilter = () => {
-    setFilterGenreIs(new Set()); setFilterGenreIsnt(new Set());
-    setFilterSortBy(null); setFilterShelf(null);
-    setFilterResults(null); setFilterOpen(false);
+  const runNameSearch = async (q) => {
+    if (!q.trim()) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); return; }
+    setActiveInsight(null);
+    setDiscoveryLoading(true);
+    setDiscoveryLabel(`Results for "${q}"`);
+    const { data } = await supabase.from("games").select("id, name, genre, avg_rating, review_count")
+      .ilike("name", `%${q}%`).limit(20);
+    setDiscoveryResults((data || []).map(g => ({ ...g, _stat: g.avg_rating ? `${g.avg_rating.toFixed(1)} avg rating` : g.genre || "" })));
+    setDiscoveryLoading(false);
   };
 
-  const hasActiveFilter = filterGenreIs.size > 0 || filterGenreIsnt.size > 0 || filterSortBy || filterShelf;
+  const clearDiscovery = () => {
+    setActiveInsight(null); setDiscoveryResults(null);
+    setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
+  };
 
   const Sparkline = ({ points, color = C.accent }) => {
     if (!points || points.length === 0) return null;
@@ -3221,135 +3374,96 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
     );
   };
 
-  // ── Filter panel toggle chip ──
-  const FilterChip = ({ label, active, onClick }) => (
-    <button onClick={onClick} style={{ background: active ? C.accentGlow : C.surfaceRaised, border: `1px solid ${active ? C.accentDim : C.border}`, borderRadius: 20, padding: "5px 12px", color: active ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap" }}>
-      {label}
-    </button>
-  );
-
-  const GenreToggle = ({ genre, isSet, isnt, onIs, onIsnt }) => {
-    const inIs = isSet.has(genre);
-    const inIsnt = isnt.has(genre);
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0" }}>
-        <span style={{ flex: 1, color: C.text, fontSize: 12 }}>{GENRE_ICONS[genre] || '🎮'} {genre}</span>
-        <button onClick={onIs} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${inIs ? C.accentDim : C.border}`, background: inIs ? C.accentGlow : "transparent", color: inIs ? C.accentSoft : C.textMuted, fontSize: 11, cursor: "pointer", fontWeight: inIs ? 700 : 400 }}>Is</button>
-        <button onClick={onIsnt} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${inIsnt ? "#ef444488" : C.border}`, background: inIsnt ? "#ef444411" : "transparent", color: inIsnt ? "#ef4444" : C.textMuted, fontSize: 11, cursor: "pointer", fontWeight: inIsnt ? 700 : 400 }}>Isn't</button>
-      </div>
-    );
-  };
-
-  const toggleGenreIs = (genre) => {
-    setFilterGenreIs(prev => { const n = new Set(prev); n.has(genre) ? n.delete(genre) : n.add(genre); return n; });
-    setFilterGenreIsnt(prev => { const n = new Set(prev); n.delete(genre); return n; });
-  };
-  const toggleGenreIsnt = (genre) => {
-    setFilterGenreIsnt(prev => { const n = new Set(prev); n.has(genre) ? n.delete(genre) : n.add(genre); return n; });
-    setFilterGenreIs(prev => { const n = new Set(prev); n.delete(genre); return n; });
-  };
-
   return (
     <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 24px 40px" }}>
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontWeight: 800, fontSize: isMobile ? 22 : 28, color: C.text, letterSpacing: "-0.5px", marginBottom: 6 }}>Games</div>
-          <div style={{ color: C.textMuted, fontSize: 14 }}>What the community is playing, reviewing, and shelving.</div>
-        </div>
-        <button onClick={() => setFilterOpen(o => !o)}
-          style={{ display: "flex", alignItems: "center", gap: 8, background: filterOpen || hasActiveFilter ? C.accentGlow : C.surface, border: `1px solid ${filterOpen || hasActiveFilter ? C.accentDim : C.border}`, borderRadius: 12, padding: "10px 18px", color: filterOpen || hasActiveFilter ? C.accentSoft : C.text, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-          <span>🔍</span> Find a Game {hasActiveFilter ? `(${[...filterGenreIs].length + [...filterGenreIsnt].length + (filterSortBy ? 1 : 0) + (filterShelf ? 1 : 0)} active)` : ""}
-        </button>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontWeight: 800, fontSize: isMobile ? 22 : 28, color: C.text, letterSpacing: "-0.5px", marginBottom: 6 }}>Games</div>
+        <div style={{ color: C.textMuted, fontSize: 14 }}>What the community is playing, reviewing, and shelving.</div>
       </div>
 
-      {/* ── Filter Panel ── */}
-      {filterOpen && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 28 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 18 }}>Find a Game</div>
-
-          {/* Sort by */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Sort By Community Data</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {[
-                { id: "most_played", label: "Most Played" },
-                { id: "most_wanted", label: "Most Wanted" },
-                { id: "most_reviewed", label: "Most Reviewed" },
-                { id: "highest_rated", label: "Highest Rated" },
-                { id: "trending", label: "Trending" },
-              ].map(s => (
-                <FilterChip key={s.id} label={s.label} active={filterSortBy === s.id}
-                  onClick={() => setFilterSortBy(prev => prev === s.id ? null : s.id)} />
-              ))}
-            </div>
+      {/* ── Game Discovery Card ── */}
+      <div style={{ background: C.surface, border: `1px solid ${discoveryOpen ? C.accentDim : C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden", transition: "border-color 0.2s" }}>
+        {/* Card header — always visible, click to expand */}
+        <div onClick={() => setDiscoveryOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", cursor: "pointer" }}
+          onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>Game Discovery</div>
+            <div style={{ color: C.textMuted, fontSize: 13, marginTop: 2 }}>Find something to play based on what the community is doing.</div>
           </div>
+          <div style={{ color: C.textDim, fontSize: 12, marginLeft: 16, flexShrink: 0 }}>{discoveryOpen ? "▲" : "▼"}</div>
+        </div>
 
-          {/* Shelf filter */}
-          {currentUser && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>My Shelf</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <FilterChip label="On my shelf" active={filterShelf === "on"} onClick={() => setFilterShelf(p => p === "on" ? null : "on")} />
-                <FilterChip label="Not on my shelf" active={filterShelf === "off"} onClick={() => setFilterShelf(p => p === "off" ? null : "off")} />
+        {/* Expanded panel */}
+        {discoveryOpen && (
+          <div style={{ borderTop: `1px solid ${C.border}`, padding: "20px 22px 22px" }}>
+            {/* Insight pills */}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Discover by</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {INSIGHTS.map(insight => (
+                  <button key={insight.id} onClick={() => runInsight(insight)}
+                    title={insight.desc}
+                    style={{ background: activeInsight === insight.id ? C.accentGlow : C.surfaceRaised, border: `1px solid ${activeInsight === insight.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "7px 16px", color: activeInsight === insight.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                    {insight.label}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* Genre is/isn't */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Genre</div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0 32px", maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
-              {ALL_GENRES.map(genre => (
-                <GenreToggle key={genre} genre={genre}
-                  isSet={filterGenreIs} isnt={filterGenreIsnt}
-                  onIs={() => toggleGenreIs(genre)}
-                  onIsnt={() => toggleGenreIsnt(genre)} />
-              ))}
+            {/* Name search */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
+              <input value={nameSearch}
+                onChange={e => { setNameSearch(e.target.value); if (!e.target.value) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); } }}
+                onKeyDown={e => e.key === "Enter" && runNameSearch(nameSearch)}
+                placeholder="Type a game name..."
+                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
+              />
+              {nameSearch && (
+                <button onClick={() => runNameSearch(nameSearch)}
+                  style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Search
+                </button>
+              )}
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-            <button onClick={runFilter} disabled={filterLoading}
-              style={{ background: C.accent, border: "none", borderRadius: 10, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-              {filterLoading ? "Searching…" : "Search"}
-            </button>
-            {hasActiveFilter && (
-              <button onClick={clearFilter} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 18px", color: C.textMuted, fontSize: 14, cursor: "pointer" }}>
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Filter Results ── */}
-      {filterResults !== null && (
+      {/* ── Discovery Results ── */}
+      {(discoveryResults !== null || discoveryLoading) && (
         <div style={{ marginBottom: 36 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{filterResults.length} game{filterResults.length !== 1 ? "s" : ""} found</div>
-            <button onClick={clearFilter} style={{ background: "transparent", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Clear results ✕</button>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>
+              {discoveryLoading ? "Finding games…" : `${discoveryLabel} · ${discoveryResults?.length || 0} game${discoveryResults?.length !== 1 ? "s" : ""}`}
+            </div>
+            <button onClick={clearDiscovery} style={{ background: "transparent", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
           </div>
-          {filterResults.length === 0 ? (
+          {discoveryLoading ? (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
+              {[...Array(8)].map((_, i) => <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, height: 90 }} />)}
+            </div>
+          ) : discoveryResults?.length === 0 ? (
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center", color: C.textDim }}>
-              No games match those filters. Try adjusting your criteria.
+              No results found. Try a different approach.
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
-              {filterResults.map(g => {
+              {discoveryResults.map(g => {
                 const v = gameVisuals(g);
                 const onShelf = userShelf.has(g.id);
                 return (
                   <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-                    style={{ background: C.surface, border: `1px solid ${onShelf ? C.accentDim : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", position: "relative" }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
+                    style={{ background: C.surface, border: `1px solid ${onShelf ? C.accentDim : C.border}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = onShelf ? C.accent : C.borderHover}
                     onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}>{v.icon}</div>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 3 }}>{g.name}</div>
-                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g.genre}</div>
-                    {onShelf && <div style={{ fontSize: 10, color: C.accentSoft, fontWeight: 700 }}>✓ On shelf</div>}
+                    <div style={{ width: 28, height: 4, borderRadius: 2, background: v.color, marginBottom: 10 }} />
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4, lineHeight: 1.3 }}>{g.name}</div>
+                    <div style={{ color: C.textDim, fontSize: 11 }}>{g._stat}</div>
+                    {onShelf && <div style={{ fontSize: 10, color: C.accentSoft, fontWeight: 700, marginTop: 6 }}>On your shelf</div>}
                   </div>
                 );
               })}
