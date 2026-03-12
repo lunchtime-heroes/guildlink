@@ -517,10 +517,10 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [replyTo, setReplyTo] = useState(null); // { id, name }
   const commentInputRef = useRef(null);
 
-  // Sync liked/likes from parent when post prop changes (e.g. after page navigation)
+  // Sync count from parent only when post identity changes (new post loaded into this card slot)
   useEffect(() => {
-    setLocalPost(prev => ({ ...prev, liked: post.liked, likes: post.likes }));
-  }, [post.liked, post.likes]);
+    setLocalPost(post);
+  }, [post.id]);
 
   useEffect(() => {
     if (replyTo) commentInputRef.current?.focus();
@@ -1711,7 +1711,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-102</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-103</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2411,24 +2411,18 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     }
   }, []);
 
-  // Re-sync liked state whenever feed becomes visible (user navigated back)
+  // Re-sync like counts when returning to feed (never touch liked — FeedPostCard owns that)
   useEffect(() => {
     if (activePage !== "feed" || isGuest || livePosts.length === 0) return;
     const syncLikes = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
       const postIds = livePosts.map(p => p.id).filter(id => typeof id === 'string' && id.includes('-'));
       if (postIds.length === 0) return;
-      const [{ data: myLikes }, { data: freshCounts }] = await Promise.all([
-        supabase.from("post_likes").select("post_id").eq("user_id", authUser.id),
-        supabase.from("posts").select("id, likes").in("id", postIds),
-      ]);
-      const likedIds = new Set((myLikes || []).map(l => l.post_id));
+      const { data: freshCounts } = await supabase.from("posts").select("id, likes").in("id", postIds);
+      if (!freshCounts) return;
       const countMap = {};
-      (freshCounts || []).forEach(p => { countMap[p.id] = p.likes ?? 0; });
+      freshCounts.forEach(p => { countMap[p.id] = p.likes ?? 0; });
       setLivePosts(prev => prev.map(p => ({
         ...p,
-        liked: likedIds.has(p.id),
         likes: countMap[p.id] ?? p.likes ?? 0,
       })));
     };
