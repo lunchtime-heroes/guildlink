@@ -517,6 +517,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [replyTo, setReplyTo] = useState(null); // { id, name }
   const commentInputRef = useRef(null);
 
+  // Sync liked/likes from parent when post prop changes (e.g. after page navigation)
+  useEffect(() => {
+    setLocalPost(prev => ({ ...prev, liked: post.liked, likes: post.likes }));
+  }, [post.liked, post.likes]);
+
   useEffect(() => {
     if (replyTo) commentInputRef.current?.focus();
   }, [replyTo]);
@@ -562,8 +567,13 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       .select("*, profiles(username, handle, avatar_initials)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
-    if (data) setLiveComments(data);
+    if (data) { setLiveComments(data); if (data.length > 0) setShowComments(true); }
   };
+
+  // Auto-load comments if there are any
+  useEffect(() => {
+    if (post.id && post.id.includes('-') && post.comment_count > 0) loadComments();
+  }, [post.id]);
 
   const toggleComments = () => {
     if (!showComments && liveComments === null) loadComments();
@@ -1702,7 +1712,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-95</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-96</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
