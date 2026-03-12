@@ -516,21 +516,19 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [liveComments, setLiveComments] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const commentInputRef = useRef(null);
-  const userHasToggled = useRef(false);
 
-  // Only sync liked from parent if user hasn't manually toggled this session
+  // Sync count from parent
   useEffect(() => {
-    if (!userHasToggled.current) {
-      setLocalPost(prev => ({ ...prev, liked: post.liked, likes: post.likes }));
-    } else {
-      // Always sync count, never overwrite liked once user has interacted
-      setLocalPost(prev => ({ ...prev, likes: post.likes }));
-    }
-  }, [post.liked, post.likes]);
+    setLocalPost(prev => ({ ...prev, likes: post.likes }));
+  }, [post.likes]);
 
-  // Reset fully when a different post is loaded into this card slot
+  // Sync liked from parent but only if it's true — never let parent un-like what user did
   useEffect(() => {
-    userHasToggled.current = false;
+    if (post.liked) setLocalPost(prev => ({ ...prev, liked: true }));
+  }, [post.liked]);
+
+  // Full reset only when a genuinely different post loads into this slot
+  useEffect(() => {
     setLocalPost(post);
   }, [post.id]);
 
@@ -554,7 +552,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const newLiked = !localPost.liked;
-    userHasToggled.current = true;
     setLocalPost(p => ({ ...p, liked: newLiked }));
     if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
       if (newLiked) {
@@ -1724,7 +1721,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-105</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-106</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2427,7 +2424,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   // Re-sync liked state and counts when returning to feed
   useEffect(() => {
     if (activePage !== "feed" || isGuest || livePosts.length === 0) return;
-    const syncLikes = async () => {
+    const syncCounts = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
       const postIds = livePosts.map(p => p.id).filter(id => typeof id === 'string' && id.includes('-'));
@@ -2445,7 +2442,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         likes: countMap[p.id] ?? p.likes ?? 0,
       })));
     };
-    syncLikes();
+    syncCounts();
   }, [activePage]);
 
   const loadSuggestedGamers = async () => {
