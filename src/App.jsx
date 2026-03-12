@@ -977,6 +977,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                 content: post.content,
                 time: timeAgo(post.created_at),
                 likes: post.likes || 0,
+                liked: post.liked || false,
                 commentList: [],
               } : {
                 ...post,
@@ -1721,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-106</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-107</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2869,6 +2870,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               content: post.content,
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
+              liked: post.liked || false,
               comment_count: post.comment_count || 0,
               commentList: [],
             }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
@@ -2935,6 +2937,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 content: post.content,
                 time: timeAgo(post.created_at),
                 likes: post.likes || 0,
+                liked: post.liked || false,
                 comment_count: post.comment_count || 0,
                 commentList: [],
               }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
@@ -3512,6 +3515,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   content: post.content,
                   time: timeAgo(post.created_at),
                   likes: post.likes || 0,
+                  liked: post.liked || false,
                   comment_count: post.comment_count || 0,
                   commentList: [],
                 }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
