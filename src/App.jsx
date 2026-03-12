@@ -567,12 +567,12 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       .select("*, profiles(username, handle, avatar_initials)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
-    if (data) { setLiveComments(data); if (data.length > 0) setShowComments(true); }
+    if (data) setLiveComments(data);
   };
 
-  // Auto-load comments if there are any
+  // Silently pre-load comments in background — count will update, expand on click
   useEffect(() => {
-    if (post.id && post.id.includes('-') && post.comment_count > 0) loadComments();
+    if (post.id && post.id.includes('-')) loadComments();
   }, [post.id]);
 
   const toggleComments = () => {
@@ -1712,7 +1712,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-96</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-97</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3705,7 +3705,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       const posts = postsResult.data;
       if (postsResult.error) console.error("Profile posts error:", postsResult.error);
       if (posts) {
-        setUserPosts(posts.map(p => ({ ...p, liked: likedIds.has(p.id) })));
+        const postIds = posts.map(p => p.id);
+        const { data: allLikes } = postIds.length > 0
+          ? await supabase.from("post_likes").select("post_id").in("post_id", postIds)
+          : { data: [] };
+        const likeCounts = {};
+        (allLikes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+        setUserPosts(posts.map(p => ({ ...p, liked: likedIds.has(p.id), likes: likeCounts[p.id] ?? p.likes ?? 0 })));
         setPostCount(posts.length);
         // Build names map from posts that have game_tag, fetch in one query
         const gameIds = [...new Set(posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag.trim()))];
@@ -6082,16 +6088,24 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
 
       // Posts + liked state
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const [{ data: userPosts }, likesRes] = await Promise.all([
+      const [{ data: userPosts }, likesRes, likeCountsRes] = await Promise.all([
         supabase.from("posts").select("*").eq("user_id", userId)
           .order("created_at", { ascending: false }).limit(20),
         authUser
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
+        supabase.from("post_likes").select("post_id").eq("user_id", userId).then(r => r.error ? { data: [] } : r),
       ]);
       const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
+      // Build accurate like counts per post from post_likes table
       if (userPosts) {
-        setPosts(userPosts.map(p => ({ ...p, liked: likedIds.has(p.id) })));
+        const postIds = userPosts.map(p => p.id);
+        const { data: allLikes } = postIds.length > 0
+          ? await supabase.from("post_likes").select("post_id").in("post_id", postIds)
+          : { data: [] };
+        const likeCounts = {};
+        (allLikes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+        setPosts(userPosts.map(p => ({ ...p, liked: likedIds.has(p.id), likes: likeCounts[p.id] ?? p.likes ?? 0 })));
         const gameIds = [...new Set(userPosts.filter(p => p.game_tag?.includes('-')).map(p => p.game_tag))];
         if (gameIds.length > 0) {
           const { data: games } = await supabase.from("games").select("id, name").in("id", gameIds);
