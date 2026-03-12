@@ -506,107 +506,6 @@ function Badge({ children, color = C.accent, small }) {
   );
 }
 
-// ─── USER POPOVER ──────────────────────────────────────────────────────────────
-
-function UserPopover({ userId, username, handle, avatarInitials, isFounding, setActivePage, setCurrentPlayer, currentUser, isGuest, onSignIn, anchorRef, onClose }) {
-  const popoverRef = useRef(null);
-  const [following, setFollowing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState(false);
-  const [playingGames, setPlayingGames] = useState([]);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-
-  useEffect(() => {
-    if (anchorRef?.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      const left = Math.min(rect.left, window.innerWidth - 260);
-      setPos({ top: rect.bottom + window.scrollY + 6, left: Math.max(8, left) });
-    }
-  }, [anchorRef]);
-
-  useEffect(() => {
-    const handleClick = (e) => { if (popoverRef.current && !popoverRef.current.contains(e.target) && !anchorRef?.current?.contains(e.target)) onClose(); };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!userId) { setLoading(false); return; }
-    const load = async () => {
-      const { data: { user: au } } = await supabase.auth.getUser();
-      const [followRes, gamesRes] = await Promise.all([
-        au ? supabase.from("follows").select("id").eq("follower_id", au.id).eq("followed_user_id", userId).maybeSingle() : Promise.resolve({ data: null }),
-        supabase.from("user_games").select("status, games(name)").eq("user_id", userId).eq("status", "playing").limit(4),
-      ]);
-      setFollowing(!!followRes.data);
-      setPlayingGames((gamesRes.data || []).map(g => g.games?.name).filter(Boolean));
-      setLoading(false);
-    };
-    load();
-  }, [userId]);
-
-  const toggleFollow = async () => {
-    if (isGuest) { onSignIn?.("Follow players to see their posts in your feed."); onClose(); return; }
-    setToggling(true);
-    const { data: { user: au } } = await supabase.auth.getUser();
-    if (!au) { setToggling(false); return; }
-    if (following) {
-      await supabase.from("follows").delete().eq("follower_id", au.id).eq("followed_user_id", userId);
-      setFollowing(false);
-    } else {
-      await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: userId });
-      setFollowing(true);
-    }
-    setToggling(false);
-  };
-
-  const isSelf = currentUser?.id === userId;
-
-  return (
-    <div ref={popoverRef} style={{ position: "fixed", top: pos.top, left: pos.left, width: 240, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, zIndex: 9999, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-      {/* Header */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-        <Avatar initials={(avatarInitials || username || "?").slice(0,2).toUpperCase()} size={38} status="online" />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{username}</span>
-            {isFounding && <span title="Founding Member" style={{ color: C.gold, fontSize: 11 }}>⭐</span>}
-          </div>
-          <div style={{ color: C.textDim, fontSize: 11 }}>{handle}</div>
-        </div>
-      </div>
-
-      {/* Currently Playing */}
-      {!loading && playingGames.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ color: C.textDim, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 5 }}>Currently Playing</div>
-          {playingGames.map((g, i) => (
-            <div key={i} style={{ color: C.textMuted, fontSize: 12, padding: "2px 0" }}>🎮 {g}</div>
-          ))}
-        </div>
-      )}
-      {!loading && playingGames.length === 0 && (
-        <div style={{ color: C.textDim, fontSize: 12, marginBottom: 12 }}>Nothing on their shelf yet.</div>
-      )}
-      {loading && <div style={{ color: C.textDim, fontSize: 12, marginBottom: 12 }}>Loading…</div>}
-
-      {/* Actions */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => { setCurrentPlayer(userId); setActivePage("player"); onClose(); }}
-          style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 0", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-          View Profile
-        </button>
-        {!isSelf && (
-          <button onClick={toggleFollow} disabled={toggling}
-            style={{ flex: 1, background: following ? C.surfaceRaised : C.accentGlow, border: `1px solid ${following ? C.border : C.accentDim}`, borderRadius: 8, padding: "6px 0", color: following ? C.textMuted : C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-            {toggling ? "…" : following ? "Following ✓" : "+ Follow"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
 
 function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger }) {
@@ -617,8 +516,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [liveComments, setLiveComments] = useState(null);
   const [replyTo, setReplyTo] = useState(null); // { id, name }
   const commentInputRef = useRef(null);
-  const usernameRef = useRef(null);
-  const [showPopover, setShowPopover] = useState(false);
 
   useEffect(() => {
     if (replyTo) commentInputRef.current?.focus();
@@ -723,25 +620,18 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               if (localPost.user.isNPC) {
                 if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
                 else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-              } else if (localPost.user_id) {
-                setShowPopover(v => !v);
-              }
+              } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
             }}>
             <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span ref={usernameRef} style={{
-                fontWeight: 700, fontSize: 14, cursor: "pointer",
-                color: localPost.user.isNPC ? C.gold : C.text,
-              }}
+              <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
                 onClick={() => {
                   if (localPost.user.isNPC) {
                     if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
                     else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-                  } else if (localPost.user_id) {
-                    setShowPopover(v => !v);
-                  }
+                  } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
                 }}
               >{localPost.user.name}</span>
               {localPost.user.isNPC && <NPCBadge />}
@@ -761,23 +651,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           </div>
         </div>
 
-        {showPopover && localPost.user_id && !localPost.user.isNPC && (
-          <UserPopover
-            userId={localPost.user_id}
-            username={localPost.user.name}
-            handle={localPost.user.handle}
-            avatarInitials={localPost.user.avatar}
-            isFounding={localPost.user.isFounding}
-            setActivePage={setActivePage}
-            setCurrentPlayer={setCurrentPlayer}
-            currentUser={currentUser}
-            isGuest={isGuest}
-            onSignIn={onSignIn}
-            anchorRef={usernameRef}
-            onClose={() => setShowPopover(false)}
-          />
-        )}
-
         <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
 
         {/* Actions */}
@@ -789,14 +662,13 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
           }}>{localPost.liked ? "❤️" : "🤍"} {localPost.likes}</button>
-          {(liveComments?.length > 0 || (localPost.comment_count || localPost.comments || 0) > 0) && (
-            <button onClick={toggleComments} style={{
-              background: "transparent", border: `1px solid ${C.border}`,
+          <button onClick={toggleComments} style={{
+              background: showComments ? C.accentGlow : "transparent",
+              border: `1px solid ${showComments ? C.accentDim : C.border}`,
               borderRadius: 8, padding: "5px 14px", cursor: "pointer",
-              color: C.textMuted, fontSize: 13, fontWeight: 600,
+              color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
               display: "flex", alignItems: "center", gap: 5,
             }}>💬 {liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</button>
-          )}
           {!isGuest && (
             <button onClick={() => {
               if (!showComments) {
@@ -1830,7 +1702,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-92</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-93</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3810,16 +3682,20 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
-      // Real posts
-      const { data: posts, error: postsError } = await supabase
-        .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
-        .eq("user_id", authUser.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (postsError) console.error("Profile posts error:", postsError);
+      // Real posts + liked state
+      const [postsResult, likesResult] = await Promise.all([
+        supabase.from("posts")
+          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
+          .eq("user_id", authUser.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r),
+      ]);
+      const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
+      const posts = postsResult.data;
+      if (postsResult.error) console.error("Profile posts error:", postsResult.error);
       if (posts) {
-        setUserPosts(posts);
+        setUserPosts(posts.map(p => ({ ...p, liked: likedIds.has(p.id) })));
         setPostCount(posts.length);
         // Build names map from posts that have game_tag, fetch in one query
         const gameIds = [...new Set(posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag.trim()))];
@@ -6188,12 +6064,15 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
       const { data: prof } = await supabase.from("profiles").select("*").eq("id", userId).single();
       if (prof) setProfile(prof);
 
-      // Posts
-      const { data: userPosts } = await supabase
-        .from("posts").select("*").eq("user_id", userId)
-        .order("created_at", { ascending: false }).limit(20);
+      // Posts + liked state
+      const [{ data: userPosts }, likesRes] = await Promise.all([
+        supabase.from("posts").select("*").eq("user_id", userId)
+          .order("created_at", { ascending: false }).limit(20),
+        supabase.from("post_likes").select("post_id").eq("user_id", user.id).then(r => r.error ? { data: [] } : r),
+      ]);
+      const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
       if (userPosts) {
-        setPosts(userPosts);
+        setPosts(userPosts.map(p => ({ ...p, liked: likedIds.has(p.id) })));
         const gameIds = [...new Set(userPosts.filter(p => p.game_tag?.includes('-')).map(p => p.game_tag))];
         if (gameIds.length > 0) {
           const { data: games } = await supabase.from("games").select("id, name").in("id", gameIds);
