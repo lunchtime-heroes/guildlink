@@ -1702,7 +1702,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-94</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-95</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4306,13 +4306,18 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {/* Posts tab */}
       {activeTab === "posts" && (
         <div>
-          {userPosts.length > 0 ? userPosts.map(post => (
+          {userPosts.length > 0 ? userPosts.map(post => {
+            const npc = post.npc_id ? Object.values(NPCS).find(n => n.id === post.npc_id) : null;
+            return (
             <FeedPostCard key={post.id} post={{
               id: post.id,
               npc_id: post.npc_id,
               game_tag: post.game_tag,
               user_id: post.user_id || user.id,
-              user: {
+              liked: post.liked || false,
+              user: npc ? {
+                name: npc.name, handle: npc.handle, avatar: npc.avatar, status: npc.status, isNPC: true, isFounding: false,
+              } : {
                 name: user.name || user.username,
                 handle: user.handle,
                 avatar: user.avatar,
@@ -4326,7 +4331,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               comment_count: post.comment_count || 0,
               commentList: [],
             }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
-          )) : (
+            );
+          }) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📝</div>
               <div style={{ fontSize: 14 }}>No posts yet. Share what you're playing.</div>
@@ -5987,7 +5993,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
 
 // ─── PLAYER PROFILE PAGE ──────────────────────────────────────────────────────
 
-function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn }) {
+function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn }) {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -6272,13 +6278,18 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
       {/* Posts */}
       {activeTab === "posts" && (
         <div>
-          {posts.length > 0 ? posts.map(post => (
+          {posts.length > 0 ? posts.map(post => {
+            const npc = post.npc_id ? Object.values(NPCS).find(n => n.id === post.npc_id) : null;
+            return (
             <FeedPostCard key={post.id} post={{
               id: post.id,
               npc_id: post.npc_id,
               game_tag: post.game_tag,
               user_id: post.user_id || userId,
-              user: {
+              liked: post.liked || false,
+              user: npc ? {
+                name: npc.name, handle: npc.handle, avatar: npc.avatar, status: npc.status, isNPC: true, isFounding: false,
+              } : {
                 name: profile?.username || "Gamer",
                 handle: profile?.handle || "@gamer",
                 avatar: profile?.avatar_initials || "GL",
@@ -6291,8 +6302,9 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
               likes: post.likes || 0,
               comment_count: post.comment_count || 0,
               commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={() => {}} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
-          )) : (
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC || (() => {})} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
+            );
+          }) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
               <div style={{ fontSize: 13 }}>No posts yet.</div>
             </div>
@@ -6947,7 +6959,7 @@ export default function GuildLink() {
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
-      {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
+      {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} onSignUp={openSignUp} />}
     </div>
