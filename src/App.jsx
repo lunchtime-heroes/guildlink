@@ -1702,7 +1702,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-93</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-94</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6065,10 +6065,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentPl
       if (prof) setProfile(prof);
 
       // Posts + liked state
+      const { data: { user: authUser } } = await supabase.auth.getUser();
       const [{ data: userPosts }, likesRes] = await Promise.all([
         supabase.from("posts").select("*").eq("user_id", userId)
           .order("created_at", { ascending: false }).limit(20),
-        supabase.from("post_likes").select("post_id").eq("user_id", user.id).then(r => r.error ? { data: [] } : r),
+        authUser
+          ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
+          : Promise.resolve({ data: [] }),
       ]);
       const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
       if (userPosts) {
