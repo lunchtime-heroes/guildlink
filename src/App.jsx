@@ -1712,7 +1712,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-98</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-99</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2420,17 +2420,16 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       if (!authUser) return;
       const postIds = livePosts.map(p => p.id).filter(id => typeof id === 'string' && id.includes('-'));
       if (postIds.length === 0) return;
-      const [likesRes, countsRes] = await Promise.all([
-        supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).in("post_id", postIds).then(r => r.error ? { data: [] } : r),
-        supabase.from("post_likes").select("post_id").in("post_id", postIds).then(r => r.error ? { data: [] } : r),
-      ]);
-      const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
-      const likeCounts = {};
-      (countsRes.data || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+      const { data: myLikes } = await supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).in("post_id", postIds);
+      const likedIds = new Set((myLikes || []).map(l => l.post_id));
+      // Re-fetch post likes counts from posts table (authoritative column)
+      const { data: freshPosts } = await supabase.from("posts").select("id, likes").in("id", postIds);
+      const freshLikes = {};
+      (freshPosts || []).forEach(p => { freshLikes[p.id] = p.likes ?? 0; });
       setLivePosts(prev => prev.map(p => ({
         ...p,
         liked: likedIds.has(p.id),
-        likes: likeCounts[p.id] ?? p.likes ?? 0,
+        likes: freshLikes[p.id] ?? p.likes ?? 0,
       })));
     };
     syncLikes();
@@ -3729,13 +3728,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       const posts = postsResult.data;
       if (postsResult.error) console.error("Profile posts error:", postsResult.error);
       if (posts) {
-        const postIds = posts.map(p => p.id);
-        const { data: allLikes } = postIds.length > 0
-          ? await supabase.from("post_likes").select("post_id").in("post_id", postIds)
-          : { data: [] };
-        const likeCounts = {};
-        (allLikes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
-        setUserPosts(posts.map(p => ({ ...p, liked: likedIds.has(p.id), likes: likeCounts[p.id] ?? p.likes ?? 0 })));
+        setUserPosts(posts.map(p => ({ ...p, liked: likedIds.has(p.id), likes: p.likes ?? 0 })));
         setPostCount(posts.length);
         // Build names map from posts that have game_tag, fetch in one query
         const gameIds = [...new Set(posts.filter(p => p.game_tag && p.game_tag.includes('-')).map(p => p.game_tag.trim()))];
@@ -6118,18 +6111,10 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
         authUser
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
-        supabase.from("post_likes").select("post_id").eq("user_id", userId).then(r => r.error ? { data: [] } : r),
       ]);
       const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
-      // Build accurate like counts per post from post_likes table
       if (userPosts) {
-        const postIds = userPosts.map(p => p.id);
-        const { data: allLikes } = postIds.length > 0
-          ? await supabase.from("post_likes").select("post_id").in("post_id", postIds)
-          : { data: [] };
-        const likeCounts = {};
-        (allLikes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
-        setPosts(userPosts.map(p => ({ ...p, liked: likedIds.has(p.id), likes: likeCounts[p.id] ?? p.likes ?? 0 })));
+        setPosts(userPosts.map(p => ({ ...p, liked: likedIds.has(p.id), likes: p.likes ?? 0 })));
         const gameIds = [...new Set(userPosts.filter(p => p.game_tag?.includes('-')).map(p => p.game_tag))];
         if (gameIds.length > 0) {
           const { data: games } = await supabase.from("games").select("id, name").in("id", gameIds);
