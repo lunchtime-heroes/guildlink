@@ -542,20 +542,25 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const newLiked = !localPost.liked;
-    const newLikes = newLiked ? localPost.likes + 1 : localPost.likes - 1;
-    // Optimistic update
-    setLocalPost(p => ({ ...p, liked: newLiked, likes: newLikes }));
+    // Optimistic UI update — use best-guess count
+    setLocalPost(p => ({ ...p, liked: newLiked, likes: Math.max(0, p.likes + (newLiked ? 1 : -1)) }));
     if (post.id && typeof post.id === 'string' && post.id.includes('-')) {
       if (newLiked) {
-        supabase.from("post_likes").upsert({ post_id: post.id, user_id: authUser.id }).then(() => {});
+        await supabase.from("post_likes").upsert({ post_id: post.id, user_id: authUser.id });
+        await supabase.rpc("increment_post_likes", { p_post_id: post.id }).catch(() =>
+          supabase.from("posts").update({ likes: (localPost.likes || 0) + 1 }).eq("id", post.id)
+        );
       } else {
-        supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", authUser.id).then(() => {});
+        await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
+        await supabase.rpc("decrement_post_likes", { p_post_id: post.id }).catch(() =>
+          supabase.from("posts").update({ likes: Math.max(0, (localPost.likes || 1) - 1) }).eq("id", post.id)
+        );
       }
-      await supabase.from("posts").update({ likes: newLikes }).eq("id", post.id);
-      // Quest trigger for post author receiving a like
+      // Re-fetch true count from DB and reconcile
+      const { data: fresh } = await supabase.from("posts").select("likes").eq("id", post.id).single();
+      if (fresh) setLocalPost(p => ({ ...p, likes: fresh.likes }));
       if (newLiked && post.user_id && post.user_id !== authUser.id) {
-        await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "like_received" });
-        onQuestTrigger?.();
+        supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "like_received" }).then(() => onQuestTrigger?.());
       }
     }
   };
@@ -1712,7 +1717,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-99</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-100</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2420,16 +2425,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       if (!authUser) return;
       const postIds = livePosts.map(p => p.id).filter(id => typeof id === 'string' && id.includes('-'));
       if (postIds.length === 0) return;
-      const { data: myLikes } = await supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).in("post_id", postIds);
+      const [{ data: myLikes }, { data: freshCounts }] = await Promise.all([
+        supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).in("post_id", postIds),
+        supabase.from("posts").select("id, likes").in("id", postIds),
+      ]);
       const likedIds = new Set((myLikes || []).map(l => l.post_id));
-      // Re-fetch post likes counts from posts table (authoritative column)
-      const { data: freshPosts } = await supabase.from("posts").select("id, likes").in("id", postIds);
-      const freshLikes = {};
-      (freshPosts || []).forEach(p => { freshLikes[p.id] = p.likes ?? 0; });
+      const countMap = {};
+      (freshCounts || []).forEach(p => { countMap[p.id] = p.likes ?? 0; });
       setLivePosts(prev => prev.map(p => ({
         ...p,
         liked: likedIds.has(p.id),
-        likes: freshLikes[p.id] ?? p.likes ?? 0,
+        likes: countMap[p.id] ?? p.likes ?? 0,
       })));
     };
     syncLikes();
