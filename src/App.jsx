@@ -1712,7 +1712,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-97</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-98</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2327,7 +2327,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
   );
 }
 
-function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger }) {
+function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger }) {
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(true);
   const [postText, setPostText] = useState("");
@@ -2411,6 +2411,30 @@ function FeedPage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlay
       loadSuggestedGamers();
     }
   }, []);
+
+  // Re-sync liked state whenever feed becomes visible (user navigated back)
+  useEffect(() => {
+    if (activePage !== "feed" || isGuest || livePosts.length === 0) return;
+    const syncLikes = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const postIds = livePosts.map(p => p.id).filter(id => typeof id === 'string' && id.includes('-'));
+      if (postIds.length === 0) return;
+      const [likesRes, countsRes] = await Promise.all([
+        supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).in("post_id", postIds).then(r => r.error ? { data: [] } : r),
+        supabase.from("post_likes").select("post_id").in("post_id", postIds).then(r => r.error ? { data: [] } : r),
+      ]);
+      const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
+      const likeCounts = {};
+      (countsRes.data || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+      setLivePosts(prev => prev.map(p => ({
+        ...p,
+        liked: likedIds.has(p.id),
+        likes: likeCounts[p.id] ?? p.likes ?? 0,
+      })));
+    };
+    syncLikes();
+  }, [activePage]);
 
   const loadSuggestedGamers = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -6977,7 +7001,7 @@ export default function GuildLink() {
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "charts" && <ChartsPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
-      {activePage === "feed" && <FeedPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
+      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
