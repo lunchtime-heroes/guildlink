@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-109</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-110</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6912,14 +6912,30 @@ export default function GuildLink() {
 
   const isGuest = !session;
 
+  // XP thresholds: cumulative XP needed to reach each level
+  const XP_LEVELS = [0, 100, 250, 450, 750, 1150, 1650, 2250, 3000, 3900];
+  const MAX_LEVEL = 10;
+  const getLevel = (xp) => {
+    let level = 1;
+    for (let i = 1; i < XP_LEVELS.length; i++) {
+      if (xp >= XP_LEVELS[i]) level = i + 1;
+      else break;
+    }
+    return Math.min(level, MAX_LEVEL);
+  };
+  const getXpNext = (level) => {
+    if (level >= MAX_LEVEL) return XP_LEVELS[XP_LEVELS.length - 1];
+    return XP_LEVELS[level]; // XP_LEVELS[level] is the threshold for level+1
+  };
+
   const liveUser = profile ? {
     id: profile.id,
     name: profile.username || "Gamer",
     handle: profile.handle || "@gamer",
     avatar: profile.avatar_initials || "GL",
-    level: profile.level || 1,
+    level: getLevel(profile.xp || 0),
     xp: profile.xp || 0,
-    xpNext: 1000,
+    xpNext: getXpNext(getLevel(profile.xp || 0)),
     title: profile.bio || "New to GuildLink",
     location: "",
     connections: 0,
