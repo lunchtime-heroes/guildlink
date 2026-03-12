@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-108</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-109</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3796,7 +3796,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         .select("followed_user_id, followed_npc_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials)")
         .eq("follower_id", authUser.id);
       if (followData) {
-        const users = followData.filter(f => f.followed_user_id && f.profiles).map(f => ({ ...f.profiles, type: "user" }));
+        const users = followData.filter(f => f.followed_user_id && f.profiles).map(f => ({
+          id: f.followed_user_id,
+          username: f.profiles.username,
+          handle: f.profiles.handle,
+          avatar_initials: f.profiles.avatar_initials,
+          type: "user"
+        }));
         const npcs = followData.filter(f => f.followed_npc_id).map(f => {
           const npc = Object.values(NPCS).find(n => n.id === f.followed_npc_id) || null;
           return npc ? { id: f.followed_npc_id, username: npc.name, handle: npc.handle, avatar_initials: npc.avatar, type: "npc" } : null;
