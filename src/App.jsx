@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-110</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-111</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1989,7 +1989,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             );
           })}
           {limit && (
-            <button onClick={() => setActivePage("charts")}
+            <button onClick={() => setActivePage("games")}
               style={{ width: "100%", marginTop: 10, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               See Full Charts →
             </button>
@@ -2980,98 +2980,450 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
 // ─── GAMES BROWSE PAGE ────────────────────────────────────────────────────────
 
-function GamesPage({ setActivePage, setCurrentGame, isMobile }) {
+function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser }) {
+  // ── Games data ──
   const [dbGames, setDbGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [gamesLoading, setGamesLoading] = useState(true);
+  const [userShelf, setUserShelf] = useState(new Set());
 
+  // ── Filter panel ──
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterGenreIs, setFilterGenreIs] = useState(new Set());
+  const [filterGenreIsnt, setFilterGenreIsnt] = useState(new Set());
+  const [filterSortBy, setFilterSortBy] = useState(null); // "most_played"|"most_wanted"|"highest_rated"|"trending"|"most_reviewed"
+  const [filterShelf, setFilterShelf] = useState(null); // "on"|"off"
+  const [filterResults, setFilterResults] = useState(null); // null = not searched yet
+  const [filterLoading, setFilterLoading] = useState(false);
+
+  // ── Charts data (absorbed from ChartsPage) ──
+  const [chartWindow, setChartWindow] = useState("7d");
+  const [chartsLoading, setChartsLoading] = useState(true);
+  const [overall, setOverall] = useState([]);
+  const [byGenre, setByGenre] = useState({});
+  const [byGenreFull, setByGenreFull] = useState({});
+  const [expandedGenreAll, setExpandedGenreAll] = useState(new Set());
+  const [expandedOverall, setExpandedOverall] = useState(null);
+  const [expandedGenre, setExpandedGenre] = useState({});
+  const [sparklines, setSparklines] = useState({});
+  const [loadingSparkline, setLoadingSparkline] = useState({});
+
+  const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+  const ALL_GENRES = ['Action RPG','Battle Royale','City Builder','Farming Sim','Fighting','Hero Shooter','Life Simulation','Looter Shooter','MMO','MOBA','Open World','Platformer','Puzzle Adventure','Racing','Roguelike','RPG','RTS','Sandbox Survival','Simulation RPG','Soulslike','Sports','Survival','Tactical Shooter','Turn-Based Strategy'];
+  const GENRE_ICONS = { 'MMO': '🌐', 'MOBA': '⚔️', 'Battle Royale': '🎯', 'Action RPG': '🗡️', 'RPG': '📖', 'Roguelike': '🎲', 'Tactical Shooter': '🔫', 'Hero Shooter': '🦸', 'Looter Shooter': '💥', 'Soulslike': '💀', 'Fighting': '🥊', 'Farming Sim': '🌱', 'Life Simulation': '🏡', 'City Builder': '🏙️', 'Sandbox Survival': '⛏️', 'Survival': '🪓', 'Racing': '🏎️', 'Sports': '⚽', 'Platformer': '🕹️', 'Auto Battler': '♟️', 'RTS': '🏰', 'Turn-Based Strategy': '🎖️', 'Simulation RPG': '🎭', 'Puzzle Adventure': '🔍', 'Open World': '🗺️' };
+  const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
+
+  const gameVisuals = (g) => {
+    const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name?.toLowerCase());
+    if (hard) return { color: hard.color, gradient: hard.gradient, icon: hard.icon };
+    const colorIndex = (g.name || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % COLORS.length;
+    const color = COLORS[colorIndex];
+    return { color, gradient: `linear-gradient(135deg, ${color}22 0%, #080e1a 100%)`, icon: GENRE_ICONS[g.genre] || '🎮' };
+  };
+
+  const getWeekStart = () => {
+    const d = new Date(); d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - d.getDay()); return d.toISOString().split("T")[0];
+  };
+  const getWeekStarts = (count) => {
+    const starts = []; const base = new Date(getWeekStart());
+    for (let i = 0; i < count; i++) { const d = new Date(base); d.setDate(base.getDate() - i * 7); starts.push(d.toISOString().split("T")[0]); }
+    return starts;
+  };
+  const getWindowWeeks = (w) => w === "7d" ? 1 : 4;
+
+  const scoreEvents = (events) => {
+    const scoreMap = {}, countMap = {}, userMap = {};
+    events.forEach(e => {
+      if (!e.games) return;
+      const id = e.game_id;
+      if (!scoreMap[id]) { scoreMap[id] = 0; countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }; userMap[id] = new Set(); }
+      userMap[id].add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; scoreMap[id] += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; countMap[id].post++; }
+      else { scoreMap[id] += WEIGHTS[e.event_type] || 0; if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++; }
+    });
+    return Object.entries(scoreMap).map(([id, rawScore]) => {
+      const uniqueUsers = userMap[id].size;
+      const finalScore = rawScore * (1 + Math.log(Math.max(uniqueUsers, 1)) * 0.2);
+      const g = countMap[id].game;
+      return { id, finalScore, uniqueUsers, ...countMap[id], name: g?.name, genre: g?.genre, icon: g?.icon };
+    }).sort((a, b) => b.finalScore - a.finalScore);
+  };
+
+  // Load games + shelf
   useEffect(() => {
     supabase.from("games").select("*").order("followers", { ascending: false }).then(({ data }) => {
       if (data) setDbGames(data);
-      setLoading(false);
+      setGamesLoading(false);
     });
-  }, []);
+    if (currentUser?.id) {
+      supabase.from("user_games").select("game_id").eq("user_id", currentUser.id).then(({ data }) => {
+        if (data) setUserShelf(new Set(data.map(r => r.game_id)));
+      });
+    }
+  }, [currentUser?.id]);
 
-  // Generate a deterministic color/icon/gradient for games not in the hardcoded list
-  const gameVisuals = (g) => {
-    const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name.toLowerCase());
-    if (hard) return { color: hard.color, gradient: hard.gradient, icon: hard.icon };
-    const ICONS = { 'MMO': '🌐', 'MOBA': '⚔️', 'Battle Royale': '🎯', 'Action RPG': '🗡️', 'RPG': '📖', 'Roguelike': '🎲', 'Tactical Shooter': '🔫', 'Hero Shooter': '🦸', 'Looter Shooter': '💥', 'Soulslike': '💀', 'Fighting': '🥊', 'Farming Sim': '🌱', 'Life Simulation': '🏡', 'City Builder': '🏙️', 'Sandbox Survival': '⛏️', 'Survival': '🪓', 'Racing': '🏎️', 'Sports': '⚽', 'Platformer': '🕹️', 'Auto Battler': '♟️', 'RTS': '🏰', 'Turn-Based Strategy': '🎖️', 'Simulation RPG': '🎭', 'Puzzle Adventure': '🔍', 'Open World': '🗺️' };
-    const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
-    const colorIndex = g.name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % COLORS.length;
-    const color = COLORS[colorIndex];
-    return {
-      color,
-      gradient: `linear-gradient(135deg, ${color}22 0%, #080e1a 100%)`,
-      icon: ICONS[g.genre] || '🎮',
+  // Load charts
+  useEffect(() => {
+    const load = async () => {
+      setChartsLoading(true);
+      const weekStarts = getWeekStarts(getWindowWeeks(chartWindow));
+      const { data: events } = await supabase.from("chart_events")
+        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
+        .in("week_start", weekStarts);
+      if (!events) { setChartsLoading(false); return; }
+      const scored = scoreEvents(events);
+      setOverall(scored.slice(0, 10));
+      const genres = {}, genresFull = {};
+      scored.forEach(g => {
+        const pg = Array.isArray(g.genre) ? g.genre[0] : (g.genre || "Other");
+        if (!genres[pg]) { genres[pg] = []; genresFull[pg] = []; }
+        genresFull[pg].push(g);
+        if (genres[pg].length < 5) genres[pg].push(g);
+      });
+      setByGenre(genres); setByGenreFull(genresFull);
+      setExpandedGenreAll(new Set()); setChartsLoading(false);
     };
+    load();
+  }, [chartWindow]);
+
+  const loadSparkline = async (gameId) => {
+    if (sparklines[gameId]) return;
+    setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
+    const weekStarts = getWeekStarts(8);
+    const { data: events } = await supabase.from("chart_events")
+      .select("event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
+    const weekScores = {};
+    weekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+    (events || []).forEach(e => {
+      if (!weekScores[e.week_start]) return;
+      weekScores[e.week_start].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+    });
+    const points = weekStarts.slice().reverse().map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); });
+    setSparklines(prev => ({ ...prev, [gameId]: points }));
+    setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
-  const featured = dbGames.slice(0, 6);
-  const filtered = search
-    ? dbGames.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.genre?.toLowerCase().includes(search.toLowerCase()))
-    : dbGames;
+  const handleExpand = (gameId, section) => {
+    if (section === "overall") setExpandedOverall(prev => prev === gameId ? null : gameId);
+    else setExpandedGenre(prev => ({ ...prev, [section]: prev[section] === gameId ? null : gameId }));
+    loadSparkline(gameId);
+  };
 
-  return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Game Communities</h2>
-        <p style={{ margin: "0 0 16px", color: C.textMuted, fontSize: 14 }}>Find your people. Every game has a home here.</p>
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search games..."
-          style={{ width: "100%", maxWidth: 320, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 14px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
-        />
+  // Run filter search
+  const runFilter = async () => {
+    setFilterLoading(true);
+    let query = supabase.from("games").select("*, user_games(game_id, status)");
+    const results = await query;
+    let games = results.data || [];
+
+    // Genre filters
+    if (filterGenreIs.size > 0) games = games.filter(g => filterGenreIs.has(g.genre));
+    if (filterGenreIsnt.size > 0) games = games.filter(g => !filterGenreIsnt.has(g.genre));
+
+    // Shelf filters
+    if (filterShelf === "on") games = games.filter(g => userShelf.has(g.id));
+    if (filterShelf === "off") games = games.filter(g => !userShelf.has(g.id));
+
+    // Sorting
+    const sortFns = {
+      most_played: (a, b) => ((b.user_games?.filter(r => r.status === "playing" || r.status === "have_played").length || 0) - (a.user_games?.filter(r => r.status === "playing" || r.status === "have_played").length || 0)),
+      most_wanted: (a, b) => ((b.user_games?.filter(r => r.status === "want_to_play").length || 0) - (a.user_games?.filter(r => r.status === "want_to_play").length || 0)),
+      most_reviewed: (a, b) => ((b.review_count || 0) - (a.review_count || 0)),
+      highest_rated: (a, b) => ((b.avg_rating || 0) - (a.avg_rating || 0)),
+      trending: (a, b) => ((b.followers || 0) - (a.followers || 0)),
+    };
+    if (filterSortBy && sortFns[filterSortBy]) games = [...games].sort(sortFns[filterSortBy]);
+
+    setFilterResults(games);
+    setFilterLoading(false);
+  };
+
+  const clearFilter = () => {
+    setFilterGenreIs(new Set()); setFilterGenreIsnt(new Set());
+    setFilterSortBy(null); setFilterShelf(null);
+    setFilterResults(null); setFilterOpen(false);
+  };
+
+  const hasActiveFilter = filterGenreIs.size > 0 || filterGenreIsnt.size > 0 || filterSortBy || filterShelf;
+
+  const Sparkline = ({ points, color = C.accent }) => {
+    if (!points || points.length === 0) return null;
+    const w = 260, h = 60, pad = 4;
+    const max = Math.max(...points, 0.1);
+    const pts = points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `${x},${y}`; }).join(" ");
+    const areaPath = `M ${pad},${h - pad} ` + points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `L ${x},${y}`; }).join(" ") + ` L ${w - pad},${h - pad} Z`;
+    const labels = ["8w", "7w", "6w", "5w", "4w", "3w", "2w", "Now"];
+    return (
+      <div style={{ marginTop: 8 }}>
+        <svg width={w} height={h} style={{ display: "block" }}>
+          <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+          <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
+          <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          {points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />; })}
+        </svg>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2, paddingLeft: pad, paddingRight: pad }}>
+          {labels.map((l, i) => <span key={i} style={{ color: C.textDim, fontSize: 9, width: w / labels.length, textAlign: "center" }}>{l}</span>)}
+        </div>
       </div>
+    );
+  };
 
-      {loading && <div style={{ color: C.textMuted, textAlign: "center", padding: 40 }}>Loading games...</div>}
+  const getDominantSignal = (entry) => {
+    if (entry.shelf_playing > 0) return `${entry.shelf_playing} playing`;
+    if (entry.review > 0) return `${entry.review} review${entry.review > 1 ? "s" : ""}`;
+    if (entry.comment > 0) return `${entry.comment} comment${entry.comment > 1 ? "s" : ""}`;
+    if (entry.shelf_want > 0) return `${entry.shelf_want} want to play`;
+    if (entry.post > 0) return `${entry.post} post${entry.post > 1 ? "s" : ""}`;
+    return `${entry.uniqueUsers} player${entry.uniqueUsers > 1 ? "s" : ""}`;
+  };
 
-      {!loading && !search && (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 32 }}>
-            {featured.map(g => {
-              const v = gameVisuals(g);
-              return (
-                <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-                  style={{ background: v.gradient, border: `1px solid ${v.color}33`, borderRadius: 16, padding: 24, cursor: "pointer", position: "relative", overflow: "hidden" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = v.color + "88"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = v.color + "33"}
-                >
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>{v.icon}</div>
-                  <div style={{ fontWeight: 800, color: "#fff", fontSize: 20, marginBottom: 4 }}>{g.name}</div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16 }}>{g.genre}{g.category ? ` · ${g.category}` : ""}</div>
-                  <div style={{ display: "flex", gap: 16 }}>
-                    <div><div style={{ fontWeight: 700, color: v.color, fontSize: 15 }}>{((g.followers || 0) / 1000).toFixed(1)}k</div><div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Followers</div></div>
-                  </div>
-                  {g.is_claimed && <div style={{ position: "absolute", top: 16, right: 16 }}><Badge small color={C.teal}>✓ Dev Claimed</Badge></div>}
-                </div>
-              );
-            })}
+  const ChartRow = ({ entry, rank, section }) => {
+    const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
+    const sp = sparklines[entry.id];
+    const isLoadingSp = loadingSparkline[entry.id];
+    const momentum = sp ? (() => { const last = sp[sp.length - 1] || 0; const prev = sp[sp.length - 2] || 0; if (prev === 0) return null; const pct = Math.round(((last - prev) / prev) * 100); return { pct, up: pct >= 0 }; })() : null;
+    return (
+      <div style={{ borderBottom: `1px solid ${C.border}`, overflow: "hidden" }}>
+        <div onClick={() => handleExpand(entry.id, section)}
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", cursor: "pointer", background: isExpanded ? C.accentGlow : "transparent" }}
+          onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = C.surfaceHover; }}
+          onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = "transparent"; }}>
+          <div style={{ width: 24, textAlign: "center", fontWeight: 800, fontSize: rank <= 3 ? 16 : 13, color: rank === 1 ? C.gold : rank === 2 ? "#c0c0c0" : rank === 3 ? "#cd7f32" : C.textDim, flexShrink: 0 }}>{rank}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{entry.name}</div>
+            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{getDominantSignal(entry)} · {entry.uniqueUsers} player{entry.uniqueUsers !== 1 ? "s" : ""}</div>
           </div>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 14 }}>All Games ({dbGames.length})</div>
-        </>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10 }}>
-        {filtered.map(g => {
-          const v = gameVisuals(g);
-          return (
-            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: "pointer" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
-              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-            >
-              <div style={{ fontSize: 28, marginBottom: 8 }}>{v.icon}</div>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{g.name}</div>
-              <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8 }}>{g.genre || g.category}</div>
-              <div style={{ color: C.textMuted, fontSize: 11 }}>{((g.followers || 0) / 1000).toFixed(1)}k followers</div>
+          {momentum && <div style={{ color: momentum.up ? "#22c55e" : "#ef4444", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{momentum.up ? "▲" : "▼"} {Math.abs(momentum.pct)}%</div>}
+          <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
+        </div>
+        {isExpanded && (
+          <div style={{ padding: "4px 20px 18px", borderTop: `1px solid ${C.border}`, background: C.accentGlow }}>
+            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
+            {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
+              : sp ? <Sparkline points={sp} color={C.accent} />
+              : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
+            <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
+              {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
+              {entry.comment > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.comment}</div><div style={{ color: C.textDim, fontSize: 10 }}>comments</div></div>}
+              {entry.shelf_playing > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: "#22c55e", fontSize: 16 }}>{entry.shelf_playing}</div><div style={{ color: C.textDim, fontSize: 10 }}>playing</div></div>}
+              {entry.shelf_want > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accentSoft, fontSize: 16 }}>{entry.shelf_want}</div><div style={{ color: C.textDim, fontSize: 10 }}>want to play</div></div>}
+              {entry.review > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 16 }}>{entry.review}</div><div style={{ color: C.textDim, fontSize: 10 }}>reviews</div></div>}
+              <div style={{ marginLeft: "auto", alignSelf: "flex-end" }}>
+                <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); }}
+                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Game →</button>
+              </div>
             </div>
-          );
-        })}
-        {!loading && filtered.length === 0 && (
-          <div style={{ gridColumn: "1 / -1", color: C.textMuted, textAlign: "center", padding: 40 }}>No games found for "{search}"</div>
+          </div>
         )}
       </div>
+    );
+  };
+
+  // ── Filter panel toggle chip ──
+  const FilterChip = ({ label, active, onClick }) => (
+    <button onClick={onClick} style={{ background: active ? C.accentGlow : C.surfaceRaised, border: `1px solid ${active ? C.accentDim : C.border}`, borderRadius: 20, padding: "5px 12px", color: active ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap" }}>
+      {label}
+    </button>
+  );
+
+  const GenreToggle = ({ genre, isSet, isnt, onIs, onIsnt }) => {
+    const inIs = isSet.has(genre);
+    const inIsnt = isnt.has(genre);
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0" }}>
+        <span style={{ flex: 1, color: C.text, fontSize: 12 }}>{GENRE_ICONS[genre] || '🎮'} {genre}</span>
+        <button onClick={onIs} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${inIs ? C.accentDim : C.border}`, background: inIs ? C.accentGlow : "transparent", color: inIs ? C.accentSoft : C.textMuted, fontSize: 11, cursor: "pointer", fontWeight: inIs ? 700 : 400 }}>Is</button>
+        <button onClick={onIsnt} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${inIsnt ? "#ef444488" : C.border}`, background: inIsnt ? "#ef444411" : "transparent", color: inIsnt ? "#ef4444" : C.textMuted, fontSize: 11, cursor: "pointer", fontWeight: inIsnt ? 700 : 400 }}>Isn't</button>
+      </div>
+    );
+  };
+
+  const toggleGenreIs = (genre) => {
+    setFilterGenreIs(prev => { const n = new Set(prev); n.has(genre) ? n.delete(genre) : n.add(genre); return n; });
+    setFilterGenreIsnt(prev => { const n = new Set(prev); n.delete(genre); return n; });
+  };
+  const toggleGenreIsnt = (genre) => {
+    setFilterGenreIsnt(prev => { const n = new Set(prev); n.has(genre) ? n.delete(genre) : n.add(genre); return n; });
+    setFilterGenreIs(prev => { const n = new Set(prev); n.delete(genre); return n; });
+  };
+
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 24px 40px" }}>
+
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: isMobile ? 22 : 28, color: C.text, letterSpacing: "-0.5px", marginBottom: 6 }}>Games</div>
+          <div style={{ color: C.textMuted, fontSize: 14 }}>What the community is playing, reviewing, and shelving.</div>
+        </div>
+        <button onClick={() => setFilterOpen(o => !o)}
+          style={{ display: "flex", alignItems: "center", gap: 8, background: filterOpen || hasActiveFilter ? C.accentGlow : C.surface, border: `1px solid ${filterOpen || hasActiveFilter ? C.accentDim : C.border}`, borderRadius: 12, padding: "10px 18px", color: filterOpen || hasActiveFilter ? C.accentSoft : C.text, fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+          <span>🔍</span> Find a Game {hasActiveFilter ? `(${[...filterGenreIs].length + [...filterGenreIsnt].length + (filterSortBy ? 1 : 0) + (filterShelf ? 1 : 0)} active)` : ""}
+        </button>
+      </div>
+
+      {/* ── Filter Panel ── */}
+      {filterOpen && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 28 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 18 }}>Find a Game</div>
+
+          {/* Sort by */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Sort By Community Data</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {[
+                { id: "most_played", label: "Most Played" },
+                { id: "most_wanted", label: "Most Wanted" },
+                { id: "most_reviewed", label: "Most Reviewed" },
+                { id: "highest_rated", label: "Highest Rated" },
+                { id: "trending", label: "Trending" },
+              ].map(s => (
+                <FilterChip key={s.id} label={s.label} active={filterSortBy === s.id}
+                  onClick={() => setFilterSortBy(prev => prev === s.id ? null : s.id)} />
+              ))}
+            </div>
+          </div>
+
+          {/* Shelf filter */}
+          {currentUser && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>My Shelf</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <FilterChip label="On my shelf" active={filterShelf === "on"} onClick={() => setFilterShelf(p => p === "on" ? null : "on")} />
+                <FilterChip label="Not on my shelf" active={filterShelf === "off"} onClick={() => setFilterShelf(p => p === "off" ? null : "off")} />
+              </div>
+            </div>
+          )}
+
+          {/* Genre is/isn't */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Genre</div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0 32px", maxHeight: 280, overflowY: "auto", paddingRight: 4 }}>
+              {ALL_GENRES.map(genre => (
+                <GenreToggle key={genre} genre={genre}
+                  isSet={filterGenreIs} isnt={filterGenreIsnt}
+                  onIs={() => toggleGenreIs(genre)}
+                  onIsnt={() => toggleGenreIsnt(genre)} />
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+            <button onClick={runFilter} disabled={filterLoading}
+              style={{ background: C.accent, border: "none", borderRadius: 10, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+              {filterLoading ? "Searching…" : "Search"}
+            </button>
+            {hasActiveFilter && (
+              <button onClick={clearFilter} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 18px", color: C.textMuted, fontSize: 14, cursor: "pointer" }}>
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Results ── */}
+      {filterResults !== null && (
+        <div style={{ marginBottom: 36 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{filterResults.length} game{filterResults.length !== 1 ? "s" : ""} found</div>
+            <button onClick={clearFilter} style={{ background: "transparent", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Clear results ✕</button>
+          </div>
+          {filterResults.length === 0 ? (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center", color: C.textDim }}>
+              No games match those filters. Try adjusting your criteria.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
+              {filterResults.map(g => {
+                const v = gameVisuals(g);
+                const onShelf = userShelf.has(g.id);
+                return (
+                  <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+                    style={{ background: C.surface, border: `1px solid ${onShelf ? C.accentDim : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", position: "relative" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>{v.icon}</div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 3 }}>{g.name}</div>
+                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g.genre}</div>
+                    {onShelf && <div style={{ fontSize: 10, color: C.accentSoft, fontWeight: 700 }}>✓ On shelf</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── The Charts ── */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 20, color: C.text, letterSpacing: "-0.3px" }}>The Charts</div>
+          <div style={{ color: C.textMuted, fontSize: 13, marginTop: 3 }}>Ranked by what the community is actually doing.</div>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[{ id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
+            <button key={w.id} onClick={() => { setChartWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); setExpandedGenreAll(new Set()); }}
+              style={{ background: chartWindow === w.id ? C.accentGlow : C.surface, border: `1px solid ${chartWindow === w.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "6px 16px", color: chartWindow === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: chartWindow === w.id ? 700 : 500, cursor: "pointer" }}>
+              {w.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {chartsLoading ? (
+        <div style={{ color: C.textDim, fontSize: 14, textAlign: "center", padding: 60 }}>Loading charts…</div>
+      ) : overall.length === 0 ? (
+        <div style={{ color: C.textDim, fontSize: 14, textAlign: "center", padding: 60, lineHeight: 1.8 }}>
+          No chart data for this window yet.<br />
+          <span style={{ fontSize: 12 }}>Charts fill up as the community posts, plays, and reviews games.</span>
+        </div>
+      ) : (
+        <>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "baseline", gap: 10 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
+              <div style={{ color: C.textDim, fontSize: 12 }}>{chartWindow === "7d" ? "This Week" : "This Month"}</div>
+            </div>
+            {overall.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="overall" />)}
+          </div>
+
+          {(() => {
+            const genreEntries = Object.entries(byGenre).filter(([, games]) => games.length >= 2);
+            if (genreEntries.length === 0) return null;
+            return (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 13, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 14 }}>By Genre</div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
+                  {genreEntries.map(([genre, games]) => {
+                    const fullList = byGenreFull[genre] || games;
+                    const isExpanded = expandedGenreAll.has(genre);
+                    const displayList = isExpanded ? fullList : games;
+                    const hasMore = fullList.length > games.length;
+                    return (
+                      <div key={genre} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+                        <div style={{ padding: "14px 18px 10px", borderBottom: `1px solid ${C.border}` }}>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
+                        </div>
+                        {displayList.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />)}
+                        {(hasMore || isExpanded) && (
+                          <button onClick={() => setExpandedGenreAll(prev => { const n = new Set(prev); isExpanded ? n.delete(genre) : n.add(genre); return n; })}
+                            style={{ margin: "10px 16px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
+                            {isExpanded ? "Show less" : `See all ${fullList.length} in ${genre} →`}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+        </>
+      )}
     </div>
   );
 }
@@ -7025,9 +7377,9 @@ export default function GuildLink() {
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
-      {activePage === "charts" && <ChartsPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
+      {activePage === "charts" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
-      {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} />}
+      {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
