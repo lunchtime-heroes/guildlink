@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-111</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-113</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2564,7 +2564,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
-          .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+          .select("id, content, likes, created_at, game_tag, user_id, npc_id, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding)")
           .is("npc_id", null)
           .order("likes", { ascending: false })
           .limit(30),
@@ -2572,7 +2572,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
       const npcPosts = (npcResult.data || []).map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
       
-      // Score real posts: likes * 2 + comments * 1.5 + recency bonus (posts in last 7 days get +10)
+      // Score real posts — keep all even if profiles join is null (RLS may block for guests)
       const now = Date.now();
       const weekMs = 7 * 24 * 60 * 60 * 1000;
       const scoredReal = (realResult.data || [])
@@ -2847,12 +2847,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.map(post => {
           const isNPC = !!post.npc_id;
           const author = isNPC ? post.npcs : post.profiles;
-          if (!author && !isNPC) return null; // drop real posts with no profile
-          // For NPC posts with missing join, look up from NPCS by npc_id or use placeholder
-          const npcFallback = isNPC && !author ? (
-            Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" }
-          ) : null;
-          const displayAuthor = author || npcFallback;
+          // For NPC posts with missing join, fall back to NPCS lookup
+          const npcFallback = isNPC && !author
+            ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
+            : null;
+          // For real user posts where profiles join is null (RLS blocked for guests), show anonymous fallback
+          const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
+          const displayAuthor = author || npcFallback || realFallback;
           return (
             <FeedPostCard key={post.id} post={{
               id: post.id,
