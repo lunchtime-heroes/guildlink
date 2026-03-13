@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-114</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-115</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3385,6 +3385,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       </div>
 
       {/* ── Game Discovery Card ── */}
+      {!currentUser ? (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 4 }}>Game Discovery</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>Game discovery works when you build your game shelf.</div>
+          </div>
+          <button onClick={() => onSignIn?.("Build your shelf and unlock game discovery.")}
+            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+            Sign Up Now
+          </button>
+        </div>
+      ) : (
       <div style={{ background: C.surface, border: `1px solid ${discoveryOpen ? C.accentDim : C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden", transition: "border-color 0.2s" }}>
         {/* Card header — always visible, click to expand */}
         <div onClick={() => setDiscoveryOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", cursor: "pointer" }}
@@ -3400,71 +3412,40 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         {/* Expanded panel */}
         {discoveryOpen && (
           <div style={{ borderTop: `1px solid ${C.border}`, padding: "20px 22px 22px" }}>
-            {currentUser ? (
-              <>
-                {/* Insight pills */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Discover by</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {INSIGHTS.map(insight => (
-                      <button key={insight.id} onClick={() => runInsight(insight)}
-                        title={insight.desc}
-                        style={{ background: activeInsight === insight.id ? C.accentGlow : C.surfaceRaised, border: `1px solid ${activeInsight === insight.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "7px 16px", color: activeInsight === insight.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
-                        {insight.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Name search */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
-                  <input value={nameSearch}
-                    onChange={e => { setNameSearch(e.target.value); if (!e.target.value) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); } }}
-                    onKeyDown={e => e.key === "Enter" && runNameSearch(nameSearch)}
-                    placeholder="Type a game name..."
-                    style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
-                  />
-                  {nameSearch && (
-                    <button onClick={() => runNameSearch(nameSearch)}
-                      style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      Search
-                    </button>
-                  )}
-                </div>
-              </>
-            ) : (
-              /* Guest state — name search only, sign-up nudge in place of insight pills */
-              <div>
-                <div style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                  <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>
-                    Sign up to discover new games — personalized picks based on your shelf, your follows, and what the community is doing.
-                  </div>
-                  <button onClick={() => onSignIn?.("Build your shelf and unlock game discovery.")}
-                    style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-                    Join Free
+            {/* Insight pills */}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Discover by</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {INSIGHTS.map(insight => (
+                  <button key={insight.id} onClick={() => runInsight(insight)}
+                    title={insight.desc}
+                    style={{ background: activeInsight === insight.id ? C.accentGlow : C.surfaceRaised, border: `1px solid ${activeInsight === insight.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "7px 16px", color: activeInsight === insight.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                    {insight.label}
                   </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
-                  <input value={nameSearch}
-                    onChange={e => { setNameSearch(e.target.value); if (!e.target.value) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); } }}
-                    onKeyDown={e => e.key === "Enter" && runNameSearch(nameSearch)}
-                    placeholder="Type a game name..."
-                    style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
-                  />
-                  {nameSearch && (
-                    <button onClick={() => runNameSearch(nameSearch)}
-                      style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      Search
-                    </button>
-                  )}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
+
+            {/* Name search */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
+              <input value={nameSearch}
+                onChange={e => { setNameSearch(e.target.value); if (!e.target.value) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); } }}
+                onKeyDown={e => e.key === "Enter" && runNameSearch(nameSearch)}
+                placeholder="Type a game name..."
+                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
+              />
+              {nameSearch && (
+                <button onClick={() => runNameSearch(nameSearch)}
+                  style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Search
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
+      )}
 
       {/* ── Discovery Results ── */}
       {(discoveryResults !== null || discoveryLoading) && (
