@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-126</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-127</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5275,8 +5275,9 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setGameSearch(q);
     if (q.length < 2) { setGameResults([]); return; }
     setGameSearchLoading(true);
-    const { data } = await supabase.from("games").select("id, name, genre, avg_rating, review_count")
-      .ilike("name", `%${q}%`).limit(12);
+    const { data, error } = await supabase.from("games").select("id, name, genre, avg_rating, review_count")
+      .ilike("name", `%${q}%`).order("followers", { ascending: false }).limit(12);
+    if (error) console.error("Game search error:", error);
     setGameResults(data || []);
     setGameSearchLoading(false);
   };
@@ -5326,87 +5327,129 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     );
   };
 
+  const [topRated, setTopRated] = useState([]);
+
+  useEffect(() => {
+    const loadTopRated = async () => {
+      const { data } = await supabase.from("games")
+        .select("id, name, avg_rating, review_count")
+        .gte("review_count", 1)
+        .order("avg_rating", { ascending: false })
+        .limit(10);
+      setTopRated(data || []);
+    };
+    loadTopRated();
+  }, []);
+
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 24px 40px" }}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 24px 40px" }}>
       <div style={{ fontWeight: 800, fontSize: isMobile ? 22 : 28, color: C.text, letterSpacing: "-0.5px", marginBottom: 6 }}>Reviews</div>
       <div style={{ color: C.textMuted, fontSize: 14, marginBottom: 24 }}>What the community thinks about the games they've played.</div>
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, marginBottom: 24, gap: 2 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: `1px solid ${tab === t.id ? C.accentDim : "transparent"}`, borderRadius: 9, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Feed / Following tabs */}
-      {(tab === "feed" || tab === "following") && (
-        <>
-          {loading ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[1,2,3].map(i => (
-                <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, height: 120 }} />
-              ))}
-            </div>
-          ) : reviews.length === 0 ? (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "60px 24px", textAlign: "center" }}>
-              <div style={{ color: C.text, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
-                {tab === "following" ? "No reviews from people you follow yet." : "No reviews yet."}
-              </div>
-              <div style={{ color: C.textMuted, fontSize: 13 }}>
-                {tab === "following" ? "Follow more gamers to see their reviews here." : "Be the first to review a game."}
-              </div>
-            </div>
-          ) : (
-            reviews.map(r => <ReviewCard key={r.id} review={r} />)
-          )}
-        </>
-      )}
-
-      {/* By Game tab */}
-      {tab === "by_game" && (
-        <div>
-          <div style={{ marginBottom: 20 }}>
-            <input
-              value={gameSearch}
-              onChange={e => searchGames(e.target.value)}
-              placeholder="Search for a game..."
-              autoFocus
-              style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        {/* ── Main column ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Tab bar */}
+          <div style={{ display: "flex", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: `1px solid ${tab === t.id ? C.accentDim : "transparent"}`, borderRadius: 9, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                {t.label}
+              </button>
+            ))}
           </div>
-          {gameSearch.length < 2 ? (
-            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>
-              Type a game name to find its reviews.
-            </div>
-          ) : gameSearchLoading ? (
-            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>Searching…</div>
-          ) : gameResults.length === 0 ? (
-            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>No games found.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {gameResults.map(g => (
-                <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
-                  style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{g.name}</div>
-                    <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{g.genre}</div>
+
+          {/* Feed / Following */}
+          {(tab === "feed" || tab === "following") && (
+            <>
+              {loading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[1,2,3].map(i => <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, height: 120 }} />)}
+                </div>
+              ) : reviews.length === 0 ? (
+                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "60px 24px", textAlign: "center" }}>
+                  <div style={{ color: C.text, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
+                    {tab === "following" ? "No reviews from people you follow yet." : "No reviews yet."}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                    {g.review_count > 0 && <div style={{ color: C.textMuted, fontSize: 12 }}>{g.review_count} review{g.review_count !== 1 ? "s" : ""}</div>}
-                    {g.avg_rating > 0 && <div style={{ background: C.goldDim, color: C.gold, borderRadius: 6, padding: "2px 8px", fontSize: 12, fontWeight: 700 }}>{g.avg_rating?.toFixed(1)}</div>}
-                    <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>See reviews →</div>
+                  <div style={{ color: C.textMuted, fontSize: 13 }}>
+                    {tab === "following" ? "Follow more gamers to see their reviews here." : "Be the first to review a game."}
                   </div>
                 </div>
-              ))}
+              ) : (
+                reviews.map(r => <ReviewCard key={r.id} review={r} />)
+              )}
+            </>
+          )}
+
+          {/* By Game */}
+          {tab === "by_game" && (
+            <div>
+              <div style={{ marginBottom: 16 }}>
+                <input
+                  value={gameSearch}
+                  onChange={e => searchGames(e.target.value)}
+                  placeholder="Search for a game..."
+                  autoFocus
+                  style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              {gameSearch.length < 2 ? (
+                <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>Type a game name to find its reviews.</div>
+              ) : gameSearchLoading ? (
+                <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>Searching…</div>
+              ) : gameResults.length === 0 ? (
+                <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>No games found for "{gameSearch}".</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {gameResults.map(g => (
+                    <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
+                      style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{g.name}</div>
+                        <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{g.genre}</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                        {g.review_count > 0 && <div style={{ color: C.textMuted, fontSize: 12 }}>{g.review_count} review{g.review_count !== 1 ? "s" : ""}</div>}
+                        {g.avg_rating > 0 && <div style={{ background: C.goldDim, color: C.gold, borderRadius: 6, padding: "2px 8px", fontSize: 12, fontWeight: 700 }}>{g.avg_rating?.toFixed(1)}</div>}
+                        <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>See reviews →</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+
+        {/* ── Sidebar: Top Rated ── */}
+        {!isMobile && (
+          <div style={{ width: 220, flexShrink: 0 }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}` }}>
+                <div style={{ fontWeight: 800, color: C.text, fontSize: 13 }}>Top Rated</div>
+                <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>By avg. community rating</div>
+              </div>
+              {topRated.length === 0 ? (
+                <div style={{ padding: 16, color: C.textDim, fontSize: 12 }}>No rated games yet.</div>
+              ) : topRated.map((g, i) => (
+                <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: i < topRated.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <div style={{ width: 20, textAlign: "center", fontWeight: 800, fontSize: i < 3 ? 14 : 12, color: i === 0 ? C.gold : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : C.textDim, flexShrink: 0 }}>{i + 1}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                    <div style={{ color: C.textDim, fontSize: 10, marginTop: 1 }}>{g.review_count} review{g.review_count !== 1 ? "s" : ""}</div>
+                  </div>
+                  <div style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "2px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{g.avg_rating?.toFixed(1)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
