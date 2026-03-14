@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-131</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-133</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3683,10 +3683,13 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         setTopVoices(sorted);
       }
 
-      // Latest reviews
+      // Latest reviews — filtered to this game
       const { data: reviews } = await supabase
         .from("reviews")
         .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+        .eq("game_id", dbId)
+        .order("created_at", { ascending: false })
+        .limit(20);
       if (reviews) setLatestReviews(reviews);
 
       // Charts data — rank by weekly posts + reviews
@@ -5350,11 +5353,12 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
 
   const searchGames = async (q) => {
     setGameSearch(q);
-    if (q.length < 2) { setGameResults([]); return; }
+    const clean = q.replace(/^@/, ""); // strip leading @ so @elden finds Elden Ring
+    if (clean.length < 2) { setGameResults([]); return; }
     setGameSearchLoading(true);
     const { data, error } = await supabase.from("games")
       .select("id, name, genre")
-      .ilike("name", `%${q}%`)
+      .ilike("name", `%${clean}%`)
       .limit(12);
     if (error) console.error("Game search error:", error);
     setGameResults(data || []);
@@ -5478,7 +5482,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 <input
                   value={gameSearch}
                   onChange={e => searchGames(e.target.value)}
-                  placeholder="Type a game name, e.g. Elden Ring..."
+                  placeholder="Search by name or @game..."
                   autoFocus
                   style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
                 />
@@ -5488,7 +5492,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               ) : gameSearchLoading ? (
                 <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>Searching…</div>
               ) : gameResults.length === 0 ? (
-                <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>No games found for "{gameSearch}".</div>
+                <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>No games found for "{gameSearch.replace(/^@/, "")}".</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {gameResults.map(g => (
