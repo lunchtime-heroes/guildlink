@@ -3946,7 +3946,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                         <button onClick={() => { setActiveTab("reviews"); setShowReviewForm(true); }}
                           style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                       )}
-                      <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating}/10</div>
+                      <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{`${review.rating}/10`}</div>
                     </div>
                     {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
                     {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
@@ -4163,7 +4163,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       <button onClick={() => setShowReviewForm(true)}
                         style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                     )}
-                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating}/10</div>
+                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{`${review.rating}/10`}</div>
                   </div>
                   {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
                   {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
@@ -5217,7 +5217,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                             <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
                           </div>
-                          {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating}/10</span>}
+                          {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{`${review.rating}/10`}</span>}
                           {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
                         </div>
                       </div>
@@ -5289,7 +5289,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: review.games ? "pointer" : "default" }}>{review.games?.name || "Unknown Game"}</div>
                       <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
                     </div>
-                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
+                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{`${review.rating}/10`}</div>
                     <button onClick={() => startEditReview(review)}
                       style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                       Edit
@@ -5501,7 +5501,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
           )}
           <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
-            {review.rating}/10
+            {`${review.rating}/10`}
           </div>
         </div>
         {/* Content */}
@@ -7390,7 +7390,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
                       </div>
-                      {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating}/10</span>}
+                      {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{`${review.rating}/10`}</span>}
                     </div>
                   </div>
                 );
@@ -7422,7 +7422,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                   <button onClick={(e) => { e.stopPropagation(); setGameDefaultTab?.("reviews"); setCurrentGame(review.game_id); setActivePage("game"); }}
                     style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                 )}
-                <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
+                <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{`${review.rating}/10`}</div>
               </div>
               {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
               {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
