@@ -600,7 +600,16 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     });
   }, [post.game_tag, post.gameId]);
 
-  const toggleLike = async () => {
+  const deletePost = async () => {
+    if (!post.id || !post.id.includes('-')) return;
+    await supabase.from("posts").delete().eq("id", post.id);
+    setLocalPost(p => ({ ...p, deleted: true }));
+  };
+
+  const deleteComment = async (commentId) => {
+    await supabase.from("comments").delete().eq("id", commentId);
+    setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
+  };
     if (isGuest) { onSignIn?.("Like posts and join the conversation."); return; }
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
@@ -677,10 +686,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setSubmittingComment(false);
   };
 
+  if (localPost.deleted) return null;
+
   return (
-    <div style={{
-      background: C.surface,
-      border: "1px solid " + localPost.user.isNPC ? C.goldBorder : C.border,
       borderRadius: 14, marginBottom: 12, overflow: "hidden",
       boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
     }}>
@@ -754,6 +762,13 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               color: C.textMuted, fontSize: 13, fontWeight: 600,
             }}>↩ Reply</button>
           )}
+          {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
+            <button onClick={deletePost} style={{
+              marginLeft: "auto", background: "transparent", border: "1px solid " + C.border,
+              borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+              color: C.textDim, fontSize: 12,
+            }}>Delete</button>
+          )}
         </div>
       </div>
 
@@ -797,10 +812,18 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                     <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
                   </div>
                   {!isGuest && currentUser && (
-                    <button onClick={() => { setReplyTo({ id: comment.id, name: name }); setShowComments(true); }}
-                      style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px", marginTop: 2 }}>
-                      ↩ Reply
-                    </button>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <button onClick={() => { setReplyTo({ id: comment.id, name: name }); setShowComments(true); }}
+                        style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px", marginTop: 2 }}>
+                        ↩ Reply
+                      </button>
+                      {(comment.user_id === currentUser.id || currentUser.is_admin) && (
+                        <button onClick={() => deleteComment(comment.id)}
+                          style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 4px", marginTop: 2 }}>
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1749,7 +1772,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-146</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-147</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6136,7 +6159,11 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     setSyncing(false);
   };
 
-  // Check which hardcoded NPCs are missing from DB
+  const deleteNPC = async (id) => {
+    if (!window.confirm("Delete this NPC? This cannot be undone.")) return;
+    await supabase.from("npcs").delete().eq("id", id);
+    setDbNPCs(prev => prev.filter(n => n.id !== id));
+  };
   const hardcodedHandles = new Set(Object.values(NPCS).map(n => n.handle));
   const dbHandles = new Set(dbNPCs.map(n => n.handle));
   const unsynced = Object.values(NPCS).filter(n => !dbHandles.has(n.handle));
@@ -6454,6 +6481,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                   <button onClick={() => { setEditingNPC(npc); setShowEditor(true); }}
                     style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>
                     Edit
+                  </button>
+                  <button onClick={() => deleteNPC(npc.id)}
+                    style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>
+                    Del
                   </button>
                 </div>
               </div>
@@ -6791,8 +6822,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
                     {/* Full comment thread */}
                     <div style={{ padding: "12px 16px", background: C2.surfaceHover }}>
-                      {thread.comments.map((c, i) => {
-                        const npcCommentData = c.npc_id ? (c.npcs || Object.values(NPCS).find(n => n.id === c.npc_id)) : null;
+                      {thread.comments.length === 0 ? (
+                        <div style={{ color: C2.textDim, fontSize: 12, fontStyle: "italic", padding: "4px 0" }}>No replies yet.</div>
+                      ) : thread.comments.map((c, i) => {
+                        const npcCommentData = c.npc_id ? c.npcs : null;
                         const isNPC = !!c.npc_id;
                         const name = npcCommentData?.name || c.profiles?.username || "Unknown";
                         const avatar = npcCommentData?.avatar_initials || npcCommentData?.avatar || c.profiles?.avatar_initials || "?";
