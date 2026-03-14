@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-133</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-134</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3642,6 +3642,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [myReview, setMyReview] = useState(null); // current user's existing review for this game
 
   useEffect(() => {
     const load = async () => {
@@ -3691,6 +3692,25 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         .order("created_at", { ascending: false })
         .limit(20);
       if (reviews) setLatestReviews(reviews);
+
+      // Check if current user already reviewed this game
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: existing } = await supabase.from("reviews")
+          .select("*").eq("game_id", dbId).eq("user_id", authUser.id).maybeSingle();
+        if (existing) {
+          setMyReview(existing);
+          setReviewForm({
+            rating: existing.rating || 0,
+            headline: existing.headline || "",
+            time_played: existing.time_played ? String(existing.time_played) : "",
+            completed: existing.completed || false,
+            loved: existing.loved || "",
+            didnt_love: existing.didnt_love || "",
+            content: existing.content || "",
+          });
+        }
+      }
 
       // Charts data — rank by weekly posts + reviews
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -3757,16 +3777,22 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       content: reviewForm.content || null,
     });
     if (!error) {
-      logChartEvent(dbGame.id, 'review', authUser.id); // fire-and-forget
-      supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "review_written" }).then(() => onQuestComplete?.());
-      // Refresh reviews and charts
-      const { data: reviews } = await supabase.from("reviews").select("*, profiles(username, handle, avatar_initials)").eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(5);
+      const isEdit = !!myReview;
+      if (!isEdit) {
+        logChartEvent(dbGame.id, 'review', authUser.id);
+        supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "review_written" }).then(() => onQuestComplete?.());
+      }
+      // Refresh reviews
+      const { data: reviews } = await supabase.from("reviews")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+        .eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(20);
       if (reviews) setLatestReviews(reviews);
       const { data: avgData } = await supabase.from("reviews").select("rating").eq("game_id", dbGame.id);
       const avgRating = avgData && avgData.length > 0 ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1) : null;
       setChartsData(prev => ({ ...prev, avgRating, totalReviews: avgData?.length || 0 }));
+      // Update myReview so button reflects the saved state
+      setMyReview({ ...reviewForm, game_id: dbGame.id, user_id: authUser.id });
       setShowReviewForm(false);
-      setReviewForm({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
     }
     setSubmittingReview(false);
   };
@@ -4083,13 +4109,13 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
         {activeTab === "reviews" && (
           <div>
-            {/* Write a review CTA */}
+            {/* Write / Edit review CTA */}
             {currentUser && !isGuest && (
               <div style={{ marginBottom: 20 }}>
                 {!showReviewForm ? (
                   <button onClick={() => setShowReviewForm(true)}
-                    style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 12, padding: "12px 20px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
-                    Write a Review
+                    style={{ background: myReview ? C.goldDim : C.accentGlow, border: `1px solid ${myReview ? C.goldBorder : C.accentDim}`, borderRadius: 12, padding: "12px 20px", color: myReview ? C.gold : C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    {myReview ? `Your review: ${myReview.rating}/10 — Edit` : "Write a Review"}
                   </button>
                 ) : (
                   <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 }}>
