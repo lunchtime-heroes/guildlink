@@ -1777,7 +1777,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-149</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-150</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6281,13 +6281,23 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     const npcUUID = selectedNPC;
 
     // Find posts where this NPC has commented OR is the author
-    const [commentedRes, authoredRes] = await Promise.all([
-      supabase.from("comments").select("post_id").eq("npc_id", npcUUID),
+    // Also check legacy npc_id values (old hardcoded string keys like "merv")
+    const npcRecord = dbNPCs.find(n => n.id === npcUUID);
+    const legacyKey = npcRecord ? Object.keys(NPCS).find(k => NPCS[k].handle === npcRecord.handle) : null;
+
+    const commentQueries = [supabase.from("comments").select("post_id").eq("npc_id", npcUUID)];
+    if (legacyKey) commentQueries.push(supabase.from("comments").select("post_id").eq("npc_id", legacyKey));
+
+    const [commentedRes, authoredRes, ...legacyRes] = await Promise.all([
+      ...commentQueries,
       supabase.from("posts").select("id").eq("npc_id", npcUUID),
     ]);
+    // last item is authoredRes, middle items are legacy (if any)
+    const allCommentedData = [commentedRes, ...(legacyKey ? [legacyRes[0]] : [])];
+    const authoredResActual = legacyKey ? legacyRes[1] : authoredRes;
 
-    const commentedIds = (commentedRes.data || []).map(c => c.post_id);
-    const authoredIds = (authoredRes.data || []).map(p => p.id);
+    const commentedIds = allCommentedData.flatMap(r => (r.data || []).map(c => c.post_id));
+    const authoredIds = (authoredResActual?.data || []).map(p => p.id);
     const postIds = [...new Set([...commentedIds, ...authoredIds])];
 
     if (postIds.length === 0) { setThreads([]); setLoadingThreads(false); return; }
@@ -6299,7 +6309,8 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
       .in("id", postIds)
       .order("created_at", { ascending: false });
 
-    // Fetch all comments for those posts
+    // Fetch all comments for those posts — include both UUID and legacy key
+    const npcIds = [npcUUID, ...(legacyKey ? [legacyKey] : [])];
     const { data: allComments } = await supabase
       .from("comments")
       .select("*, profiles(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
@@ -6311,12 +6322,13 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
       if (!commentsByPost[c.post_id]) commentsByPost[c.post_id] = [];
       commentsByPost[c.post_id].push(c);
     });
+    console.log("[loadThreads] postIds:", postIds, "allComments count:", allComments?.length, "commentsByPost keys:", Object.keys(commentsByPost));
 
     const enriched = (posts || []).map(p => {
       const comments = commentsByPost[p.id] || [];
       const lastComment = comments[comments.length - 1];
       // Needs reply if last comment was from a user (not this NPC)
-      const needsReply = comments.length === 0 || lastComment?.npc_id !== npcUUID;
+      const needsReply = comments.length === 0 || !npcIds.includes(lastComment?.npc_id);
       return { ...p, comments, needsReply };
     }).sort((a, b) => {
       if (a.needsReply && !b.needsReply) return -1;
