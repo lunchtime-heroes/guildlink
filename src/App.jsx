@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-139</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-140</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3942,11 +3942,11 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · ✓ Completed" : ""}</div>
                       </div>
-                      <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                       {currentUser && review.user_id === currentUser.id && (
                         <button onClick={() => { setActiveTab("reviews"); setShowReviewForm(true); }}
                           style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                       )}
+                      <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                     </div>
                     {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
                     {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
@@ -4158,10 +4158,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                       <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}</div>
                     </div>
-                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                     {currentUser && review.user_id === currentUser.id && (
                       <button onClick={() => setShowReviewForm(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                     )}
+                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                   </div>
                   {review.headline ? <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div> : null}
                   {review.loved ? <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Loved: " + review.loved}</div> : null}
@@ -5287,8 +5287,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: review.games ? "pointer" : "default" }}>{review.games?.name || "Unknown Game"}</div>
                       <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · Completed" : ""}</div>
                     </div>
-                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
                     <button onClick={() => startEditReview(review)}
+                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
                       style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                       Edit
                     </button>
@@ -7416,11 +7416,11 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
                   <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · Completed" : ""}</div>
                 </div>
-                <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
                 {currentUser && review.user_id === currentUser.id && (
                   <button onClick={(e) => { e.stopPropagation(); setGameDefaultTab?.("reviews"); setCurrentGame(review.game_id); setActivePage("game"); }}
                     style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                 )}
+                <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
               </div>
               {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
               {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
