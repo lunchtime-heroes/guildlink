@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-136</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-137</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2598,11 +2598,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const followedIds = followData.map(f => f.followed_user_id);
     const { data } = await supabase
       .from("posts")
-      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+      .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
       .in("user_id", followedIds)
+      .is("npc_id", null)
       .order("created_at", { ascending: false })
       .limit(30);
-    if (data) setFollowingPosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0 })));
+    if (data) setFollowingPosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0, liked: false })));
   };
 
   const loadPosts = async () => {
@@ -2974,20 +2975,20 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             </div>
           ) : followingPosts.map(post => {
             const author = post.profiles;
-            if (!author) return null;
+            const displayAuthor = author || { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false, active_ring: "none" };
             return (
               <FeedPostCard key={post.id} post={{
                 id: post.id,
                 game_tag: post.game_tag,
                 user_id: post.user_id,
                 user: {
-                  name: author.username || "Gamer",
-                  handle: author.handle || "@gamer",
-                  avatar: author.avatar_initials || "GL",
+                  name: displayAuthor.username || "Gamer",
+                  handle: displayAuthor.handle || "@gamer",
+                  avatar: displayAuthor.avatar_initials || "GL",
                   status: "online",
                   isNPC: false,
-                  isFounding: author.is_founding || false,
-                  activeRing: author.active_ring || "none",
+                  isFounding: displayAuthor.is_founding || false,
+                  activeRing: displayAuthor.active_ring || "none",
                 },
                 content: post.content,
                 time: timeAgo(post.created_at),
@@ -3625,7 +3626,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
 // ─── GAME PAGE ────────────────────────────────────────────────────────────────
 
-function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onTabConsumed }) {
+function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onTabConsumed, onQuestComplete }) {
   const hardcoded = GAMES[gameId];
   const [activeTab, setActiveTab] = useState(defaultTab || "pulse");
 
@@ -8042,7 +8043,7 @@ export default function GuildLink() {
       {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "reviews" && <ReviewsPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
-      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} />}
+      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
