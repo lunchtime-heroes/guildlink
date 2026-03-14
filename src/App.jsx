@@ -602,12 +602,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const deletePost = async () => {
     if (!post.id || !post.id.includes('-')) return;
-    await supabase.from("posts").delete().eq("id", post.id);
+    const { error } = await supabase.from("posts").delete().eq("id", post.id);
+    if (error) { console.error("[deletePost] error:", error); return; }
     setLocalPost(p => ({ ...p, deleted: true }));
   };
 
   const deleteComment = async (commentId) => {
-    await supabase.from("comments").delete().eq("id", commentId);
+    const { error } = await supabase.from("comments").delete().eq("id", commentId);
+    if (error) { console.error("[deleteComment] error:", error); return; }
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
   };
 
@@ -1795,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-153</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-154</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6183,7 +6185,8 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
   const deleteNPC = async (id) => {
     if (!window.confirm("Delete this NPC? This cannot be undone.")) return;
-    await supabase.from("npcs").delete().eq("id", id);
+    const { error } = await supabase.from("npcs").delete().eq("id", id);
+    if (error) { console.error("[deleteNPC] error:", error); return; }
     setDbNPCs(prev => prev.filter(n => n.id !== id));
   };
   const hardcodedHandles = new Set(Object.values(NPCS).map(n => n.handle));
