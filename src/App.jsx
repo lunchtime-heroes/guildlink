@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-154</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-156</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6185,8 +6185,11 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
   const deleteNPC = async (id) => {
     if (!window.confirm("Delete this NPC? This cannot be undone.")) return;
-    const { error } = await supabase.from("npcs").delete().eq("id", id);
+    console.log("[deleteNPC] attempting delete for id:", id, "typeof:", typeof id);
+    const { data, error, count, status, statusText } = await supabase.from("npcs").delete().eq("id", id).select();
+    console.log("[deleteNPC] result:", { data, error, count, status, statusText });
     if (error) { console.error("[deleteNPC] error:", error); return; }
+    if (!data || data.length === 0) { console.warn("[deleteNPC] deleted 0 rows — id may not match or RLS blocked"); return; }
     setDbNPCs(prev => prev.filter(n => n.id !== id));
   };
   const hardcodedHandles = new Set(Object.values(NPCS).map(n => n.handle));
@@ -6929,14 +6932,16 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                             if (!composeText.trim()) return;
                             setSending(true);
                             const { data: { user: writerUser } } = await supabase.auth.getUser();
-                            await supabase.from("comments").insert({
+                            const { error } = await supabase.from("comments").insert({
                               post_id: thread.id,
                               content: composeText.trim(),
-                              npc_id: npcUUID,
+                              npc_id: selectedNPC,
                               user_id: writerUser.id,
                               reply_to_comment_id: replyToComment?.id || null,
                             });
-                            setComposeText(""); setReplyToComment(null); setSelectedPost(null); setSending(false);
+                            setSending(false);
+                            if (error) { console.error("[thread reply] error:", error); return; }
+                            setComposeText(""); setReplyToComment(null); setSelectedPost(null);
                             setSent(true); setTimeout(() => setSent(false), 2000);
                             loadThreads();
                           }} disabled={!composeText.trim() || sending}
