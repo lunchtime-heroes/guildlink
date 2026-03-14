@@ -439,16 +439,15 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
   const ringColor = ringData?.color || (showFoundingRing ? C.gold : null);
   const ringGlow = ringData?.glow || (showFoundingRing ? C.goldBorder : null);
   const hasRing = ringColor && ringColor !== "transparent";
-  const pad = hasRing ? 3 : 0;
 
   return (
-    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size + pad * 2, height: size + pad * 2, flexShrink: 0 }}>
-      {/* Ring */}
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
+      {/* Ring — bleeds outward, never changes container size */}
       {hasRing && (
         <div style={{
-          position: "absolute", inset: 0,
+          position: "absolute", inset: -3,
           borderRadius: "50%",
-          border: `${pad}px solid ${ringColor}`,
+          border: `3px solid ${ringColor}`,
           boxShadow: `0 0 ${size * 0.3}px ${ringGlow || ringColor + "44"}, inset 0 0 ${size * 0.15}px ${ringGlow || ringColor + "22"}`,
           zIndex: 1, pointerEvents: "none",
         }} />
@@ -464,7 +463,7 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
         letterSpacing: "-0.5px", position: "relative", zIndex: 0, flexShrink: 0,
       }}>{initials}</div>
       {status && <div style={{
-        position: "absolute", bottom: pad + 1, right: pad + 1,
+        position: "absolute", bottom: 1, right: 1,
         width: size * 0.28, height: size * 0.28, borderRadius: "50%",
         background: statusColors[status] || C.textDim,
         border: `2px solid ${C.surface}`, zIndex: 2,
@@ -1723,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-119</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-120</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
