@@ -510,7 +510,7 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
         background: isNPC
           ? `linear-gradient(135deg, #3d2e00, #7a5c00)`
           : `linear-gradient(135deg, ${C.accent}cc, ${C.accent}55)`,
-        border: `2px solid ${isNPC ? C.gold + "66" : hasRing ? ringColor + "44" : C.accent + "55"}`,
+        border: "2px solid " + isNPC ? C.gold + "66" : hasRing ? ringColor + "44" : C.accent + "55",
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: size * 0.35, fontWeight: 700, color: isNPC ? C.gold : "#fff",
         letterSpacing: "-0.5px", position: "relative", zIndex: 0, flexShrink: 0,
@@ -519,7 +519,7 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
         position: "absolute", bottom: 1, right: 1,
         width: size * 0.28, height: size * 0.28, borderRadius: "50%",
         background: statusColors[status] || C.textDim,
-        border: `2px solid ${C.surface}`, zIndex: 2,
+        border: "2px solid " + C.surface, zIndex: 2,
       }} />}
     </div>
   );
@@ -529,7 +529,7 @@ function FoundingBadge() {
   return (
     <span style={{
       background: C.goldGlow, color: C.gold,
-      border: `1px solid ${C.goldBorder}`,
+      border: "1px solid " + C.goldBorder,
       borderRadius: 5, padding: "2px 7px",
       fontSize: 10, fontWeight: 800, letterSpacing: "0.5px",
       whiteSpace: "nowrap",
@@ -541,7 +541,7 @@ function NPCBadge() {
   return (
     <span style={{
       background: C.goldGlow, color: C.gold,
-      border: `1px solid ${C.goldBorder}`,
+      border: "1px solid " + C.goldBorder,
       borderRadius: 5, padding: "2px 7px",
       fontSize: 10, fontWeight: 800, letterSpacing: "0.5px",
       textTransform: "uppercase", whiteSpace: "nowrap",
@@ -552,7 +552,7 @@ function NPCBadge() {
 function Badge({ children, color = C.accent, small }) {
   return (
     <span style={{
-      background: `${color}18`, color, border: `1px solid ${color}33`,
+      background: color + "18", color, border: "1px solid " + color + "33",
       borderRadius: 6, padding: small ? "2px 7px" : "4px 10px",
       fontSize: small ? 11 : 12, fontWeight: 600, whiteSpace: "nowrap",
     }}>{children}</span>
@@ -680,7 +680,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   return (
     <div style={{
       background: C.surface,
-      border: `1px solid ${localPost.user.isNPC ? C.goldBorder : C.border}`,
+      border: "1px solid " + localPost.user.isNPC ? C.goldBorder : C.border,
       borderRadius: 14, marginBottom: 12, overflow: "hidden",
       boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
     }}>
@@ -726,17 +726,17 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid " + C.border, paddingTop: 12 }}>
           <button onClick={toggleLike} style={{
-            background: localPost.liked ? `${C.red}18` : "transparent",
-            border: `1px solid ${localPost.liked ? C.red + "44" : C.border}`,
+            background: localPost.liked ? C.red + "18" : "transparent",
+            border: "1px solid " + localPost.liked ? C.red + "44" : C.border,
             borderRadius: 8, padding: "5px 14px", cursor: "pointer",
             color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
           }}>{localPost.liked ? "❤️" : "🤍"} {localPost.likes}</button>
           <button onClick={toggleComments} style={{
               background: showComments ? C.accentGlow : "transparent",
-              border: `1px solid ${showComments ? C.accentDim : C.border}`,
+              border: "1px solid " + showComments ? C.accentDim : C.border,
               borderRadius: 8, padding: "5px 14px", cursor: "pointer",
               color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
               display: "flex", alignItems: "center", gap: 5,
@@ -749,7 +749,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               }
               setTimeout(() => commentInputRef.current?.focus(), 50);
             }} style={{
-              background: "transparent", border: `1px solid ${C.border}`,
+              background: "transparent", border: "1px solid " + C.border,
               borderRadius: 8, padding: "5px 14px", cursor: "pointer",
               color: C.textMuted, fontSize: 13, fontWeight: 600,
             }}>↩ Reply</button>
@@ -759,7 +759,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
       {/* Comments */}
       {showComments && (
-        <div style={{ background: C.surfaceHover, borderTop: `1px solid ${C.border}`, padding: "14px 20px" }}>
+        <div style={{ background: C.surfaceHover, borderTop: "1px solid " + C.border, padding: "14px 20px" }}>
           {(liveComments || localPost.commentList).map((comment, i) => {
             const isLive = !!comment.profiles || !!comment.npc_id;
             const npcData = comment.npc_id ? NPCS[comment.npc_id] : null;
@@ -781,7 +781,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               <div key={comment.id} style={{ display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0 }}>
                 <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ background: C.surfaceRaised, border: `1px solid ${isNPC ? C.goldBorder : C.border}`, borderRadius: 10, padding: "10px 14px" }}>
+                  <div style={{ background: C.surfaceRaised, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name || "Gamer"}</span>
                       {isNPC && <NPCBadge />}
@@ -807,16 +807,16 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             );
           })}
           {/* Comment input */}
-          <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid " + C.border }}>
             {isGuest ? (
               <div onClick={() => onSignIn?.("Join the conversation and comment on posts.")}
-                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
                 Sign in to join the conversation...
               </div>
             ) : currentUser ? (
               <div style={{ flex: 1 }}>
                 {replyTo && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 10px" }}>
                     <span style={{ color: C.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyTo.name}</strong></span>
                     <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", lineHeight: 1 }}>×</button>
                   </div>
@@ -829,7 +829,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && submitComment()}
                     placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
-                    style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+                    style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
                   />
                   <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     {submittingComment ? "…" : "Reply"}
@@ -940,7 +940,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
       {/* Gold hero header */}
       <div style={{
         background: `linear-gradient(135deg, #1a1200 0%, #2d2000 40%, #1a1200 100%)`,
-        borderBottom: `1px solid ${C.goldBorder}`,
+        borderBottom: "1px solid " + C.goldBorder,
         position: "relative", overflow: "hidden",
       }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 1px 1px, ${C.gold}08 1px, transparent 0)`, backgroundSize: "24px 24px" }} />
@@ -961,16 +961,16 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                 <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 26, color: C.gold, letterSpacing: "-0.5px" }}>{displayNPC.name}</h1>
                 <NPCBadge />
-                <span style={{ background: `${C.gold}18`, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                <span style={{ background: C.gold + "18", color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
                   {displayNPC.universeIcon} {displayNPC.universe}
                 </span>
               </div>
-              <div style={{ color: `${C.gold}99`, fontSize: 12, marginBottom: 4 }}>{displayNPC.handle}</div>
-              <div style={{ color: `${C.gold}77`, fontSize: 12, marginBottom: isMobile ? 6 : 10 }}>{displayNPC.role}</div>
-              {!isMobile && <div style={{ color: `${C.gold}55`, fontSize: 12, marginBottom: 14 }}>📍 {displayNPC.location}</div>}
+              <div style={{ color: C.gold + "99", fontSize: 12, marginBottom: 4 }}>{displayNPC.handle}</div>
+              <div style={{ color: C.gold + "77", fontSize: 12, marginBottom: isMobile ? 6 : 10 }}>{displayNPC.role}</div>
+              {!isMobile && <div style={{ color: C.gold + "55", fontSize: 12, marginBottom: 14 }}>📍 {displayNPC.location}</div>}
               <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 14px", lineHeight: 1.65 }}>{displayNPC.bio}</p>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.goldGlow : C.gold, border: `1px solid ${C.gold}`, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.goldGlow : C.gold, border: "1px solid " + C.gold, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
                 <button style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 14px", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer" }}>Share</button>
               </div>
             </div>
@@ -982,7 +982,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                 { label: "Yrs Service", value: displayNPC.yearsOfService || "—", color: "#e8d5a0" },
                 { label: "Associates", value: displayNPC.connections || "—", color: C.textMuted },
               ].map(s => (
-                <div key={s.label} style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 90 }}>
+                <div key={s.label} style={{ background: "rgba(0,0,0,0.4)", border: "1px solid " + C.goldBorder, borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 90 }}>
                   <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18, color: s.color }}>{s.value}</div>
                   <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 3 }}>{s.label}</div>
                 </div>
@@ -993,12 +993,12 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
       </div>
 
       {/* Tabs */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.goldBorder}`, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
+      <div style={{ background: C.surface, borderBottom: "1px solid " + C.goldBorder, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px", display: "flex", gap: 2 }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               background: "transparent", border: "none",
-              borderBottom: activeTab === tab.id ? `2px solid ${C.gold}` : "2px solid transparent",
+              borderBottom: activeTab === tab.id ? "2px solid " + C.gold : "2px solid transparent",
               padding: isMobile ? "12px 14px" : "14px 18px", cursor: "pointer",
               color: activeTab === tab.id ? C.gold : C.textMuted,
               fontSize: isMobile ? 12 : 13, fontWeight: activeTab === tab.id ? 700 : 500,
@@ -1057,7 +1057,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
               {(npc?.stats || []).map((stat, i) => (
                 <div key={i} style={{
-                  background: C.surface, border: `1px solid ${C.goldBorder}`,
+                  background: C.surface, border: "1px solid " + C.goldBorder,
                   borderRadius: 14, padding: 20, position: "relative", overflow: "hidden",
                 }}>
                   <div style={{ position: "absolute", top: 0, right: 0, width: 60, height: 60, background: `radial-gradient(circle, ${C.gold}08, transparent)` }} />
@@ -1069,11 +1069,11 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
             </div>
 
             {/* Games observed */}
-            <div style={{ marginTop: 20, background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20 }}>
+            <div style={{ marginTop: 20, background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20 }}>
               <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>🎮 Games Observed</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {npc.games.map(g => (
-                  <span key={g} style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600 }}>{g}</span>
+                  <span key={g} style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600 }}>{g}</span>
                 ))}
               </div>
               <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>These are the worlds {npc.name.split(" ")[0]} follows, comments on, and has feelings about.</div>
@@ -1085,28 +1085,28 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
         {activeTab === "lore" && (
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap: 20 }}>
             <div>
-              <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28, marginBottom: 16 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 28, marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>Origin</div>
-                <div style={{ color: `${C.gold}66`, fontSize: 12, marginBottom: 16 }}>From the official {displayNPC.universe} lore archives</div>
+                <div style={{ color: C.gold + "66", fontSize: 12, marginBottom: 16 }}>From the official {displayNPC.universe} lore archives</div>
                 <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{npc?.lore || displayNPC.bio || "Lore coming soon."}</p>
               </div>
-              <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 28 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 28 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 16, marginBottom: 16 }}>Sample Interactions</div>
                 {[
                   { context: "On an Elden Ring post", quote: "I have inventory relevant to this situation. I am available. The cave is lit." },
                   { context: "When @mentioned", quote: "I appreciate being included. This does not happen often." },
                   { context: "On a patch notes post", quote: "Nothing in this patch affects the cave economy. I note this without emotion." },
                 ].map((ex, i) => (
-                  <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < 2 ? `1px solid ${C.border}` : "none" }}>
+                  <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < 2 ? "1px solid " + C.border : "none" }}>
                     <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{ex.context}</div>
-                    <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "12px 14px", color: C.text, fontSize: 14, lineHeight: 1.6, fontStyle: "italic" }}>"{ex.quote}"</div>
+                    <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "12px 14px", color: C.text, fontSize: 14, lineHeight: 1.6, fontStyle: "italic" }}>"{ex.quote}"</div>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, marginBottom: 14 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>Universe</div>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
                   <div style={{ fontSize: 40, marginBottom: 8 }}>{displayNPC.universeIcon}</div>
@@ -1115,7 +1115,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                   <div style={{ marginTop: 14, color: C.textMuted, fontSize: 13 }}>Meet the cast:</div>
                   <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                     {Object.values(NPCS).filter(n => n.universe === npc.universe && n.id !== npc.id).map(n => (
-                      <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 6, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer" }}>
+                      <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 6, background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 10px", cursor: "pointer" }}>
                         <Avatar initials={n.avatar} size={22} isNPC={true} />
                         <span style={{ color: C.gold, fontSize: 11, fontWeight: 600 }}>{n.name.split(" ")[0]}</span>
                       </div>
@@ -1123,7 +1123,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                   </div>
                 </div>
               </div>
-              <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 20, textAlign: "center" }}>
+              <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>🤝</div>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>Interested in Sponsored NPCs?</div>
                 <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>Game studios can create official character accounts tied to real game pages. Players love it.</div>
@@ -1162,7 +1162,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
       {/* Hero */}
       <div style={{
         background: `linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)`,
-        borderBottom: `1px solid ${C.goldBorder}`,
+        borderBottom: "1px solid " + C.goldBorder,
         position: "relative", overflow: "hidden",
       }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 1px 1px, ${C.gold}06 1px, transparent 0)`, backgroundSize: "32px 32px" }} />
@@ -1189,7 +1189,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
             </div>
           </div>
 
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 20, padding: "6px 16px", marginBottom: 20 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 20, padding: "6px 16px", marginBottom: 20 }}>
             <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>⚙ Founding Membership</span>
           </div>
 
@@ -1202,13 +1202,13 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           </p>
 
           {/* Progress bar */}
-          <div style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: "24px 28px", maxWidth: 500, margin: "0 auto 32px" }}>
+          <div style={{ background: "rgba(0,0,0,0.4)", border: "1px solid " + C.goldBorder, borderRadius: 16, padding: "24px 28px", maxWidth: 500, margin: "0 auto 32px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
               <span style={{ color: C.gold, fontWeight: 800, fontSize: 22 }}>{FOUNDING.claimed.toLocaleString()}</span>
               <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, alignSelf: "center" }}>of {FOUNDING.total.toLocaleString()} founding spots</span>
             </div>
             <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 5, overflow: "hidden", marginBottom: 10 }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}aa, ${C.gold})`, borderRadius: 5, transition: "width 1s ease" }} />
+              <div style={{ height: "100%", width: pct + "%", background: `linear-gradient(90deg, ${C.gold}aa, ${C.gold})`, borderRadius: 5, transition: "width 1s ease" }} />
             </div>
             <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 13 }}>
               <span style={{ color: C.gold, fontWeight: 700 }}>{remaining.toLocaleString()} spots remaining</span> · Closes when full
@@ -1237,7 +1237,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16, marginBottom: 56 }}>
           {perks.map((perk, i) => (
-            <div key={i} style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 24 }}>
+            <div key={i} style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 24 }}>
               <div style={{ fontSize: 28, marginBottom: 12 }}>{perk.icon}</div>
               <div style={{ fontWeight: 700, color: C.gold, fontSize: 15, marginBottom: 8 }}>{perk.title}</div>
               <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.65 }}>{perk.desc}</div>
@@ -1246,7 +1246,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </div>
 
         {/* Ring showcase */}
-        <div style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: 32, marginBottom: 40 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 16, padding: 32, marginBottom: 40 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 6 }}>Profile Rings — Earn Your Mark</div>
             <div style={{ color: C.textMuted, fontSize: 14 }}>Every ring tells a story. The founding ring is the only one you can't earn through quests.</div>
@@ -1257,7 +1257,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
                   <div style={{ position: "relative", width: 56, height: 56 }}>
                     <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `3px solid ${ring.color}`, boxShadow: `0 0 16px ${ring.glow || ring.color + "44"}` }} />
-                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`, border: `2px solid ${ring.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`, border: "2px solid " + ring.color + "44", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
                       {ring.icon || "●"}
                     </div>
                   </div>
@@ -1270,7 +1270,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </div>
 
         {/* Invite CTA */}
-        <div style={{ background: `linear-gradient(135deg, #0f0a00, #1f1500)`, border: `1px solid ${C.goldBorder}`, borderRadius: 16, padding: isMobile ? 20 : 32, textAlign: "center" }}>
+        <div style={{ background: `linear-gradient(135deg, #0f0a00, #1f1500)`, border: "1px solid " + C.goldBorder, borderRadius: 16, padding: isMobile ? 20 : 32, textAlign: "center" }}>
           <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 17 : 20, marginBottom: 10 }}>Know a gamer who'd get it?</div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, marginBottom: 24, lineHeight: 1.7 }}>
             Founding spots are limited to 5,000. Invite a friend and they'll claim one before it's gone — along with everything that comes with it. Invite rewards are coming soon.
@@ -1293,7 +1293,7 @@ function InviteModal({ onClose }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
       onClick={onClose}>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 32, maxWidth: 400, width: "100%" }}
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 20, padding: 32, maxWidth: 400, width: "100%" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⚔️</div>
         <div style={{ fontWeight: 800, fontSize: 20, color: C.text, marginBottom: 6, textAlign: "center" }}>Invite a Friend</div>
@@ -1301,7 +1301,7 @@ function InviteModal({ onClose }) {
           {FOUNDING.total - FOUNDING.claimed} founding spots left. Invite someone and they'll claim one before it's gone — along with a permanent gold founder ring.
         </div>
         {sent ? (
-          <div style={{ background: `${C.green}15`, border: `1px solid ${C.green}44`, borderRadius: 12, padding: "16px", textAlign: "center" }}>
+          <div style={{ background: C.green + "15", border: "1px solid " + C.green + "44", borderRadius: 12, padding: "16px", textAlign: "center" }}>
             <div style={{ fontSize: 24, marginBottom: 8 }}>✉️</div>
             <div style={{ color: C.green, fontWeight: 800, fontSize: 14 }}>Invite sent!</div>
             <div style={{ color: C.textMuted, fontSize: 12, marginTop: 4 }}>We'll let them know you vouched for them.</div>
@@ -1313,7 +1313,7 @@ function InviteModal({ onClose }) {
               onChange={e => setEmail(e.target.value)}
               placeholder="friend@email.com"
               type="email"
-              style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
+              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
             />
             <button
               onClick={() => { if (email.includes("@")) setSent(true); }}
@@ -1341,7 +1341,7 @@ function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp 
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
       <div style={{
         background: `linear-gradient(135deg, #1a1200, #2d2000)`,
-        border: `1px solid ${C.goldBorder}`,
+        border: "1px solid " + C.goldBorder,
         borderRadius: 12, padding: isMobile ? "12px 14px" : "14px 18px", marginBottom: 14,
         display: "flex", alignItems: "center", gap: isMobile ? 10 : 16, flexWrap: isMobile ? "wrap" : "nowrap",
         boxShadow: `0 0 0 1px ${C.goldGlow}`,
@@ -1353,12 +1353,12 @@ function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp 
             <span style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 12 : 13 }}>
               {isGuest ? "Founding membership is free — for now." : "Founding spots are almost gone."}
             </span>
-            <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>
+            <span style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>
               {spotsLeft.toLocaleString()} left
             </span>
           </div>
           <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 4, maxWidth: 280 }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.gold}88, ${C.gold})`, borderRadius: 2, transition: "width 0.6s ease" }} />
+            <div style={{ height: "100%", width: pct + "%", background: `linear-gradient(90deg, ${C.gold}88, ${C.gold})`, borderRadius: 2, transition: "width 0.6s ease" }} />
           </div>
           <div style={{ color: "rgba(255,255,255,0.35)", fontSize: isMobile ? 10 : 11 }}>
             {isGuest
@@ -1379,7 +1379,7 @@ function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp 
                 Invite a Friend
               </button>
               <button onClick={() => setActivePage("founding")}
-                style={{ background: "transparent", border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: isMobile ? "7px 12px" : "8px 14px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                style={{ background: "transparent", border: "1px solid " + C.goldBorder, borderRadius: 8, padding: isMobile ? "7px 12px" : "8px 14px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 Details
               </button>
             </>
@@ -1398,7 +1398,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
       onClick={onClose}>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 32, maxWidth: 380, width: "100%", textAlign: "center" }}
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 20, padding: 32, maxWidth: 380, width: "100%", textAlign: "center" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ fontSize: 36, marginBottom: 16 }}>⚔️</div>
         <div style={{ fontWeight: 800, fontSize: 20, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Join the Guild</div>
@@ -1408,7 +1408,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
         <button onClick={onSignIn} style={{ width: "100%", background: C.accent, border: "none", borderRadius: 10, padding: "12px", color: C.accentText, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>
           Create Free Account
         </button>
-        <button onClick={onSignIn} style={{ width: "100%", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+        <button onClick={onSignIn} style={{ width: "100%", background: "transparent", border: "1px solid " + C.border, borderRadius: 10, padding: "10px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           Sign In
         </button>
         <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginTop: 14 }}>
@@ -1474,9 +1474,9 @@ function PostModal({ postId, onClose, currentUser }) {
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 16, width: "100%", maxWidth: 580, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 16, width: "100%", maxWidth: 580, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
-        <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Post</span>
           <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
         </div>
@@ -1489,7 +1489,7 @@ function PostModal({ postId, onClose, currentUser }) {
           ) : (
             <>
               {/* The post */}
-              <div style={{ padding: 20, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ padding: 20, borderBottom: "1px solid " + C.border }}>
                 <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                   <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={38} />
                   <div>
@@ -1516,7 +1516,7 @@ function PostModal({ postId, onClose, currentUser }) {
                     <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                       <Avatar initials={avatar.slice(0,2).toUpperCase()} size={30} isNPC={isNPC} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ background: C.surface, border: `1px solid ${isNPC ? C.goldBorder : C.border}`, borderRadius: 10, padding: "9px 13px" }}>
+                        <div style={{ background: C.surface, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "9px 13px" }}>
                           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
                             <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name}</span>
                             {isNPC && <NPCBadge />}
@@ -1542,9 +1542,9 @@ function PostModal({ postId, onClose, currentUser }) {
 
         {/* Comment input */}
         {currentUser && (
-          <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div style={{ padding: "12px 20px", borderTop: "1px solid " + C.border, flexShrink: 0 }}>
             {replyTo && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 10px" }}>
                 <span style={{ color: C.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyTo.name}</strong></span>
                 <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto" }}>×</button>
               </div>
@@ -1554,7 +1554,7 @@ function PostModal({ postId, onClose, currentUser }) {
               <input ref={modalInputRef} value={commentText} onChange={e => setCommentText(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && submitComment()}
                 placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
-                style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+                style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
               />
               <button onClick={submitComment} disabled={submitting || !commentText.trim()}
                 style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 16px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -1604,8 +1604,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         {/* Mobile top bar */}
         <nav style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-          background: `${C.bg}f8`, backdropFilter: "blur(20px)",
-          borderBottom: `1px solid ${C.border}`,
+          background: C.bg + "f8", backdropFilter: "blur(20px)",
+          borderBottom: "1px solid " + C.border,
           height: 52, display: "flex", alignItems: "center", padding: "0 16px", gap: 10,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setActivePage("feed")}>
@@ -1614,7 +1614,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </div>
           <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
             <span style={{ position: "absolute", left: 10, color: C.textDim, fontSize: 12 }}>🔍</span>
-            <input placeholder="Search..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 10px 6px 28px", color: C.text, fontSize: 13, outline: "none" }} />
+            <input placeholder="Search..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 10px 6px 28px", color: C.text, fontSize: 13, outline: "none" }} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGuest ? (
@@ -1635,8 +1635,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         {/* Mobile bottom tab bar */}
         <nav style={{
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
-          background: `${C.surface}fc`, backdropFilter: "blur(20px)",
-          borderTop: `1px solid ${C.border}`,
+          background: C.surface + "fc", backdropFilter: "blur(20px)",
+          borderTop: "1px solid " + C.border,
           height: 60, display: "flex", alignItems: "center",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}>
@@ -1660,8 +1660,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
   return (
     <nav style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-      background: `${C.bg}f0`, backdropFilter: "blur(20px)",
-      borderBottom: `1px solid ${C.border}`,
+      background: C.bg + "f0", backdropFilter: "blur(20px)",
+      borderBottom: "1px solid " + C.border,
       height: 60, display: "flex", alignItems: "center", padding: "0 24px", gap: 8,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 20, cursor: "pointer" }} onClick={() => setActivePage("feed")}>
@@ -1670,13 +1670,13 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       </div>
       <div style={{ flex: 1, maxWidth: 300, position: "relative", display: "flex", alignItems: "center" }}>
         <span style={{ position: "absolute", left: 12, color: C.textDim, fontSize: 13 }}>🔍</span>
-        <input placeholder="Search games, players, squads..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none" }} />
+        <input placeholder="Search games, players, squads..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none" }} />
       </div>
       <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
         {desktopItems.map(item => (
           <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
             background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : item.admin ? activePage === item.id ? "#ef444420" : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
-            border: item.gold ? activePage === item.id ? `1px solid ${C.goldBorder}` : "1px solid transparent" : item.admin ? activePage === item.id ? "1px solid #ef444440" : "1px solid transparent" : activePage === item.id ? `1px solid ${C.accentDim}` : "1px solid transparent",
+            border: item.gold ? activePage === item.id ? "1px solid " + C.goldBorder : "1px solid transparent" : item.admin ? activePage === item.id ? "1px solid #ef444440" : "1px solid transparent" : activePage === item.id ? "1px solid " + C.accentDim : "1px solid transparent",
             borderRadius: 8, padding: "6px 14px",
             color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : item.admin ? "#ef4444" : activePage === item.id ? C.accentSoft : C.textMuted,
             cursor: "pointer", fontSize: 13, fontWeight: 600,
@@ -1687,14 +1687,14 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
         {isGuest ? (
           <>
-            <button onClick={onSignIn} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
+            <button onClick={onSignIn} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
             <button onClick={onSignUp} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
           </>
         ) : (
           <>
             <div style={{ position: "relative" }}>
               <button onClick={() => { setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
-                style={{ background: showNotifs ? C.accentGlow : "transparent", border: `1px solid ${showNotifs ? C.accentDim : "transparent"}`, borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "4px 8px", display: "flex", alignItems: "center" }}>
+                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "1px solid " + showNotifs ? C.accentDim : "transparent", borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "4px 8px", display: "flex", alignItems: "center" }}>
                 🔔
                 {unreadCount > 0 && (
                   <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: C.accentText, borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
@@ -1703,8 +1703,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 )}
               </button>
               {showNotifs && (
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden" }}>
-                  <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, background: C.surface, border: "1px solid " + C.border, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden" }}>
+                  <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       {notifications?.length > 0 && (
@@ -1735,9 +1735,9 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                             if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); }
                             else if (isGamertagRequest) { setActivePage("profile"); setShowNotifs(false); }
                           }}
-                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? `1px solid ${C.border}` : "none", background: isUnread ? `${C.accent}0a` : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost || isGamertagRequest) ? "pointer" : "default", transition: "background 0.1s" }}
+                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: isUnread ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost || isGamertagRequest) ? "pointer" : "default", transition: "background 0.1s" }}
                           onMouseEnter={e => { if (hasPost || isGamertagRequest) e.currentTarget.style.background = C.surfaceHover; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = isUnread ? `${C.accent}0a` : "transparent"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = isUnread ? C.accent + "0a" : "transparent"; }}
                         >
                           <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1770,7 +1770,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
               <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
             </div>
-            {signOut && <button onClick={signOut} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
+            {signOut && <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
@@ -1797,7 +1797,7 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
       </div>
       {Object.values(NPCS).map(npc => (
         <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
-          style={{ background: C.surface, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 18, marginBottom: 12, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
+          style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 18, marginBottom: 12, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
           <Avatar initials={npc.avatar} size={50} isNPC={true} status={npc.status} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
@@ -1832,13 +1832,13 @@ function TrendingWidget({ setActivePage, setCurrentGame }) {
   }, []);
 
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16 }}>
       <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Trending</div>
       {games.length === 0 ? (
         <div style={{ color: C.textDim, fontSize: 12 }}>Loading...</div>
       ) : games.map((g, i) => (
         <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < games.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < games.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
           <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, width: 16, textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
@@ -1885,7 +1885,7 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
     <div>
       {shelfGames.map((g, i) => (
         <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < shelfGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < shelfGames.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -2007,7 +2007,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
   };
 
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16, marginBottom: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
           {category ? `${category} Charts` : "The Charts"}
@@ -2028,7 +2028,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             return (
               <div key={entry.id}
                 onClick={() => { setCurrentGame(entry.id); setActivePage("game"); }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < charts.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < charts.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}>
                 <div style={{ width: 18, textAlign: "center", color: i < 3 ? C.gold : C.textDim, fontWeight: 800, fontSize: i < 3 ? 13 : 11, flexShrink: 0 }}>
                   {entry.rank}
                 </div>
@@ -2042,7 +2042,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           })}
           {limit && (
             <button onClick={() => setActivePage("games")}
-              style={{ width: "100%", marginTop: 10, background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              style={{ width: "100%", marginTop: 10, background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               See Full Charts →
             </button>
           )}
@@ -2252,7 +2252,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     })() : null;
 
     return (
-      <div style={{ borderBottom: `1px solid ${C.border}`, overflow: "hidden" }}>
+      <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
         <div onClick={() => handleExpand(entry.id, section)}
           style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", cursor: "pointer", transition: "background 0.1s", background: isExpanded ? C.accentGlow : "transparent" }}
           onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = C.surfaceHover; }}
@@ -2276,7 +2276,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
         </div>
 
         {isExpanded && (
-          <div style={{ padding: "4px 20px 18px", borderTop: `1px solid ${C.border}`, background: C.accentGlow }}>
+          <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
             {isLoadingSp ? (
               <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
@@ -2318,7 +2318,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
         {[{ id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
           <button key={w.id} onClick={() => { setWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); setExpandedGenreAll(new Set()); }}
-            style={{ background: window === w.id ? C.accentGlow : C.surface, border: `1px solid ${window === w.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "6px 16px", color: window === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: window === w.id ? 700 : 500, cursor: "pointer" }}>
+            style={{ background: window === w.id ? C.accentGlow : C.surface, border: "1px solid " + window === w.id ? C.accentDim : C.border, borderRadius: 20, padding: "6px 16px", color: window === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: window === w.id ? 700 : 500, cursor: "pointer" }}>
             {w.label}
           </button>
         ))}
@@ -2334,8 +2334,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       ) : (
         <>
           {/* Top 10 Overall */}
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
-            <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
               <div style={{ color: C.textDim, fontSize: 12 }}>{windowLabel[window]}</div>
             </div>
@@ -2358,8 +2358,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
                   const displayList = isExpanded ? fullList : games;
                   const hasMore = fullList.length > games.length;
                   return (
-                    <div key={genre} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                      <div style={{ padding: "14px 18px 10px", borderBottom: `1px solid ${C.border}` }}>
+                    <div key={genre} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid " + C.border }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
                       </div>
                       {displayList.map((entry, i) => (
@@ -2372,7 +2372,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
                             isExpanded ? next.delete(genre) : next.add(genre);
                             return next;
                           })}
-                          style={{ margin: "10px 16px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          style={{ margin: "10px 16px 14px", background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           {isExpanded ? `Show less` : `See all ${fullList.length} in ${genre} →`}
                         </button>
                       )}
@@ -2716,7 +2716,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         <div style={{ marginBottom: 4 }}>
           <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
           {isGuest ? (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, marginBottom: 14 }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 14, marginBottom: 14 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Shelf</div>
               <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
                 <span onClick={() => onSignIn?.("Sign up to build your shelf.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to build your shelf.
@@ -2732,11 +2732,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       <div style={{ width: 230, flexShrink: 0 }}>
         {/* User block — real profile or guest "unclaimed" card */}
         {isGuest ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}22, ${C.teal}22)` }} />
             <div style={{ padding: "0 16px 18px", marginTop: -22 }}>
               {/* Question mark avatar */}
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: "2px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
               <div style={{ marginTop: 10, marginBottom: 14 }}>
                 <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6 }}>This profile grid is waiting to be claimed. Will you be the proud new owner?</div>
               </div>
@@ -2747,7 +2747,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             </div>
           </div>
         ) : user ? (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)` }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
               <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} />
@@ -2757,20 +2757,20 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
               </div>
               {/* XP + Level */}
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid " + C.border }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontWeight: 700, color: C.gold, fontSize: 13 }}>Lv.{user.level}</div>
                   <div style={{ color: C.textDim, fontSize: 10 }}>{user.xp} / {user.xpNext} XP</div>
                 </div>
                 <div style={{ height: 4, background: C.surfaceRaised, borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, Math.round((user.xp / user.xpNext) * 100))}%`, background: `linear-gradient(90deg, ${C.gold}, ${C.accent})`, borderRadius: 4, transition: "width 0.4s ease" }} />
+                  <div style={{ height: "100%", width: Math.min(100, Math.round((user.xp / user.xpNext) * 100)) + "%", background: `linear-gradient(90deg, ${C.gold}, ${C.accent})`, borderRadius: 4, transition: "width 0.4s ease" }} />
                 </div>
               </div>
             </div>
           </div>
         ) : null}
 
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 3 }}>Currently Playing</div>
             <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage your shelf →</span>
@@ -2782,7 +2782,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             </div>
           ) : playingGames.map((g, i) => (
             <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < playingGames.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < playingGames.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
             >
@@ -2793,7 +2793,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </div>
 
         {/* Gamers — shelf-based suggestions */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Gamers</div>
           {suggestedGamers.length === 0 ? (
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Add games to your shelf to find players like you.</div>
@@ -2816,17 +2816,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
                 setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
                 loadFollowing();
-              }} style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Follow</button>
+              }} style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Follow</button>
             </div>
           ))}
         </div>
 
         {/* NPCs */}
-        <div style={{ background: C.goldGlow, border: `1px solid ${C.goldBorder}`, borderRadius: 14, padding: 16, marginTop: 14 }}>
+        <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
           <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
           {Object.values(NPCS).slice(0, 3).map((npc, i, arr) => (
             <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
-              style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? `1px solid ${C.goldBorder}` : "none", cursor: "pointer" }}
+              style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? "1px solid " + C.goldBorder : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
             >
@@ -2846,24 +2846,24 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Feed tabs — members only */}
         {!isGuest && (
-          <div style={{ display: "flex", gap: 4, marginBottom: 14, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 14, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4 }}>
             {[{ id: "forYou", label: "For You" }, { id: "following", label: "Following" }].map(tab => (
               <button key={tab.id} onClick={() => { setFeedTab(tab.id); if (tab.id === "following") loadFollowingPosts(); }}
-                style={{ flex: 1, background: feedTab === tab.id ? C.accentGlow : "transparent", border: `1px solid ${feedTab === tab.id ? C.accentDim : "transparent"}`, borderRadius: 8, padding: "7px", color: feedTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: feedTab === tab.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ flex: 1, background: feedTab === tab.id ? C.accentGlow : "transparent", border: "1px solid " + feedTab === tab.id ? C.accentDim : "transparent", borderRadius: 8, padding: "7px", color: feedTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: feedTab === tab.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {tab.label}
               </button>
             ))}
           </div>
         )}
         {!isGuest && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
-                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
-                  <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {mentionResults.map((game, i) => (
                       <div key={game.id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
                         onMouseEnter={e => { setMentionIndex(i); }}>
@@ -2879,7 +2879,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   {taggedGames.map(gameId => {
                     const game = dbGames[gameId] || GAMES[gameId];
                     return (
-                      <span key={gameId} style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                      <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
                         {game?.name || gameId}
                         <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
                       </span>
@@ -2933,7 +2933,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         })}
         {/* Loading skeleton */}
         {(isGuest || feedTab === "forYou") && feedLoading && [1,2,3].map(i => (
-          <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 10 }}>
+          <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: "50%", background: C.surfaceRaised, flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
@@ -2949,7 +2949,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
         {/* Empty state once loaded */}
         {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.length === 0 && (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
             <div style={{ fontSize: 36, marginBottom: 14 }}>🎮</div>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>The feed is empty right now.</div>
             <div style={{ color: C.textMuted, fontSize: 13 }}>Be the first to post something.</div>
@@ -2959,7 +2959,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         {/* Following feed */}
         {!isGuest && feedTab === "following" && (
           followingPosts.length === 0 ? (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
               <div style={{ fontSize: 36, marginBottom: 14 }}>👥</div>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>
                 {following.length === 0 ? "You're not following anyone yet." : "No posts from people you follow yet."}
@@ -3014,7 +3014,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               Create Free Account
             </button>
             <button onClick={() => onSignIn?.()}
-              style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 32px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "block", width: "100%", maxWidth: 280, margin: "0 auto" }}>
+              style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 10, padding: "10px 32px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "block", width: "100%", maxWidth: 280, margin: "0 auto" }}>
               Sign In
             </button>
           </div>
@@ -3407,7 +3407,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const isLoadingSp = loadingSparkline[entry.id];
     const momentum = sp ? (() => { const last = sp[sp.length - 1] || 0; const prev = sp[sp.length - 2] || 0; if (prev === 0) return null; const pct = Math.round(((last - prev) / prev) * 100); return { pct, up: pct >= 0 }; })() : null;
     return (
-      <div style={{ borderBottom: `1px solid ${C.border}`, overflow: "hidden" }}>
+      <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
         <div onClick={() => handleExpand(entry.id, section)}
           style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", cursor: "pointer", background: isExpanded ? C.accentGlow : "transparent" }}
           onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = C.surfaceHover; }}
@@ -3421,7 +3421,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
         </div>
         {isExpanded && (
-          <div style={{ padding: "4px 20px 18px", borderTop: `1px solid ${C.border}`, background: C.accentGlow }}>
+          <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
             {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
               : sp ? <Sparkline points={sp} color={C.accent} />
@@ -3454,7 +3454,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       {/* ── Game Discovery Card ── */}
       {!currentUser ? (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 4 }}>Game Discovery</div>
             <div style={{ color: C.textMuted, fontSize: 13 }}>Game discovery works when you build your game shelf.</div>
@@ -3465,7 +3465,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           </button>
         </div>
       ) : (
-      <div style={{ background: C.surface, border: `1px solid ${discoveryOpen ? C.accentDim : C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden", transition: "border-color 0.2s" }}>
+      <div style={{ background: C.surface, border: "1px solid " + discoveryOpen ? C.accentDim : C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden", transition: "border-color 0.2s" }}>
         {/* Card header — always visible, click to expand */}
         <div onClick={() => setDiscoveryOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", cursor: "pointer" }}
           onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
@@ -3479,7 +3479,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
         {/* Expanded panel */}
         {discoveryOpen && (
-          <div style={{ borderTop: `1px solid ${C.border}`, padding: "20px 22px 22px" }}>
+          <div style={{ borderTop: "1px solid " + C.border, padding: "20px 22px 22px" }}>
             {/* Insight pills */}
             <div style={{ marginBottom: 18 }}>
               <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Discover by</div>
@@ -3487,7 +3487,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 {INSIGHTS.map(insight => (
                   <button key={insight.id} onClick={() => runInsight(insight)}
                     title={insight.desc}
-                    style={{ background: activeInsight === insight.id ? C.accentGlow : C.surfaceRaised, border: `1px solid ${activeInsight === insight.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "7px 16px", color: activeInsight === insight.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                    style={{ background: activeInsight === insight.id ? C.accentGlow : C.surfaceRaised, border: "1px solid " + activeInsight === insight.id ? C.accentDim : C.border, borderRadius: 20, padding: "7px 16px", color: activeInsight === insight.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                     {insight.label}
                   </button>
                 ))}
@@ -3501,7 +3501,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 onChange={e => { setNameSearch(e.target.value); if (!e.target.value) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); } }}
                 onKeyDown={e => e.key === "Enter" && runNameSearch(nameSearch)}
                 placeholder="Type a game name..."
-                style={{ flex: 1, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
               />
               {nameSearch && (
                 <button onClick={() => runNameSearch(nameSearch)}
@@ -3526,10 +3526,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           </div>
           {discoveryLoading ? (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
-              {[...Array(8)].map((_, i) => <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, height: 90 }} />)}
+              {[...Array(8)].map((_, i) => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, height: 90 }} />)}
             </div>
           ) : discoveryResults?.length === 0 ? (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center", color: C.textDim }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "40px 24px", textAlign: "center", color: C.textDim }}>
               No results found. Try a different approach.
             </div>
           ) : (
@@ -3539,7 +3539,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 const onShelf = userShelf.has(g.id);
                 return (
                   <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-                    style={{ background: C.surface, border: `1px solid ${onShelf ? C.accentDim : C.border}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer" }}
+                    style={{ background: C.surface, border: "1px solid " + onShelf ? C.accentDim : C.border, borderRadius: 12, padding: "14px 16px", cursor: "pointer" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = onShelf ? C.accent : C.borderHover}
                     onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
                     <div style={{ width: 28, height: 4, borderRadius: 2, background: v.color, marginBottom: 10 }} />
@@ -3563,7 +3563,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         <div style={{ display: "flex", gap: 6 }}>
           {[{ id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
             <button key={w.id} onClick={() => { setChartWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); setExpandedGenreAll(new Set()); }}
-              style={{ background: chartWindow === w.id ? C.accentGlow : C.surface, border: `1px solid ${chartWindow === w.id ? C.accentDim : C.border}`, borderRadius: 20, padding: "6px 16px", color: chartWindow === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: chartWindow === w.id ? 700 : 500, cursor: "pointer" }}>
+              style={{ background: chartWindow === w.id ? C.accentGlow : C.surface, border: "1px solid " + chartWindow === w.id ? C.accentDim : C.border, borderRadius: 20, padding: "6px 16px", color: chartWindow === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: chartWindow === w.id ? 700 : 500, cursor: "pointer" }}>
               {w.label}
             </button>
           ))}
@@ -3579,8 +3579,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         </div>
       ) : (
         <>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
-            <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
               <div style={{ color: C.textDim, fontSize: 12 }}>{chartWindow === "7d" ? "This Week" : "This Month"}</div>
             </div>
@@ -3600,14 +3600,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     const displayList = isExpanded ? fullList : games;
                     const hasMore = fullList.length > games.length;
                     return (
-                      <div key={genre} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
-                        <div style={{ padding: "14px 18px 10px", borderBottom: `1px solid ${C.border}` }}>
+                      <div key={genre} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden" }}>
+                        <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid " + C.border }}>
                           <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
                         </div>
                         {displayList.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />)}
                         {(hasMore || isExpanded) && (
                           <button onClick={() => setExpandedGenreAll(prev => { const n = new Set(prev); isExpanded ? n.delete(genre) : n.add(genre); return n; })}
-                            style={{ margin: "10px 16px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
+                            style={{ margin: "10px 16px 14px", background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
                             {isExpanded ? "Show less" : `See all ${fullList.length} in ${genre} →`}
                           </button>
                         )}
@@ -3816,7 +3816,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     followers: dbGame.followers,
     genre: dbGame.genre ? [dbGame.genre] : (hardcoded?.genre || []),
     color: hardcoded?.color || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; return COLORS[(dbGame.name || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length]; })(),
-    gradient: hardcoded?.gradient || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return `linear-gradient(135deg, ${c}22 0%, #080e1a 100%)`; })(),
+    gradient: hardcoded?.gradient || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return "linear-gradient(135deg, " + c + "22 0%, #080e1a 100%)"; })(),
     icon: hardcoded?.icon || { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽','Platformer':'🕹️','Auto Battler':'♟️','RTS':'🏰','Turn-Based Strategy':'🎖️' }[dbGame.genre] || '🎮',
     claimed: dbGame.is_claimed,
     id: gameId,
@@ -3834,10 +3834,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
   return (
     <div style={{ paddingTop: isMobile ? 52 : 60 }}>
-      <div style={{ background: game.gradient, borderBottom: `1px solid ${game.color}33` }}>
+      <div style={{ background: game.gradient, borderBottom: "1px solid " + game.color + "33" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px 20px" : "36px 24px 28px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 20, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-            <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: 16, fontSize: isMobile ? 30 : 44, background: `${game.color}22`, border: `2px solid ${game.color}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{game.icon}</div>
+            <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: 16, fontSize: isMobile ? 30 : 44, background: game.color + "22", border: "2px solid " + game.color + "44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{game.icon}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 28, color: "#fff" }}>{game.name}</h1>
@@ -3846,7 +3846,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: isMobile ? 8 : 10 }}>{game.developer} · {game.year}</div>
               {!isMobile && <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: "0 0 16px", maxWidth: 540, lineHeight: 1.6 }}>{game.description}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0 }}>
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? `${game.color}33` : game.color, border: `1px solid ${game.color}`, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? game.color + "33" : game.color, border: "1px solid " + game.color, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start" }}>
@@ -3861,10 +3861,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         </div>
       </div>
 
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
+      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px", display: "flex", overflowX: "auto" }}>
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: "transparent", border: "none", borderBottom: activeTab === tab.id ? `2px solid ${game.color}` : "2px solid transparent", padding: isMobile ? "12px 14px" : "14px 18px", cursor: "pointer", color: activeTab === tab.id ? "#fff" : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: activeTab === tab.id ? 700 : 500, whiteSpace: "nowrap" }}>{tab.label}</button>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: "transparent", border: "none", borderBottom: activeTab === tab.id ? "2px solid " + game.color : "2px solid transparent", padding: isMobile ? "12px 14px" : "14px 18px", cursor: "pointer", color: activeTab === tab.id ? "#fff" : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: activeTab === tab.id ? 700 : 500, whiteSpace: "nowrap" }}>{tab.label}</button>
           ))}
         </div>
       </div>
@@ -3874,7 +3874,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: 20 }}>
             <div>
               {/* The Charts card */}
-              <div style={{ background: C.surface, border: `1px solid ${game.color}44`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+              <div style={{ background: C.surface, border: "1px solid " + game.color + "44", borderRadius: 14, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>The Charts</div>
                   <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
@@ -3883,7 +3883,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   {[
                     { label: "Posts This Week", value: chartsData?.weeklyPosts ?? "—", color: game.color },
                     { label: "New Reviews", value: chartsData?.weeklyReviews ?? "—", color: C.teal },
-                    { label: "Avg Rating", value: chartsData?.avgRating ? `${chartsData.avgRating}` + "/10" : "—", color: C.gold },
+                    { label: "Avg Rating", value: chartsData?.avgRating ? chartsData.avgRating + "/10" : "—", color: C.gold },
                   ].map(s => (
                     <div key={s.label} style={{ background: C.surfaceRaised, borderRadius: 10, padding: "14px 12px", textAlign: "center" }}>
                       <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.value}</div>
@@ -3899,13 +3899,13 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               </div>
 
               {/* Latest Reviews */}
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>⭐ Latest Reviews</div>
                   <button onClick={() => setShowReviewForm(true)} style={{ background: game.color, border: "none", borderRadius: 7, padding: "5px 12px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
                 </div>
                 {showReviewForm && (
-                  <div style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 18, marginBottom: 18 }}>
+                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 18, marginBottom: 18 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Your Review of {game.name}</div>
                     {/* Star rating */}
                     <div style={{ marginBottom: 14 }}>
@@ -3913,40 +3913,40 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       <div style={{ display: "flex", gap: 6 }}>
                         {[1,2,3,4,5,6,7,8,9,10].map(n => (
                           <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
-                            style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${reviewForm.rating >= n ? C.gold : C.border}`, background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}</button>
+                            style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid " + reviewForm.rating >= n ? C.gold : C.border, background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}</button>
                         ))}
                       </div>
                     </div>
-                    <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
+                    <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
                     <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                      <input value={reviewForm.time_played} onChange={e => setReviewForm(f => ({ ...f, time_played: e.target.value }))} placeholder="Hours played" type="number" style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+                      <input value={reviewForm.time_played} onChange={e => setReviewForm(f => ({ ...f, time_played: e.target.value }))} placeholder="Hours played" type="number" style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
                       <label style={{ display: "flex", alignItems: "center", gap: 6, color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                         <input type="checkbox" checked={reviewForm.completed} onChange={e => setReviewForm(f => ({ ...f, completed: e.target.checked }))} />
                         Completed
                       </label>
                     </div>
-                    <input value={reviewForm.loved} onChange={e => setReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
-                    <input value={reviewForm.didnt_love} onChange={e => setReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
-                    <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
+                    <input value={reviewForm.loved} onChange={e => setReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
+                    <input value={reviewForm.didnt_love} onChange={e => setReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
+                    <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                      <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                      <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                       <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview} style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 18px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>{submittingReview ? "Saving..." : "Submit Review"}</button>
                     </div>
                   </div>
                 )}
                 {latestReviews.length > 0 ? latestReviews.map((review, i) => (
-                  <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? "1px solid " + C.border : "none" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                       <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · ✓ Completed" : ""}</div>
                       </div>
                       {currentUser && review.user_id === currentUser.id && (
                         <button onClick={() => { setActiveTab("reviews"); setShowReviewForm(true); }}
-                          style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                          style={{ background: C.goldDim, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                       )}
-                      <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{`${review.rating}` + "/10"}</div>
+                      <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                     </div>
                     {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
                     {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
@@ -3960,20 +3960,20 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   </div>
                 )}
               {game.alsoLiked.length > 0 && (
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
                   <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Based on follows, reviews & completions</div>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                     {game.alsoLiked.map(g2 => (
                       <div key={g2.id} onClick={() => { setCurrentGame(g2.id); setActiveTab("pulse"); }}
-                        style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, cursor: "pointer" }}>
+                        style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 14, cursor: "pointer" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                           <span style={{ fontSize: 22 }}>{g2.icon}</span>
                           <div>
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{g2.name}</div>
                             <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
                               <div style={{ height: 4, width: 50, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${g2.overlap}%`, background: game.color, borderRadius: 2 }} />
+                                <div style={{ height: "100%", width: g2.overlap + "%", background: game.color, borderRadius: 2 }} />
                               </div>
                               <span style={{ color: game.color, fontSize: 11, fontWeight: 700 }}>{g2.overlap}%</span>
                             </div>
@@ -3988,13 +3988,13 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
             </div>
 
             {/* Right sidebar — Top Voices */}
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, alignSelf: "start" }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, alignSelf: "start" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 15 }}>🏆 Top Voices</div>
                 <span style={{ color: C.textDim, fontSize: 12 }}>By likes earned</span>
               </div>
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
-                <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
                   <Avatar initials={voice.avatar_initials || "GL"} size={34} founding={voice.is_founding} ring={voice.active_ring} />
                   <div style={{ flex: 1 }}>
@@ -4005,7 +4005,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               )) : (
                 // Fallback to hardcoded for games that have it
                 game.topVoices.length > 0 ? game.topVoices.map((voice, i) => (
-                  <div key={voice.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < game.topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div key={voice.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < game.topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
                     <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
                     <Avatar initials={voice.avatar} size={34} color={i === 0 ? C.gold : C.accent} />
                     <div style={{ flex: 1 }}>
@@ -4026,7 +4026,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
         {activeTab === "community" && (
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22, gridColumn: "span 2" }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, gridColumn: "span 2" }}>
               <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🏁 Completion Board</div>
               <div style={{ color: C.textDim, fontSize: 13, marginBottom: 20 }}>{(game.completions || 0).toLocaleString()} GuildLink members have completed this game</div>
               {[{ label: "Any% Complete", count: game.completions, pct: 100, color: C.green }, { label: "True Ending", count: Math.floor((game.completions || 0) * 0.64), pct: 64, color: C.teal }, { label: "New Game+", count: Math.floor((game.completions || 0) * 0.41), pct: 41, color: C.accent }, { label: "100% / Platinum", count: Math.floor((game.completions || 0) * 0.18), pct: 18, color: C.gold }, { label: "Speedrun (sub 2hr)", count: Math.floor((game.completions || 0) * 0.04), pct: 4, color: C.red }].map(row => (
@@ -4036,18 +4036,18 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     <span style={{ color: row.color, fontSize: 13, fontWeight: 700 }}>{row.count.toLocaleString()} <span style={{ color: C.textDim, fontWeight: 400 }}>({row.pct}%)</span></span>
                   </div>
                   <div style={{ height: 6, background: C.surfaceRaised, borderRadius: 3 }}>
-                    <div style={{ height: "100%", width: `${row.pct}%`, background: row.color, borderRadius: 3 }} />
+                    <div style={{ height: "100%", width: row.pct + "%", background: row.color, borderRadius: 3 }} />
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 22 }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22 }}>
               <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 16 }}>⭐ Community Score</div>
               <div style={{ textAlign: "center", marginBottom: 20 }}>
                 <div style={{ fontSize: 56, fontWeight: 900, color: C.gold }}>{game.reviewScore}</div>
                 <div style={{ color: C.textDim, fontSize: 13, marginTop: 6 }}>Based on {(game.reviewCount || 0).toLocaleString()} reviews</div>
               </div>
-              <button style={{ width: "100%", background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "8px", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Write a Review</button>
+              <button style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Write a Review</button>
             </div>
           </div>
         )}
@@ -4055,7 +4055,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         {activeTab === "tips" && (
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             {game.tips.map((tip, i) => (
-              <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 }}>
+              <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
                 <div style={{ display: "flex", gap: 10 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 8, background: C.goldDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💡</div>
                   <div>
@@ -4174,9 +4174,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         {activeTab === "developer" && (
           <div>
             {game.claimed ? (
-              <div style={{ background: C.surface, border: `1px solid ${C.teal}33`, borderRadius: 14, padding: 28 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.teal + "33", borderRadius: 14, padding: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: `${C.teal}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏢</div>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: C.teal + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏢</div>
                   <div>
                     <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>{game.developer}</div>
                     <Badge color={C.teal}>✓ Verified Developer</Badge>
@@ -4671,14 +4671,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header card */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
             <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} />
           </div>
           {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
-              <span style={{ background: C.goldGlow, color: C.gold, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
+              <span style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
             </div>
           )}
         </div>
@@ -4696,7 +4696,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             {editing ? (
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={cancelEdit} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
               <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
@@ -4704,15 +4704,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           </div>
 
           {editing && (
-            <div style={{ marginTop: 20, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }}>
+            <div style={{ marginTop: 20, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 20 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>Edit Profile</div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Display Name</div>
-                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
-                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
+                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
 
               {/* Theme picker — base themes + quest-unlocked catalog */}
@@ -4730,7 +4730,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       <div key={theme.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
                         <button onClick={() => { setEditForm(f => ({ ...f, theme: theme.id })); applyTheme(theme.id); setPreviewThemeId(theme.id); }}
                           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 6 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${theme.bg} 60%, ${theme.accent} 60%)`, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, boxShadow: isActive ? `0 0 0 3px ${C.accentDim}` : "none", transition: "all 0.15s" }} />
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${theme.bg} 60%, ${theme.accent} 60%)`, border: isActive ? "2px solid " + C.accent : "2px solid " + C.border, boxShadow: isActive ? `0 0 0 3px ${C.accentDim}` : "none", transition: "all 0.15s" }} />
                         </button>
                         <span style={{ color: isActive ? C.accentSoft : C.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400 }}>{theme.label}</span>
                       </div>
@@ -4747,7 +4747,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         <button onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, theme: qt.id })); applyTheme(qt.id); setPreviewThemeId(qt.id); }}
                           title={isUnlocked ? qt.label : `Locked — ${qt.questLabel}`}
                           style={{ background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, marginBottom: 6 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${palette.bg} 60%, ${palette.accent} 60%)`, border: isActive && isUnlocked ? `2px solid ${palette.accent}` : `2px solid ${C.border}`, boxShadow: isActive && isUnlocked ? `0 0 0 3px ${palette.accent}44` : "none", opacity: isUnlocked ? 1 : 0.45, transition: "all 0.15s" }} />
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${palette.bg} 60%, ${palette.accent} 60%)`, border: isActive && isUnlocked ? "2px solid " + palette.accent : "2px solid " + C.border, boxShadow: isActive && isUnlocked ? `0 0 0 3px ${palette.accent}44` : "none", opacity: isUnlocked ? 1 : 0.45, transition: "all 0.15s" }} />
                         </button>
                         <span style={{ color: isActive && isUnlocked ? palette.accent : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, opacity: isUnlocked ? 1 : 0.6 }}>{qt.label}</span>
                         <span style={{ color: C.textDim, fontSize: 9, opacity: isUnlocked ? 1 : 0.5 }}>{isUnlocked ? "Unlocked" : qt.questLabel}</span>
@@ -4796,13 +4796,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             <div style={{
                               width: 56, height: 56, borderRadius: "50%",
                               background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`,
-                              border: `2px solid ${ring.color}44`,
+                              border: "2px solid " + ring.color + "44",
                               display: "flex", alignItems: "center", justifyContent: "center",
                               fontSize: 22, position: "relative"
                             }}>
                               {ring.icon || "●"}
                               {isActive && isUnlocked && (
-                                <div style={{ position: "absolute", bottom: -1, right: -1, width: 18, height: 18, borderRadius: "50%", background: ring.color, border: `2px solid ${C.surfaceRaised}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <div style={{ position: "absolute", bottom: -1, right: -1, width: 18, height: 18, borderRadius: "50%", background: ring.color, border: "2px solid " + C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center" }}>
                                   <span style={{ fontSize: 9, color: ring.id === "platinum" ? "#000" : "#fff", fontWeight: 900 }}>✓</span>
                                 </div>
                               )}
@@ -4832,18 +4832,18 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={cancelEdit} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             </div>
           )}
 
           {/* Birthday and DOB Section — only visible while editing */}
           {editing && (
-          <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+          <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: user.date_of_birth || editingDob ? 12 : 0 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Birthday</div>
               {user.date_of_birth && !editingDob && canChangeDob && (
-                <button onClick={() => { setEditingDob(true); setDobError(""); }} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>Change</button>
+                <button onClick={() => { setEditingDob(true); setDobError(""); }} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>Change</button>
               )}
             </div>
 
@@ -4853,7 +4853,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   Add your birthday to unlock gamertag sharing and LFG at 18+.
                 </div>
                 <button onClick={() => { setEditingDob(true); setDobError(""); }}
-                  style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   Add Birthday
                 </button>
               </div>
@@ -4887,20 +4887,20 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <input value={dobForm.month} onChange={e => setDobForm(f => ({ ...f, month: e.target.value }))}
                         placeholder="1–12" maxLength={2}
-                        style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                        style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                     </div>
                   </div>
                   <div style={{ flex: "0 0 80px" }}>
                     <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Day</div>
                     <input value={dobForm.day} onChange={e => setDobForm(f => ({ ...f, day: e.target.value }))}
                       placeholder="1–31" maxLength={2}
-                      style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                      style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                   </div>
                   <div style={{ flex: "0 0 90px" }}>
                     <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Year</div>
                     <input value={dobForm.year} onChange={e => setDobForm(f => ({ ...f, year: e.target.value }))}
                       placeholder="e.g. 1990" maxLength={4}
-                      style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                      style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                   </div>
                 </div>
                 {dobError && <div style={{ color: C.red, fontSize: 12, marginBottom: 8 }}>{dobError}</div>}
@@ -4910,7 +4910,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     {dobSaving ? "Saving…" : "Save Birthday"}
                   </button>
                   <button onClick={() => { setEditingDob(false); setDobForm({ month: "", day: "", year: "" }); setDobError(""); }}
-                    style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                    style={{ background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                     Cancel
                   </button>
                 </div>
@@ -4920,7 +4920,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           )} {/* end editing Birthday section */}
 
           {/* Gamertag Management */}
-          <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+          <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gamertags.length > 0 || addingTag ? 14 : 0 }}>
               <div>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Gamertags</div>
@@ -4932,7 +4932,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 )}
               </div>
               {isAdult && gamertags.length < 5 && !addingTag && (
-                <button onClick={() => setAddingTag(true)} style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
+                <button onClick={() => setAddingTag(true)} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
               )}
             </div>
 
@@ -4940,7 +4940,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             {gamertags.map(t => {
               const plat = PLATFORMS.find(p => p.id === t.platform);
               return (
-                <div key={t.platform} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                <div key={t.platform} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid " + C.border }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: plat?.color || C.textDim, flexShrink: 0 }} />
                   <span style={{ color: C.textMuted, fontSize: 12, fontWeight: 600, width: 90, flexShrink: 0 }}>{plat?.label || t.platform}</span>
                   <span style={{ color: C.text, fontSize: 13, flex: 1 }}>{t.tag}</span>
@@ -4957,7 +4957,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {PLATFORMS.filter(p => !gamertags.find(t => t.platform === p.id)).map(p => (
                       <button key={p.id} onClick={() => setGamertagForm(f => ({ ...f, platform: p.id }))}
-                        style={{ background: gamertagForm.platform === p.id ? C.accentGlow : C.surface, border: `1px solid ${gamertagForm.platform === p.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "6px 14px", color: gamertagForm.platform === p.id ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        style={{ background: gamertagForm.platform === p.id ? C.accentGlow : C.surface, border: "1px solid " + gamertagForm.platform === p.id ? C.accentDim : C.border, borderRadius: 8, padding: "6px 14px", color: gamertagForm.platform === p.id ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                         {p.label}
                       </button>
                     ))}
@@ -4968,14 +4968,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Gamertag</div>
                   <input value={gamertagForm.tag} onChange={e => setGamertagForm(f => ({ ...f, tag: e.target.value }))}
                     placeholder="Your tag on this platform"
-                    style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                 </div>
                 <button onClick={saveGamertag} disabled={!gamertagForm.platform || !gamertagForm.tag.trim() || tagSaving}
                   style={{ background: gamertagForm.platform && gamertagForm.tag.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 16px", color: gamertagForm.platform && gamertagForm.tag.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                   {tagSaving ? "Saving…" : "Save"}
                 </button>
                 <button onClick={() => { setAddingTag(false); setGamertagForm({ platform: "", tag: "" }); }}
-                  style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                  style={{ background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                   Cancel
                 </button>
                 </div>
@@ -4989,7 +4989,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
           {/* Incoming gamertag requests */}
           {isAdult && incomingRequests.length > 0 && (
-            <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 12, padding: 16 }}>
+            <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>
                 Gamertag Requests <span style={{ background: C.accent, color: C.accentText, borderRadius: 10, padding: "2px 8px", fontSize: 11, marginLeft: 6 }}>{incomingRequests.length}</span>
               </div>
@@ -4997,7 +4997,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 const plat = PLATFORMS.find(p => p.id === req.platform);
                 const requester = req.profiles;
                 return (
-                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
+                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid " + C.border }}>
                     <Avatar initials={(requester?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={32} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{requester?.username || "Someone"}</span>
@@ -5010,7 +5010,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       Approve
                     </button>
                     <button onClick={() => respondToRequest(req.id, "denied")}
-                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 12px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>
+                      style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "5px 12px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>
                       Deny
                     </button>
                   </div>
@@ -5021,13 +5021,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
           {/* Approved connections — revoke UI */}
           {isAdult && approvedConnections.length > 0 && (
-            <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+            <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Shared Gamertags</div>
               {approvedConnections.map(req => {
                 const plat = PLATFORMS.find(p => p.id === req.platform);
                 const requester = req.profiles;
                 return (
-                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid " + C.border }}>
                     <Avatar initials={(requester?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={30} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{requester?.username || "Someone"}</span>
@@ -5035,7 +5035,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       <span style={{ fontWeight: 600, color: plat?.color || C.textMuted, fontSize: 12 }}>{plat?.label || req.platform}</span>
                     </div>
                     <button onClick={() => revokeConnection(req.id)}
-                      style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}
+                      style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}
                       title="Revoke access — permanent">
                       Revoke
                     </button>
@@ -5047,7 +5047,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           )}
 
           {/* Stats row */}
-          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}`, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: "1px solid " + C.border, alignItems: "center", flexWrap: "wrap" }}>
             {[
               { label: "Posts", val: postCount || 0, color: C.accent, tab: "posts" },
               { label: "Reviews", val: userReviews.length, color: C.teal, tab: "reviews" },
@@ -5069,7 +5069,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <span style={{ color: C.textDim, fontSize: 11 }}>{user.xp?.toLocaleString() || 0} / {user.xpNext?.toLocaleString() || 1000}</span>
               </div>
               <div style={{ height: 8, background: C.surfaceHover, borderRadius: 4 }}>
-                <div style={{ height: "100%", width: `${Math.min(((user.xp || 0) / (user.xpNext || 1000)) * 100, 100)}%`, background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
+                <div style={{ height: "100%", width: Math.min(((user.xp || 0) / (user.xpNext || 1000)) * 100, 100) + "%", background: `linear-gradient(90deg, ${C.gold}, #f97316)`, borderRadius: 4 }} />
               </div>
             </div>
           </div>
@@ -5079,7 +5079,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
         {tabs.map(tab => (
-          <button key={tab.id} data-tour={`${tab.id}-tab`} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
+          <button key={tab.id} data-tour={`${tab.id}-tab`} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
         ))}
       </div>
 
@@ -5133,7 +5133,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
           {/* Search to add */}
           {addingGame && (
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 16, position: "relative" }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 16, marginBottom: 16, position: "relative" }}>
               <input
                 autoFocus
                 value={gameSearch}
@@ -5153,12 +5153,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   }
                 }}
                 placeholder="@ to tag a game, or just type to search..."
-                style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
               />
               {gameSearchResults.length > 0 && (
-                <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: "1px solid " + C.border }}>
                   {gameSearchResults.map(game => (
-                    <div key={game.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.surfaceRaised, borderBottom: `1px solid ${C.border}` }}>
+                    <div key={game.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
                       <div>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}{game.genre ? " · " + game.genre : ""}</div>
@@ -5166,7 +5166,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       <div style={{ display: "flex", gap: 6 }}>
                         {SHELF_COLUMNS.map(col => (
                           <button key={col.id} onClick={() => addToShelf(game, col.id)}
-                            style={{ background: "transparent", border: `1px solid ${col.color}44`, borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                            style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                             {col.label}
                           </button>
                         ))}
@@ -5184,10 +5184,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div key={col.id}
                 onDragOver={e => handleDragOver(e, col.id)}
                 onDrop={e => handleDrop(e, col.id)}
-                style={{ background: dragOver === col.id ? `${col.color}11` : C.surface, border: `1px solid ${dragOver === col.id ? col.color + "66" : col.color + "33"}`, borderRadius: 14, padding: 14, minHeight: isMobile ? 80 : 200, transition: "all 0.15s" }}>
+                style={{ background: dragOver === col.id ? col.color + "11" : C.surface, border: "1px solid " + dragOver === col.id ? col.color + "66" : col.color + "33", borderRadius: 14, padding: 14, minHeight: isMobile ? 80 : 200, transition: "all 0.15s" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
-                  <div style={{ background: `${col.color}22`, color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
+                  <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
                 </div>
                 {userShelf[col.id].length > 0 ? userShelf[col.id].map(entry => {
                   const game = entry.games;
@@ -5207,13 +5207,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             setCurrentGame(game.id); setActivePage("game");
                           }
                         }}
-                        style={{ background: isMoving ? `${col.color}22` : C.surfaceRaised, border: `1px solid ${isMoving ? col.color + "66" : C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s" }}>
+                        style={{ background: isMoving ? col.color + "22" : C.surfaceRaised, border: "1px solid " + isMoving ? col.color + "66" : C.border, borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                             <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
                           </div>
-                          {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{`${review.rating}` + "/10"}</span>}
+                          {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating + "/10"}</span>}
                           {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
                         </div>
                       </div>
@@ -5222,12 +5222,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
                           {SHELF_COLUMNS.filter(c => c.id !== col.id).map(target => (
                             <button key={target.id} onClick={() => { moveGame(entry.game_id, col.id, target.id); setMobileMoveCard(null); }}
-                              style={{ flex: 1, background: `${target.color}22`, border: `1px solid ${target.color}66`, borderRadius: 8, padding: "6px 8px", color: target.color, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              style={{ flex: 1, background: target.color + "22", border: "1px solid " + target.color + "66", borderRadius: 8, padding: "6px 8px", color: target.color, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                               → {target.label}
                             </button>
                           ))}
                           <button onClick={() => { removeFromShelf(entry.game_id, col.id); setMobileMoveCard(null); }}
-                            style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 8px", color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 8px", color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                             Remove
                           </button>
                         </div>
@@ -5249,7 +5249,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {activeTab === "reviews" && (
         <div>
           {userReviews.length > 0 ? userReviews.map(review => (
-            <div key={review.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+            <div key={review.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
               {editingReview?.game_id === review.game_id ? (
                 /* Inline edit form */
                 <div>
@@ -5257,19 +5257,19 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setReviewEditForm(f => ({ ...f, rating: n }))}
-                        style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${reviewEditForm.rating >= n ? C.gold : C.border}`, background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + reviewEditForm.rating >= n ? C.gold : C.border, background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         {n}
                       </button>
                     ))}
                   </div>
-                  <input value={reviewEditForm.headline} onChange={e => setReviewEditForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                  <input value={reviewEditForm.headline} onChange={e => setReviewEditForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={saveReview} disabled={!reviewEditForm.rating || savingReview}
                       style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                       {savingReview ? "Saving…" : "Save"}
                     </button>
-                    <button onClick={() => setEditingReview(null)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                    <button onClick={() => setEditingReview(null)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                   </div>
                 </div>
               ) : (
@@ -5277,17 +5277,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                     <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
-                      style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default" }}>
+                      style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default" }}>
                       <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
                     </div>
                     <div style={{ flex: 1 }}>
                       <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
                         style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: review.games ? "pointer" : "default" }}>{review.games?.name || "Unknown Game"}</div>
-                      <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
+                      <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · Completed" : ""}</div>
                     </div>
-                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{`${review.rating}` + "/10"}</div>
+                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
                     <button onClick={() => startEditReview(review)}
-                      style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                      style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                       Edit
                     </button>
                   </div>
@@ -5321,7 +5321,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
               {profileFollowing.map(p => (
                 <div key={p.id} onClick={() => { if (p.type === "npc") { setCurrentNPC?.(p.id); setActivePage("npc"); } else { setCurrentPlayer?.(p.id); setActivePage("player"); } }}
-                  style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                   <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} />
@@ -5372,25 +5372,25 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 return (
                   <div key={quest.quest_id} style={{
                     background: C.surface,
-                    border: `1px solid ${quest.completed ? C.green + "44" : C.border}`,
+                    border: "1px solid " + quest.completed ? C.green + "44" : C.border,
                     borderRadius: 14, padding: "16px 20px",
                     display: "flex", gap: 16, alignItems: "center",
                     opacity: quest.completed ? 0.85 : 1,
                   }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: quest.completed ? `${C.green}18` : C.surfaceRaised, border: `1px solid ${quest.completed ? C.green + "33" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: quest.completed ? C.green + "18" : C.surfaceRaised, border: "1px solid " + quest.completed ? C.green + "33" : C.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
                       {quest.completed ? "✓" : quest.is_onboarding ? "🗺️" : "🎯"}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 700, color: quest.completed ? C.green : C.text, fontSize: 14 }}>{quest.title}</span>
-                        {quest.is_onboarding && !quest.completed && <span style={{ background: C.accentGlow, color: C.accentSoft, border: `1px solid ${C.accentDim}`, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>INTRO</span>}
-                        {quest.reward_id && <span style={{ background: rewardColor + "18", color: rewardColor, border: `1px solid ${rewardColor}33`, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{quest.reward_label}</span>}
+                        {quest.is_onboarding && !quest.completed && <span style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>INTRO</span>}
+                        {quest.reward_id && <span style={{ background: rewardColor + "18", color: rewardColor, border: "1px solid " + rewardColor + "33", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{quest.reward_label}</span>}
                       </div>
                       <div style={{ color: C.textMuted, fontSize: 12, marginBottom: quest.completed ? 0 : 8 }}>{quest.description}</div>
                       {!quest.completed && (
                         <>
                           <div style={{ height: 4, background: C.surfaceRaised, borderRadius: 2, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct}%`, background: C.accent, borderRadius: 2, transition: "width 0.3s" }} />
+                            <div style={{ height: "100%", width: pct + "%", background: C.accent, borderRadius: 2, transition: "width 0.3s" }} />
                           </div>
                           <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{quest.progress} / {quest.threshold}</div>
                         </>
@@ -5478,7 +5478,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     if (!game) return null;
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
     return (
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 14 : 20, marginBottom: 10 }}>
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 14 : 20, marginBottom: 10 }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <div onClick={() => profile?.id && setCurrentPlayer(profile.id) && setActivePage("player")} style={{ cursor: profile?.id ? "pointer" : "default" }}>
@@ -5490,14 +5490,14 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
               <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }} style={{ fontWeight: 700, color: C.accentSoft, fontSize: 13, cursor: "pointer" }}>{game.name}</span>
             </div>
-            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}</div>
+            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}</div>
           </div>
           {currentUser && review.user_id === currentUser.id && (
             <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
-              style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+              style={{ background: C.goldDim, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
           )}
-          <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
-            {`${review.rating}` + "/10"}
+          <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
+            {review.rating + "/10"}
           </div>
         </div>
         {/* Content */}
@@ -5505,7 +5505,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         {/* Game tag */}
         <div style={{ marginTop: 10 }}>
           <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-            style={{ background: C.accentGlow, color: C.accentSoft, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+            style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
             {game.name}
           </span>
         </div>
@@ -5546,10 +5546,10 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         {/* ── Main column ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Tab bar */}
-          <div style={{ display: "flex", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 }}>
+          <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 }}>
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: `1px solid ${tab === t.id ? C.accentDim : "transparent"}`, borderRadius: 9, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: "1px solid " + tab === t.id ? C.accentDim : "transparent", borderRadius: 9, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {t.label}
               </button>
             ))}
@@ -5560,10 +5560,10 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
             <>
               {loading ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[1,2,3].map(i => <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, height: 120 }} />)}
+                  {[1,2,3].map(i => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, height: 120 }} />)}
                 </div>
               ) : reviews.length === 0 ? (
-                <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "60px 24px", textAlign: "center" }}>
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "60px 24px", textAlign: "center" }}>
                   <div style={{ color: C.text, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
                     {tab === "following" ? "No reviews from people you follow yet." : "No reviews yet."}
                   </div>
@@ -5586,7 +5586,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                   onChange={e => searchGames(e.target.value)}
                   placeholder="Search by name or @game..."
                   autoFocus
-                  style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
                 />
               </div>
               {gameSearch.length < 2 ? (
@@ -5599,7 +5599,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {gameResults.map(g => (
                     <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
-                      style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
+                      style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                       <div style={{ flex: 1 }}>
@@ -5618,8 +5618,8 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         {/* ── Sidebar: Top Rated ── */}
         {!isMobile && (
           <div style={{ width: 220, flexShrink: 0 }}>
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
-              <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border }}>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 13 }}>Top Rated</div>
                 <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>By avg. community rating</div>
               </div>
@@ -5627,7 +5627,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 <div style={{ padding: 16, color: C.textDim, fontSize: 12 }}>No rated games yet.</div>
               ) : topRated.map((g, i) => (
                 <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: i < topRated.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: i < topRated.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <div style={{ width: 20, textAlign: "center", fontWeight: 800, fontSize: i < 3 ? 14 : 12, color: i === 0 ? C.gold : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : C.textDim, flexShrink: 0 }}>{i + 1}</div>
@@ -5745,13 +5745,13 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text }}>Admin Dashboard</h2>
           <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink Activity Monitor</div>
         </div>
-        <button onClick={loadAll} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
+        <button onClick={loadAll} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
       </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 24, overflowX: "auto", paddingBottom: 4 }}>
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ background: tab === t.id ? C.accentGlow : C.surface, border: `1px solid ${tab === t.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 14px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t.label}</button>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ background: tab === t.id ? C.accentGlow : C.surface, border: "1px solid " + tab === t.id ? C.accentDim : C.border, borderRadius: 8, padding: "7px 14px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t.label}</button>
         ))}
       </div>
 
@@ -5766,7 +5766,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               { label: "Posts Today", value: stats.postsToday, color: C.gold, icon: "🔥" },
               { label: "Reviews", value: stats.totalReviews, color: "#0d9488", icon: "⭐" },
             ].map(s => (
-              <div key={s.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
+              <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
                 <div style={{ fontWeight: 800, fontSize: 26, color: s.color, marginBottom: 4 }}>{s.value}</div>
                 <div style={{ color: C.textDim, fontSize: 11 }}>{s.label}</div>
@@ -5775,11 +5775,11 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           </div>
 
           {/* Recent signups preview */}
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 16 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 16 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Recent Signups</div>
             {users.slice(0, 5).map(u => (
               <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid " + C.border, cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
@@ -5799,13 +5799,13 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
       {/* Users tab */}
       {tab === "users" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
             {users.length} users (most recent first)
           </div>
           {users.map((u, i) => (
             <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: i < users.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: i < users.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
@@ -5827,15 +5827,15 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
       {/* Posts tab */}
       {tab === "posts" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
             Last 30 posts
           </div>
           {posts.map((p, i) => {
             const author = p.profiles?.username || p.npcs?.name || "Unknown";
             const isNPC = !!p.npc_id;
             return (
-              <div key={p.id} style={{ padding: "12px 20px", borderBottom: i < posts.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div key={p.id} style={{ padding: "12px 20px", borderBottom: i < posts.length - 1 ? "1px solid " + C.border : "none" }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
                   <span style={{ color: isNPC ? C.gold : C.accent, fontSize: 12, fontWeight: 600 }}>{author}</span>
                   {isNPC && <Badge small color={C.gold}>NPC</Badge>}
@@ -5851,13 +5851,13 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
       {/* Chart Activity tab */}
       {tab === "charts" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
             Chart events this week — top 15 games
           </div>
           {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet this week.</div>}
           {chartEvents.map((g, i) => (
-            <div key={g.name} style={{ padding: "12px 20px", borderBottom: i < chartEvents.length - 1 ? `1px solid ${C.border}` : "none" }}>
+            <div key={g.name} style={{ padding: "12px 20px", borderBottom: i < chartEvents.length - 1 ? "1px solid " + C.border : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                 <span style={{ color: C.textDim, fontSize: 12, width: 20 }}>#{i + 1}</span>
                 <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1 }}>{g.name}</span>
@@ -5865,7 +5865,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingLeft: 30 }}>
                 {Object.entries(g.types).map(([type, count]) => (
-                  <span key={type} style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
+                  <span key={type} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
                 ))}
               </div>
             </div>
@@ -5875,12 +5875,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
       {/* Reviews tab */}
       {tab === "reviews" && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, fontWeight: 700, color: C.text, fontSize: 13 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
             Last 20 reviews
           </div>
           {reviews.map((r, i) => (
-            <div key={r.id} style={{ padding: "12px 20px", borderBottom: i < reviews.length - 1 ? `1px solid ${C.border}` : "none" }}>
+            <div key={r.id} style={{ padding: "12px 20px", borderBottom: i < reviews.length - 1 ? "1px solid " + C.border : "none" }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                 <span style={{ color: C.accent, fontSize: 12, fontWeight: 600 }}>{r.profiles?.username || "—"}</span>
                 <span style={{ color: C.textDim, fontSize: 12 }}>reviewed</span>
@@ -6181,7 +6181,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 14 }}>
           {npcList.map(npc => (
             <div key={npc.id} onClick={() => setSelectedNPC(npc.id)}
-              style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 16, padding: 20, cursor: "pointer", transition: "all 0.15s" }}
+              style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 16, padding: 20, cursor: "pointer", transition: "all 0.15s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = C2.goldBorder; e.currentTarget.style.background = C2.goldGlow; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = C2.border; e.currentTarget.style.background = C2.surface; }}
             >
@@ -6195,7 +6195,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
               <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>{npc.bio.slice(0, 100)}…</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {npc.games.slice(0, 2).map(g => (
-                  <span key={g} style={{ background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 6, padding: "2px 8px", color: C2.textDim, fontSize: 11 }}>{g}</span>
+                  <span key={g} style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 8px", color: C2.textDim, fontSize: 11 }}>{g}</span>
                 ))}
               </div>
             </div>
@@ -6209,7 +6209,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
             {queue.map(item => {
               const npc = NPCS[item.npc_id];
               return (
-                <div key={item.id} style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div key={item.id} style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <Avatar initials={npc?.avatar || "?"} size={32} isNPC={true} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -6243,7 +6243,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
           </button>
 
           {/* NPC card */}
-          <div style={{ background: C2.goldGlow, border: `1px solid ${C2.goldBorder}`, borderRadius: 16, padding: 18, marginBottom: 14 }}>
+          <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 16, padding: 18, marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <Avatar initials={npc.avatar} size={44} isNPC={true} status={npc.status} />
               <div>
@@ -6252,20 +6252,20 @@ function NPCStudioPage({ isMobile, currentUser }) {
               </div>
             </div>
 
-            <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7, marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>{npc.bio}</div>
+            <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7, marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>{npc.bio}</div>
 
-            <div style={{ marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>
+            <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
               <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Background</div>
               <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7 }}>{npc.lore}</div>
             </div>
 
-            <div style={{ marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>
+            <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
               <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Role</div>
               <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.role}</div>
               <div style={{ color: C2.textDim, fontSize: 11, marginTop: 2 }}>{npc.location}</div>
             </div>
 
-            <div style={{ marginBottom: 14, borderBottom: `1px solid ${C2.goldBorder}`, paddingBottom: 14 }}>
+            <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
               <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Universe</div>
               <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.universeIcon} {npc.universe}</div>
             </div>
@@ -6274,14 +6274,14 @@ function NPCStudioPage({ isMobile, currentUser }) {
               <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Games</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {npc.games.map(g => (
-                  <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${C2.goldBorder}`, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
+                  <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid " + C2.goldBorder, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
                 ))}
               </div>
             </div>
           </div>
 
           {/* Stats */}
-          <div style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 16 }}>
             <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Stats</div>
             {npc.stats.map(s => (
               <div key={s.label} style={{ marginBottom: 10 }}>
@@ -6298,10 +6298,10 @@ function NPCStudioPage({ isMobile, currentUser }) {
         {/* Main panel */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 20, background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 12, padding: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 20, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 4 }}>
             {[{ id: "respond", label: "Respond" }, { id: "threads", label: "Threads" }, { id: "post", label: "Post" }].map(m => (
               <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
-                style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: `1px solid ${mode === m.id ? C2.accentDim : "transparent"}`, borderRadius: 8, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: "1px solid " + mode === m.id ? C2.accentDim : "transparent", borderRadius: 8, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {m.label}
               </button>
             ))}
@@ -6331,14 +6331,14 @@ function NPCStudioPage({ isMobile, currentUser }) {
                     : "fresh";
 
                   const statusStyles = {
-                    fresh:       { bg: `${C2.accent}18`, border: `${C2.accentDim}`, label: "Fresh", color: C2.accentSoft },
+                    fresh:       { bg: C2.accent + "18", border: `${C2.accentDim}`, label: "Fresh", color: C2.accentSoft },
                     replied:     { bg: `#22c55e18`,      border: `#22c55e44`,       label: "Replied",      color: "#22c55e" },
                     needs_reply: { bg: `#f59e0b18`,      border: `#f59e0b44`,       label: "Needs Reply",  color: C2.gold },
                   };
                   const st = statusStyles[status];
 
                   return (
-                    <div key={post.id} style={{ background: isSelected ? C2.accentGlow : C2.surface, border: `1px solid ${isSelected ? C2.accentDim : C2.border}`, borderRadius: 14, marginBottom: 12, overflow: "hidden", transition: "all 0.15s" }}>
+                    <div key={post.id} style={{ background: isSelected ? C2.accentGlow : C2.surface, border: "1px solid " + isSelected ? C2.accentDim : C2.border, borderRadius: 14, marginBottom: 12, overflow: "hidden", transition: "all 0.15s" }}>
                       <div style={{ padding: 16 }}>
                         {/* Post header with status */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -6351,11 +6351,11 @@ function NPCStudioPage({ isMobile, currentUser }) {
                           </div>
                           <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
                             {/* Status pill */}
-                            <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
-                            {post.newUser && <span style={{ background: `${C2.accent}22`, border: `1px solid ${C2.accentDim}`, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
+                            <span style={{ background: st.bg, border: "1px solid " + st.border, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
+                            {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
                             {post.hasThread && <span style={{ background: `#f59e0b22`, border: `1px solid #f59e0b44`, borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
                             <button onClick={e => { e.stopPropagation(); setClosedCandidates(prev => new Set([...prev, post.id])); if (selectedPost?.id === post.id) { setSelectedPost(null); setReplyToComment(null); setComposeText(""); } }}
-                              style={{ background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                               Close ✓
                             </button>
                           </div>
@@ -6367,13 +6367,13 @@ function NPCStudioPage({ isMobile, currentUser }) {
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span style={{ color: C2.textDim, fontSize: 11 }}>♥ {post.likes || 0}</span>
                           <button onClick={() => togglePostComments(post.id)}
-                            style={{ background: commentsExpanded ? C2.surfaceRaised : "none", border: `1px solid ${commentsExpanded ? C2.border : "transparent"}`, borderRadius: 6, padding: "3px 10px", color: commentsExpanded ? C2.text : C2.textDim, fontSize: 11, cursor: "pointer" }}>
+                            style={{ background: commentsExpanded ? C2.surfaceRaised : "none", border: "1px solid " + commentsExpanded ? C2.border : "transparent", borderRadius: 6, padding: "3px 10px", color: commentsExpanded ? C2.text : C2.textDim, fontSize: 11, cursor: "pointer" }}>
                             💬 {post.commentCount} {isLoading ? "…" : commentsExpanded ? "▲" : "▼"}
                           </button>
                           <div style={{ marginLeft: "auto" }}>
                             {!isSelected && (
                               <button onClick={() => { setSelectedPost(post); setComposeText(""); if (!commentsExpanded) loadPostComments(post.id); }}
-                                style={{ background: C2.accentGlow, border: `1px solid ${C2.accentDim}`, borderRadius: 8, padding: "5px 14px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                                style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "5px 14px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                                 Reply as {npc.name.split(" ")[0]}
                               </button>
                             )}
@@ -6383,7 +6383,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
                       {/* Expanded comments */}
                       {commentsExpanded && (
-                        <div style={{ background: C2.surfaceHover, borderTop: `1px solid ${C2.border}`, padding: "12px 16px" }}>
+                        <div style={{ background: C2.surfaceHover, borderTop: "1px solid " + C2.border, padding: "12px 16px" }}>
                           {postComments.length === 0 ? (
                             <div style={{ color: C2.textDim, fontSize: 12 }}>No comments yet.</div>
                           ) : postComments.map((c, i) => {
@@ -6396,7 +6396,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
                               <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < postComments.length - 1 ? 10 : 0 }}>
                                 <Avatar initials={avatar.slice(0,2).toUpperCase()} size={26} isNPC={isNPC} />
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: `1px solid ${isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border}`, borderRadius: 8, padding: "7px 12px" }}>
+                                  <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: "1px solid " + isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border, borderRadius: 8, padding: "7px 12px" }}>
                                     <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
                                       <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
                                       {isNPC && <NPCBadge />}
@@ -6419,9 +6419,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
                       {/* Inline composer when selected */}
                       {isSelected && (
-                        <div style={{ borderTop: `1px solid ${C2.accentDim}`, padding: "12px 16px", background: C2.accentGlow }}>
+                        <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow }}>
                           {replyToComment && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "5px 10px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px" }}>
                               <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
                               <button onClick={() => setReplyToComment(null)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", padding: 0 }}>×</button>
                             </div>
@@ -6430,14 +6430,14 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             <Avatar initials={npc.avatar} size={28} isNPC={true} />
                             <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                               placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
-                              style={{ flex: 1, background: C2.bg, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
+                              style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
                               autoFocus
                             />
                           </div>
                           {renderScheduler()}
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                             <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); setScheduleMode(false); }}
-                              style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                              style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                             <button onClick={handleSend} disabled={!composeText.trim() || sending}
                               style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
                               {sending ? "Sending…" : sent ? "✓ Sent" : scheduleMode ? "Schedule" : "Reply Now"}
@@ -6470,9 +6470,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
                 const statusBorder = thread.needsReply ? "#f59e0b44" : "#22c55e44";
                 const isSelected = selectedPost?.id === thread.id;
                 return (
-                  <div key={thread.id} style={{ background: C2.surface, border: `1px solid ${thread.needsReply ? "#f59e0b44" : C2.border}`, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
+                  <div key={thread.id} style={{ background: C2.surface, border: "1px solid " + thread.needsReply ? "#f59e0b44" : C2.border, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
                     {/* Thread header */}
-                    <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C2.border}` }}>
+                    <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C2.border }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <Avatar initials={((thread.npc_id ? thread.npcs?.avatar_initials : thread.profiles?.avatar_initials) || "?").slice(0,2).toUpperCase()} size={28} isNPC={!!thread.npc_id} />
@@ -6482,9 +6482,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <span style={{ background: statusBg, border: `1px solid ${statusBorder}`, borderRadius: 6, padding: "2px 8px", color: statusColor, fontSize: 10, fontWeight: 700 }}>{statusLabel}</span>
+                          <span style={{ background: statusBg, border: "1px solid " + statusBorder, borderRadius: 6, padding: "2px 8px", color: statusColor, fontSize: 10, fontWeight: 700 }}>{statusLabel}</span>
                           <button onClick={() => setClosedThreads(prev => new Set([...prev, thread.id]))}
-                            style={{ background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                            style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                             Close ✓
                           </button>
                         </div>
@@ -6507,7 +6507,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
                           <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < thread.comments.length - 1 ? 10 : 0 }}>
                             <Avatar initials={avatar.slice(0,2).toUpperCase()} size={26} isNPC={isNPC} />
                             <div style={{ flex: 1 }}>
-                              <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: `1px solid ${isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border}`, borderRadius: 8, padding: "7px 12px" }}>
+                              <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: "1px solid " + isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border, borderRadius: 8, padding: "7px 12px" }}>
                                 <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
                                   <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
                                   {isNPC && <NPCBadge />}
@@ -6530,9 +6530,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
                     {/* Inline composer */}
                     {isSelected && (
-                      <div style={{ borderTop: `1px solid ${C2.accentDim}`, padding: "12px 16px", background: C2.accentGlow }}>
+                      <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow }}>
                         {replyToComment && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "5px 10px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px" }}>
                             <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
                             <button onClick={() => setReplyToComment(null)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", padding: 0 }}>×</button>
                           </div>
@@ -6541,13 +6541,13 @@ function NPCStudioPage({ isMobile, currentUser }) {
                           <Avatar initials={npc.avatar} size={28} isNPC={true} />
                           <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                             placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
-                            style={{ flex: 1, background: C2.bg, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70 }}
+                            style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70 }}
                             autoFocus
                           />
                         </div>
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                           <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
-                            style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                           <button onClick={async () => {
                             if (!composeText.trim()) return;
                             setSending(true);
@@ -6571,9 +6571,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
                       </div>
                     )}
                     {!isSelected && (
-                      <div style={{ padding: "10px 16px", borderTop: `1px solid ${C2.border}` }}>
+                      <div style={{ padding: "10px 16px", borderTop: "1px solid " + C2.border }}>
                         <button onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }}
-                          style={{ background: C2.accentGlow, border: `1px solid ${C2.accentDim}`, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           Reply as {npc.name.split(" ")[0]}
                         </button>
                       </div>
@@ -6586,7 +6586,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
           {/* Post mode */}
           {mode === "post" && (
-            <div style={{ background: C2.surface, border: `1px solid ${C2.border}`, borderRadius: 14, padding: 20 }}>
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 20 }}>
               <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
                 <Avatar initials={npc.avatar} size={38} isNPC={true} status={npc.status} />
                 <div style={{ flex: 1 }}>
@@ -6596,13 +6596,13 @@ function NPCStudioPage({ isMobile, currentUser }) {
               </div>
               <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                 placeholder={`What's ${npc.name.split(" ")[0]} thinking?`}
-                style={{ width: "100%", background: C2.surfaceHover, border: `1px solid ${C2.border}`, borderRadius: 10, padding: "12px 16px", color: C2.text, fontSize: 14, resize: "none", outline: "none", minHeight: 120, boxSizing: "border-box", lineHeight: 1.6 }}
+                style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 10, padding: "12px 16px", color: C2.text, fontSize: 14, resize: "none", outline: "none", minHeight: 120, boxSizing: "border-box", lineHeight: 1.6 }}
               />
               <div style={{ color: C2.textDim, fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 14 }}>{composeText.length} chars</div>
               {renderScheduler()}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button onClick={() => setComposeText("")}
-                  style={{ background: "none", border: `1px solid ${C2.border}`, borderRadius: 8, padding: "8px 18px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
+                  style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 18px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
                 <button onClick={handleSend} disabled={!composeText.trim() || sending}
                   style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 14, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
                   {sending ? "Sending…" : sent ? "✓ Posted" : scheduleMode ? "Schedule" : "Post Now"}
@@ -6626,9 +6626,9 @@ function NPCStudioPage({ isMobile, currentUser }) {
         {scheduleMode && (
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
-              style={{ background: C2.surfaceHover, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
+              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
             <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-              style={{ background: C2.surfaceHover, border: `1px solid ${C2.border}`, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
+              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
           </div>
         )}
       </div>
@@ -6741,7 +6741,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
     setPosts(prev => prev.filter(p => p.id !== id));
   };
 
-  const inputStyle = { width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
+  const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
@@ -6752,7 +6752,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
           <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Find players who match your style, game, and schedule.</p>
         </div>
         {currentUser && myGamertags.length > 0 && (
-          <button onClick={() => setShowForm(f => !f)} style={{ background: showForm ? C.surfaceRaised : C.accent, border: `1px solid ${showForm ? C.border : "transparent"}`, borderRadius: 10, padding: "9px 20px", color: showForm ? C.textMuted : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={() => setShowForm(f => !f)} style={{ background: showForm ? C.surfaceRaised : C.accent, border: "1px solid " + showForm ? C.border : "transparent", borderRadius: 10, padding: "9px 20px", color: showForm ? C.textMuted : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             {showForm ? "Cancel" : "+ Post LFG"}
           </button>
         )}
@@ -6760,14 +6760,14 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
 
       {/* Post LFG form */}
       {showForm && (
-        <div style={{ background: C.surface, border: `1px solid ${C.accentDim}`, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 14, padding: 20, marginBottom: 20 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Post a Looking for Group</div>
 
           {/* Game search */}
           <div style={{ marginBottom: 12, position: "relative" }}>
             <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Game *</div>
             {selectedGame ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "8px 12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 12px" }}>
                 <span style={{ color: C.accentSoft, fontWeight: 600, fontSize: 13 }}>{selectedGame.name}</span>
                 <button onClick={() => { setSelectedGame(null); setGameSearch(""); }} style={{ marginLeft: "auto", background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
               </div>
@@ -6775,10 +6775,10 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
               <>
                 <input value={gameSearch} onChange={e => searchGames(e.target.value)} placeholder="Search for a game..." style={inputStyle} autoFocus />
                 {gameResults.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, zIndex: 50, overflow: "hidden", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 50, overflow: "hidden", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {gameResults.map(g => (
                       <div key={g.id} onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
-                        style={{ padding: "10px 14px", cursor: "pointer", borderBottom: `1px solid ${C.border}` }}
+                        style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
                         onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                       >
@@ -6826,7 +6826,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
 
       {/* Locked state — no gamertags entered */}
       {currentUser && !loading && myGamertags.length === 0 && (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 32, textAlign: "center", marginBottom: 20 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 32, textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>Add a gamertag to unlock LFG</div>
           <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, maxWidth: 400, margin: "0 auto 16px" }}>
@@ -6843,10 +6843,10 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
       {/* Platform filters — only platforms the viewer has */}
       {currentUser && myGamertags.length > 0 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          <button onClick={() => setPlatformFilter("all")} style={{ background: platformFilter === "all" ? C.accentGlow : C.surface, border: `1px solid ${platformFilter === "all" ? C.accentDim : C.border}`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600 }}>All Platforms</button>
+          <button onClick={() => setPlatformFilter("all")} style={{ background: platformFilter === "all" ? C.accentGlow : C.surface, border: "1px solid " + platformFilter === "all" ? C.accentDim : C.border, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600 }}>All Platforms</button>
           {PLATFORMS.filter(p => myGamertags.includes(p.id)).map(p => (
             <button key={p.id} onClick={() => setPlatformFilter(p.id)}
-              style={{ background: platformFilter === p.id ? `${p.color}22` : C.surface, border: `1px solid ${platformFilter === p.id ? p.color : C.border}`, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === p.id ? p.color : C.textMuted, fontSize: 12, fontWeight: 600 }}>
+              style={{ background: platformFilter === p.id ? p.color + "22" : C.surface, border: "1px solid " + platformFilter === p.id ? p.color : C.border, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === p.id ? p.color : C.textMuted, fontSize: 12, fontWeight: 600 }}>
               {p.label}
             </button>
           ))}
@@ -6856,9 +6856,9 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
       {/* Game filters */}
       {filterGames.length > 0 && myGamertags.length > 0 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-          <button onClick={() => setGameFilter("all")} style={{ background: gameFilter === "all" ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === "all" ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>All Games</button>
+          <button onClick={() => setGameFilter("all")} style={{ background: gameFilter === "all" ? C.accentGlow : C.surface, border: "1px solid " + gameFilter === "all" ? C.accentDim : C.border, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>All Games</button>
           {filterGames.map(g => (
-            <button key={g.id} onClick={() => setGameFilter(g.id)} style={{ background: gameFilter === g.id ? C.accentGlow : C.surface, border: `1px solid ${gameFilter === g.id ? C.accentDim : C.border}`, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === g.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g.name}</button>
+            <button key={g.id} onClick={() => setGameFilter(g.id)} style={{ background: gameFilter === g.id ? C.accentGlow : C.surface, border: "1px solid " + gameFilter === g.id ? C.accentDim : C.border, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === g.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g.name}</button>
           ))}
         </div>
       )}
@@ -6883,7 +6883,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
         const game = post.games;
         const isOwn = currentUser?.id === profile?.id;
         return (
-          <div key={post.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
+          <div key={post.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
             <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={44} founding={profile?.is_founding} ring={profile?.active_ring} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
@@ -6914,7 +6914,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
               )}
               {isOwn && (
                 <button onClick={() => deletePost(post.id)}
-                  style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "7px 18px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                  style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 18px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                   Remove
                 </button>
               )}
@@ -7236,7 +7236,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header card */}
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: isMobile ? 100 : 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: isMobile ? -28 : -36, left: isMobile ? 16 : 28 }}>
             <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} />
@@ -7254,12 +7254,12 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", alignItems: isMobile ? "center" : "flex-end", gap: 8, width: isMobile ? "100%" : "auto" }}>
               {!isOwnProfile && (
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.accentGlow : C.accent, border: `1px solid ${followed ? C.accentDim : C.accent}`, borderRadius: 8, padding: "8px 22px", color: followed ? C.accentSoft : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.accentGlow : C.accent, border: "1px solid " + followed ? C.accentDim : C.accent, borderRadius: 8, padding: "8px 22px", color: followed ? C.accentSoft : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
                   {followLoading ? "..." : followed ? "✓ Following" : "Follow"}
                 </button>
               )}
               {compatibilityText && (
-                <div style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : "none", textAlign: "center" }}>
+                <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : "none", textAlign: "center" }}>
                   {compatibilityText}
                 </div>
               )}
@@ -7267,7 +7267,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
           </div>
 
           {/* Stats */}
-          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", gap: 24, marginTop: 20, paddingTop: 20, borderTop: "1px solid " + C.border }}>
             {[
               { label: "Posts", val: posts.length, color: C.accent },
               { label: "Reviews", val: reviews.length, color: C.teal },
@@ -7282,7 +7282,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
 
           {/* Gamertag requests — only shown to 18+ followers who have tags themselves */}
           {gamertagVisibility.length > 0 && (
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid " + C.border }}>
               <div style={{ color: C.textDim, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10, fontWeight: 600 }}>Gamertags</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {gamertagVisibility.map(({ platform, request_status, tag }) => {
@@ -7297,13 +7297,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ color: C.textDim, fontSize: 12 }}>Request sent</span>
                           <button onClick={() => cancelRequest(platform)} disabled={requestLoading[platform]}
-                            style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 10px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>
+                            style={{ background: "none", border: "1px solid " + C.border, borderRadius: 6, padding: "3px 10px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>
                             Cancel
                           </button>
                         </div>
                       ) : (
                         <button onClick={() => sendRequest(platform)} disabled={requestLoading[platform]}
-                          style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           {requestLoading[platform] ? "…" : "Request gamertag"}
                         </button>
                       )}
@@ -7320,7 +7320,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? `1px solid ${C.accentDim}` : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+            style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
             {tab.label}
           </button>
         ))}
@@ -7368,10 +7368,10 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       {activeTab === "games" && (
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
           {SHELF_COLUMNS.map(col => (
-            <div key={col.id} style={{ background: C.surface, border: `1px solid ${col.color}33`, borderRadius: 14, padding: 14, minHeight: 160 }}>
+            <div key={col.id} style={{ background: C.surface, border: "1px solid " + col.color + "33", borderRadius: 14, padding: 14, minHeight: 160 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
-                <div style={{ background: `${col.color}22`, color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{shelf[col.id].length}</div>
+                <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{shelf[col.id].length}</div>
               </div>
               {shelf[col.id].length > 0 ? shelf[col.id].map(entry => {
                 const game = entry.games;
@@ -7380,13 +7380,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 return (
                   <div key={entry.game_id}
                     onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-                    style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "pointer" }}>
+                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "pointer" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
                       </div>
-                      {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{`${review.rating}` + "/10"}</span>}
+                      {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating + "/10"}</span>}
                     </div>
                   </div>
                 );
@@ -7405,20 +7405,20 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
         <div>
           {reviews.length > 0 ? reviews.map(review => (
             <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
-              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}>
+              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
-                  <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
+                  <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · Completed" : ""}</div>
                 </div>
                 {currentUser && review.user_id === currentUser.id && (
                   <button onClick={(e) => { e.stopPropagation(); setGameDefaultTab?.("reviews"); setCurrentGame(review.game_id); setActivePage("game"); }}
-                    style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                    style={{ background: C.goldDim, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                 )}
-                <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{`${review.rating}` + "/10"}</div>
+                <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
               </div>
               {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
               {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
@@ -7642,7 +7642,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
             top: spotRect.top - 6, left: spotRect.left - 6,
             width: spotRect.width + 12, height: spotRect.height + 12,
             borderRadius: 12,
-            border: `2px solid ${C.accent}`,
+            border: "2px solid " + C.accent,
             boxShadow: `0 0 0 4px ${C.accent}22, 0 0 20px ${C.accent}44`,
             animation: "tourPulse 1.5s ease-in-out infinite",
           }} />
@@ -7656,7 +7656,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
         width: isMobile ? "calc(100vw - 24px)" : 560,
         zIndex: 9999,
         background: `linear-gradient(135deg, ${C.surface} 0%, ${C.surfaceRaised} 100%)`,
-        border: `1px solid ${C.border}`,
+        border: "1px solid " + C.border,
         borderTop: `3px solid ${DECKARD_COLOR}`,
         borderRadius: 16,
         boxShadow: "0 -4px 40px #00000077, 0 8px 32px #00000055",
@@ -7667,7 +7667,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       }}>
         {/* Progress bar */}
         <div style={{ height: 2, background: C.surfaceRaised }}>
-          <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${DECKARD_COLOR}, ${C.accent})`, transition: "width 0.4s ease" }} />
+          <div style={{ height: "100%", width: progress + "%", background: `linear-gradient(90deg, ${DECKARD_COLOR}, ${C.accent})`, transition: "width 0.4s ease" }} />
         </div>
 
         <div style={{ padding: isMobile ? "16px 18px" : "20px 24px" }}>
@@ -7690,7 +7690,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
               {/* Quest pop */}
               {current.questPop && (
                 <div style={{
-                  background: `${C.green}15`, border: `1px solid ${C.green}44`,
+                  background: C.green + "15", border: "1px solid " + C.green + "44",
                   borderRadius: 8, padding: "8px 12px", marginBottom: 10,
                   display: "flex", alignItems: "center", gap: 10,
                   animation: "slideUp 0.3s ease",
@@ -7721,14 +7721,14 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                       onKeyDown={handleAtKeyDown}
                       placeholder="Type @ to tag a game, like tagging a friend"
                       autoFocus
-                      style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.accentDim}`, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
                     />
                   </div>
                   {atResults.length > 0 && (
-                    <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", zIndex: 10001, boxShadow: "0 -8px 24px #00000066" }}>
+                    <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, overflow: "hidden", zIndex: 10001, boxShadow: "0 -8px 24px #00000066" }}>
                       {atResults.map((game, idx) => (
                         <div key={game.id} onClick={() => selectAtGame(game)}
-                          style={{ padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: idx === atIndex ? C.surfaceRaised : "transparent" }}
+                          style={{ padding: "10px 12px", cursor: "pointer", borderBottom: "1px solid " + C.border, display: "flex", justifyContent: "space-between", alignItems: "center", background: idx === atIndex ? C.surfaceRaised : "transparent" }}
                           onMouseEnter={() => setAtIndex(idx)}>
                           <div>
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>@{game.name.replace(/\s+/g, "")}</div>
@@ -7742,7 +7742,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                   {addedGames.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                       {addedGames.map(g => (
-                        <div key={g.id} style={{ background: `${C.accent}18`, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ @{g.name.replace(/\s+/g, "")}</div>
+                        <div key={g.id} style={{ background: C.accent + "18", border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ @{g.name.replace(/\s+/g, "")}</div>
                       ))}
                     </div>
                   )}
@@ -7756,7 +7756,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
 
           {/* CTA row */}
           {current.cta && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 14, borderTop: "1px solid " + C.border }}>
               <button
                 onClick={current.last ? finish : () => advance()}
                 style={{ background: `linear-gradient(135deg, ${DECKARD_COLOR}, ${C.accent})`, border: "none", borderRadius: 8, padding: isMobile ? "9px 18px" : "10px 22px", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
@@ -7989,13 +7989,13 @@ export default function GuildLink() {
           position: "fixed", bottom: isMobile ? 72 : 24, left: "50%", transform: "translateX(-50%)",
           zIndex: 9999, width: isMobile ? "calc(100vw - 32px)" : 420,
           background: `linear-gradient(135deg, ${C.surface}, ${C.surfaceRaised})`,
-          border: `1px solid ${C.green}44`, borderRadius: 16,
+          border: "1px solid " + C.green + "44", borderRadius: 16,
           padding: "16px 20px", boxShadow: `0 8px 32px #00000066, 0 0 0 1px ${C.green}22`,
           display: "flex", alignItems: "center", gap: 16,
           animation: "slideUp 0.3s ease",
         }}>
           <style>{`@keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: `${C.green}18`, border: `1px solid ${C.green}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎯</div>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: C.green + "18", border: "1px solid " + C.green + "33", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎯</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: C.green, fontWeight: 800, fontSize: 13, marginBottom: 2 }}>Quest Complete!</div>
             <div style={{ color: C.text, fontWeight: 700, fontSize: 14, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questBanner.title}</div>
@@ -8010,7 +8010,7 @@ export default function GuildLink() {
               View Quests
             </button>
             <button onClick={() => setQuestBanner(null)}
-              style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 12px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              style={{ background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 12px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               Dismiss
             </button>
           </div>
