@@ -641,7 +641,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
               } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
             }}>
-            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} />
+            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-120</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-121</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2751,7 +2751,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} />
+                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                   {p.sharedGame && <div style={{ color: C.textDim, fontSize: 11 }}>Also plays {p.sharedGame}</div>}
@@ -2867,6 +2867,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 status: "online",
                 isNPC: isNPC,
                 isFounding: !isNPC && (displayAuthor.is_founding || false),
+                activeRing: !isNPC ? (displayAuthor.active_ring || "none") : "none",
               },
               content: post.content,
               time: timeAgo(post.created_at),
@@ -2934,14 +2935,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   status: "online",
                   isNPC: false,
                   isFounding: author.is_founding || false,
-                },
-                content: post.content,
-                time: timeAgo(post.created_at),
-                likes: post.likes || 0,
-                liked: post.liked || false,
-                comment_count: post.comment_count || 0,
-                commentList: [],
-              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+                  activeRing: author.active_ring || "none",
             );
           })
         )}
@@ -3597,7 +3591,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Top Voices — users with most likes on posts for this game
       const { data: voicePosts } = await supabase
         .from("posts")
-        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding)")
+        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
         .eq("game_tag", dbId)
         .not("user_id", "is", null);
       if (voicePosts) {
@@ -3615,10 +3609,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Latest reviews
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("*, profiles(username, handle, avatar_initials)")
-        .eq("game_id", dbId)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
       if (reviews) setLatestReviews(reviews);
 
       // Charts data — rank by weekly posts + reviews
@@ -3839,7 +3830,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 {latestReviews.length > 0 ? latestReviews.map((review, i) => (
                   <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? `1px solid ${C.border}` : "none" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} />
+                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
@@ -3897,7 +3888,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                  <Avatar initials={voice.avatar_initials || "GL"} size={34} color={i === 0 ? C.gold : C.accent} />
+                  <Avatar initials={voice.avatar_initials || "GL"} size={34} founding={voice.is_founding} ring={voice.active_ring} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
@@ -3991,14 +3982,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     status: "online",
                     isNPC,
                     isFounding: author.is_founding || false,
-                  },
-                  content: post.content,
-                  time: timeAgo(post.created_at),
-                  likes: post.likes || 0,
-                  liked: post.liked || false,
-                  comment_count: post.comment_count || 0,
-                  commentList: [],
-                }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
+                    activeRing: !isNPC ? (author.active_ring || "none") : "none",
               );
             }) : (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
@@ -4909,13 +4893,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 status: "online",
                 isNPC: false,
                 isFounding: user.is_founding || false,
-              },
-              content: post.content,
-              time: timeAgo(post.created_at),
-              likes: post.likes || 0,
-              comment_count: post.comment_count || 0,
-              commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
+                activeRing: user.activeRing || "none",
             );
           }) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
@@ -5223,7 +5201,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
-      supabase.from("reviews").select("*, profiles(username), games(name)").order("created_at", { ascending: false }).limit(20),
+      supabase.from("reviews").select("*, profiles(username, active_ring, is_founding), games(name)").order("created_at", { ascending: false }).limit(20),
       supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
@@ -6777,7 +6755,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: isMobile ? 100 : 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: isMobile ? -28 : -36, left: isMobile ? 16 : 28 }}>
-            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" />
+            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} />
           </div>
         </div>
         <div style={{ padding: isMobile ? "40px 16px 20px" : "48px 28px 24px" }}>
@@ -6885,13 +6863,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 status: "online",
                 isNPC: false,
                 isFounding: profile?.is_founding || false,
-              },
-              content: post.content,
-              time: timeAgo(post.created_at),
-              likes: post.likes || 0,
-              comment_count: post.comment_count || 0,
-              commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC || (() => {})} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
+                activeRing: profile?.active_ring || "none",
             );
           }) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
