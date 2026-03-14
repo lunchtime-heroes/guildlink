@@ -4117,7 +4117,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 {!showReviewForm ? (
                   <button onClick={() => setShowReviewForm(true)}
                     style={{ background: myReview ? C.goldDim : C.accentGlow, border: `1px solid ${myReview ? C.goldBorder : C.accentDim}`, borderRadius: 12, padding: "12px 20px", color: myReview ? C.gold : C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                    {myReview ? `Your review: ${myReview.rating}/10 — Edit` : "Write a Review"}
+                    {myReview ? `Your review: ${myReview.rating} / 10 — Edit` : "Write a Review"}
                   </button>
                 ) : (
                   <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 }}>
