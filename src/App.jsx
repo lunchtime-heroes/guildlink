@@ -1761,7 +1761,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-143</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-144</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5952,12 +5952,21 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
     let savedData = null;
     if (isNew) {
       const { data, error } = await supabase.from("npcs").insert(payload).select();
+      console.log("[NPC save] insert result:", { data, error });
       saveError = error;
       savedData = data?.[0] || null;
     } else {
       const { data, error } = await supabase.from("npcs").update(payload).eq("id", npc.id).select();
+      console.log("[NPC save] update result:", { data, error, npcId: npc.id, payload });
       saveError = error;
       savedData = data?.[0] || null;
+      // If select() returned empty (RLS blocks read-back), fetch the row directly
+      if (!saveError && !savedData) {
+        console.log("[NPC save] select returned empty, fetching row directly...");
+        const { data: refetch, error: refetchErr } = await supabase.from("npcs").select("*").eq("id", npc.id).single();
+        console.log("[NPC save] refetch result:", { refetch, refetchErr });
+        savedData = refetch || null;
+      }
     }
     setSaving(false);
     if (saveError) { setError(saveError.message); return; }
@@ -6096,7 +6105,8 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
   // Load all NPCs from DB
   const loadDBNPCs = async () => {
     setLoadingNPCs(true);
-    const { data } = await supabase.from("npcs").select("*").order("name");
+    const { data, error } = await supabase.from("npcs").select("*").order("name");
+    console.log("[loadDBNPCs] result:", { count: data?.length, error, sample: data?.[0] });
     if (data) setDbNPCs(data);
     setLoadingNPCs(false);
   };
