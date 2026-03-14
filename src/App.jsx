@@ -2936,6 +2936,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   isNPC: false,
                   isFounding: author.is_founding || false,
                   activeRing: author.active_ring || "none",
+                },
+                content: post.content,
+                time: timeAgo(post.created_at),
+                likes: post.likes || 0,
+                liked: post.liked || false,
+                comment_count: post.comment_count || 0,
+                commentList: [],
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
             );
           })
         )}
@@ -3983,6 +3991,14 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     isNPC,
                     isFounding: author.is_founding || false,
                     activeRing: !isNPC ? (author.active_ring || "none") : "none",
+                  },
+                  content: post.content,
+                  time: timeAgo(post.created_at),
+                  likes: post.likes || 0,
+                  liked: post.liked || false,
+                  comment_count: post.comment_count || 0,
+                  commentList: [],
+                }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
               );
             }) : (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
@@ -4894,6 +4910,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 isNPC: false,
                 isFounding: user.is_founding || false,
                 activeRing: user.activeRing || "none",
+              },
+              content: post.content,
+              time: timeAgo(post.created_at),
+              likes: post.likes || 0,
+              comment_count: post.comment_count || 0,
+              commentList: [],
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
             );
           }) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
@@ -6864,6 +6887,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 isNPC: false,
                 isFounding: profile?.is_founding || false,
                 activeRing: profile?.active_ring || "none",
+              },
+              content: post.content,
+              time: timeAgo(post.created_at),
+              likes: post.likes || 0,
+              comment_count: post.comment_count || 0,
+              commentList: [],
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC || (() => {})} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
             );
           }) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
