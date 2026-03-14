@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-129</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-130</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3787,7 +3787,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     </div>
   );
 
-  const tabs = [{ id: "pulse", label: "🔥 Pulse" }, { id: "community", label: "👥 Community" }, { id: "tips", label: "💡 Tips" }, { id: "posts", label: "📝 Posts" }, { id: "developer", label: "🏢 Developer" }];
+  const tabs = [{ id: "pulse", label: "Pulse" }, { id: "reviews", label: "Reviews" }, { id: "community", label: "Community" }, { id: "tips", label: "Tips" }, { id: "posts", label: "Posts" }, { id: "developer", label: "Developer" }];
 
   return (
     <div style={{ paddingTop: isMobile ? 52 : 60 }}>
@@ -4061,6 +4061,68 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
                 <div style={{ fontSize: 14 }}>No posts yet. Be the first to post about {game.name}.</div>
               </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "reviews" && (
+          <div>
+            {/* Write a review CTA */}
+            {currentUser && !isGuest && (
+              <div style={{ marginBottom: 20 }}>
+                {!showReviewForm ? (
+                  <button onClick={() => setShowReviewForm(true)}
+                    style={{ background: C.accentGlow, border: `1px solid ${C.accentDim}`, borderRadius: 12, padding: "12px 20px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
+                    Write a Review
+                  </button>
+                ) : (
+                  <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Your Review</div>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                        <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                          style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${reviewForm.rating >= n ? C.gold : C.border}`, background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                    <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview}
+                        style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>
+                        {submittingReview ? "Submitting…" : "Submit"}
+                      </button>
+                      <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Reviews list */}
+            {latestReviews.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
+                <div style={{ fontSize: 14 }}>No reviews yet. Be the first.</div>
+              </div>
+            ) : (
+              latestReviews.map((review, i) => (
+                <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <Avatar initials={review.profiles?.avatar_initials || "GL"} size={32} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
+                    </div>
+                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating}/10</div>
+                  </div>
+                  {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
+                  {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
+                  {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Didn't love: {review.didnt_love}</div>}
+                  {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>}
+                </div>
+              ))
             )}
           </div>
         )}
@@ -5277,8 +5339,10 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setGameSearch(q);
     if (q.length < 2) { setGameResults([]); return; }
     setGameSearchLoading(true);
-    const { data, error } = await supabase.from("games").select("id, name, genre, avg_rating, review_count")
-      .ilike("name", `%${q}%`).order("followers", { ascending: false }).limit(12);
+    const { data, error } = await supabase.from("games")
+      .select("id, name, genre, avg_rating, review_count")
+      .ilike("name", `%${q}%`)
+      .limit(12);
     if (error) console.error("Game search error:", error);
     setGameResults(data || []);
     setGameSearchLoading(false);
