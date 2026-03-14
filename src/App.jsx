@@ -1073,18 +1073,6 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               ))}
             </div>
 
-            {/* Games observed */}
-            {(displayNPC.games || []).length > 0 && (
-              <div style={{ marginTop: 20, background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20 }}>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>🎮 Games Observed</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(displayNPC.games || []).map(g => (
-                    <span key={g} style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600 }}>{g}</span>
-                  ))}
-                </div>
-                <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>These are the worlds {displayNPC.name.split(" ")[0]} follows, comments on, and has feelings about.</div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1761,7 +1749,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-144</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-145</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5956,8 +5944,9 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
       saveError = error;
       savedData = data?.[0] || null;
     } else {
-      const { data, error } = await supabase.from("npcs").update(payload).eq("id", npc.id).select();
-      console.log("[NPC save] update result:", { data, error, npcId: npc.id, payload });
+      console.log("[NPC save] attempting update for id:", npc.id, "typeof:", typeof npc.id);
+      const { data, error, count, status, statusText } = await supabase.from("npcs").update(payload).eq("id", npc.id).select();
+      console.log("[NPC save] update result:", { data, error, count, status, statusText, npcId: npc.id, payloadKeys: Object.keys(payload) });
       saveError = error;
       savedData = data?.[0] || null;
       // If select() returned empty (RLS blocks read-back), fetch the row directly
@@ -6453,13 +6442,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                   </div>
                 </div>
                 <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{npc.bio || "No bio yet."}</div>
-                {(npc.games || []).length > 0 && (
-                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10 }}>
-                    {(npc.games || []).slice(0, 2).map(g => (
-                      <span key={g} style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 8px", color: C2.textDim, fontSize: 10 }}>{g}</span>
-                    ))}
-                  </div>
-                )}
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => setSelectedNPC(npc.id)}
                     style={{ flex: 1, background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px", color: C2.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
