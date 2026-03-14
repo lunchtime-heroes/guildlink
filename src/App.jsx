@@ -1777,7 +1777,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-150</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-151</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6137,11 +6137,12 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
   // Sync hardcoded NPCs that don't have a DB record yet
   const syncHardcodedNPCs = async () => {
     setSyncing(true);
+    const { data: existing } = await supabase.from("npcs").select("handle");
+    const existingHandles = new Set((existing || []).map(n => n.handle));
     const hardcodedList = Object.values(NPCS);
-    const existingHandles = new Set(dbNPCs.map(n => n.handle));
     const toSync = hardcodedList.filter(n => !existingHandles.has(n.handle));
     for (const n of toSync) {
-      await supabase.from("npcs").upsert({
+      await supabase.from("npcs").insert({
         handle: n.handle,
         name: n.name,
         avatar_initials: n.avatar,
@@ -6150,15 +6151,13 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         role: n.role || "",
         location: n.location || "",
         universe: n.universe || "",
-        universe_icon: n.universeIcon || "⚔️",
-        status: n.status || "online",
+        universe_icon: n.universeIcon || "",
+        status: "online",
         years_of_service: n.yearsOfService || null,
-        connections: n.connections || null,
-        followers: n.followers || null,
         games: n.games || [],
         stats: n.stats || [],
         is_active: true,
-      }, { onConflict: "handle" });
+      });
     }
     await loadDBNPCs();
     setSyncing(false);
@@ -6284,20 +6283,19 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     // Also check legacy npc_id values (old hardcoded string keys like "merv")
     const npcRecord = dbNPCs.find(n => n.id === npcUUID);
     const legacyKey = npcRecord ? Object.keys(NPCS).find(k => NPCS[k].handle === npcRecord.handle) : null;
+    const npcIds = [npcUUID, ...(legacyKey ? [legacyKey] : [])];
 
-    const commentQueries = [supabase.from("comments").select("post_id").eq("npc_id", npcUUID)];
-    if (legacyKey) commentQueries.push(supabase.from("comments").select("post_id").eq("npc_id", legacyKey));
-
-    const [commentedRes, authoredRes, ...legacyRes] = await Promise.all([
-      ...commentQueries,
+    const [commentedRes, legacyCommentedRes, authoredRes] = await Promise.all([
+      supabase.from("comments").select("post_id").eq("npc_id", npcUUID),
+      legacyKey ? supabase.from("comments").select("post_id").eq("npc_id", legacyKey) : Promise.resolve({ data: [] }),
       supabase.from("posts").select("id").eq("npc_id", npcUUID),
     ]);
-    // last item is authoredRes, middle items are legacy (if any)
-    const allCommentedData = [commentedRes, ...(legacyKey ? [legacyRes[0]] : [])];
-    const authoredResActual = legacyKey ? legacyRes[1] : authoredRes;
 
-    const commentedIds = allCommentedData.flatMap(r => (r.data || []).map(c => c.post_id));
-    const authoredIds = (authoredResActual?.data || []).map(p => p.id);
+    const commentedIds = [
+      ...(commentedRes.data || []).map(c => c.post_id),
+      ...(legacyCommentedRes.data || []).map(c => c.post_id),
+    ];
+    const authoredIds = (authoredRes.data || []).map(p => p.id);
     const postIds = [...new Set([...commentedIds, ...authoredIds])];
 
     if (postIds.length === 0) { setThreads([]); setLoadingThreads(false); return; }
@@ -6310,7 +6308,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
       .order("created_at", { ascending: false });
 
     // Fetch all comments for those posts — include both UUID and legacy key
-    const npcIds = [npcUUID, ...(legacyKey ? [legacyKey] : [])];
     const { data: allComments } = await supabase
       .from("comments")
       .select("*, profiles(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
