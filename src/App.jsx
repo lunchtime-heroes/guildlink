@@ -691,6 +691,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   if (localPost.deleted) return null;
 
   return (
+    <div style={{
+      background: C.surface,
+      border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
       borderRadius: 14, marginBottom: 12, overflow: "hidden",
       boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
     }}>
@@ -1774,7 +1777,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-148</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-149</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
