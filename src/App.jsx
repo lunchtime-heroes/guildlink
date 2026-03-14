@@ -635,12 +635,22 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const loadComments = async () => {
     if (!post.id || !post.id.includes('-')) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
-    if (data) setLiveComments(data);
+    if (error) console.error("[loadComments] error:", error);
+    if (data) {
+      // For NPC comments, look up NPC data separately for any UUID-based npc_ids
+      const npcUUIDs = [...new Set(data.filter(c => c.npc_id && c.npc_id.includes('-')).map(c => c.npc_id))];
+      let npcMap = {};
+      if (npcUUIDs.length > 0) {
+        const { data: npcRows } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcUUIDs);
+        if (npcRows) npcRows.forEach(n => { npcMap[n.id] = n; });
+      }
+      setLiveComments(data.map(c => c.npc_id && c.npc_id.includes('-') ? { ...c, npcs: npcMap[c.npc_id] || null } : c));
+    }
   };
 
   // Silently pre-load comments in background — count will update, expand on click
@@ -1785,7 +1795,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-152</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-153</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6315,15 +6325,27 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
       .in("id", postIds)
       .order("created_at", { ascending: false });
 
-    // Fetch all comments for those posts — include both UUID and legacy key
-    const { data: allComments } = await supabase
+    // Fetch all comments for those posts
+    const { data: allComments, error: commentsError } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials)")
       .in("post_id", postIds)
       .order("created_at", { ascending: true });
+    if (commentsError) console.error("[loadThreads] comments error:", commentsError);
+
+    // Resolve NPC authors for UUID-based npc_ids
+    const npcUUIDs = [...new Set((allComments || []).filter(c => c.npc_id && c.npc_id.includes('-')).map(c => c.npc_id))];
+    let npcMap = {};
+    if (npcUUIDs.length > 0) {
+      const { data: npcRows } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcUUIDs);
+      if (npcRows) npcRows.forEach(n => { npcMap[n.id] = n; });
+    }
+    const enrichedComments = (allComments || []).map(c =>
+      c.npc_id && c.npc_id.includes('-') ? { ...c, npcs: npcMap[c.npc_id] || null } : c
+    );
 
     const commentsByPost = {};
-    (allComments || []).forEach(c => {
+    enrichedComments.forEach(c => {
       if (!commentsByPost[c.post_id]) commentsByPost[c.post_id] = [];
       commentsByPost[c.post_id].push(c);
     });
