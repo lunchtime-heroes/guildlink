@@ -1577,8 +1577,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
 
   const handleNavClick = (id) => {
     if (id === "reviews-nav") {
-      setProfileDefaultTab?.("reviews");
-      setActivePage("profile");
+      setActivePage("reviews");
     } else {
       setActivePage(id);
     }
@@ -1775,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-125</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-126</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3613,9 +3612,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
 // ─── GAME PAGE ────────────────────────────────────────────────────────────────
 
-function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn }) {
+function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onTabConsumed }) {
   const hardcoded = GAMES[gameId];
-  const [activeTab, setActiveTab] = useState("pulse");
+  const [activeTab, setActiveTab] = useState(defaultTab || "pulse");
+
+  useEffect(() => {
+    if (defaultTab) { setActiveTab(defaultTab); onTabConsumed?.(); }
+  }, [gameId]);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [dbGame, setDbGame] = useState(null);
@@ -5230,7 +5233,185 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   );
 }
 
-// ─── ADMIN PAGE ───────────────────────────────────────────────────────────────
+// ─── REVIEWS PAGE ─────────────────────────────────────────────────────────────
+
+function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, setGameDefaultTab }) {
+  const [tab, setTab] = useState("feed");
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [gameSearch, setGameSearch] = useState("");
+  const [gameResults, setGameResults] = useState([]);
+  const [gameSearchLoading, setGameSearchLoading] = useState(false);
+
+  const loadReviews = async (mode) => {
+    setLoading(true);
+    setReviews([]);
+    if (mode === "feed") {
+      const { data } = await supabase.from("reviews")
+        .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+        .order("created_at", { ascending: false })
+        .limit(40);
+      setReviews(data || []);
+    } else if (mode === "following") {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) { setLoading(false); return; }
+      const { data: follows } = await supabase.from("follows")
+        .select("followed_user_id").eq("follower_id", authUser.id);
+      const ids = (follows || []).map(f => f.followed_user_id).filter(Boolean);
+      if (!ids.length) { setLoading(false); return; }
+      const { data } = await supabase.from("reviews")
+        .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+        .in("user_id", ids)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      setReviews(data || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { if (tab !== "by_game") loadReviews(tab); }, [tab]);
+
+  const searchGames = async (q) => {
+    setGameSearch(q);
+    if (q.length < 2) { setGameResults([]); return; }
+    setGameSearchLoading(true);
+    const { data } = await supabase.from("games").select("id, name, genre, avg_rating, review_count")
+      .ilike("name", `%${q}%`).limit(12);
+    setGameResults(data || []);
+    setGameSearchLoading(false);
+  };
+
+  const TABS = [
+    { id: "feed", label: "All Reviews" },
+    { id: "following", label: "Following" },
+    { id: "by_game", label: "By Game" },
+  ];
+
+  const ReviewCard = ({ review }) => {
+    const profile = review.profiles;
+    const game = review.games;
+    if (!profile || !game) return null;
+    return (
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 14 : 20, marginBottom: 10 }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div onClick={() => { setCurrentPlayer(profile.id); setActivePage("player"); }} style={{ cursor: "pointer" }}>
+            <Avatar initials={(profile.avatar_initials || profile.username || "?").slice(0,2).toUpperCase()} size={36} founding={profile.is_founding} ring={profile.active_ring} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span onClick={() => { setCurrentPlayer(profile.id); setActivePage("player"); }} style={{ fontWeight: 700, color: C.text, fontSize: 13, cursor: "pointer" }}>{profile.username}</span>
+              <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
+              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }} style={{ fontWeight: 700, color: C.accentSoft, fontSize: 13, cursor: "pointer" }}>{game.name}</span>
+            </div>
+            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}</div>
+          </div>
+          <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
+            {review.rating}/10
+          </div>
+        </div>
+        {/* Content */}
+        {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
+        {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
+        {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Didn't love: {review.didnt_love}</div>}
+        {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.65, margin: 0 }}>{review.content}</p>}
+        {/* Game tag */}
+        <div style={{ marginTop: 10 }}>
+          <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+            style={{ background: C.accentGlow, color: C.accentSoft, border: `1px solid ${C.accentDim}`, borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+            {game.name}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 24px 40px" }}>
+      <div style={{ fontWeight: 800, fontSize: isMobile ? 22 : 28, color: C.text, letterSpacing: "-0.5px", marginBottom: 6 }}>Reviews</div>
+      <div style={{ color: C.textMuted, fontSize: 14, marginBottom: 24 }}>What the community thinks about the games they've played.</div>
+
+      {/* Tab bar */}
+      <div style={{ display: "flex", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 4, marginBottom: 24, gap: 2 }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: `1px solid ${tab === t.id ? C.accentDim : "transparent"}`, borderRadius: 9, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Feed / Following tabs */}
+      {(tab === "feed" || tab === "following") && (
+        <>
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, height: 120 }} />
+              ))}
+            </div>
+          ) : reviews.length === 0 ? (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "60px 24px", textAlign: "center" }}>
+              <div style={{ color: C.text, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
+                {tab === "following" ? "No reviews from people you follow yet." : "No reviews yet."}
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 13 }}>
+                {tab === "following" ? "Follow more gamers to see their reviews here." : "Be the first to review a game."}
+              </div>
+            </div>
+          ) : (
+            reviews.map(r => <ReviewCard key={r.id} review={r} />)
+          )}
+        </>
+      )}
+
+      {/* By Game tab */}
+      {tab === "by_game" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <input
+              value={gameSearch}
+              onChange={e => searchGames(e.target.value)}
+              placeholder="Search for a game..."
+              autoFocus
+              style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+            />
+          </div>
+          {gameSearch.length < 2 ? (
+            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>
+              Type a game name to find its reviews.
+            </div>
+          ) : gameSearchLoading ? (
+            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>Searching…</div>
+          ) : gameResults.length === 0 ? (
+            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: "40px 0" }}>No games found.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {gameResults.map(g => (
+                <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
+                  style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{g.name}</div>
+                    <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{g.genre}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                    {g.review_count > 0 && <div style={{ color: C.textMuted, fontSize: 12 }}>{g.review_count} review{g.review_count !== 1 ? "s" : ""}</div>}
+                    {g.avg_rating > 0 && <div style={{ background: C.goldDim, color: C.gold, borderRadius: 6, padding: "2px 8px", fontSize: 12, fontWeight: 700 }}>{g.avg_rating?.toFixed(1)}</div>}
+                    <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>See reviews →</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 
 const ADMIN_USER_IDS = []; // Populated at runtime from session
 
@@ -7364,6 +7545,7 @@ export default function GuildLink() {
   const [activePage, setActivePage] = useState("feed");
   const [currentGame, setCurrentGame] = useState("elden-ring");
   const [currentNPC, setCurrentNPC] = useState("merv");
+  const [gameDefaultTab, setGameDefaultTab] = useState(null);
 
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [profileDefaultTab, setProfileDefaultTab] = useState("posts");
@@ -7631,8 +7813,9 @@ export default function GuildLink() {
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
       {activePage === "charts" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
       {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
+      {activePage === "reviews" && <ReviewsPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "games" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
-      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
+      {activePage === "game" && <GamePage gameId={currentGame} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
