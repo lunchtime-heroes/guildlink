@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-134</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-135</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4217,6 +4217,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [saving, setSaving] = useState(false);
   const [userPosts, setUserPosts] = useState([]);
   const [userReviews, setUserReviews] = useState([]);
+  const [editingReview, setEditingReview] = useState(null); // review object being edited
+  const [reviewEditForm, setReviewEditForm] = useState({});
+  const [savingReview, setSavingReview] = useState(false);
   const [gameLibrary, setGameLibrary] = useState([]);
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
@@ -4567,6 +4570,44 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (!authUser) return;
     await supabase.from("user_games").delete().eq("user_id", authUser.id).eq("game_id", gameId);
     setUserShelf(prev => ({ ...prev, [status]: prev[status].filter(e => e.game_id !== gameId) }));
+  };
+
+  const saveReview = async () => {
+    if (!editingReview || !reviewEditForm.rating) return;
+    setSavingReview(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setSavingReview(false); return; }
+    const { error } = await supabase.from("reviews").upsert({
+      user_id: authUser.id,
+      game_id: editingReview.game_id,
+      rating: reviewEditForm.rating,
+      headline: reviewEditForm.headline || null,
+      time_played: reviewEditForm.time_played ? parseInt(reviewEditForm.time_played) : null,
+      completed: reviewEditForm.completed || false,
+      loved: reviewEditForm.loved || null,
+      didnt_love: reviewEditForm.didnt_love || null,
+      content: reviewEditForm.content || null,
+    });
+    if (!error) {
+      setUserReviews(prev => prev.map(r =>
+        r.game_id === editingReview.game_id ? { ...r, ...reviewEditForm } : r
+      ));
+      setEditingReview(null);
+    }
+    setSavingReview(false);
+  };
+
+  const startEditReview = (review) => {
+    setEditingReview(review);
+    setReviewEditForm({
+      rating: review.rating || 0,
+      headline: review.headline || "",
+      time_played: review.time_played ? String(review.time_played) : "",
+      completed: review.completed || false,
+      loved: review.loved || "",
+      didnt_love: review.didnt_love || "",
+      content: review.content || "",
+    });
   };
 
   const equipRing = async (ringId) => {
@@ -5206,23 +5247,55 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {activeTab === "reviews" && (
         <div>
           {userReviews.length > 0 ? userReviews.map(review => (
-            <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
-              style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12, cursor: review.games ? "pointer" : "default" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+            <div key={review.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+              {editingReview?.game_id === review.game_id ? (
+                /* Inline edit form */
+                <div>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 12 }}>Editing: {review.games?.name}</div>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                      <button key={n} onClick={() => setReviewEditForm(f => ({ ...f, rating: n }))}
+                        style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${reviewEditForm.rating >= n ? C.gold : C.border}`, background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <input value={reviewEditForm.headline} onChange={e => setReviewEditForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={saveReview} disabled={!reviewEditForm.rating || savingReview}
+                      style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      {savingReview ? "Saving…" : "Save"}
+                    </button>
+                    <button onClick={() => setEditingReview(null)} style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
-                  <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
+              ) : (
+                /* Display mode */
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                    <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
+                      style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default" }}>
+                      <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
+                        style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: review.games ? "pointer" : "default" }}>{review.games?.name || "Unknown Game"}</div>
+                      <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
+                    </div>
+                    <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
+                    <button onClick={() => startEditReview(review)}
+                      style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                      Edit
+                    </button>
+                  </div>
+                  {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
+                  {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
+                  {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Didn't love: {review.didnt_love}</div>}
+                  {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: "8px 0 0" }}>{review.content}</p>}
+                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 10 }}>{timeAgo(review.created_at)}</div>
                 </div>
-                <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
-              </div>
-              {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
-              {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
-              {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>⚠️ {review.didnt_love}</div>}
-              {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: "8px 0 0" }}>{review.content}</p>}
-              <div style={{ color: C.textDim, fontSize: 11, marginTop: 10 }}>{timeAgo(review.created_at)}</div>
+              )}
             </div>
           )) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
@@ -7758,12 +7831,12 @@ export default function GuildLink() {
       .limit(1);
     if (data && data.length > 0) {
       const uq = data[0];
-      // Grant reward to user_rewards if this quest has one
+      // Grant reward to user_rewards if this quest has one (non-fatal if RLS blocks)
       if (uq.quests?.reward_id) {
-        await supabase.from("user_rewards").upsert(
+        supabase.from("user_rewards").upsert(
           { user_id: userId, reward_id: uq.quests.reward_id },
           { onConflict: "user_id,reward_id" }
-        );
+        ).catch(() => {});
       }
       setQuestBanner({
         quest_id: uq.quest_id,
