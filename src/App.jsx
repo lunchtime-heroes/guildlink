@@ -1775,7 +1775,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-124</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-125</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4569,32 +4569,23 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 12 }}>Theme</div>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                  {/* Base themes — always available */}
                   {[
-                    { id: "deep-space", label: "Deep Space", bg: "#080e1a", accent: "#0ea5e9", surface: "#0d1424" },
-                    { id: "light", label: "Light", bg: "#f4f6fa", accent: "#0284c7", surface: "#ffffff" },
-                    { id: "high-contrast", label: "High Contrast", bg: "#000000", accent: "#ffffff", surface: "#0a0a0a" },
-                    { id: "colorblind", label: "Colorblind Safe", bg: "#0f0a00", accent: "#f97316", surface: "#1a1200" },
+                    { id: "deep-space",    label: "Deep Space",     bg: "#080e1a", accent: "#0ea5e9" },
+                    { id: "light",         label: "Light",          bg: "#f4f6fa", accent: "#0284c7" },
+                    { id: "high-contrast", label: "High Contrast",  bg: "#000000", accent: "#ffffff" },
+                    { id: "colorblind",    label: "Colorblind Safe",bg: "#0f0a00", accent: "#f97316" },
                   ].map(theme => {
                     const isActive = (editForm.theme || "deep-space") === theme.id;
                     return (
                       <div key={theme.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
                         <button onClick={() => { setEditForm(f => ({ ...f, theme: theme.id })); applyTheme(theme.id); setPreviewThemeId(theme.id); }}
-                          title={theme.label}
                           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 6 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: theme.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, overflow: "hidden", boxShadow: isActive ? `0 0 0 3px ${C.accentDim}` : "none", transition: "all 0.15s", position: "relative" }}>
-                            {/* Surface stripe */}
-                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 16, background: theme.surface }} />
-                            {/* Accent bar */}
-                            <div style={{ position: "absolute", bottom: 0, left: 0, width: "40%", height: 4, background: theme.accent }} />
-                            {isActive && <div style={{ position: "absolute", top: 4, right: 4, width: 10, height: 10, borderRadius: "50%", background: theme.accent }} />}
-                          </div>
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${theme.bg} 60%, ${theme.accent} 60%)`, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, boxShadow: isActive ? `0 0 0 3px ${C.accentDim}` : "none", transition: "all 0.15s" }} />
                         </button>
-                        <span style={{ color: isActive ? C.accentSoft : C.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400, textAlign: "center" }}>{theme.label}</span>
+                        <span style={{ color: isActive ? C.accentSoft : C.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400 }}>{theme.label}</span>
                       </div>
                     );
                   })}
-                  {/* Quest-unlocked themes — show all, lock if not earned */}
                   {QUEST_THEMES.map(qt => {
                     const palette = THEMES[qt.id];
                     if (!palette) return null;
@@ -4602,23 +4593,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       userQuests.some(q => q.completed && (q.reward_id === qt.rewardId || q.reward_id === qt.id));
                     const isActive = (editForm.theme || "deep-space") === qt.id;
                     return (
-                      <div key={qt.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", opacity: isUnlocked ? 1 : 0.45 }}>
-                        <button
-                          onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, theme: qt.id })); applyTheme(qt.id); setPreviewThemeId(qt.id); }}
+                      <div key={qt.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <button onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, theme: qt.id })); applyTheme(qt.id); setPreviewThemeId(qt.id); }}
                           title={isUnlocked ? qt.label : `Locked — ${qt.questLabel}`}
                           style={{ background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, marginBottom: 6 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: palette.bg, border: isActive && isUnlocked ? `2px solid ${palette.accent}` : `2px solid ${C.border}`, overflow: "hidden", boxShadow: isActive && isUnlocked ? `0 0 0 3px ${palette.accent}44` : "none", transition: "all 0.15s", position: "relative" }}>
-                            {/* Surface stripe */}
-                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 16, background: palette.surface }} />
-                            {/* Accent bar */}
-                            <div style={{ position: "absolute", bottom: 0, left: 0, width: "40%", height: 4, background: palette.accent }} />
-                            {/* Lock overlay */}
-                            {!isUnlocked && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }}><span style={{ fontSize: 16 }}>🔒</span></div>}
-                            {isActive && isUnlocked && <div style={{ position: "absolute", top: 4, right: 4, width: 10, height: 10, borderRadius: "50%", background: palette.accent }} />}
-                          </div>
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `linear-gradient(135deg, ${palette.bg} 60%, ${palette.accent} 60%)`, border: isActive && isUnlocked ? `2px solid ${palette.accent}` : `2px solid ${C.border}`, boxShadow: isActive && isUnlocked ? `0 0 0 3px ${palette.accent}44` : "none", opacity: isUnlocked ? 1 : 0.45, transition: "all 0.15s" }} />
                         </button>
-                        <span style={{ color: isActive && isUnlocked ? palette.accent : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, textAlign: "center" }}>{qt.label}</span>
-                        <span style={{ color: C.textDim, fontSize: 9, textAlign: "center" }}>{isUnlocked ? "Unlocked" : qt.questLabel}</span>
+                        <span style={{ color: isActive && isUnlocked ? palette.accent : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, opacity: isUnlocked ? 1 : 0.6 }}>{qt.label}</span>
+                        <span style={{ color: C.textDim, fontSize: 9, opacity: isUnlocked ? 1 : 0.5 }}>{isUnlocked ? "Unlocked" : qt.questLabel}</span>
                       </div>
                     );
                   })}
@@ -4631,13 +4613,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
                   {PROFILE_RINGS.filter(r => r.id !== "none").map(ring => {
                     const isFoundingUnlocked = ring.foundingOnly && user.isFounding;
-                    // Check user_rewards table (joined quest_rewards)
                     const isRewardUnlocked = userRewards.some(r =>
                       r.quest_rewards?.value === ring.id ||
                       r.reward_id === ring.id ||
                       r.reward_id === ring.questId
                     );
-                    // Also check completed quests directly — reward_id in quest row often IS the ring id
                     const isQuestCompleted = userQuests.some(q =>
                       q.completed && (
                         q.reward_id === ring.id ||
@@ -4654,8 +4634,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, activeRing: ring.id })); equipRing(ring.id); }}
                           title={isUnlocked ? (isActive ? `${ring.label} — equipped` : `Equip ${ring.label}`) : `Locked — ${ring.how}`}
                           style={{ background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, marginBottom: 8 }}>
-                          <div style={{ position: "relative", width: 56, height: 56, opacity: isUnlocked ? 1 : 0.5 }}>
-                            {/* Outer glow ring — colored always */}
+                          <div style={{ position: "relative", width: 56, height: 56, opacity: isUnlocked ? 1 : 0.4 }}>
                             <div style={{
                               position: "absolute", inset: -4, borderRadius: "50%",
                               border: `3px solid ${ring.color}`,
@@ -4664,7 +4643,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                 : isUnlocked ? `0 0 8px ${ring.color}33` : "none",
                               transition: "all 0.2s"
                             }} />
-                            {/* Inner circle */}
                             <div style={{
                               width: 56, height: 56, borderRadius: "50%",
                               background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`,
