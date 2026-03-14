@@ -769,7 +769,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10 }}>
-                  <Avatar initials={currentUser?.avatar || "GL"} size={32} />
+                  <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
                   <input
                     ref={commentInputRef}
                     value={commentText}
@@ -1497,7 +1497,7 @@ function PostModal({ postId, onClose, currentUser }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 10 }}>
-              <Avatar initials={currentUser.avatar || "GL"} size={32} />
+              <Avatar initials={currentUser.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
               <input ref={modalInputRef} value={commentText} onChange={e => setCommentText(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && submitComment()}
                 placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-121</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-122</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2697,7 +2697,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)` }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
-              <Avatar initials={user.avatar} size={44} status="online" />
+              <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} />
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
@@ -4273,7 +4273,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Following — users and NPCs
       const { data: followData } = await supabase
         .from("follows")
-        .select("followed_user_id, followed_npc_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials)")
+        .select("followed_user_id, followed_npc_id, profiles!follows_followed_user_id_fkey(id, username, handle, avatar_initials, is_founding, active_ring)")
         .eq("follower_id", authUser.id);
       if (followData) {
         const users = followData.filter(f => f.followed_user_id && f.profiles).map(f => ({
@@ -4281,6 +4281,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           username: f.profiles.username,
           handle: f.profiles.handle,
           avatar_initials: f.profiles.avatar_initials,
+          is_founding: f.profiles.is_founding,
+          active_ring: f.profiles.active_ring,
           type: "user"
         }));
         const npcs = followData.filter(f => f.followed_npc_id).map(f => {
@@ -5097,7 +5099,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} />
+                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, color: p.type === "npc" ? C.gold : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{p.handle}{p.type === "npc" ? " · NPC" : ""}</div>
@@ -5322,7 +5324,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={32} />
+                <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={32} founding={u.is_founding} ring={u.active_ring} />
                 <div style={{ flex: 1 }}>
                   <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{u.username || "—"} <span style={{ color: C.textDim, fontWeight: 400 }}>{u.handle}</span></div>
                   <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
@@ -5882,7 +5884,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
                         {/* Post header with status */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={30} />
+                            <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={30} founding={post.profiles?.is_founding} ring={post.profiles?.active_ring} />
                             <div>
                               <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{post.profiles?.username || "Unknown"}</span>
                               <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{post.profiles?.handle}</span>
