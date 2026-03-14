@@ -1761,7 +1761,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-141</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-142</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5895,10 +5895,10 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
   const isNew = !npc;
   const emptyForm = {
     name: "", handle: "", avatar_initials: "", bio: "", lore: "", personality: "",
-    role: "", location: "", universe: "", universe_icon: "⚔️", status: "online",
-    years_of_service: "", connections: "", followers: "",
-    games: "", // comma-separated string in editor, saved as text[]
-    stats: [], // array of {label, value, note}
+    role: "", location: "", universe: "",
+    years_of_service: "",
+    genre: "",
+    stats: [],
     is_active: true,
   };
   const [form, setForm] = useState(isNew ? emptyForm : {
@@ -5911,12 +5911,8 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
     role: npc.role || "",
     location: npc.location || "",
     universe: npc.universe || "",
-    universe_icon: npc.universe_icon || "⚔️",
-    status: npc.status || "online",
     years_of_service: npc.years_of_service || "",
-    connections: npc.connections || "",
-    followers: npc.followers || "",
-    games: (npc.games || []).join(", "),
+    genre: (npc.games || []).join(", "),
     stats: npc.stats || [],
     is_active: npc.is_active !== false,
   });
@@ -5946,24 +5942,26 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
       role: form.role.trim(),
       location: form.location.trim(),
       universe: form.universe.trim(),
-      universe_icon: form.universe_icon.trim(),
-      status: form.status,
+      status: "online",
       years_of_service: form.years_of_service ? parseInt(form.years_of_service) : null,
-      connections: form.connections ? parseInt(form.connections) : null,
-      followers: form.followers ? parseInt(form.followers) : null,
-      games: form.games.split(",").map(g => g.trim()).filter(Boolean),
+      games: form.genre.split(",").map(g => g.trim()).filter(Boolean),
       stats: form.stats.filter(s => s.label.trim()),
       is_active: form.is_active,
     };
-    let result;
+    let saveError = null;
+    let savedData = null;
     if (isNew) {
-      result = await supabase.from("npcs").insert(payload).select().single();
+      const { data, error } = await supabase.from("npcs").insert(payload).select();
+      saveError = error;
+      savedData = data?.[0] || null;
     } else {
-      result = await supabase.from("npcs").update(payload).eq("id", npc.id).select().single();
+      const { data, error } = await supabase.from("npcs").update(payload).eq("id", npc.id).select();
+      saveError = error;
+      savedData = data?.[0] || null;
     }
     setSaving(false);
-    if (result.error) { setError(result.error.message); return; }
-    onSaved(result.data);
+    if (saveError) { setError(saveError.message); return; }
+    onSaved(savedData);
   };
 
   const labelStyle = { color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4, display: "block" };
@@ -5992,7 +5990,7 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
             <input value={form.handle} onChange={e => set("handle", e.target.value)} style={inputStyle} placeholder="@ShopKeepMerv_NPC" />
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 120px", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px", gap: 12, marginBottom: 12 }}>
           <div>
             <label style={labelStyle}>Initials</label>
             <input value={form.avatar_initials} onChange={e => set("avatar_initials", e.target.value)} style={inputStyle} placeholder="SM" maxLength={3} />
@@ -6002,52 +6000,38 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
             <input value={form.role} onChange={e => set("role", e.target.value)} style={inputStyle} placeholder="Licensed Cave Merchant" />
           </div>
           <div>
-            <label style={labelStyle}>Status</label>
-            <select value={form.status} onChange={e => set("status", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-              {["online","away","ingame","offline"].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <label style={labelStyle}>Yrs Service</label>
+            <input type="number" value={form.years_of_service} onChange={e => set("years_of_service", e.target.value)} style={inputStyle} placeholder="0" />
           </div>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>Location</label>
-          <input value={form.location} onChange={e => set("location", e.target.value)} style={inputStyle} placeholder="The Fogwood Cave, Eastern Pass, Aethoria" />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 60px", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
           <div>
             <label style={labelStyle}>Universe</label>
             <input value={form.universe} onChange={e => set("universe", e.target.value)} style={inputStyle} placeholder="Realm of Aethoria" />
           </div>
           <div>
-            <label style={labelStyle}>Icon</label>
-            <input value={form.universe_icon} onChange={e => set("universe_icon", e.target.value)} style={inputStyle} placeholder="⚔️" />
+            <label style={labelStyle}>Location</label>
+            <input value={form.location} onChange={e => set("location", e.target.value)} style={inputStyle} placeholder="Eastern Gate, Aethon" />
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-          {[["years_of_service","Yrs Service"],["connections","Connections"],["followers","Followers"]].map(([key, label]) => (
-            <div key={key}>
-              <label style={labelStyle}>{label}</label>
-              <input type="number" value={form[key]} onChange={e => set(key, e.target.value)} style={inputStyle} placeholder="0" />
-            </div>
-          ))}
-        </div>
         <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>Games (comma-separated)</label>
-          <input value={form.games} onChange={e => set("games", e.target.value)} style={inputStyle} placeholder="Elden Ring, Dark Souls III, Hollow Knight" />
+          <label style={labelStyle}>Genre (comma-separated — informs character behavior)</label>
+          <input value={form.genre} onChange={e => set("genre", e.target.value)} style={inputStyle} placeholder="Fantasy RPG, Open World, Souls-like" />
         </div>
 
         {section("Public Content")}
         <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>Bio (public — shown on profile)</label>
+          <label style={labelStyle}>Bio (shown on profile)</label>
           <textarea value={form.bio} onChange={e => set("bio", e.target.value)} style={taStyle} placeholder="I have operated this cave-based general store since the Third Age…" />
         </div>
         <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>Lore / Origin (public — shown on Lore tab)</label>
+          <label style={labelStyle}>Lore / Origin (shown on Lore tab)</label>
           <textarea value={form.lore} onChange={e => set("lore", e.target.value)} style={{ ...taStyle, minHeight: 100 }} placeholder="Merv took over the Fogwood Cave shop from his father…" />
         </div>
 
         {section("Internal Notes")}
         <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>Personality & Voice (internal — writing reference only)</label>
+          <label style={labelStyle}>Personality & Voice (writing reference — not shown publicly)</label>
           <textarea value={form.personality} onChange={e => set("personality", e.target.value)} style={taStyle} placeholder="Dry, understated, never complains directly. Speaks in short declarative sentences. Absurdist patience. Never sarcastic — sincerely confused by heroes." />
         </div>
 
