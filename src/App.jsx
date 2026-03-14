@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-137</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-138</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3942,20 +3942,21 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · ✓ Completed" : ""}</div>
                       </div>
+                      {currentUser && review.user_id === currentUser.id && (
+                        <button onClick={() => { setActiveTab("reviews"); setShowReviewForm(true); }}
+                          style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                      )}
                       <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating}/10</div>
                     </div>
                     {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
-                    {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>✅ {review.loved}</div>}
-                    {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>⚠️ {review.didnt_love}</div>}
+                    {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
+                    {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Didn't love: {review.didnt_love}</div>}
                     {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>}
                   </div>
                 )) : (
                   <div style={{ textAlign: "center", padding: "30px 0", color: C.textDim }}>
                     <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
                     <div style={{ fontSize: 13 }}>No reviews yet. Be the first.</div>
-                  </div>
-                )}
-              </div>
 
               {/* Also liked — keep for hardcoded games, hide for DB-only */}
               {game.alsoLiked.length > 0 && (
@@ -4158,6 +4159,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                       <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
                     </div>
+                    {currentUser && review.user_id === currentUser.id && (
+                      <button onClick={() => setShowReviewForm(true)}
+                        style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                    )}
                     <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating}/10</div>
                   </div>
                   {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
@@ -5491,15 +5496,16 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
             </div>
             <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{timeAgo(review.created_at)}{review.time_played ? ` · ${review.time_played}h played` : ""}</div>
           </div>
+          {currentUser && review.user_id === currentUser.id && (
+            <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
+              style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+          )}
           <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
             {review.rating}/10
           </div>
         </div>
         {/* Content */}
         {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
-        {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
-        {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Didn't love: {review.didnt_love}</div>}
-        {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.65, margin: 0 }}>{review.content}</p>}
         {/* Game tag */}
         <div style={{ marginTop: 10 }}>
           <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
@@ -7038,7 +7044,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
 
 // ─── PLAYER PROFILE PAGE ──────────────────────────────────────────────────────
 
-function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn }) {
+function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setGameDefaultTab }) {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -7412,6 +7418,10 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{review.games?.name || "Unknown Game"}</div>
                   <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? ` · ${review.time_played}h played` : ""}{review.completed ? " · Completed" : ""}</div>
                 </div>
+                {currentUser && review.user_id === currentUser.id && (
+                  <button onClick={(e) => { e.stopPropagation(); setGameDefaultTab?.("reviews"); setCurrentGame(review.game_id); setActivePage("game"); }}
+                    style={{ background: C.goldDim, border: `1px solid ${C.goldBorder}`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 700, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                )}
                 <div style={{ background: C.goldDim, border: `1px solid ${C.gold}44`, borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating}/10</div>
               </div>
               {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
@@ -8047,7 +8057,7 @@ export default function GuildLink() {
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
-      {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} />}
+      {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={setCurrentPlayer} setActivePage={setActivePage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={setActivePage} isMobile={isMobile} onSignUp={openSignUp} />}
     </div>
