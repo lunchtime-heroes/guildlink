@@ -4163,7 +4163,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   </div>
                   {review.headline ? <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div> : null}
                   {review.loved ? <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Loved: " + review.loved}</div> : null}
-                  {review.didnt_love ? <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Didn\u2019t love: " + review.didnt_love}</div> : null}
+                  {review.didnt_love ? <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Didn’t love: " + review.didnt_love}</div> : null}
                   {review.content ? <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p> : null}
                 </div>
               ))}
