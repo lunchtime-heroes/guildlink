@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-130</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-131</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3206,15 +3206,20 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Hidden Gems",
       desc: "Highly reviewed but not widely followed",
       run: async () => {
-        const { data } = await supabase.from("games")
-          .select("id, name, genre, avg_rating, review_count, followers")
-          .gte("avg_rating", 7)
-          .gte("review_count", 2)
-          .order("avg_rating", { ascending: false });
-        return (data || [])
-          .filter(g => (g.followers || 0) < 500)
+        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, followers)");
+        const agg = {};
+        (data || []).forEach(r => {
+          if (!r.games) return;
+          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 };
+          agg[r.game_id].total += r.rating;
+          agg[r.game_id].count++;
+        });
+        return Object.values(agg)
+          .map(g => ({ ...g, avg: g.total / g.count }))
+          .filter(g => g.avg >= 7 && g.count >= 2 && (g.followers || 0) < 500)
+          .sort((a, b) => b.avg - a.avg)
           .slice(0, 12)
-          .map(g => ({ ...g, _stat: `${g.avg_rating?.toFixed(1)} avg · ${g.review_count} review${g.review_count !== 1 ? "s" : ""}` }));
+          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} review${g.count !== 1 ? "s" : ""}` }));
       }
     },
     {
@@ -3275,12 +3280,20 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Critic's Choice",
       desc: "Highest rated with meaningful review volume",
       run: async () => {
-        const { data } = await supabase.from("games")
-          .select("id, name, genre, avg_rating, review_count")
-          .gte("review_count", 3)
-          .order("avg_rating", { ascending: false })
-          .limit(12);
-        return (data || []).map(g => ({ ...g, _stat: `${g.avg_rating?.toFixed(1)} avg · ${g.review_count} reviews` }));
+        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre)");
+        const agg = {};
+        (data || []).forEach(r => {
+          if (!r.games) return;
+          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 };
+          agg[r.game_id].total += r.rating;
+          agg[r.game_id].count++;
+        });
+        return Object.values(agg)
+          .filter(g => g.count >= 2)
+          .map(g => ({ ...g, avg: g.total / g.count }))
+          .sort((a, b) => b.avg - a.avg)
+          .slice(0, 12)
+          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} reviews` }));
       }
     },
     ...(currentUser ? [{
@@ -3345,9 +3358,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(null);
     setDiscoveryLoading(true);
     setDiscoveryLabel(`Results for "${q}"`);
-    const { data } = await supabase.from("games").select("id, name, genre, avg_rating, review_count")
+    const { data } = await supabase.from("games").select("id, name, genre")
       .ilike("name", `%${q}%`).limit(20);
-    setDiscoveryResults((data || []).map(g => ({ ...g, _stat: g.avg_rating ? `${g.avg_rating.toFixed(1)} avg rating` : g.genre || "" })));
+    setDiscoveryResults((data || []).map(g => ({ ...g, _stat: g.genre || "" })));
     setDiscoveryLoading(false);
   };
 
@@ -5340,7 +5353,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     if (q.length < 2) { setGameResults([]); return; }
     setGameSearchLoading(true);
     const { data, error } = await supabase.from("games")
-      .select("id, name, genre, avg_rating, review_count")
+      .select("id, name, genre")
       .ilike("name", `%${q}%`)
       .limit(12);
     if (error) console.error("Game search error:", error);
@@ -5487,11 +5500,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{g.name}</div>
                         <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{g.genre}</div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                        {g.review_count > 0 && <div style={{ color: C.textMuted, fontSize: 12 }}>{g.review_count} review{g.review_count !== 1 ? "s" : ""}</div>}
-                        {g.avg_rating > 0 && <div style={{ background: C.goldDim, color: C.gold, borderRadius: 6, padding: "2px 8px", fontSize: 12, fontWeight: 700 }}>{g.avg_rating?.toFixed(1)}</div>}
-                        <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>See reviews →</div>
-                      </div>
+                      <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, flexShrink: 0 }}>See reviews →</div>
                     </div>
                   ))}
                 </div>
@@ -7738,20 +7747,23 @@ export default function GuildLink() {
   };
 
   const backfillQuestRewards = async (userId) => {
-    // Grant rewards for any completed quests that have a reward_id but aren't in user_rewards yet
-    const { data: completed } = await supabase
-      .from("user_quests")
-      .select("quest_id, quests(reward_id)")
-      .eq("user_id", userId)
-      .eq("completed", true)
-      .not("quests.reward_id", "is", null);
-    if (!completed?.length) return;
-    const rewardIds = completed.map(r => r.quests?.reward_id).filter(Boolean);
-    if (!rewardIds.length) return;
-    await supabase.from("user_rewards").upsert(
-      rewardIds.map(rid => ({ user_id: userId, reward_id: rid })),
-      { onConflict: "user_id,reward_id" }
-    );
+    try {
+      const { data: completed } = await supabase
+        .from("user_quests")
+        .select("quest_id, quests(reward_id)")
+        .eq("user_id", userId)
+        .eq("completed", true)
+        .not("quests.reward_id", "is", null);
+      if (!completed?.length) return;
+      const rewardIds = completed.map(r => r.quests?.reward_id).filter(Boolean);
+      if (!rewardIds.length) return;
+      await supabase.from("user_rewards").upsert(
+        rewardIds.map(rid => ({ user_id: userId, reward_id: rid })),
+        { onConflict: "user_id,reward_id" }
+      );
+    } catch (e) {
+      // user_rewards may have RLS restrictions — non-fatal
+    }
   };
 
   const fetchProfile = async (userId) => {
