@@ -1749,7 +1749,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-145</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-146</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5881,7 +5881,21 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
 function NPCEditorModal({ npc, onClose, onSaved }) {
   const isNew = !npc;
-  const emptyForm = {
+  const buildForm = (n) => n ? {
+    name: n.name || "",
+    handle: n.handle || "",
+    avatar_initials: n.avatar_initials || "",
+    bio: n.bio || "",
+    lore: n.lore || "",
+    personality: n.personality || "",
+    role: n.role || "",
+    location: n.location || "",
+    universe: n.universe || "",
+    years_of_service: n.years_of_service || "",
+    genre: (n.games || []).join(", "),
+    stats: Array.isArray(n.stats) ? n.stats : [],
+    is_active: n.is_active !== false,
+  } : {
     name: "", handle: "", avatar_initials: "", bio: "", lore: "", personality: "",
     role: "", location: "", universe: "",
     years_of_service: "",
@@ -5889,23 +5903,13 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
     stats: [],
     is_active: true,
   };
-  const [form, setForm] = useState(isNew ? emptyForm : {
-    name: npc.name || "",
-    handle: npc.handle || "",
-    avatar_initials: npc.avatar_initials || "",
-    bio: npc.bio || "",
-    lore: npc.lore || "",
-    personality: npc.personality || "",
-    role: npc.role || "",
-    location: npc.location || "",
-    universe: npc.universe || "",
-    years_of_service: npc.years_of_service || "",
-    genre: (npc.games || []).join(", "),
-    stats: npc.stats || [],
-    is_active: npc.is_active !== false,
-  });
+
+  const [form, setForm] = useState(() => buildForm(npc));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // Re-initialize form if npc prop changes (e.g. switching between edit targets)
+  useEffect(() => { setForm(buildForm(npc)); }, [npc?.id]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
