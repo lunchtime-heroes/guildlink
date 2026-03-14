@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-128</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-129</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5248,7 +5248,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setReviews([]);
     if (mode === "feed") {
       const { data, error } = await supabase.from("reviews")
-        .select("*, profiles!reviews_user_id_fkey(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
         .order("created_at", { ascending: false })
         .limit(40);
       if (error) console.error("Reviews feed error:", error);
@@ -5261,7 +5261,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
       const ids = (follows || []).map(f => f.followed_user_id).filter(Boolean);
       if (!ids.length) { setLoading(false); return; }
       const { data, error } = await supabase.from("reviews")
-        .select("*, profiles!reviews_user_id_fkey(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
         .in("user_id", ids)
         .order("created_at", { ascending: false })
         .limit(40);
@@ -5334,12 +5334,22 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
 
   useEffect(() => {
     const loadTopRated = async () => {
-      const { data } = await supabase.from("games")
-        .select("id, name, avg_rating, review_count")
-        .gte("review_count", 1)
-        .order("avg_rating", { ascending: false })
-        .limit(10);
-      setTopRated(data || []);
+      // Compute top rated from reviews table directly — avg_rating on games table may be stale
+      const { data } = await supabase.from("reviews")
+        .select("game_id, rating, games(id, name)");
+      if (!data) return;
+      const agg = {};
+      data.forEach(r => {
+        if (!r.games) return;
+        if (!agg[r.game_id]) agg[r.game_id] = { id: r.games.id, name: r.games.name, total: 0, count: 0 };
+        agg[r.game_id].total += r.rating;
+        agg[r.game_id].count += 1;
+      });
+      const ranked = Object.values(agg)
+        .map(g => ({ ...g, avg: g.total / g.count }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 10);
+      setTopRated(ranked);
     };
     loadTopRated();
   }, []);
@@ -5391,7 +5401,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 <input
                   value={gameSearch}
                   onChange={e => searchGames(e.target.value)}
-                  placeholder="Search for a game..."
+                  placeholder="Type a game name, e.g. Elden Ring..."
                   autoFocus
                   style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
                 />
@@ -5444,9 +5454,9 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                   <div style={{ width: 20, textAlign: "center", fontWeight: 800, fontSize: i < 3 ? 14 : 12, color: i === 0 ? C.gold : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : C.textDim, flexShrink: 0 }}>{i + 1}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                    <div style={{ color: C.textDim, fontSize: 10, marginTop: 1 }}>{g.review_count} review{g.review_count !== 1 ? "s" : ""}</div>
+                    <div style={{ color: C.textDim, fontSize: 10, marginTop: 1 }}>{g.count} review{g.count !== 1 ? "s" : ""}</div>
                   </div>
-                  <div style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "2px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{g.avg_rating?.toFixed(1)}</div>
+                  <div style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "2px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{g.avg.toFixed(1)}</div>
                 </div>
               ))}
             </div>
