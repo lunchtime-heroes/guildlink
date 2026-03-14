@@ -138,7 +138,60 @@ const THEMES = {
     red: "#ef4444", teal: "#34d399", purple: "#a78bfa",
     text: "#fef3e2", textMuted: "#c4a882", textDim: "#6b5a3e", online: "#22c55e",
   },
+  // ── Quest-unlocked themes ──────────────────────────────────────────────────
+  "theme_rpg": {
+    label: "RPG", questLabel: "Genre Explorer", icon: "📖",
+    bg: "#0e0a1a", surface: "#150f2a", surfaceHover: "#1c1538", surfaceRaised: "#221b42",
+    border: "#2e234f", borderHover: "#3d3066",
+    accent: "#a78bfa", accentGlow: "#a78bfa22", accentSoft: "#c4b5fd", accentDim: "#a78bfa44",
+    accentText: "#ffffff",
+    green: "#4ade80", gold: "#fbbf24", goldDim: "#fbbf2422", goldBorder: "#fbbf2433", goldGlow: "#fbbf2415",
+    red: "#f87171", teal: "#2dd4bf", purple: "#a78bfa",
+    text: "#ede9fe", textMuted: "#9d87c9", textDim: "#4a3d70", online: "#4ade80",
+    bgPattern: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cpolygon points='30,4 56,18 56,42 30,56 4,42 4,18' stroke='%23a78bfa' stroke-width='0.4' stroke-opacity='0.12'/%3E%3C/g%3E%3C/svg%3E")`,
+  },
+  "theme_space": {
+    label: "Space", questLabel: "Genre Master", icon: "🚀",
+    bg: "#050a14", surface: "#0a1022", surfaceHover: "#0e162e", surfaceRaised: "#121d38",
+    border: "#1a2840", borderHover: "#243654",
+    accent: "#818cf8", accentGlow: "#818cf822", accentSoft: "#a5b4fc", accentDim: "#818cf844",
+    accentText: "#ffffff",
+    green: "#34d399", gold: "#fcd34d", goldDim: "#fcd34d22", goldBorder: "#fcd34d33", goldGlow: "#fcd34d15",
+    red: "#f87171", teal: "#22d3ee", purple: "#c084fc",
+    text: "#e0e7ff", textMuted: "#7b86b8", textDim: "#2d3a5c", online: "#34d399",
+    bgPattern: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23818cf8' fill-opacity='0.18'/%3E%3Ccircle cx='20' cy='36' r='0.6' fill='%23c084fc' fill-opacity='0.14'/%3E%3Ccircle cx='52' cy='12' r='0.8' fill='%23818cf8' fill-opacity='0.12'/%3E%3Ccircle cx='68' cy='60' r='1' fill='%23a5b4fc' fill-opacity='0.16'/%3E%3Ccircle cx='36' cy='68' r='0.5' fill='%23818cf8' fill-opacity='0.1'/%3E%3C/svg%3E")`,
+  },
+  "theme_retro": {
+    label: "Retro", questLabel: "Road Warrior", icon: "🕹️",
+    bg: "#0a0800", surface: "#140f00", surfaceHover: "#1c1600", surfaceRaised: "#241c00",
+    border: "#3a2e00", borderHover: "#4f3e00",
+    accent: "#f59e0b", accentGlow: "#f59e0b22", accentSoft: "#fbbf24", accentDim: "#f59e0b44",
+    accentText: "#000000",
+    green: "#84cc16", gold: "#f59e0b", goldDim: "#f59e0b22", goldBorder: "#f59e0b33", goldGlow: "#f59e0b15",
+    red: "#ef4444", teal: "#14b8a6", purple: "#a78bfa",
+    text: "#fef9e7", textMuted: "#b8a060", textDim: "#5a4a18", online: "#84cc16",
+    bgPattern: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='40' height='40' fill='none'/%3E%3Crect x='0' y='0' width='20' height='20' fill='%23f59e0b' fill-opacity='0.04'/%3E%3Crect x='20' y='20' width='20' height='20' fill='%23f59e0b' fill-opacity='0.04'/%3E%3C/svg%3E")`,
+  },
+  "theme_8bit": {
+    label: "8-Bit", questLabel: "Trusted Voice", icon: "👾",
+    bg: "#020c02", surface: "#061006", surfaceHover: "#0c180c", surfaceRaised: "#102010",
+    border: "#1a3a1a", borderHover: "#245024",
+    accent: "#4ade80", accentGlow: "#4ade8022", accentSoft: "#86efac", accentDim: "#4ade8044",
+    accentText: "#000000",
+    green: "#4ade80", gold: "#facc15", goldDim: "#facc1522", goldBorder: "#facc1533", goldGlow: "#facc1515",
+    red: "#f87171", teal: "#4ade80", purple: "#c084fc",
+    text: "#dcfce7", textMuted: "#6dab7a", textDim: "#234a2a", online: "#4ade80",
+    bgPattern: `url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='8' height='8' fill='%234ade80' fill-opacity='0.04'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%234ade80' fill-opacity='0.04'/%3E%3C/svg%3E")`,
+  },
 };
+
+// Theme catalog for quest-unlock display
+const QUEST_THEMES = [
+  { id: "theme_rpg",   label: "RPG",     icon: "📖", questLabel: "Genre Explorer",  rewardId: "theme_rpg" },
+  { id: "theme_space", label: "Space",   icon: "🚀", questLabel: "Genre Master",    rewardId: "theme_space" },
+  { id: "theme_retro", label: "Retro",   icon: "🕹️", questLabel: "Road Warrior",    rewardId: "theme_retro" },
+  { id: "theme_8bit",  label: "8-Bit",   icon: "👾", questLabel: "Trusted Voice",   rewardId: "theme_8bit" },
+];
 
 const C = { ...THEMES["deep-space"] };
 
@@ -1722,7 +1775,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-122</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-123</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4512,10 +4565,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
 
-              {/* Theme picker */}
+              {/* Theme picker — base themes + quest-unlocked catalog */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 8 }}>Theme</div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 12 }}>Theme</div>
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                  {/* Base themes — always available */}
                   {[
                     { id: "deep-space", label: "Deep Space", bg: "#080e1a", accent: "#0ea5e9" },
                     { id: "light", label: "Light", bg: "#f4f6fa", accent: "#0284c7" },
@@ -4524,39 +4578,45 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   ].map(theme => {
                     const isActive = (editForm.theme || "deep-space") === theme.id;
                     return (
-                      <button key={theme.id} onClick={() => { setEditForm(f => ({ ...f, theme: theme.id })); applyTheme(theme.id); setPreviewThemeId(theme.id); }}
-                        title={theme.label}
-                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: theme.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive ? `0 0 0 2px ${C.accentDim}` : "none", transition: "all 0.15s" }}>
-                          <div style={{ width: 16, height: 16, borderRadius: 4, background: theme.accent }} />
-                        </div>
-                        <span style={{ color: isActive ? C.accentSoft : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap" }}>{theme.label}</span>
-                      </button>
+                      <div key={theme.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <button onClick={() => { setEditForm(f => ({ ...f, theme: theme.id })); applyTheme(theme.id); setPreviewThemeId(theme.id); }}
+                          title={theme.label}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 6 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: theme.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive ? `0 0 0 3px ${C.accentDim}` : "none", transition: "all 0.15s" }}>
+                            <div style={{ width: 18, height: 18, borderRadius: 5, background: theme.accent }} />
+                          </div>
+                        </button>
+                        <span style={{ color: isActive ? C.accentSoft : C.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400, textAlign: "center" }}>{theme.label}</span>
+                      </div>
                     );
                   })}
-                  {/* Quest-unlocked themes */}
-                  {userRewards.filter(r => r.quest_rewards?.type === "theme").map(r => {
-                    const tid = r.quest_rewards.value;
-                    const palette = THEMES[tid];
+                  {/* Quest-unlocked themes — show all, lock if not earned */}
+                  {QUEST_THEMES.map(qt => {
+                    const palette = THEMES[qt.id];
                     if (!palette) return null;
-                    const isActive = (editForm.theme || "deep-space") === tid;
+                    const isUnlocked = userRewards.some(r => r.reward_id === qt.rewardId || r.quest_rewards?.value === qt.id) ||
+                      userQuests.some(q => q.completed && (q.reward_id === qt.rewardId || q.reward_id === qt.id));
+                    const isActive = (editForm.theme || "deep-space") === qt.id;
                     return (
-                      <button key={tid} onClick={() => { setEditForm(f => ({ ...f, theme: tid })); applyTheme(tid); setPreviewThemeId(tid); }}
-                        title={r.quest_rewards.label}
-                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: palette.bg, border: isActive ? `2px solid ${C.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive ? `0 0 0 2px ${C.accentDim}` : "none", transition: "all 0.15s" }}>
-                          <div style={{ width: 16, height: 16, borderRadius: 4, background: palette.accent }} />
-                        </div>
-                        <span style={{ color: isActive ? C.accentSoft : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap" }}>{r.quest_rewards.label}</span>
-                      </button>
+                      <div key={qt.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", opacity: isUnlocked ? 1 : 0.45 }}>
+                        <button
+                          onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, theme: qt.id })); applyTheme(qt.id); setPreviewThemeId(qt.id); }}
+                          title={isUnlocked ? qt.label : `Locked — ${qt.questLabel}`}
+                          style={{ background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, marginBottom: 6 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: palette.bg, border: isActive && isUnlocked ? `2px solid ${palette.accent}` : `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isActive && isUnlocked ? `0 0 0 3px ${palette.accent}44` : "none", fontSize: 20, transition: "all 0.15s", position: "relative" }}>
+                            {isUnlocked ? qt.icon : "🔒"}
+                            {isActive && isUnlocked && (
+                              <div style={{ position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: "50%", background: palette.accent, border: `2px solid ${C.surfaceRaised}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <span style={{ fontSize: 7, color: "#000", fontWeight: 900 }}>✓</span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                        <span style={{ color: isActive && isUnlocked ? palette.accent : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, textAlign: "center" }}>{qt.label}</span>
+                        <span style={{ color: C.textDim, fontSize: 9, textAlign: "center" }}>{isUnlocked ? "Unlocked" : qt.questLabel}</span>
+                      </div>
                     );
                   })}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: C.surface, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 16 }}>🔒</span>
-                    </div>
-                    <span style={{ color: C.textDim, fontSize: 10, whiteSpace: "nowrap" }}>More via quests</span>
-                  </div>
                 </div>
               </div>
 
@@ -7515,7 +7575,7 @@ export default function GuildLink() {
   } : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
+    <div style={{ minHeight: "100vh", background: C.bg, backgroundImage: C.bgPattern || "none", color: C.text }}>
       {signInPromptMsg !== null && (
         <SignInPrompt
           message={signInPromptMsg || undefined}
