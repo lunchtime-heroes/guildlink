@@ -3959,6 +3959,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     <div style={{ fontSize: 13 }}>No reviews yet. Be the first.</div>
                   </div>
                 )}
+              </div>
+
               {game.alsoLiked.length > 0 && (
                 <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
