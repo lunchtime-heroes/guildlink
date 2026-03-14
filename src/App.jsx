@@ -155,14 +155,15 @@ const FOUNDING = {
 };
 
 const PROFILE_RINGS = [
-  { id: "none", label: "No Ring", color: "transparent", border: C?.border, description: "Standard member", unlocked: true, how: "Default" },
-  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", unlocked: true, how: "Become a Founding Member", special: true },
-  { id: "platinum", label: "Platinum Ring", color: "#e2e8f0", glow: "#e2e8f022", description: "Complete 50 game reviews", unlocked: false, how: "Quest: The Critic" },
-  { id: "crimson", label: "Crimson Ring", color: "#ef4444", glow: "#ef444433", description: "Reach Top Voice on any game page", unlocked: false, how: "Quest: Top of the Feed" },
-  { id: "void", label: "Void Ring", color: "#7c3aed", glow: "#7c3aed33", description: "Complete 10 games to 100%", unlocked: false, how: "Quest: The Completionist" },
-  { id: "emerald", label: "Emerald Ring", color: "#10b981", glow: "#10b98133", description: "Help 100 players find a squad", unlocked: false, how: "Quest: The Connector" },
-  { id: "celestial", label: "Celestial Ring", color: "#38bdf8", glow: "#38bdf833", description: "500 followers on GuildLink", unlocked: false, how: "Quest: Rising Star" },
-  { id: "onyx", label: "Onyx Ring", color: "#1e293b", glow: "#94a3b833", description: "1 year as a GuildLink member", unlocked: false, how: "Quest: Veteran" },
+  { id: "none", label: "No Ring", color: "transparent", border: C?.border, description: "Standard member", alwaysUnlocked: true },
+  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", foundingOnly: true },
+  { id: "rpg", label: "RPG Ring", color: "#a78bfa", glow: "#a78bfa33", description: "For the devoted adventurer.", questId: "rpg_fan", questLabel: "Quest: RPG Fan" },
+  { id: "platinum", label: "Platinum Ring", color: "#e2e8f0", glow: "#e2e8f022", description: "Complete 50 game reviews", questId: "the_critic", questLabel: "Quest: The Critic" },
+  { id: "crimson", label: "Crimson Ring", color: "#ef4444", glow: "#ef444433", description: "Reach Top Voice on any game page", questId: "top_of_feed", questLabel: "Quest: Top of the Feed" },
+  { id: "void", label: "Void Ring", color: "#7c3aed", glow: "#7c3aed33", description: "Complete 10 games to 100%", questId: "completionist", questLabel: "Quest: The Completionist" },
+  { id: "emerald", label: "Emerald Ring", color: "#10b981", glow: "#10b98133", description: "Help 100 players find a squad", questId: "the_connector", questLabel: "Quest: The Connector" },
+  { id: "celestial", label: "Celestial Ring", color: "#38bdf8", glow: "#38bdf833", description: "500 followers on GuildLink", questId: "rising_star", questLabel: "Quest: Rising Star" },
+  { id: "onyx", label: "Onyx Ring", color: "#94a3b8", glow: "#94a3b833", description: "1 year as a GuildLink member", questId: "veteran", questLabel: "Quest: Veteran" },
 ];
 
 const QUESTS = [
@@ -1722,7 +1723,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-115</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-116</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4303,6 +4304,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       bio: user.bio || "",
       games: Array.isArray(user.games) ? user.games.join(", ") : user.games || "",
       theme: user.theme || "deep-space",
+      activeRing: user.activeRing || "none",
     });
     setPreviewThemeId(user.theme || "deep-space");
     setEditing(true);
@@ -4557,31 +4559,59 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 </div>
               </div>
 
-              {/* Unlocked Rewards */}
-              {userRewards.filter(r => r.quest_rewards?.type === "ring").length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 8 }}>Unlocked Rings</div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {userRewards.filter(r => r.quest_rewards?.type === "ring").map(r => {
-                      const ring = PROFILE_RINGS.find(pr => pr.id === r.quest_rewards.value);
-                      const isActive = user.activeRing === r.quest_rewards.value;
-                      if (!ring) return null;
-                      return (
-                        <button key={r.reward_id} title={ring.label}
-                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          <div style={{ position: "relative", width: 40, height: 40 }}>
-                            <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `2px solid ${ring.color}`, boxShadow: isActive ? `0 0 10px ${ring.color}66` : "none" }} />
-                            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `${ring.color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-                              {isActive ? "✓" : "○"}
-                            </div>
+              {/* Ring picker — full catalog */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 8 }}>Profile Ring</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {PROFILE_RINGS.map(ring => {
+                    // Determine if this ring is unlocked for this user
+                    const isFoundingUnlocked = ring.foundingOnly && user.isFounding;
+                    const isAlwaysUnlocked = ring.alwaysUnlocked;
+                    const isQuestUnlocked = userRewards.some(r => r.quest_rewards?.value === ring.id);
+                    const isUnlocked = isAlwaysUnlocked || isFoundingUnlocked || isQuestUnlocked;
+                    const isActive = (editForm.activeRing || user.activeRing || "none") === ring.id;
+
+                    return (
+                      <button key={ring.id}
+                        onClick={() => {
+                          if (!isUnlocked) return;
+                          setEditForm(f => ({ ...f, activeRing: ring.id }));
+                          equipRing(ring.id);
+                        }}
+                        title={isUnlocked ? ring.label : `Locked — ${ring.foundingOnly ? "Founding Members only" : ring.questLabel}`}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, opacity: isUnlocked ? 1 : 0.45 }}>
+                        <div style={{ position: "relative", width: 44, height: 44 }}>
+                          {/* Ring border */}
+                          <div style={{
+                            position: "absolute", inset: 0, borderRadius: "50%",
+                            border: `2.5px solid ${isUnlocked ? ring.color : C.border}`,
+                            boxShadow: isActive && isUnlocked ? `0 0 10px ${ring.color}66` : "none",
+                            transition: "all 0.15s"
+                          }} />
+                          {/* Inner fill */}
+                          <div style={{
+                            position: "absolute", inset: 4, borderRadius: "50%",
+                            background: isActive && isUnlocked ? `${ring.color}22` : C.surfaceRaised,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {!isUnlocked
+                              ? <span style={{ fontSize: 13, color: C.textDim }}>🔒</span>
+                              : isActive
+                                ? <span style={{ fontSize: 11, color: ring.color, fontWeight: 900 }}>✓</span>
+                                : null
+                            }
                           </div>
-                          <span style={{ color: isActive ? ring.color : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap" }}>{ring.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        </div>
+                        <span style={{
+                          color: isActive && isUnlocked ? ring.color : isUnlocked ? C.textMuted : C.textDim,
+                          fontSize: 10, fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap",
+                          maxWidth: 54, textAlign: "center", lineHeight: 1.2,
+                        }}>{ring.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
