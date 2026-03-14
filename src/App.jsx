@@ -849,16 +849,15 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 // ─── NPC PROFILE PAGE ─────────────────────────────────────────────────────────
 
 function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, setCurrentPlayer, isMobile, currentUser, onQuestTrigger }) {
-  const npc = NPCS[npcId];
   const [activeTab, setActiveTab] = useState("posts");
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [liveNPC, setLiveNPC] = useState(null);
   const [npcPosts, setNpcPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadNPCData();
-    // Check if already following
     const checkFollow = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !npcId) return;
@@ -884,50 +883,56 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
     setFollowLoading(false);
   };
 
-  useEffect(() => {
-    loadNPCData();
-  }, [npcId]);
-
   const loadNPCData = async () => {
-    // npcId can be a uuid (from database) or a string key like "merv" (from hardcoded)
+    setLoading(true);
+    // npcId may be a UUID (DB) or a legacy string key like "merv"
     const isUUID = npcId && npcId.includes('-');
     let npcData = null;
     if (isUUID) {
       const { data } = await supabase.from("npcs").select("*").eq("id", npcId).single();
       npcData = data;
-    } else if (npc) {
-      const { data } = await supabase.from("npcs").select("*").eq("handle", npc.handle).single();
-      npcData = data;
+    } else {
+      // Legacy key — look up by matching handle or name from hardcoded NPCS
+      const hardcoded = NPCS[npcId];
+      if (hardcoded) {
+        const { data } = await supabase.from("npcs").select("*").eq("handle", hardcoded.handle).maybeSingle();
+        npcData = data;
+        // If not in DB yet, fall back to hardcoded shape normalized to DB shape
+        if (!npcData) {
+          npcData = {
+            id: null, name: hardcoded.name, handle: hardcoded.handle,
+            avatar_initials: hardcoded.avatar, bio: hardcoded.bio, lore: hardcoded.lore,
+            role: hardcoded.role, location: hardcoded.location, universe: hardcoded.universe,
+            universe_icon: hardcoded.universeIcon, status: hardcoded.status,
+            years_of_service: hardcoded.yearsOfService, connections: hardcoded.connections,
+            followers: hardcoded.followers, games: hardcoded.games, stats: hardcoded.stats,
+          };
+        }
+      }
     }
     if (npcData) {
       setLiveNPC(npcData);
-      const { data: posts } = await supabase
-        .from("posts")
-        .select("*")
-        .eq("npc_id", npcData.id)
-        .order("created_at", { ascending: false });
-      if (posts) setNpcPosts(posts);
+      if (npcData.id) {
+        const { data: posts } = await supabase.from("posts").select("*").eq("npc_id", npcData.id).order("created_at", { ascending: false });
+        if (posts) setNpcPosts(posts);
+      }
     }
+    setLoading(false);
   };
 
-  if (!npc && !liveNPC) return (
+  if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ color: C.textMuted, fontSize: 14 }}>Loading...</div>
+      <div style={{ color: C.textMuted, fontSize: 14 }}>Loading…</div>
     </div>
   );
 
-  const displayNPC = liveNPC ? {
-    ...(npc || {}),
-    name: liveNPC.name,
-    handle: liveNPC.handle,
-    bio: liveNPC.bio,
-    followers: liveNPC.followers,
-    role: liveNPC.role,
-    location: liveNPC.location,
-    avatar: liveNPC.avatar_initials || (npc?.avatar) || "NPC",
-    universe: liveNPC.universe || (npc?.universe) || "Unknown",
-    universeIcon: npc?.universeIcon || "⚔️",
-  } : npc;
+  if (!liveNPC) return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: C.textMuted, fontSize: 14 }}>Character not found.</div>
+    </div>
+  );
+
+  const displayNPC = liveNPC;
 
   const tabs = [
     { id: "posts", label: "📝 Posts" },
@@ -955,14 +960,14 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: isMobile ? 22 : 32, fontWeight: 800, color: C.gold, letterSpacing: "-1px",
               boxShadow: `0 0 32px ${C.gold}22`,
-            }}>{displayNPC.avatar}</div>
+            }}>{displayNPC.avatar_initials || "?"}</div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                 <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 26, color: C.gold, letterSpacing: "-0.5px" }}>{displayNPC.name}</h1>
                 <NPCBadge />
                 <span style={{ background: C.gold + "18", color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                  {displayNPC.universeIcon} {displayNPC.universe}
+                  {displayNPC.universe_icon || "⚔️"} {displayNPC.universe}
                 </span>
               </div>
               <div style={{ color: C.gold + "99", fontSize: 12, marginBottom: 4 }}>{displayNPC.handle}</div>
@@ -1018,12 +1023,12 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               const isLivePost = !!post.created_at;
               const feedPost = isLivePost ? {
                 id: post.id,
-                npc_id: post.npc_id || liveNPC?.id,
+                npc_id: post.npc_id || displayNPC?.id,
                 game_tag: post.game_tag,
                 user: {
                   name: displayNPC.name,
                   handle: displayNPC.handle,
-                  avatar: displayNPC.avatar,
+                  avatar: displayNPC.avatar_initials || "?",
                   status: "online",
                   isNPC: true,
                 },
@@ -1055,7 +1060,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               <div style={{ color: C.textDim, fontSize: 13 }}>Official statistics from {displayNPC.universe} records. Verified by the guild.</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
-              {(npc?.stats || []).map((stat, i) => (
+              {(displayNPC.stats || []).map((stat, i) => (
                 <div key={i} style={{
                   background: C.surface, border: "1px solid " + C.goldBorder,
                   borderRadius: 14, padding: 20, position: "relative", overflow: "hidden",
@@ -1069,15 +1074,17 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
             </div>
 
             {/* Games observed */}
-            <div style={{ marginTop: 20, background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20 }}>
-              <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>🎮 Games Observed</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {npc.games.map(g => (
-                  <span key={g} style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600 }}>{g}</span>
-                ))}
+            {(displayNPC.games || []).length > 0 && (
+              <div style={{ marginTop: 20, background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20 }}>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>🎮 Games Observed</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {(displayNPC.games || []).map(g => (
+                    <span key={g} style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 14px", fontSize: 13, fontWeight: 600 }}>{g}</span>
+                  ))}
+                </div>
+                <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>These are the worlds {displayNPC.name.split(" ")[0]} follows, comments on, and has feelings about.</div>
               </div>
-              <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>These are the worlds {npc.name.split(" ")[0]} follows, comments on, and has feelings about.</div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1088,41 +1095,21 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 28, marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>Origin</div>
                 <div style={{ color: C.gold + "66", fontSize: 12, marginBottom: 16 }}>From the official {displayNPC.universe} lore archives</div>
-                <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{npc?.lore || displayNPC.bio || "Lore coming soon."}</p>
-              </div>
-              <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 28 }}>
-                <div style={{ fontWeight: 800, color: C.gold, fontSize: 16, marginBottom: 16 }}>Sample Interactions</div>
-                {[
-                  { context: "On an Elden Ring post", quote: "I have inventory relevant to this situation. I am available. The cave is lit." },
-                  { context: "When @mentioned", quote: "I appreciate being included. This does not happen often." },
-                  { context: "On a patch notes post", quote: "Nothing in this patch affects the cave economy. I note this without emotion." },
-                ].map((ex, i) => (
-                  <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < 2 ? "1px solid " + C.border : "none" }}>
-                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{ex.context}</div>
-                    <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "12px 14px", color: C.text, fontSize: 14, lineHeight: 1.6, fontStyle: "italic" }}>"{ex.quote}"</div>
-                  </div>
-                ))}
+                <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>{displayNPC.lore || displayNPC.bio || "Lore coming soon."}</p>
               </div>
             </div>
 
             <div>
+              {displayNPC.universe && (
               <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>Universe</div>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>{displayNPC.universeIcon}</div>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>{displayNPC.universe_icon || "⚔️"}</div>
                   <div style={{ fontWeight: 800, color: C.gold, fontSize: 16 }}>{displayNPC.universe}</div>
                   <div style={{ color: C.textDim, fontSize: 12, marginTop: 6 }}>A GuildLink original universe</div>
-                  <div style={{ marginTop: 14, color: C.textMuted, fontSize: 13 }}>Meet the cast:</div>
-                  <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                    {Object.values(NPCS).filter(n => n.universe === npc.universe && n.id !== npc.id).map(n => (
-                      <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 6, background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px 10px", cursor: "pointer" }}>
-                        <Avatar initials={n.avatar} size={22} isNPC={true} />
-                        <span style={{ color: C.gold, fontSize: 11, fontWeight: 600 }}>{n.name.split(" ")[0]}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
+              )}
               <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>🤝</div>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>Interested in Sponsored NPCs?</div>
@@ -1789,16 +1776,26 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
 // ─── NPC BROWSE PAGE (mobile tab) ────────────────────────────────────────────
 
 function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
+  const [npcs, setNpcs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from("npcs").select("*").eq("is_active", true).order("name")
+      .then(({ data }) => { if (data) setNpcs(data); setLoading(false); });
+  }, []);
+
   return (
     <div style={{ maxWidth: 700, margin: "0 auto", padding: "70px 16px 80px" }}>
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ margin: "0 0 6px", fontWeight: 800, fontSize: 22, color: C.text }}>GuildLink NPCs</h2>
         <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Original characters from the GuildLink universe. They're out here living their best lives.</p>
       </div>
-      {Object.values(NPCS).map(npc => (
+      {loading ? (
+        <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading characters…</div>
+      ) : npcs.map(npc => (
         <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
           style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 18, marginBottom: 12, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
-          <Avatar initials={npc.avatar} size={50} isNPC={true} status={npc.status} />
+          <Avatar initials={npc.avatar_initials || "?"} size={50} isNPC={true} status={npc.status} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
               <span style={{ fontWeight: 700, color: C.gold, fontSize: 15 }}>{npc.name}</span>
@@ -1807,8 +1804,8 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
             <div style={{ color: C.textDim, fontSize: 12, marginBottom: 4 }}>{npc.handle}</div>
             <div style={{ color: C.textMuted, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.role}</div>
             <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-              <span style={{ color: C.textDim, fontSize: 11 }}>👥 {(npc.followers / 1000).toFixed(1)}k followers</span>
-              <span style={{ color: C.textDim, fontSize: 11 }}>{npc.universeIcon} {npc.universe}</span>
+              {npc.followers && <span style={{ color: C.textDim, fontSize: 11 }}>👥 {((npc.followers || 0) / 1000).toFixed(1)}k followers</span>}
+              {npc.universe && <span style={{ color: C.textDim, fontSize: 11 }}>{npc.universe_icon || "⚔️"} {npc.universe}</span>}
             </div>
           </div>
           <span style={{ color: C.textDim, fontSize: 18 }}>→</span>
@@ -5892,14 +5889,213 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
 // ─── NPC STUDIO ───────────────────────────────────────────────────────────────
 
+// ─── NPC EDITOR MODAL ─────────────────────────────────────────────────────────
+
+function NPCEditorModal({ npc, onClose, onSaved }) {
+  const isNew = !npc;
+  const emptyForm = {
+    name: "", handle: "", avatar_initials: "", bio: "", lore: "", personality: "",
+    role: "", location: "", universe: "", universe_icon: "⚔️", status: "online",
+    years_of_service: "", connections: "", followers: "",
+    games: "", // comma-separated string in editor, saved as text[]
+    stats: [], // array of {label, value, note}
+    is_active: true,
+  };
+  const [form, setForm] = useState(isNew ? emptyForm : {
+    name: npc.name || "",
+    handle: npc.handle || "",
+    avatar_initials: npc.avatar_initials || "",
+    bio: npc.bio || "",
+    lore: npc.lore || "",
+    personality: npc.personality || "",
+    role: npc.role || "",
+    location: npc.location || "",
+    universe: npc.universe || "",
+    universe_icon: npc.universe_icon || "⚔️",
+    status: npc.status || "online",
+    years_of_service: npc.years_of_service || "",
+    connections: npc.connections || "",
+    followers: npc.followers || "",
+    games: (npc.games || []).join(", "),
+    stats: npc.stats || [],
+    is_active: npc.is_active !== false,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const addStat = () => setForm(f => ({ ...f, stats: [...f.stats, { label: "", value: "", note: "" }] }));
+  const updateStat = (i, key, val) => setForm(f => {
+    const stats = f.stats.map((s, idx) => idx === i ? { ...s, [key]: val } : s);
+    return { ...f, stats };
+  });
+  const removeStat = (i) => setForm(f => ({ ...f, stats: f.stats.filter((_, idx) => idx !== i) }));
+
+  const handleSave = async () => {
+    if (!form.name.trim() || !form.handle.trim()) { setError("Name and handle are required."); return; }
+    setSaving(true);
+    setError(null);
+    const payload = {
+      name: form.name.trim(),
+      handle: form.handle.trim(),
+      avatar_initials: form.avatar_initials.trim() || form.name.slice(0, 2).toUpperCase(),
+      bio: form.bio.trim(),
+      lore: form.lore.trim(),
+      personality: form.personality.trim(),
+      role: form.role.trim(),
+      location: form.location.trim(),
+      universe: form.universe.trim(),
+      universe_icon: form.universe_icon.trim(),
+      status: form.status,
+      years_of_service: form.years_of_service ? parseInt(form.years_of_service) : null,
+      connections: form.connections ? parseInt(form.connections) : null,
+      followers: form.followers ? parseInt(form.followers) : null,
+      games: form.games.split(",").map(g => g.trim()).filter(Boolean),
+      stats: form.stats.filter(s => s.label.trim()),
+      is_active: form.is_active,
+    };
+    let result;
+    if (isNew) {
+      result = await supabase.from("npcs").insert(payload).select().single();
+    } else {
+      result = await supabase.from("npcs").update(payload).eq("id", npc.id).select().single();
+    }
+    setSaving(false);
+    if (result.error) { setError(result.error.message); return; }
+    onSaved(result.data);
+  };
+
+  const labelStyle = { color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4, display: "block" };
+  const inputStyle = { width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
+  const taStyle = { ...inputStyle, resize: "vertical", minHeight: 80, lineHeight: 1.6 };
+  const section = (title) => (
+    <div style={{ color: C.accent, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 12, marginTop: 24, borderBottom: "1px solid " + C.border, paddingBottom: 6 }}>{title}</div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 20, width: "100%", maxWidth: 640, padding: 28, position: "relative", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: C.text }}>{isNew ? "Create NPC" : "Edit NPC"}</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 22, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
+        </div>
+
+        {section("Identity")}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={labelStyle}>Name *</label>
+            <input value={form.name} onChange={e => set("name", e.target.value)} style={inputStyle} placeholder="ShopKeep Merv" />
+          </div>
+          <div>
+            <label style={labelStyle}>Handle *</label>
+            <input value={form.handle} onChange={e => set("handle", e.target.value)} style={inputStyle} placeholder="@ShopKeepMerv_NPC" />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 120px", gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={labelStyle}>Initials</label>
+            <input value={form.avatar_initials} onChange={e => set("avatar_initials", e.target.value)} style={inputStyle} placeholder="SM" maxLength={3} />
+          </div>
+          <div>
+            <label style={labelStyle}>Role / Title</label>
+            <input value={form.role} onChange={e => set("role", e.target.value)} style={inputStyle} placeholder="Licensed Cave Merchant" />
+          </div>
+          <div>
+            <label style={labelStyle}>Status</label>
+            <select value={form.status} onChange={e => set("status", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+              {["online","away","ingame","offline"].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>Location</label>
+          <input value={form.location} onChange={e => set("location", e.target.value)} style={inputStyle} placeholder="The Fogwood Cave, Eastern Pass, Aethoria" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 60px", gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={labelStyle}>Universe</label>
+            <input value={form.universe} onChange={e => set("universe", e.target.value)} style={inputStyle} placeholder="Realm of Aethoria" />
+          </div>
+          <div>
+            <label style={labelStyle}>Icon</label>
+            <input value={form.universe_icon} onChange={e => set("universe_icon", e.target.value)} style={inputStyle} placeholder="⚔️" />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+          {[["years_of_service","Yrs Service"],["connections","Connections"],["followers","Followers"]].map(([key, label]) => (
+            <div key={key}>
+              <label style={labelStyle}>{label}</label>
+              <input type="number" value={form[key]} onChange={e => set(key, e.target.value)} style={inputStyle} placeholder="0" />
+            </div>
+          ))}
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>Games (comma-separated)</label>
+          <input value={form.games} onChange={e => set("games", e.target.value)} style={inputStyle} placeholder="Elden Ring, Dark Souls III, Hollow Knight" />
+        </div>
+
+        {section("Public Content")}
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>Bio (public — shown on profile)</label>
+          <textarea value={form.bio} onChange={e => set("bio", e.target.value)} style={taStyle} placeholder="I have operated this cave-based general store since the Third Age…" />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>Lore / Origin (public — shown on Lore tab)</label>
+          <textarea value={form.lore} onChange={e => set("lore", e.target.value)} style={{ ...taStyle, minHeight: 100 }} placeholder="Merv took over the Fogwood Cave shop from his father…" />
+        </div>
+
+        {section("Internal Notes")}
+        <div style={{ marginBottom: 12 }}>
+          <label style={labelStyle}>Personality & Voice (internal — writing reference only)</label>
+          <textarea value={form.personality} onChange={e => set("personality", e.target.value)} style={taStyle} placeholder="Dry, understated, never complains directly. Speaks in short declarative sentences. Absurdist patience. Never sarcastic — sincerely confused by heroes." />
+        </div>
+
+        {section("Stats")}
+        <div style={{ marginBottom: 8 }}>
+          {form.stats.map((stat, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 100px 1fr 28px", gap: 8, marginBottom: 8, alignItems: "start" }}>
+              <input value={stat.label} onChange={e => updateStat(i, "label", e.target.value)} style={inputStyle} placeholder="Label" />
+              <input value={stat.value} onChange={e => updateStat(i, "value", e.target.value)} style={inputStyle} placeholder="Value" />
+              <input value={stat.note} onChange={e => updateStat(i, "note", e.target.value)} style={inputStyle} placeholder="Note (italic)" />
+              <button onClick={() => removeStat(i)} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 6, color: C.textDim, fontSize: 14, cursor: "pointer", height: 34, padding: "0 6px" }}>×</button>
+            </div>
+          ))}
+          <button onClick={addStat} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer", marginTop: 4 }}>+ Add Stat Row</button>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20, marginBottom: 20 }}>
+          <input type="checkbox" id="npc-active" checked={form.is_active} onChange={e => set("is_active", e.target.checked)} style={{ accentColor: C.accent }} />
+          <label htmlFor="npc-active" style={{ color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Active (visible in Studio and public browse)</label>
+        </div>
+
+        {error && <div style={{ background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, padding: "8px 12px", color: "#ef4444", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 10, padding: "9px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 10, padding: "9px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>{saving ? "Saving…" : isNew ? "Create NPC" : "Save Changes"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── NPC STUDIO PAGE ──────────────────────────────────────────────────────────
+
 function NPCStudioPage({ isMobile, currentUser }) {
-  const [selectedNPC, setSelectedNPC] = useState(null);
+  const [selectedNPC, setSelectedNPC] = useState(null); // DB row id (uuid)
+  const [dbNPCs, setDbNPCs] = useState([]); // all NPCs from DB
+  const [loadingNPCs, setLoadingNPCs] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingNPC, setEditingNPC] = useState(null); // null = create, object = edit
+  const [syncing, setSyncing] = useState(false);
+
   const [mode, setMode] = useState("respond");
   const [candidates, setCandidates] = useState([]);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [replyToComment, setReplyToComment] = useState(null); // { id, name } for reply threading
-  const [expandedComments, setExpandedComments] = useState({}); // postId -> comments[]
+  const [replyToComment, setReplyToComment] = useState(null);
+  const [expandedComments, setExpandedComments] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
   const [composeText, setComposeText] = useState("");
   const [scheduleMode, setScheduleMode] = useState(false);
@@ -5913,26 +6109,53 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const [closedThreads, setClosedThreads] = useState(new Set());
   const [closedCandidates, setClosedCandidates] = useState(new Set());
 
-  const npcList = Object.values(NPCS);
-  const [npcUUIDs, setNpcUUIDs] = useState({}); // localId -> supabase UUID
+  // Load all NPCs from DB
+  const loadDBNPCs = async () => {
+    setLoadingNPCs(true);
+    const { data } = await supabase.from("npcs").select("*").order("name");
+    if (data) setDbNPCs(data);
+    setLoadingNPCs(false);
+  };
 
-  useEffect(() => {
-    supabase.from("npcs").select("id, handle, name").then(({ data, error }) => {
-      console.log("NPCs in DB:", JSON.stringify(data));
-      if (data) {
-        const map = {};
-        data.forEach(row => {
-          // Try matching by handle first, then by name
-          let local = npcList.find(n => n.handle === row.handle);
-          if (!local) local = npcList.find(n => n.name === row.name);
-          if (!local) local = npcList.find(n => row.name?.toLowerCase().includes(n.name?.split(" ")[0]?.toLowerCase()));
-          if (local) map[local.id] = row.id;
-        });
-        console.log("Resolved npcUUIDs:", map);
-        setNpcUUIDs(map);
-      }
-    });
-  }, []);
+  useEffect(() => { loadDBNPCs(); loadQueue(); }, []);
+
+  // Sync hardcoded NPCs that don't have a DB record yet
+  const syncHardcodedNPCs = async () => {
+    setSyncing(true);
+    const hardcodedList = Object.values(NPCS);
+    const existingHandles = new Set(dbNPCs.map(n => n.handle));
+    const toSync = hardcodedList.filter(n => !existingHandles.has(n.handle));
+    for (const n of toSync) {
+      await supabase.from("npcs").upsert({
+        handle: n.handle,
+        name: n.name,
+        avatar_initials: n.avatar,
+        bio: n.bio || "",
+        lore: n.lore || "",
+        role: n.role || "",
+        location: n.location || "",
+        universe: n.universe || "",
+        universe_icon: n.universeIcon || "⚔️",
+        status: n.status || "online",
+        years_of_service: n.yearsOfService || null,
+        connections: n.connections || null,
+        followers: n.followers || null,
+        games: n.games || [],
+        stats: n.stats || [],
+        is_active: true,
+      }, { onConflict: "handle" });
+    }
+    await loadDBNPCs();
+    setSyncing(false);
+  };
+
+  // Check which hardcoded NPCs are missing from DB
+  const hardcodedHandles = new Set(Object.values(NPCS).map(n => n.handle));
+  const dbHandles = new Set(dbNPCs.map(n => n.handle));
+  const unsynced = Object.values(NPCS).filter(n => !dbHandles.has(n.handle));
+
+  // Active NPC DB record
+  const activeNPC = dbNPCs.find(n => n.id === selectedNPC) || null;
 
   const loadPostComments = async (postId) => {
     setLoadingComments(prev => ({ ...prev, [postId]: true }));
@@ -6036,7 +6259,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
   const loadThreads = async () => {
     setLoadingThreads(true);
-    const npcUUID = npcUUIDs[selectedNPC] || selectedNPC;
+    const npcUUID = selectedNPC;
 
     // Find posts where this NPC has commented OR is the author
     const [commentedRes, authoredRes] = await Promise.all([
@@ -6102,7 +6325,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
     if (!composeText.trim() || !selectedNPC) return;
     setSending(true);
     const { data: { user: writerUser } } = await supabase.auth.getUser();
-    const npcUUID = npcUUIDs[selectedNPC] || selectedNPC; // fall back to selectedNPC if already UUID
+    const npcUUID = selectedNPC;
 
     if (scheduleMode && scheduleDate && scheduleTime) {
       const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
@@ -6164,49 +6387,96 @@ function NPCStudioPage({ isMobile, currentUser }) {
   const pad = isMobile ? "60px 12px 80px" : "80px 24px 40px";
 
   if (!selectedNPC) {
-    // NPC picker screen
     return (
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: pad }}>
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontWeight: 800, fontSize: 22, color: C2.text, letterSpacing: "-0.5px", marginBottom: 6 }}>NPC Studio</div>
-          <div style={{ color: C2.textMuted, fontSize: 14 }}>Choose a character to write as.</div>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: pad }}>
+        {showEditor && (
+          <NPCEditorModal
+            npc={editingNPC}
+            onClose={() => { setShowEditor(false); setEditingNPC(null); }}
+            onSaved={(saved) => { loadDBNPCs(); setShowEditor(false); setEditingNPC(null); }}
+          />
+        )}
+
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 22, color: C2.text, letterSpacing: "-0.5px", marginBottom: 4 }}>NPC Studio</div>
+            <div style={{ color: C2.textMuted, fontSize: 14 }}>Manage characters and write as them.</div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {unsynced.length > 0 && (
+              <button onClick={syncHardcodedNPCs} disabled={syncing}
+                style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 10, padding: "8px 16px", color: C2.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {syncing ? "Syncing…" : `↑ Sync ${unsynced.length} to DB`}
+              </button>
+            )}
+            <button onClick={() => { setEditingNPC(null); setShowEditor(true); }}
+              style={{ background: C2.accent, border: "none", borderRadius: 10, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              + New NPC
+            </button>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 14 }}>
-          {npcList.map(npc => (
-            <div key={npc.id} onClick={() => setSelectedNPC(npc.id)}
-              style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 16, padding: 20, cursor: "pointer", transition: "all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = C2.goldBorder; e.currentTarget.style.background = C2.goldGlow; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C2.border; e.currentTarget.style.background = C2.surface; }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <Avatar initials={npc.avatar} size={40} isNPC={true} status={npc.status} />
-                <div>
-                  <div style={{ fontWeight: 700, color: C2.text, fontSize: 14 }}>{npc.name}</div>
-                  <div style={{ color: C2.textDim, fontSize: 11 }}>{npc.handle}</div>
+
+        {/* NPC grid */}
+        {loadingNPCs ? (
+          <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading characters…</div>
+        ) : dbNPCs.length === 0 ? (
+          <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 60 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🎭</div>
+            <div style={{ marginBottom: 8 }}>No NPCs in the database yet.</div>
+            {unsynced.length > 0 && <div style={{ color: C2.textMuted, fontSize: 12 }}>Click "Sync to DB" above to import the existing characters.</div>}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 14, marginBottom: 32 }}>
+            {dbNPCs.map(npc => (
+              <div key={npc.id}
+                style={{ background: C2.surface, border: "1px solid " + (npc.is_active ? C2.border : C2.textDim + "33"), borderRadius: 16, padding: 18, opacity: npc.is_active ? 1 : 0.55, position: "relative" }}
+              >
+                {!npc.is_active && (
+                  <div style={{ position: "absolute", top: 10, right: 10, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 7px", color: C2.textDim, fontSize: 10, fontWeight: 700 }}>INACTIVE</div>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <Avatar initials={npc.avatar_initials || "?"} size={40} isNPC={true} status={npc.status} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: C2.text, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
+                    <div style={{ color: C2.textDim, fontSize: 11 }}>{npc.handle}</div>
+                  </div>
+                </div>
+                <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{npc.bio || "No bio yet."}</div>
+                {(npc.games || []).length > 0 && (
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 10 }}>
+                    {(npc.games || []).slice(0, 2).map(g => (
+                      <span key={g} style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 8px", color: C2.textDim, fontSize: 10 }}>{g}</span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => setSelectedNPC(npc.id)}
+                    style={{ flex: 1, background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px", color: C2.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    Write as
+                  </button>
+                  <button onClick={() => { setEditingNPC(npc); setShowEditor(true); }}
+                    style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>
+                    Edit
+                  </button>
                 </div>
               </div>
-              <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>{npc.bio.slice(0, 100)}…</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {npc.games.slice(0, 2).map(g => (
-                  <span key={g} style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 8px", color: C2.textDim, fontSize: 11 }}>{g}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Scheduled queue */}
         {queue.length > 0 && (
-          <div style={{ marginTop: 32 }}>
+          <div style={{ marginTop: 8 }}>
             <div style={{ fontWeight: 700, color: C2.text, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Scheduled Posts</div>
             {queue.map(item => {
-              const npc = NPCS[item.npc_id];
+              const qNPC = dbNPCs.find(n => n.id === item.npc_id);
               return (
                 <div key={item.id} style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <Avatar initials={npc?.avatar || "?"} size={32} isNPC={true} />
+                  <Avatar initials={qNPC?.avatar_initials || "?"} size={32} isNPC={true} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, color: C2.gold, fontSize: 13 }}>{npc?.name}</span>
+                      <span style={{ fontWeight: 600, color: C2.gold, fontSize: 13 }}>{qNPC?.name || "Unknown NPC"}</span>
                       <span style={{ color: C2.textDim, fontSize: 11 }}>{new Date(item.scheduled_for).toLocaleString()}</span>
                     </div>
                     <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5 }}>{item.content}</div>
@@ -6222,23 +6492,36 @@ function NPCStudioPage({ isMobile, currentUser }) {
     );
   }
 
-  const npc = NPCS[selectedNPC];
+  const npc = activeNPC;
+
+  if (!npc) return <div style={{ padding: 40, color: C2.textDim, textAlign: "center" }}>Loading character…</div>;
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: pad }}>
+      {showEditor && (
+        <NPCEditorModal
+          npc={editingNPC}
+          onClose={() => { setShowEditor(false); setEditingNPC(null); }}
+          onSaved={async (saved) => { await loadDBNPCs(); setShowEditor(false); setEditingNPC(null); }}
+        />
+      )}
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
 
         {/* Character sidebar */}
         <div style={{ width: 240, flexShrink: 0 }}>
           <button onClick={() => { setSelectedNPC(null); setSelectedPost(null); setComposeText(""); }}
-            style={{ background: "none", border: "none", color: C2.textDim, fontSize: 13, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
+            style={{ background: "none", border: "none", color: C2.textDim, fontSize: 13, cursor: "pointer", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
             ← All characters
+          </button>
+          <button onClick={() => { setEditingNPC(npc); setShowEditor(true); }}
+            style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 12px", color: C2.textMuted, fontSize: 11, cursor: "pointer", marginBottom: 14, width: "100%" }}>
+            ✏️ Edit this character
           </button>
 
           {/* NPC card */}
           <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 16, padding: 18, marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <Avatar initials={npc.avatar} size={44} isNPC={true} status={npc.status} />
+              <Avatar initials={npc.avatar_initials || "?"} size={44} isNPC={true} status={npc.status} />
               <div>
                 <div style={{ fontWeight: 800, color: C2.gold, fontSize: 15 }}>{npc.name}</div>
                 <div style={{ color: C2.textDim, fontSize: 11 }}>{npc.handle}</div>
@@ -6247,45 +6530,62 @@ function NPCStudioPage({ isMobile, currentUser }) {
 
             <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7, marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>{npc.bio}</div>
 
-            <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
-              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Background</div>
-              <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7 }}>{npc.lore}</div>
-            </div>
-
-            <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
-              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Role</div>
-              <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.role}</div>
-              <div style={{ color: C2.textDim, fontSize: 11, marginTop: 2 }}>{npc.location}</div>
-            </div>
-
-            <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
-              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Universe</div>
-              <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.universeIcon} {npc.universe}</div>
-            </div>
-
-            <div>
-              <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Games</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {npc.games.map(g => (
-                  <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid " + C2.goldBorder, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
-                ))}
+            {npc.personality && (
+              <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
+                <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Voice & Personality</div>
+                <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7 }}>{npc.personality}</div>
               </div>
-            </div>
+            )}
+
+            {npc.lore && (
+              <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
+                <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Background</div>
+                <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.7 }}>{npc.lore}</div>
+              </div>
+            )}
+
+            {npc.role && (
+              <div style={{ marginBottom: 14, borderBottom: "1px solid " + C2.goldBorder, paddingBottom: 14 }}>
+                <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Role</div>
+                <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.role}</div>
+                {npc.location && <div style={{ color: C2.textDim, fontSize: 11, marginTop: 2 }}>{npc.location}</div>}
+              </div>
+            )}
+
+            {npc.universe && (
+              <div style={{ marginBottom: (npc.games || []).length > 0 ? 14 : 0, borderBottom: (npc.games || []).length > 0 ? "1px solid " + C2.goldBorder : "none", paddingBottom: (npc.games || []).length > 0 ? 14 : 0 }}>
+                <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Universe</div>
+                <div style={{ color: C2.textMuted, fontSize: 12 }}>{npc.universe_icon || "⚔️"} {npc.universe}</div>
+              </div>
+            )}
+
+            {(npc.games || []).length > 0 && (
+              <div>
+                <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Games</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {(npc.games || []).map(g => (
+                    <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid " + C2.goldBorder, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Stats */}
-          <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 16 }}>
-            <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Stats</div>
-            {npc.stats.map(s => (
-              <div key={s.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: C2.textMuted, fontSize: 12 }}>{s.label}</span>
-                  <span style={{ color: C2.text, fontSize: 12, fontWeight: 700 }}>{s.value}</span>
+          {(npc.stats || []).length > 0 && (
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 16 }}>
+              <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Stats</div>
+              {(npc.stats || []).map(s => (
+                <div key={s.label} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: C2.textMuted, fontSize: 12 }}>{s.label}</span>
+                    <span style={{ color: C2.text, fontSize: 12, fontWeight: 700 }}>{s.value}</span>
+                  </div>
+                  <div style={{ color: C2.textDim, fontSize: 10, marginTop: 1 }}>{s.note}</div>
                 </div>
-                <div style={{ color: C2.textDim, fontSize: 10, marginTop: 1 }}>{s.note}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Main panel */}
@@ -6420,7 +6720,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             </div>
                           )}
                           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                            <Avatar initials={npc.avatar} size={28} isNPC={true} />
+                            <Avatar initials={npc.avatar_initials || "?"} size={28} isNPC={true} />
                             <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                               placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
                               style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
@@ -6531,7 +6831,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
                           </div>
                         )}
                         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                          <Avatar initials={npc.avatar} size={28} isNPC={true} />
+                          <Avatar initials={npc.avatar_initials || "?"} size={28} isNPC={true} />
                           <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                             placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
                             style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70 }}
@@ -6545,7 +6845,6 @@ function NPCStudioPage({ isMobile, currentUser }) {
                             if (!composeText.trim()) return;
                             setSending(true);
                             const { data: { user: writerUser } } = await supabase.auth.getUser();
-                            const npcUUID = npcUUIDs[selectedNPC] || selectedNPC;
                             await supabase.from("comments").insert({
                               post_id: thread.id,
                               content: composeText.trim(),
@@ -6581,7 +6880,7 @@ function NPCStudioPage({ isMobile, currentUser }) {
           {mode === "post" && (
             <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 20 }}>
               <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-                <Avatar initials={npc.avatar} size={38} isNPC={true} status={npc.status} />
+                <Avatar initials={npc.avatar_initials || "?"} size={38} isNPC={true} status={npc.status} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: C2.text, fontSize: 14 }}>{npc.name}</div>
                   <div style={{ color: C2.textDim, fontSize: 12 }}>{npc.handle}</div>
