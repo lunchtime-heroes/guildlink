@@ -1761,7 +1761,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-142</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-143</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6066,7 +6066,7 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
 
 // ─── NPC STUDIO PAGE ──────────────────────────────────────────────────────────
 
-function NPCStudioPage({ isMobile, currentUser }) {
+function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) {
   const [selectedNPC, setSelectedNPC] = useState(null); // DB row id (uuid)
   const [dbNPCs, setDbNPCs] = useState([]); // all NPCs from DB
   const [loadingNPCs, setLoadingNPCs] = useState(true);
@@ -6377,7 +6377,18 @@ function NPCStudioPage({ isMobile, currentUser }) {
           <NPCEditorModal
             npc={editingNPC}
             onClose={() => { setShowEditor(false); setEditingNPC(null); }}
-            onSaved={(saved) => { loadDBNPCs(); setShowEditor(false); setEditingNPC(null); }}
+            onSaved={async (saved) => {
+              if (saved) {
+                setDbNPCs(prev => {
+                  const exists = prev.find(n => n.id === saved.id);
+                  return exists ? prev.map(n => n.id === saved.id ? saved : n) : [...prev, saved];
+                });
+              } else {
+                await loadDBNPCs();
+              }
+              setShowEditor(false);
+              setEditingNPC(null);
+            }}
           />
         )}
 
@@ -6422,7 +6433,12 @@ function NPCStudioPage({ isMobile, currentUser }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                   <Avatar initials={npc.avatar_initials || "?"} size={40} isNPC={true} status={npc.status} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: C2.text, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span
+                        onClick={e => { e.stopPropagation(); setCurrentNPC(npc.id); setActivePage("npc"); }}
+                        style={{ fontWeight: 700, color: C2.accent, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer", textDecoration: "underline", textDecorationColor: C2.accentDim }}
+                      >{npc.name}</span>
+                    </div>
                     <div style={{ color: C2.textDim, fontSize: 11 }}>{npc.handle}</div>
                   </div>
                 </div>
@@ -6486,7 +6502,15 @@ function NPCStudioPage({ isMobile, currentUser }) {
         <NPCEditorModal
           npc={editingNPC}
           onClose={() => { setShowEditor(false); setEditingNPC(null); }}
-          onSaved={async (saved) => { await loadDBNPCs(); setShowEditor(false); setEditingNPC(null); }}
+          onSaved={async (saved) => {
+            if (saved) {
+              setDbNPCs(prev => prev.map(n => n.id === saved.id ? saved : n));
+            } else {
+              await loadDBNPCs();
+            }
+            setShowEditor(false);
+            setEditingNPC(null);
+          }}
         />
       )}
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
@@ -8320,7 +8344,7 @@ export default function GuildLink() {
       <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} />
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
-      {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} />}
+      {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "charts" && <GamesPage setActivePage={setActivePage} setCurrentGame={setCurrentGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
       {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "reviews" && <ReviewsPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} setGameDefaultTab={setGameDefaultTab} />}
