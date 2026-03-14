@@ -4111,7 +4111,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
         {activeTab === "reviews" && (
           <div>
-            {/* Write / Edit review CTA */}
+            {/* Write or Edit review CTA */}
             {currentUser && !isGuest && (
               <div style={{ marginBottom: 20 }}>
                 {!showReviewForm ? (
@@ -4841,7 +4841,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             </div>
           )}
 
-          {/* Birthday / DOB Section — only visible while editing */}
+          {/* Birthday and DOB Section — only visible while editing */}
           {editing && (
           <div style={{ marginTop: 12, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: user.date_of_birth || editingDob ? 12 : 0 }}>
@@ -5559,7 +5559,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
             ))}
           </div>
 
-          {/* Feed / Following */}
+          {/* Feed and Following */}
           {(tab === "feed" || tab === "following") && (
             <>
               {loading ? (
