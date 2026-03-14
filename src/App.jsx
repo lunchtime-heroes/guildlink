@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-135</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-136</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -7831,13 +7831,6 @@ export default function GuildLink() {
       .limit(1);
     if (data && data.length > 0) {
       const uq = data[0];
-      // Grant reward to user_rewards if this quest has one (non-fatal if RLS blocks)
-      if (uq.quests?.reward_id) {
-        supabase.from("user_rewards").upsert(
-          { user_id: userId, reward_id: uq.quests.reward_id },
-          { onConflict: "user_id,reward_id" }
-        ).catch(() => {});
-      }
       setQuestBanner({
         quest_id: uq.quest_id,
         title: uq.quests?.title || "Quest Complete",
@@ -7881,7 +7874,6 @@ export default function GuildLink() {
       }
     }
     fetchNotifications(userId);
-    backfillQuestRewards(userId);
     checkQuestCompletions(userId);
   };
 
