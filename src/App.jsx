@@ -1774,7 +1774,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-127</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-128</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5247,10 +5247,11 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setLoading(true);
     setReviews([]);
     if (mode === "feed") {
-      const { data } = await supabase.from("reviews")
-        .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+      const { data, error } = await supabase.from("reviews")
+        .select("*, profiles!reviews_user_id_fkey(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
         .order("created_at", { ascending: false })
         .limit(40);
+      if (error) console.error("Reviews feed error:", error);
       setReviews(data || []);
     } else if (mode === "following") {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -5259,11 +5260,12 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         .select("followed_user_id").eq("follower_id", authUser.id);
       const ids = (follows || []).map(f => f.followed_user_id).filter(Boolean);
       if (!ids.length) { setLoading(false); return; }
-      const { data } = await supabase.from("reviews")
-        .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+      const { data, error } = await supabase.from("reviews")
+        .select("*, profiles!reviews_user_id_fkey(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
         .in("user_id", ids)
         .order("created_at", { ascending: false })
         .limit(40);
+      if (error) console.error("Reviews following error:", error);
       setReviews(data || []);
     }
     setLoading(false);
@@ -5291,17 +5293,18 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
   const ReviewCard = ({ review }) => {
     const profile = review.profiles;
     const game = review.games;
-    if (!profile || !game) return null;
+    if (!game) return null;
+    const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
     return (
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: isMobile ? 14 : 20, marginBottom: 10 }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div onClick={() => { setCurrentPlayer(profile.id); setActivePage("player"); }} style={{ cursor: "pointer" }}>
-            <Avatar initials={(profile.avatar_initials || profile.username || "?").slice(0,2).toUpperCase()} size={36} founding={profile.is_founding} ring={profile.active_ring} />
+          <div onClick={() => profile?.id && setCurrentPlayer(profile.id) && setActivePage("player")} style={{ cursor: profile?.id ? "pointer" : "default" }}>
+            <Avatar initials={initials} size={36} founding={profile?.is_founding} ring={profile?.active_ring} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span onClick={() => { setCurrentPlayer(profile.id); setActivePage("player"); }} style={{ fontWeight: 700, color: C.text, fontSize: 13, cursor: "pointer" }}>{profile.username}</span>
+              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); } }} style={{ fontWeight: 700, color: C.text, fontSize: 13, cursor: profile?.id ? "pointer" : "default" }}>{profile?.username || "Guildies Member"}</span>
               <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
               <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }} style={{ fontWeight: 700, color: C.accentSoft, fontSize: 13, cursor: "pointer" }}>{game.name}</span>
             </div>
