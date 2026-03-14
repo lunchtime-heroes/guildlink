@@ -637,7 +637,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     if (!post.id || !post.id.includes('-')) return;
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials), npcs(name, handle, avatar_initials)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     if (data) setLiveComments(data);
@@ -781,22 +781,30 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       {showComments && (
         <div style={{ background: C.surfaceHover, borderTop: "1px solid " + C.border, padding: "14px 20px" }}>
           {(liveComments || localPost.commentList).map((comment, i) => {
-            const isLive = !!comment.profiles || !!comment.npc_id;
-            const npcData = comment.npc_id ? NPCS[comment.npc_id] : null;
-            const isNPC = !!(comment.npc_id || (!isLive && comment.user?.isNPC));
-            const author = npcData || (isLive ? comment.profiles : comment.user);
-            const name = npcData ? npcData.name : (isLive ? author?.username : author?.name);
-            const handle = npcData ? npcData.handle : author?.handle;
-            const avatar = npcData ? npcData.avatar : (author?.avatar_initials || author?.avatar);
+            const isNPC = !!comment.npc_id;
+            // Resolve NPC author: DB join first, then legacy hardcoded key, then give up
+            const npcData = isNPC
+              ? (comment.npcs || NPCS[comment.npc_id] || null)
+              : null;
+            const author = isNPC ? npcData : (comment.profiles || comment.user);
+            const name = isNPC
+              ? (npcData?.name || "NPC")
+              : (comment.profiles?.username || comment.user?.name || "Gamer");
+            const handle = isNPC
+              ? (npcData?.handle || "")
+              : (comment.profiles?.handle || comment.user?.handle || "");
+            const avatar = isNPC
+              ? (npcData?.avatar_initials || npcData?.avatar || "NPC")
+              : (comment.profiles?.avatar_initials || comment.user?.avatar || "GL");
             const allComments = liveComments || localPost.commentList;
             // Find the comment being replied to
             const parentComment = comment.reply_to_comment_id
               ? allComments.find(c => c.id === comment.reply_to_comment_id)
               : null;
             const parentName = parentComment
-              ? (NPCS[parentComment.npc_id]?.name || parentComment.profiles?.username || parentComment.user?.name || "someone")
+              ? (parentComment.npcs?.name || NPCS[parentComment.npc_id]?.name || parentComment.profiles?.username || parentComment.user?.name || "someone")
               : null;
-            const isMyComment = currentUser && comment.user_id === currentUser.id;
+            const isMyComment = !isNPC && currentUser && comment.user_id === currentUser.id;
             return (
               <div key={comment.id} style={{ display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0 }}>
                 <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} />
@@ -1777,7 +1785,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-151</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-152</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6839,10 +6847,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       {thread.comments.length === 0 ? (
                         <div style={{ color: C2.textDim, fontSize: 12, fontStyle: "italic", padding: "4px 0" }}>No replies yet.</div>
                       ) : thread.comments.map((c, i) => {
-                        const npcCommentData = c.npc_id ? c.npcs : null;
                         const isNPC = !!c.npc_id;
-                        const name = npcCommentData?.name || c.profiles?.username || "Unknown";
-                        const avatar = npcCommentData?.avatar_initials || npcCommentData?.avatar || c.profiles?.avatar_initials || "?";
+                        const npcCommentData = isNPC ? (c.npcs || NPCS[c.npc_id] || null) : null;
+                        const name = isNPC ? (npcCommentData?.name || "NPC") : (c.profiles?.username || "Gamer");
+                        const avatar = isNPC ? (npcCommentData?.avatar_initials || npcCommentData?.avatar || "NPC") : (c.profiles?.avatar_initials || "?");
                         const parentComment = c.reply_to_comment_id ? thread.comments.find(x => x.id === c.reply_to_comment_id) : null;
                         const parentNpcData = parentComment?.npc_id ? (parentComment.npcs || Object.values(NPCS).find(n => n.id === parentComment.npc_id)) : null;
                         const parentName = parentComment ? (parentNpcData?.name || parentComment.profiles?.username) : null;
