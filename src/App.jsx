@@ -1723,7 +1723,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-117</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-118</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4561,39 +4561,54 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
               {/* Ring picker — full catalog, founding-page style */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 12 }}>Profile Ring</div>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 16 }}>Profile Ring</div>
+                <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
                   {PROFILE_RINGS.filter(r => r.id !== "none").map(ring => {
                     const isFoundingUnlocked = ring.foundingOnly && user.isFounding;
-                    const isAlwaysUnlocked = ring.alwaysUnlocked;
-                    const isQuestUnlocked = userRewards.some(r => r.quest_rewards?.value === ring.id);
-                    const isUnlocked = isAlwaysUnlocked || isFoundingUnlocked || isQuestUnlocked;
+                    const isQuestUnlocked = userRewards.some(r =>
+                      r.quest_rewards?.value === ring.id ||
+                      r.quest_rewards?.value === ring.questId ||
+                      r.reward_id === ring.questId ||
+                      (r.quest_rewards?.label || "").toLowerCase().includes(ring.id)
+                    );
+                    const isUnlocked = ring.alwaysUnlocked || isFoundingUnlocked || isQuestUnlocked;
                     const isActive = (editForm.activeRing || user.activeRing || "none") === ring.id;
 
                     return (
-                      <div key={ring.id} style={{ textAlign: "center", width: 80, opacity: isUnlocked ? 1 : 0.5 }}>
+                      <div key={ring.id} style={{ textAlign: "center", width: 80 }}>
                         <button
                           onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, activeRing: ring.id })); equipRing(ring.id); }}
                           title={isUnlocked ? (isActive ? `${ring.label} — equipped` : `Equip ${ring.label}`) : `Locked — ${ring.how}`}
                           style={{ background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, display: "flex", justifyContent: "center", marginBottom: 8 }}>
-                          <div style={{ position: "relative", width: 56, height: 56 }}>
-                            {/* Outer glow ring */}
-                            <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `3px solid ${isUnlocked ? ring.color : C.border}`, boxShadow: isActive && isUnlocked ? `0 0 16px ${ring.glow || ring.color + "44"}` : "none", transition: "all 0.15s" }} />
+                          <div style={{ position: "relative", width: 56, height: 56, opacity: isUnlocked ? 1 : 0.5 }}>
+                            {/* Outer glow ring — colored always */}
+                            <div style={{
+                              position: "absolute", inset: -4, borderRadius: "50%",
+                              border: `3px solid ${ring.color}`,
+                              boxShadow: isActive && isUnlocked
+                                ? `0 0 18px ${ring.glow || ring.color + "66"}, 0 0 6px ${ring.color}44`
+                                : isUnlocked ? `0 0 8px ${ring.color}33` : "none",
+                              transition: "all 0.2s"
+                            }} />
                             {/* Inner circle */}
-                            <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`, border: `2px solid ${isUnlocked ? ring.color + "44" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, position: "relative" }}>
-                              {!isUnlocked
-                                ? <span style={{ fontSize: 18 }}>🔒</span>
-                                : ring.icon || "●"
-                              }
+                            <div style={{
+                              width: 56, height: 56, borderRadius: "50%",
+                              background: `linear-gradient(135deg, ${ring.color}22, ${ring.color}11)`,
+                              border: `2px solid ${ring.color}44`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 22, position: "relative"
+                            }}>
+                              {ring.icon || "●"}
+                              {/* Active checkmark badge */}
                               {isActive && isUnlocked && (
-                                <div style={{ position: "absolute", bottom: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: ring.color, border: `2px solid ${C.surface}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  <span style={{ fontSize: 8, color: "#000", fontWeight: 900 }}>✓</span>
+                                <div style={{ position: "absolute", bottom: -1, right: -1, width: 18, height: 18, borderRadius: "50%", background: ring.color, border: `2px solid ${C.surfaceRaised}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <span style={{ fontSize: 9, color: ring.id === "platinum" ? "#000" : "#fff", fontWeight: 900 }}>✓</span>
                                 </div>
                               )}
                             </div>
                           </div>
                         </button>
-                        <div style={{ fontWeight: isActive ? 700 : 400, color: isActive && isUnlocked ? ring.color : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, lineHeight: 1.3, marginBottom: 2 }}>{ring.label}</div>
+                        <div style={{ fontWeight: isActive && isUnlocked ? 700 : 400, color: isActive && isUnlocked ? ring.color : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, lineHeight: 1.3, marginBottom: 2 }}>{ring.label}</div>
                         <div style={{ color: C.textDim, fontSize: 9, lineHeight: 1.3 }}>{isUnlocked ? ring.description : ring.how}</div>
                       </div>
                     );
@@ -4604,8 +4619,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       title="Remove ring"
                       style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", justifyContent: "center", marginBottom: 8 }}>
                       <div style={{ position: "relative", width: 56, height: 56 }}>
-                        <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `3px dashed ${C.border}`, boxShadow: "none" }} />
-                        <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.surfaceRaised, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: C.textDim }}>✕</div>
+                        <div style={{ position: "absolute", inset: -4, borderRadius: "50%", border: `3px dashed ${C.border}` }} />
+                        <div style={{ width: 56, height: 56, borderRadius: "50%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: C.textDim }}>✕</div>
                       </div>
                     </button>
                     <div style={{ color: (editForm.activeRing || user.activeRing || "none") === "none" ? C.accentSoft : C.textDim, fontSize: 10, lineHeight: 1.3, fontWeight: (editForm.activeRing || user.activeRing || "none") === "none" ? 700 : 400 }}>No Ring</div>
