@@ -634,14 +634,16 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setTipped(newTipped);
     setLocalPost(p => ({ ...p, tip_count: Math.max(0, (p.tip_count || 0) + (newTipped ? 1 : -1)) }));
     if (newTipped) {
-      await supabase.from("tip_votes").upsert({ post_id: post.id, user_id: authUser.id });
-      await supabase.rpc("increment_tip", { row_id: post.id });
+      const { error: voteErr } = await supabase.from("tip_votes").upsert({ post_id: post.id, user_id: authUser.id });
+      const { error: rpcErr } = await supabase.rpc("increment_tip", { row_id: post.id });
+      console.log("[toggleTip] upsert:", voteErr, "rpc:", rpcErr, "post_id:", post.id);
     } else {
-      await supabase.from("tip_votes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
-      await supabase.rpc("decrement_tip", { row_id: post.id });
+      const { error: delErr } = await supabase.from("tip_votes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
+      const { error: rpcErr } = await supabase.rpc("decrement_tip", { row_id: post.id });
+      console.log("[toggleTip] delete:", delErr, "rpc:", rpcErr);
     }
-    // Fetch fresh count from DB
     const { data: fresh } = await supabase.from("posts").select("tip_count").eq("id", post.id).single();
+    console.log("[toggleTip] fresh tip_count from DB:", fresh?.tip_count);
     if (fresh) setLocalPost(p => ({ ...p, tip_count: fresh.tip_count || 0 }));
   };
 
@@ -1840,7 +1842,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-177</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-178</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3739,13 +3741,14 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       if (posts) setGamePosts(posts);
 
       // Tips — posts with tip votes, sorted by tip count
-      const { data: tips } = await supabase
+      const { data: tips, error: tipsErr } = await supabase
         .from("posts")
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .gte("tip_count", 1)
         .order("tip_count", { ascending: false })
         .limit(30);
+      console.log("[gameTips] dbId:", dbId, "tips:", tips?.length, "error:", tipsErr, "sample:", tips?.[0]);
       if (tips) {
         // Also fetch which tips the current user has voted on
         const tipIds = (tips || []).map(p => p.id);
