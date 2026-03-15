@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-159</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-160</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6158,6 +6158,8 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
   const [newPromptText, setNewPromptText] = useState("");
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [editingPromptId, setEditingPromptId] = useState(null);
+  const [editingPromptText, setEditingPromptText] = useState("");
 
   const loadStudioPrompt = async () => {
     const { data } = await supabase.from("daily_prompts").select("id, question, sort_order").order("sort_order", { ascending: true });
@@ -6187,7 +6189,13 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     setPrompts(prev => prev.filter(p => p.id !== id));
   };
 
-  const reorderPrompts = async (fromIndex, toIndex) => {
+  const savePromptEdit = async (id) => {
+    if (!editingPromptText.trim()) return;
+    await supabase.from("daily_prompts").update({ question: editingPromptText.trim() }).eq("id", id);
+    setPrompts(prev => prev.map(p => p.id === id ? { ...p, question: editingPromptText.trim() } : p));
+    setEditingPromptId(null);
+    setEditingPromptText("");
+  };
     if (fromIndex === toIndex) return;
     const reordered = [...prompts];
     const [moved] = reordered.splice(fromIndex, 1);
@@ -6562,19 +6570,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         {/* Prompts tab */}
         {studioTab === "prompts" && (
           <div>
-            {/* Today's active prompt */}
-            {prompts.length > 0 && (() => {
-              const dayIndex = Math.floor(Date.now() / 86400000);
-              const todayPrompt = prompts[dayIndex % prompts.length];
-              return (
-                <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "center" }}>
-                  <div style={{ color: C2.accentSoft, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>Today</div>
-                  <div style={{ color: C2.text, fontSize: 14, fontWeight: 600 }}>{todayPrompt.question}</div>
-                  <div style={{ color: C2.textDim, fontSize: 11, marginLeft: "auto", whiteSpace: "nowrap" }}>#{(dayIndex % prompts.length) + 1} of {prompts.length}</div>
-                </div>
-              );
-            })()}
-
             {/* Add new prompt */}
             <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 16, marginBottom: 20 }}>
               <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>ADD PROMPT</div>
@@ -6593,38 +6588,79 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               </div>
             </div>
 
-            {/* Prompt list — draggable */}
-            <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>QUEUE ({prompts.length} prompts — cycles daily)</div>
+            {/* Prompt queue */}
+            <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
+              QUEUE ({prompts.length} prompt{prompts.length !== 1 ? "s" : ""} — cycles daily · drag to reorder)
+            </div>
             {prompts.length === 0 ? (
               <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>No prompts yet. Add one above.</div>
-            ) : prompts.map((prompt, i) => {
+            ) : (() => {
               const dayIndex = Math.floor(Date.now() / 86400000);
-              const isToday = i === dayIndex % prompts.length;
-              return (
-                <div key={prompt.id}
-                  draggable
-                  onDragStart={e => { e.dataTransfer.setData("text/plain", String(i)); }}
-                  onDragOver={e => { e.preventDefault(); setDragOverIndex(i); }}
-                  onDragLeave={() => setDragOverIndex(null)}
-                  onDrop={e => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData("text/plain")); reorderPrompts(from, i); setDragOverIndex(null); }}
-                  style={{
-                    background: dragOverIndex === i ? C2.accentGlow : C2.surface,
-                    border: "1px solid " + (isToday ? C2.accentDim : dragOverIndex === i ? C2.accentDim : C2.border),
-                    borderRadius: 10, padding: "12px 14px", marginBottom: 8,
-                    display: "flex", alignItems: "center", gap: 12, cursor: "grab",
-                    transition: "background 0.1s",
-                  }}>
-                  <div style={{ color: C2.textDim, fontSize: 12, cursor: "grab", userSelect: "none", flexShrink: 0 }}>☰</div>
-                  <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, minWidth: 20, flexShrink: 0 }}>{i + 1}</div>
-                  <div style={{ flex: 1, color: isToday ? C2.accentSoft : C2.text, fontSize: 13 }}>{prompt.question}</div>
-                  {isToday && <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 8px", color: C2.accentSoft, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TODAY</div>}
-                  <button onClick={() => deletePrompt(prompt.id)}
-                    style={{ background: "none", border: "none", color: C2.textDim, fontSize: 13, cursor: "pointer", padding: "0 4px", flexShrink: 0 }}>
-                    Del
-                  </button>
-                </div>
-              );
-            })}
+              const todayIndex = dayIndex % prompts.length;
+              // Reorder display: today first, then the rest in queue order
+              const displayOrder = [
+                ...prompts.slice(todayIndex),
+                ...prompts.slice(0, todayIndex),
+              ];
+              return displayOrder.map((prompt, displayI) => {
+                const realIndex = prompts.indexOf(prompt);
+                const isToday = realIndex === todayIndex;
+                const isEditing = editingPromptId === prompt.id;
+                return (
+                  <div key={prompt.id}
+                    draggable={!isEditing}
+                    onDragStart={e => { e.dataTransfer.setData("text/plain", String(realIndex)); }}
+                    onDragOver={e => { e.preventDefault(); setDragOverIndex(realIndex); }}
+                    onDragLeave={() => setDragOverIndex(null)}
+                    onDrop={e => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData("text/plain")); reorderPrompts(from, realIndex); setDragOverIndex(null); }}
+                    style={{
+                      background: isToday ? C2.goldGlow : dragOverIndex === realIndex ? C2.surfaceHover : C2.surface,
+                      border: "1px solid " + (isToday ? C2.goldBorder : dragOverIndex === realIndex ? C2.borderHover : C2.border),
+                      borderRadius: 10, padding: "12px 14px", marginBottom: 8,
+                      display: "flex", alignItems: isEditing ? "flex-start" : "center", gap: 12,
+                      cursor: isEditing ? "default" : "grab",
+                      transition: "background 0.1s",
+                    }}>
+                    <div style={{ color: isToday ? C2.gold + "88" : C2.textDim, fontSize: 12, cursor: "grab", userSelect: "none", flexShrink: 0, marginTop: isEditing ? 2 : 0 }}>☰</div>
+                    <div style={{ color: isToday ? C2.gold : C2.textDim, fontSize: 11, fontWeight: 700, minWidth: 20, flexShrink: 0, marginTop: isEditing ? 2 : 0 }}>{realIndex + 1}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {isEditing ? (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <input
+                            value={editingPromptText}
+                            onChange={e => setEditingPromptText(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") savePromptEdit(prompt.id); if (e.key === "Escape") { setEditingPromptId(null); setEditingPromptText(""); } }}
+                            autoFocus
+                            style={{ flex: 1, background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "5px 10px", color: C2.text, fontSize: 13, outline: "none" }}
+                          />
+                          <button onClick={() => savePromptEdit(prompt.id)}
+                            style={{ background: C2.accent, border: "none", borderRadius: 6, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                          <button onClick={() => { setEditingPromptId(null); setEditingPromptText(""); }}
+                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 6, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                        </div>
+                      ) : (
+                        <div style={{ color: isToday ? C2.gold : C2.textMuted, fontSize: 13 }}>{prompt.question}</div>
+                      )}
+                    </div>
+                    {isToday && !isEditing && (
+                      <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TODAY</div>
+                    )}
+                    {!isEditing && (
+                      <button onClick={() => { setEditingPromptId(prompt.id); setEditingPromptText(prompt.question); }}
+                        style={{ background: "none", border: "none", color: isToday ? C2.gold + "88" : C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 2px", flexShrink: 0 }}>
+                        Edit
+                      </button>
+                    )}
+                    {!isEditing && (
+                      <button onClick={() => deletePrompt(prompt.id)}
+                        style={{ background: "none", border: "none", color: isToday ? C2.gold + "88" : C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 2px", flexShrink: 0 }}>
+                        Del
+                      </button>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
         {studioTab === "characters" && (<>
