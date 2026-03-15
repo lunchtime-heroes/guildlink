@@ -602,6 +602,16 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const [tipped, setTipped] = useState(post.tipped || false);
 
+  // Sync tipped from parent
+  useEffect(() => {
+    setTipped(post.tipped || false);
+  }, [post.tipped]);
+
+  // Sync tip_count from parent
+  useEffect(() => {
+    setLocalPost(prev => ({ ...prev, tip_count: post.tip_count || 0 }));
+  }, [post.tip_count]);
+
   const deletePost = async () => {
     if (!post.id || !post.id.includes('-')) return;
     const { error } = await supabase.from("posts").delete().eq("id", post.id);
@@ -630,6 +640,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       await supabase.from("tip_votes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
       await supabase.rpc("decrement_tip", { row_id: post.id });
     }
+    // Fetch fresh count from DB
+    const { data: fresh } = await supabase.from("posts").select("tip_count").eq("id", post.id).single();
+    if (fresh) setLocalPost(p => ({ ...p, tip_count: fresh.tip_count || 0 }));
   };
 
   const toggleLike = async () => {
@@ -1827,7 +1840,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-176</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-177</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3725,15 +3738,24 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         .limit(20);
       if (posts) setGamePosts(posts);
 
-      // Tips — posts with tip_count > 0, sorted by tip count
+      // Tips — posts with tip votes, sorted by tip count
       const { data: tips } = await supabase
         .from("posts")
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
-        .gt("tip_count", 0)
+        .gte("tip_count", 1)
         .order("tip_count", { ascending: false })
         .limit(30);
-      if (tips) setGameTips(tips);
+      if (tips) {
+        // Also fetch which tips the current user has voted on
+        const tipIds = (tips || []).map(p => p.id);
+        let tippedIds = new Set();
+        if (currentUser && tipIds.length > 0) {
+          const { data: myTips } = await supabase.from("tip_votes").select("post_id").eq("user_id", currentUser.id).in("post_id", tipIds);
+          tippedIds = new Set((myTips || []).map(t => t.post_id));
+        }
+        setGameTips(tips.map(p => ({ ...p, tipped: tippedIds.has(p.id) })));
+      }
 
       // Top Voices — users with most likes on posts for this game
       const { data: voicePosts } = await supabase
@@ -3898,7 +3920,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     </div>
   );
 
-  const tabs = [{ id: "pulse", label: "Pulse" }, { id: "reviews", label: "Reviews" }, { id: "community", label: "Community" }, { id: "tips", label: "Tips" }, { id: "posts", label: "Posts" }, { id: "developer", label: "Developer" }];
+  const tabs = [{ id: "pulse", label: "Pulse" }, { id: "reviews", label: "Reviews" }, { id: "tips", label: "Tips" }, { id: "posts", label: "Posts" }, { id: "developer", label: "Developer" }];
 
   return (
     <div style={{ paddingTop: isMobile ? 52 : 60 }}>
@@ -4094,34 +4116,6 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
           </div>
         )}
 
-        {activeTab === "community" && (
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, gridColumn: "span 2" }}>
-              <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🏁 Completion Board</div>
-              <div style={{ color: C.textDim, fontSize: 13, marginBottom: 20 }}>{(game.completions || 0).toLocaleString()} GuildLink members have completed this game</div>
-              {[{ label: "Any% Complete", count: game.completions, pct: 100, color: C.green }, { label: "True Ending", count: Math.floor((game.completions || 0) * 0.64), pct: 64, color: C.teal }, { label: "New Game+", count: Math.floor((game.completions || 0) * 0.41), pct: 41, color: C.accent }, { label: "100% / Platinum", count: Math.floor((game.completions || 0) * 0.18), pct: 18, color: C.gold }, { label: "Speedrun (sub 2hr)", count: Math.floor((game.completions || 0) * 0.04), pct: 4, color: C.red }].map(row => (
-                <div key={row.label} style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <span style={{ color: C.textMuted, fontSize: 13 }}>{row.label}</span>
-                    <span style={{ color: row.color, fontSize: 13, fontWeight: 700 }}>{row.count.toLocaleString()} <span style={{ color: C.textDim, fontWeight: 400 }}>({row.pct}%)</span></span>
-                  </div>
-                  <div style={{ height: 6, background: C.surfaceRaised, borderRadius: 3 }}>
-                    <div style={{ height: "100%", width: row.pct + "%", background: row.color, borderRadius: 3 }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22 }}>
-              <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 16 }}>⭐ Community Score</div>
-              <div style={{ textAlign: "center", marginBottom: 20 }}>
-                <div style={{ fontSize: 56, fontWeight: 900, color: C.gold }}>{game.reviewScore}</div>
-                <div style={{ color: C.textDim, fontSize: 13, marginTop: 6 }}>Based on {(game.reviewCount || 0).toLocaleString()} reviews</div>
-              </div>
-              <button style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px", color: C.accentSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Write a Review</button>
-            </div>
-          </div>
-        )}
-
         {activeTab === "tips" && (
           <div style={{ maxWidth: 680 }}>
             {gameTips.length === 0 ? (
@@ -4153,6 +4147,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   time: timeAgo(post.created_at),
                   likes: post.likes || 0,
                   liked: post.liked || false,
+                  tipped: post.tipped || false,
+                  tip_count: post.tip_count || 0,
                   comment_count: post.comment_count || 0,
                   commentList: [],
                 }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
