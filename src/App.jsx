@@ -1799,7 +1799,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-171</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-172</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1937,46 +1937,6 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
 // ─── FEED PAGE ────────────────────────────────────────────────────────────────
 
 // ─── CHARTS WIDGET ────────────────────────────────────────────────────────────
-
-function NPCSidebarWidget({ setActivePage, setCurrentNPC }) {
-  const [npcs, setNpcs] = useState([]);
-
-  useEffect(() => {
-    supabase.from("npcs").select("id, name, handle, avatar_initials, status, bio")
-      .eq("is_active", true).order("name").limit(4)
-      .then(({ data }) => { if (data) setNpcs(data); });
-  }, []);
-
-  if (npcs.length === 0) return null;
-
-  return (
-    <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Characters</div>
-        <button onClick={() => setActivePage("npcs")}
-          style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: 0 }}>
-          See all
-        </button>
-      </div>
-      {npcs.map(npc => (
-        <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid " + C.border, cursor: "pointer" }}
-          onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-          <Avatar initials={npc.avatar_initials || "?"} size={28} isNPC={true} status={npc.status} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: C.gold, fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
-            <div style={{ color: C.textDim, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.handle}</div>
-          </div>
-        </div>
-      ))}
-      <button onClick={() => setActivePage("npcs")}
-        style={{ marginTop: 10, width: "100%", background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-        Meet all characters
-      </button>
-    </div>
-  );
-}
 
 function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, limit }) {
   const [charts, setCharts] = useState([]);
@@ -2907,8 +2867,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
         {/* NPCs */}
         <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
-          <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
-          {Object.values(NPCS).slice(0, 3).map((npc, i, arr) => (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
+            <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
+          </div>
+          {Object.values(NPCS).slice(0, 4).map((npc, i, arr) => (
             <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
               style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? "1px solid " + C.goldBorder : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
@@ -3109,10 +3072,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       {!isMobile && (
       <div style={{ width: 210, flexShrink: 0 }}>
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
-
         <TrendingWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} />
-
-        <NPCSidebarWidget setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />
       </div>
       )}
     </div>
