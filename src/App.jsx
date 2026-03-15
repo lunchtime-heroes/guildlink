@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-165</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-166</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6798,60 +6798,72 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
             )}
           </div>
 
-          {/* Scheduled queue */}
-          {queue.length > 0 && (
-            <div style={{ marginTop: 32 }}>
-              <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>SCHEDULED QUEUE ({queue.length})</div>
-              {queue.map(item => {
-                const qNPC = dbNPCs.find(n => n.id === item.npc_id);
-                const isEditingThis = editingScheduledId === item.id;
-                return (
-                  <div key={item.id} style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: isEditingThis ? "flex-start" : "center" }}>
-                    <Avatar initials={qNPC?.avatar_initials || "?"} size={32} isNPC={true} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {isEditingThis ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          <textarea value={editingScheduledContent} onChange={e => setEditingScheduledContent(e.target.value)}
-                            style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70, boxSizing: "border-box" }} />
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input type="date" value={editingScheduledDate} onChange={e => setEditingScheduledDate(e.target.value)}
-                              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
-                            <input type="time" value={editingScheduledTime} onChange={e => setEditingScheduledTime(e.target.value)}
-                              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
-                            <button onClick={() => saveScheduledEdit(item.id)}
-                              style={{ background: C2.accent, border: "none", borderRadius: 8, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
-                            <button onClick={() => setEditingScheduledId(null)}
-                              style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
-                          </div>
+          {/* Scheduled queue — always visible */}
+          <div style={{ marginTop: 32 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700 }}>SCHEDULED QUEUE ({queue.length})</div>
+              {queue.length > 0 && <div style={{ color: C2.textDim, fontSize: 11 }}>Sorted by scheduled time</div>}
+            </div>
+            {queue.length === 0 ? (
+              <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 10, padding: "24px 16px", textAlign: "center", color: C2.textDim, fontSize: 13 }}>
+                No posts scheduled yet. Upload a CSV above or use the Post tab to schedule individual posts.
+              </div>
+            ) : queue.map(item => {
+              const qNPC = dbNPCs.find(n => n.id === item.npc_id);
+              const isEditingThis = editingScheduledId === item.id;
+              const scheduledDate = new Date(item.scheduled_for);
+              const isPast = scheduledDate < new Date();
+              return (
+                <div key={item.id} style={{ background: C2.surface, border: "1px solid " + (isPast ? C2.textDim + "44" : C2.border), borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: isEditingThis ? "flex-start" : "flex-start", opacity: isPast ? 0.6 : 1 }}>
+                  <Avatar initials={qNPC?.avatar_initials || "?"} size={32} isNPC={true} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {isEditingThis ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <textarea value={editingScheduledContent} onChange={e => setEditingScheduledContent(e.target.value)}
+                          style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70, boxSizing: "border-box" }} />
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <input type="date" value={editingScheduledDate} onChange={e => setEditingScheduledDate(e.target.value)}
+                            style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
+                          <input type="time" value={editingScheduledTime} onChange={e => setEditingScheduledTime(e.target.value)}
+                            style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
+                          <button onClick={() => saveScheduledEdit(item.id)}
+                            style={{ background: C2.accent, border: "none", borderRadius: 8, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                          <button onClick={() => setEditingScheduledId(null)}
+                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
                         </div>
-                      ) : (
-                        <>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, color: C2.gold, fontSize: 13 }}>{qNPC?.name || "Unknown NPC"}</span>
-                            <span style={{ color: C2.textDim, fontSize: 11 }}>{new Date(item.scheduled_for).toLocaleString()}</span>
-                          </div>
-                          <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{item.content}</div>
-                        </>
-                      )}
-                    </div>
-                    {!isEditingThis && (
-                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                        <button onClick={() => {
-                          const d = new Date(item.scheduled_for);
-                          setEditingScheduledId(item.id);
-                          setEditingScheduledContent(item.content);
-                          setEditingScheduledDate(d.toISOString().slice(0, 10));
-                          setEditingScheduledTime(d.toISOString().slice(11, 16));
-                        }} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 4px" }}>Edit</button>
-                        <button onClick={() => deleteScheduled(item.id)}
-                          style={{ background: "none", border: "none", color: C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 4px" }}>Del</button>
                       </div>
+                    ) : (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4, gap: 8 }}>
+                          <div>
+                            <span style={{ fontWeight: 700, color: C2.gold, fontSize: 13 }}>{qNPC?.name || "Unknown NPC"}</span>
+                            {isPast && <span style={{ color: C2.textDim, fontSize: 10, marginLeft: 6 }}>· sent</span>}
+                          </div>
+                          <span style={{ color: isPast ? C2.textDim : C2.accentSoft, fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            {scheduledDate.toLocaleDateString()} {scheduledDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{item.content}</div>
+                      </>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  {!isEditingThis && (
+                    <div style={{ display: "flex", gap: 4, flexShrink: 0, marginTop: 2 }}>
+                      <button onClick={() => {
+                        const d = new Date(item.scheduled_for);
+                        setEditingScheduledId(item.id);
+                        setEditingScheduledContent(item.content);
+                        setEditingScheduledDate(d.toISOString().slice(0, 10));
+                        setEditingScheduledTime(d.toISOString().slice(11, 16));
+                      }} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 4px" }}>Edit</button>
+                      <button onClick={() => deleteScheduled(item.id)}
+                        style={{ background: "none", border: "none", color: C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 4px" }}>Del</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
         )}
         {studioTab === "characters" && (<>
