@@ -1799,7 +1799,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-174</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-175</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -7073,108 +7073,70 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                 candidates.filter(p => !closedCandidates.has(p.id)).map(post => {
                   const isSelected = selectedPost?.id === post.id;
                   const postComments = expandedComments[post.id];
-                  const commentsExpanded = postComments !== undefined;
-                  const isLoading = loadingComments[post.id];
-
-                  // Derive status from comment data
                   const npcComments = (postComments || []).filter(c => c.npc_id);
                   const hasNpcReply = npcComments.length > 0;
                   const lastComment = postComments?.length > 0 ? postComments[postComments.length - 1] : null;
                   const lastIsUser = lastComment && !lastComment.npc_id;
-                  const status = hasNpcReply
-                    ? (lastIsUser ? "needs_reply" : "replied")
-                    : "fresh";
-
+                  const status = hasNpcReply ? (lastIsUser ? "needs_reply" : "replied") : "fresh";
                   const statusStyles = {
-                    fresh:       { bg: C2.accent + "18", border: `${C2.accentDim}`, label: "Fresh", color: C2.accentSoft },
-                    replied:     { bg: `#22c55e18`,      border: `#22c55e44`,       label: "Replied",      color: "#22c55e" },
-                    needs_reply: { bg: `#f59e0b18`,      border: `#f59e0b44`,       label: "Needs Reply",  color: C2.gold },
+                    fresh:       { bg: C2.accent + "18", border: C2.accentDim, label: "Fresh",       color: C2.accentSoft },
+                    replied:     { bg: "#22c55e18",      border: "#22c55e44",  label: "Replied",     color: "#22c55e" },
+                    needs_reply: { bg: "#f59e0b18",      border: "#f59e0b44",  label: "Needs Reply", color: C2.gold },
                   };
                   const st = statusStyles[status];
-
+                  const feedPost = {
+                    id: post.id,
+                    npc_id: null,
+                    user_id: post.user_id,
+                    game_tag: post.game_tag,
+                    user: {
+                      name: post.profiles?.username || "Gamer",
+                      handle: post.profiles?.handle || "",
+                      avatar: post.profiles?.avatar_initials || "?",
+                      status: "online",
+                      isNPC: false,
+                      isFounding: post.profiles?.is_founding || false,
+                      activeRing: post.profiles?.active_ring || "none",
+                    },
+                    content: post.content,
+                    time: timeAgo(post.created_at),
+                    likes: post.likes || 0,
+                    liked: false,
+                    comment_count: post.commentCount || 0,
+                    commentList: [],
+                  };
                   return (
-                    <div key={post.id} style={{ background: isSelected ? C2.accentGlow : C2.surface, border: "1px solid " + isSelected ? C2.accentDim : C2.border, borderRadius: 14, marginBottom: 12, overflow: "hidden", transition: "all 0.15s" }}>
-                      <div style={{ padding: 16 }}>
-                        {/* Post header with status */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={30} founding={post.profiles?.is_founding} ring={post.profiles?.active_ring} />
-                            <div>
-                              <span style={{ fontWeight: 600, color: C2.text, fontSize: 13 }}>{post.profiles?.username || "Unknown"}</span>
-                              <span style={{ color: C2.textDim, fontSize: 11, marginLeft: 8 }}>{post.profiles?.handle}</span>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                            {/* Status pill */}
-                            <span style={{ background: st.bg, border: "1px solid " + st.border, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
-                            {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
-                            {post.hasThread && <span style={{ background: `#f59e0b22`, border: `1px solid #f59e0b44`, borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
-                            <button onClick={e => { e.stopPropagation(); setClosedCandidates(prev => new Set([...prev, post.id])); if (selectedPost?.id === post.id) { setSelectedPost(null); setReplyToComment(null); setComposeText(""); } }}
-                              style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                              Close ✓
-                            </button>
-                          </div>
-                        </div>
-
-                        <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>{post.content}</div>
-
-                        {/* Action row */}
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ color: C2.textDim, fontSize: 11 }}>♥ {post.likes || 0}</span>
-                          <button onClick={() => togglePostComments(post.id)}
-                            style={{ background: commentsExpanded ? C2.surfaceRaised : "none", border: "1px solid " + commentsExpanded ? C2.border : "transparent", borderRadius: 6, padding: "3px 10px", color: commentsExpanded ? C2.text : C2.textDim, fontSize: 11, cursor: "pointer" }}>
-                            💬 {post.commentCount} {isLoading ? "…" : commentsExpanded ? "▲" : "▼"}
-                          </button>
-                          <div style={{ marginLeft: "auto" }}>
-                            {!isSelected && (
-                              <button onClick={() => { setSelectedPost(post); setComposeText(""); if (!commentsExpanded) loadPostComments(post.id); }}
-                                style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "5px 14px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                                Reply as {npc.name.split(" ")[0]}
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                    <div key={post.id} style={{ marginBottom: 12 }}>
+                      {/* Studio status bar */}
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 5, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ background: st.bg, border: "1px solid " + st.border, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
+                        {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
+                        {post.hasThread && <span style={{ background: "#f59e0b22", border: "1px solid #f59e0b44", borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
+                        <button onClick={() => { setClosedCandidates(prev => new Set([...prev, post.id])); if (selectedPost?.id === post.id) { setSelectedPost(null); setReplyToComment(null); setComposeText(""); } }}
+                          style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          Close ✓
+                        </button>
                       </div>
-
-                      {/* Expanded comments */}
-                      {commentsExpanded && (
-                        <div style={{ background: C2.surfaceHover, borderTop: "1px solid " + C2.border, padding: "12px 16px" }}>
-                          {postComments.length === 0 ? (
-                            <div style={{ color: C2.textDim, fontSize: 12 }}>No comments yet.</div>
-                          ) : postComments.map((c, i) => {
-                            const npcData = c.npc_id ? NPCS[c.npc_id] : null;
-                            const isNPC = !!npcData;
-                            const name = npcData?.name || c.profiles?.username || "Unknown";
-                            const avatar = npcData?.avatar || c.profiles?.avatar_initials || "?";
-                            const isReplyTarget = replyToComment?.id === c.id;
-                            return (
-                              <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: i < postComments.length - 1 ? 10 : 0 }}>
-                                <Avatar initials={avatar.slice(0,2).toUpperCase()} size={26} isNPC={isNPC} />
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ background: isReplyTarget ? C2.accentGlow : C2.surfaceRaised, border: "1px solid " + isReplyTarget ? C2.accentDim : isNPC ? C2.goldBorder : C2.border, borderRadius: 8, padding: "7px 12px" }}>
-                                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
-                                      <span style={{ fontWeight: 700, fontSize: 12, color: isNPC ? C2.gold : C2.text }}>{name}</span>
-                                      {isNPC && <NPCBadge />}
-                                      <span style={{ color: C2.textDim, fontSize: 10, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
-                                    </div>
-                                    <p style={{ color: C2.text, fontSize: 12, lineHeight: 1.5, margin: 0 }}>{c.content}</p>
-                                  </div>
-                                  {!isNPC && isSelected && (
-                                    <button onClick={() => setReplyToComment(isReplyTarget ? null : { id: c.id, name })}
-                                      style={{ background: "none", border: "none", color: isReplyTarget ? C2.accentSoft : C2.textDim, fontSize: 11, cursor: "pointer", padding: "3px 2px", marginTop: 2 }}>
-                                      {isReplyTarget ? "↩ Replying…" : "↩ Reply to this"}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                      <FeedPostCard
+                        post={feedPost}
+                        setActivePage={setActivePage}
+                        setCurrentGame={() => {}}
+                        setCurrentNPC={setCurrentNPC}
+                        setCurrentPlayer={() => {}}
+                        isMobile={isMobile}
+                        currentUser={null}
+                      />
+                      {/* Reply as NPC button + composer */}
+                      {!isSelected && (
+                        <div style={{ marginTop: 6 }}>
+                          <button onClick={() => { setSelectedPost(post); setComposeText(""); setReplyToComment(null); loadPostComments(post.id); }}
+                            style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                            Reply as {npc.name.split(" ")[0]}
+                          </button>
                         </div>
                       )}
-
-                      {/* Inline composer when selected */}
                       {isSelected && (
-                        <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow }}>
+                        <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow, borderRadius: "0 0 14px 14px", marginTop: 4 }}>
                           {replyToComment && (
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px" }}>
                               <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
