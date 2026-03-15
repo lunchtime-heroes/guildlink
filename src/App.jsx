@@ -1799,7 +1799,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-172</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-173</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2446,6 +2446,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [mentionIndex, setMentionIndex] = useState(0);
   const [dbGames, setDbGames] = useState({}); // id -> game object cache
   const [dailyPrompt, setDailyPrompt] = useState(null);
+  const [sidebarNPCs, setSidebarNPCs] = useState([]);
   const textareaRef = useRef(null); // array of game ids, max 3
 
   const handlePostTextChange = async (e) => {
@@ -2503,6 +2504,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   useEffect(() => {
     loadPosts();
     loadDailyPrompt();
+    loadSidebarNPCs();
     if (!isGuest) {
       loadFollowing();
       loadPlayingGames();
@@ -2516,6 +2518,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!data || data.length === 0) return;
     const dayIndex = Math.floor(Date.now() / 86400000);
     setDailyPrompt(data[dayIndex % data.length]);
+  };
+
+  const loadSidebarNPCs = async () => {
+    const { data } = await supabase.from("npcs").select("id, name, handle, avatar_initials, status, role").eq("is_active", true);
+    if (!data || data.length === 0) return;
+    // Pick 4 random NPCs
+    const shuffled = [...data].sort(() => Math.random() - 0.5);
+    setSidebarNPCs(shuffled.slice(0, 4));
   };
 
   // Re-sync liked state and counts when returning to feed
@@ -2866,26 +2876,28 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </div>
 
         {/* NPCs */}
+        {sidebarNPCs.length > 0 && (
         <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
           </div>
-          {Object.values(NPCS).slice(0, 4).map((npc, i, arr) => (
+          {sidebarNPCs.map((npc, i, arr) => (
             <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
               style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? "1px solid " + C.goldBorder : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
             >
-              <Avatar initials={npc.avatar} size={30} isNPC={true} status={npc.status} />
+              <Avatar initials={npc.avatar_initials || "?"} size={30} isNPC={true} status={npc.status} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
-                <div style={{ color: C.textDim, fontSize: 10 }}>{npc.role}</div>
+                <div style={{ color: C.textDim, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.role}</div>
               </div>
               <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
           ))}
         </div>
+        )}
       </div>
       )}
 
