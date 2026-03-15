@@ -600,6 +600,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     });
   }, [post.game_tag, post.gameId]);
 
+  const [tipped, setTipped] = useState(post.tipped || false);
+
   const deletePost = async () => {
     if (!post.id || !post.id.includes('-')) return;
     const { error } = await supabase.from("posts").delete().eq("id", post.id);
@@ -611,6 +613,23 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const { error } = await supabase.from("comments").delete().eq("id", commentId);
     if (error) { console.error("[deleteComment] error:", error); return; }
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
+  };
+
+  const toggleTip = async () => {
+    if (isGuest) { onSignIn?.("Sign in to mark helpful tips."); return; }
+    if (!post.id || !post.id.includes('-') || !post.game_tag) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const newTipped = !tipped;
+    setTipped(newTipped);
+    setLocalPost(p => ({ ...p, tip_count: Math.max(0, (p.tip_count || 0) + (newTipped ? 1 : -1)) }));
+    if (newTipped) {
+      await supabase.from("tip_votes").upsert({ post_id: post.id, user_id: authUser.id });
+      await supabase.rpc("increment_tip", { row_id: post.id });
+    } else {
+      await supabase.from("tip_votes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
+      await supabase.rpc("decrement_tip", { row_id: post.id });
+    }
   };
 
   const toggleLike = async () => {
@@ -778,6 +797,15 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               borderRadius: 8, padding: "5px 14px", cursor: "pointer",
               color: C.textMuted, fontSize: 13, fontWeight: 600,
             }}>↩ Reply</button>
+          )}
+          {(post.game_tag || localPost.game_tag) && !isGuest && (
+            <button onClick={toggleTip} style={{
+              background: tipped ? C.gold + "18" : "transparent",
+              border: "1px solid " + (tipped ? C.gold + "44" : C.border),
+              borderRadius: 8, padding: "5px 14px", cursor: "pointer",
+              color: tipped ? C.gold : C.textMuted, fontSize: 13, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 5,
+            }}>Helpful Tip {localPost.tip_count > 0 ? localPost.tip_count : ""}</button>
           )}
           {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
             <button onClick={deletePost} style={{
@@ -1799,7 +1827,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-175</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-176</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1847,40 +1875,6 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
             </div>
           </div>
           <span style={{ color: C.textDim, fontSize: 18 }}>→</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── TRENDING WIDGET ──────────────────────────────────────────────────────────
-
-function TrendingWidget({ setActivePage, setCurrentGame }) {
-  const [games, setGames] = useState([]);
-
-  useEffect(() => {
-    supabase.from("games")
-      .select("id, name, genre, followers")
-      .order("followers", { ascending: false })
-      .limit(6)
-      .then(({ data }) => { if (data) setGames(data); });
-  }, []);
-
-  return (
-    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16 }}>
-      <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Trending</div>
-      {games.length === 0 ? (
-        <div style={{ color: C.textDim, fontSize: 12 }}>Loading...</div>
-      ) : games.map((g, i) => (
-        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < games.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
-          onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-          <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, width: 16, textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-            {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
-          </div>
         </div>
       ))}
     </div>
@@ -2701,7 +2695,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setFeedLoading(false);
     } else {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      const [postsResult, likesResult] = await Promise.all([
+      const [postsResult, likesResult, tipsResult] = await Promise.all([
         supabase.from("posts")
           .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .order("created_at", { ascending: false })
@@ -2709,15 +2703,19 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         authUser
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
+        authUser
+          ? supabase.from("tip_votes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
+          : Promise.resolve({ data: [] }),
       ]);
       if (postsResult.error) console.error("Feed load error:", postsResult.error);
-      if (postsResult.data) console.log("Feed posts:", postsResult.data.length, "NPC posts:", postsResult.data.filter(p=>p.npc_id).length, "sample NPC:", postsResult.data.find(p=>p.npc_id));
       const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
+      const tippedIds = new Set((tipsResult.data || []).map(t => t.post_id));
       if (postsResult.data) {
         setLivePosts(postsResult.data.map(p => ({
           ...p,
           comment_count: p.comments?.length || 0,
           liked: likedIds.has(p.id),
+          tipped: tippedIds.has(p.id),
         })));
       }
       setFeedLoading(false);
@@ -2985,6 +2983,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
               liked: post.liked || false,
+              tipped: post.tipped || false,
+              tip_count: post.tip_count || 0,
               comment_count: post.comment_count || 0,
               commentList: [],
             }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
@@ -3084,7 +3084,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       {!isMobile && (
       <div style={{ width: 210, flexShrink: 0 }}>
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
-        <TrendingWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} />
       </div>
       )}
     </div>
@@ -3695,6 +3694,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [followLoading, setFollowLoading] = useState(false);
   const [dbGame, setDbGame] = useState(null);
   const [gamePosts, setGamePosts] = useState([]);
+  const [gameTips, setGameTips] = useState([]);
   const [topVoices, setTopVoices] = useState([]);
   const [latestReviews, setLatestReviews] = useState([]);
   const [chartsData, setChartsData] = useState(null);
@@ -3719,11 +3719,21 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Posts
       const { data: posts } = await supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .order("created_at", { ascending: false })
         .limit(20);
       if (posts) setGamePosts(posts);
+
+      // Tips — posts with tip_count > 0, sorted by tip count
+      const { data: tips } = await supabase
+        .from("posts")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
+        .eq("game_tag", dbId)
+        .gt("tip_count", 0)
+        .order("tip_count", { ascending: false })
+        .limit(30);
+      if (tips) setGameTips(tips);
 
       // Top Voices — users with most likes on posts for this game
       const { data: voicePosts } = await supabase
@@ -4113,22 +4123,41 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         )}
 
         {activeTab === "tips" && (
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-            {game.tips.map((tip, i) => (
-              <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: C.goldDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💡</div>
-                  <div>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{tip.title}</div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <Badge small color={C.teal}>{tip.category}</Badge>
-                      <span style={{ color: C.textDim, fontSize: 12 }}>by {tip.author}</span>
-                      <span style={{ color: C.gold, fontSize: 12, fontWeight: 700, marginLeft: "auto" }}>▲ {tip.upvotes.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
+          <div style={{ maxWidth: 680 }}>
+            {gameTips.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>💡</div>
+                <div style={{ fontSize: 14, marginBottom: 8 }}>No community tips yet.</div>
+                <div style={{ fontSize: 13, color: C.textDim }}>When players mark a post as a Helpful Tip, it shows up here.</div>
               </div>
-            ))}
+            ) : gameTips.map(post => {
+              const author = post.npc_id ? post.npcs : post.profiles;
+              const isNPC = !!post.npc_id;
+              return (
+                <FeedPostCard key={post.id} post={{
+                  id: post.id,
+                  npc_id: post.npc_id,
+                  game_tag: post.game_tag,
+                  user_id: post.user_id,
+                  tip_count: post.tip_count || 0,
+                  user: {
+                    name: isNPC ? (author?.name || "NPC") : (author?.username || "Gamer"),
+                    handle: author?.handle || "",
+                    avatar: author?.avatar_initials || "GL",
+                    status: "online",
+                    isNPC,
+                    isFounding: !isNPC && (author?.is_founding || false),
+                    activeRing: !isNPC ? (author?.active_ring || "none") : "none",
+                  },
+                  content: post.content,
+                  time: timeAgo(post.created_at),
+                  likes: post.likes || 0,
+                  liked: post.liked || false,
+                  comment_count: post.comment_count || 0,
+                  commentList: [],
+                }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
+              );
+            })}
           </div>
         )}
 
