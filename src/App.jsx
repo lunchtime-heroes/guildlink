@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-161</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-162</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6624,7 +6624,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       transition: "background 0.1s",
                     }}>
                     <div style={{ color: isToday ? C2.gold + "88" : C2.textDim, fontSize: 12, cursor: "grab", userSelect: "none", flexShrink: 0, marginTop: isEditing ? 2 : 0 }}>☰</div>
-                    <div style={{ color: isToday ? C2.gold : C2.textDim, fontSize: 11, fontWeight: 700, minWidth: 20, flexShrink: 0, marginTop: isEditing ? 2 : 0 }}>{realIndex + 1}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {isEditing ? (
                         <div style={{ display: "flex", gap: 6 }}>
