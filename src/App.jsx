@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-158</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-159</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2443,6 +2443,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [taggedGames, setTaggedGames] = useState([]);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [dbGames, setDbGames] = useState({}); // id -> game object cache
+  const [dailyPrompt, setDailyPrompt] = useState(null);
   const textareaRef = useRef(null); // array of game ids, max 3
 
   const handlePostTextChange = async (e) => {
@@ -2499,6 +2500,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
   useEffect(() => {
     loadPosts();
+    loadDailyPrompt();
     if (!isGuest) {
       loadFollowing();
       loadPlayingGames();
@@ -2506,6 +2508,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       loadSuggestedGamers();
     }
   }, []);
+
+  const loadDailyPrompt = async () => {
+    const { data } = await supabase.from("daily_prompts").select("id, question, sort_order").order("sort_order", { ascending: true });
+    if (!data || data.length === 0) return;
+    const dayIndex = Math.floor(Date.now() / 86400000);
+    setDailyPrompt(data[dayIndex % data.length]);
+  };
 
   // Re-sync liked state and counts when returning to feed
   useEffect(() => {
@@ -2894,7 +2903,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
-                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder="Share a win, review a game, find teammates... (@ to tag a game)" style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game, find teammates... (@ to tag a game)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
                   <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {mentionResults.map((game, i) => (
@@ -6143,6 +6152,55 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
   const [closedThreads, setClosedThreads] = useState(new Set());
   const [closedCandidates, setClosedCandidates] = useState(new Set());
 
+  const [studioPrompt, setStudioPrompt] = useState(null);
+  const [studioTab, setStudioTab] = useState("characters"); // "characters" | "prompts"
+  const [prompts, setPrompts] = useState([]);
+  const [newPromptText, setNewPromptText] = useState("");
+  const [savingPrompt, setSavingPrompt] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  const loadStudioPrompt = async () => {
+    const { data } = await supabase.from("daily_prompts").select("id, question, sort_order").order("sort_order", { ascending: true });
+    if (!data || data.length === 0) return;
+    setPrompts(data);
+    const dayIndex = Math.floor(Date.now() / 86400000);
+    setStudioPrompt(data[dayIndex % data.length]);
+  };
+
+  const loadPrompts = async () => {
+    const { data } = await supabase.from("daily_prompts").select("id, question, sort_order").order("sort_order", { ascending: true });
+    if (data) setPrompts(data);
+  };
+
+  const addPrompt = async () => {
+    if (!newPromptText.trim()) return;
+    setSavingPrompt(true);
+    const maxOrder = prompts.length > 0 ? Math.max(...prompts.map(p => p.sort_order)) : 0;
+    const { data } = await supabase.from("daily_prompts").insert({ question: newPromptText.trim(), sort_order: maxOrder + 1 }).select();
+    if (data?.[0]) setPrompts(prev => [...prev, data[0]]);
+    setNewPromptText("");
+    setSavingPrompt(false);
+  };
+
+  const deletePrompt = async (id) => {
+    await supabase.from("daily_prompts").delete().eq("id", id);
+    setPrompts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const reorderPrompts = async (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    const reordered = [...prompts];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    // Reassign sort_order values
+    const updated = reordered.map((p, i) => ({ ...p, sort_order: i + 1 }));
+    setPrompts(updated);
+    // Persist all sort_orders
+    for (const p of updated) {
+      await supabase.from("daily_prompts").update({ sort_order: p.sort_order }).eq("id", p.id);
+    }
+  };
+
   // Load all NPCs from DB
   const loadDBNPCs = async () => {
     setLoadingNPCs(true);
@@ -6152,7 +6210,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     setLoadingNPCs(false);
   };
 
-  useEffect(() => { loadDBNPCs(); loadQueue(); }, []);
+  useEffect(() => { loadDBNPCs(); loadQueue(); loadStudioPrompt(); }, []);
 
   // Sync hardcoded NPCs that don't have a DB record yet
   const syncHardcodedNPCs = async () => {
@@ -6470,26 +6528,106 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         )}
 
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 22, color: C2.text, letterSpacing: "-0.5px", marginBottom: 4 }}>NPC Studio</div>
             <div style={{ color: C2.textMuted, fontSize: 14 }}>Manage characters and write as them.</div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            {unsynced.length > 0 && (
+            {studioTab === "characters" && unsynced.length > 0 && (
               <button onClick={syncHardcodedNPCs} disabled={syncing}
                 style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 10, padding: "8px 16px", color: C2.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {syncing ? "Syncing…" : `↑ Sync ${unsynced.length} to DB`}
               </button>
             )}
-            <button onClick={() => { setEditingNPC(null); setShowEditor(true); }}
-              style={{ background: C2.accent, border: "none", borderRadius: 10, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              + New NPC
-            </button>
+            {studioTab === "characters" && (
+              <button onClick={() => { setEditingNPC(null); setShowEditor(true); }}
+                style={{ background: C2.accent, border: "none", borderRadius: 10, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                + New NPC
+              </button>
+            )}
           </div>
         </div>
 
-        {/* NPC grid */}
+        {/* Studio tabs */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 4 }}>
+          {[{ id: "characters", label: "Characters" }, { id: "prompts", label: "Daily Prompts" }].map(t => (
+            <button key={t.id} onClick={() => setStudioTab(t.id)}
+              style={{ flex: 1, background: studioTab === t.id ? C2.accentGlow : "transparent", border: "1px solid " + (studioTab === t.id ? C2.accentDim : "transparent"), borderRadius: 8, padding: "8px", color: studioTab === t.id ? C2.accentSoft : C2.textMuted, fontSize: 13, fontWeight: studioTab === t.id ? 700 : 500, cursor: "pointer" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Prompts tab */}
+        {studioTab === "prompts" && (
+          <div>
+            {/* Today's active prompt */}
+            {prompts.length > 0 && (() => {
+              const dayIndex = Math.floor(Date.now() / 86400000);
+              const todayPrompt = prompts[dayIndex % prompts.length];
+              return (
+                <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "center" }}>
+                  <div style={{ color: C2.accentSoft, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>Today</div>
+                  <div style={{ color: C2.text, fontSize: 14, fontWeight: 600 }}>{todayPrompt.question}</div>
+                  <div style={{ color: C2.textDim, fontSize: 11, marginLeft: "auto", whiteSpace: "nowrap" }}>#{(dayIndex % prompts.length) + 1} of {prompts.length}</div>
+                </div>
+              );
+            })()}
+
+            {/* Add new prompt */}
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>ADD PROMPT</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={newPromptText}
+                  onChange={e => setNewPromptText(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addPrompt()}
+                  placeholder="What's a game moment you'll never forget?"
+                  style={{ flex: 1, background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, outline: "none" }}
+                />
+                <button onClick={addPrompt} disabled={savingPrompt || !newPromptText.trim()}
+                  style={{ background: newPromptText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 18px", color: newPromptText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: newPromptText.trim() ? "pointer" : "default" }}>
+                  {savingPrompt ? "Adding…" : "Add"}
+                </button>
+              </div>
+            </div>
+
+            {/* Prompt list — draggable */}
+            <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>QUEUE ({prompts.length} prompts — cycles daily)</div>
+            {prompts.length === 0 ? (
+              <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>No prompts yet. Add one above.</div>
+            ) : prompts.map((prompt, i) => {
+              const dayIndex = Math.floor(Date.now() / 86400000);
+              const isToday = i === dayIndex % prompts.length;
+              return (
+                <div key={prompt.id}
+                  draggable
+                  onDragStart={e => { e.dataTransfer.setData("text/plain", String(i)); }}
+                  onDragOver={e => { e.preventDefault(); setDragOverIndex(i); }}
+                  onDragLeave={() => setDragOverIndex(null)}
+                  onDrop={e => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData("text/plain")); reorderPrompts(from, i); setDragOverIndex(null); }}
+                  style={{
+                    background: dragOverIndex === i ? C2.accentGlow : C2.surface,
+                    border: "1px solid " + (isToday ? C2.accentDim : dragOverIndex === i ? C2.accentDim : C2.border),
+                    borderRadius: 10, padding: "12px 14px", marginBottom: 8,
+                    display: "flex", alignItems: "center", gap: 12, cursor: "grab",
+                    transition: "background 0.1s",
+                  }}>
+                  <div style={{ color: C2.textDim, fontSize: 12, cursor: "grab", userSelect: "none", flexShrink: 0 }}>☰</div>
+                  <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, minWidth: 20, flexShrink: 0 }}>{i + 1}</div>
+                  <div style={{ flex: 1, color: isToday ? C2.accentSoft : C2.text, fontSize: 13 }}>{prompt.question}</div>
+                  {isToday && <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 8px", color: C2.accentSoft, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TODAY</div>}
+                  <button onClick={() => deletePrompt(prompt.id)}
+                    style={{ background: "none", border: "none", color: C2.textDim, fontSize: 13, cursor: "pointer", padding: "0 4px", flexShrink: 0 }}>
+                    Del
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {studioTab === "characters" && (<>
         {loadingNPCs ? (
           <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading characters…</div>
         ) : dbNPCs.length === 0 ? (
@@ -6562,6 +6700,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
             })}
           </div>
         )}
+        </>)}
       </div>
     );
   }
@@ -6673,7 +6812,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         {/* Main panel */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 20, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: studioPrompt ? 12 : 20, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 4 }}>
             {[{ id: "respond", label: "Respond" }, { id: "threads", label: "Threads" }, { id: "post", label: "Post" }].map(m => (
               <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
                 style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: "1px solid " + mode === m.id ? C2.accentDim : "transparent", borderRadius: 8, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
@@ -6681,6 +6820,14 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               </button>
             ))}
           </div>
+
+          {/* Daily prompt bulletin */}
+          {studioPrompt && (
+            <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ color: C2.accentSoft, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", marginTop: 1 }}>Today</div>
+              <div style={{ color: C2.text, fontSize: 13, lineHeight: 1.5 }}>{studioPrompt.question}</div>
+            </div>
+          )}
 
           {/* Respond mode */}
           {mode === "respond" && (
