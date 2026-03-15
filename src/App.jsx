@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-162</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-163</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6160,6 +6160,13 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [editingPromptId, setEditingPromptId] = useState(null);
   const [editingPromptText, setEditingPromptText] = useState("");
+  const [csvPreview, setCsvPreview] = useState(null); // array of parsed rows
+  const [csvErrors, setCsvErrors] = useState([]);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [editingScheduledId, setEditingScheduledId] = useState(null);
+  const [editingScheduledContent, setEditingScheduledContent] = useState("");
+  const [editingScheduledDate, setEditingScheduledDate] = useState("");
+  const [editingScheduledTime, setEditingScheduledTime] = useState("");
 
   const loadStudioPrompt = async () => {
     const { data } = await supabase.from("daily_prompts").select("id, question, sort_order").order("sort_order", { ascending: true });
@@ -6197,7 +6204,81 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     setEditingPromptText("");
   };
 
-  const reorderPrompts = async (fromIndex, toIndex) => {
+  const parseCsv = (text) => {
+    const lines = text.trim().split("\n").filter(l => l.trim());
+    if (lines.length < 2) return { rows: [], errors: ["CSV must have a header row and at least one data row."] };
+    const header = lines[0].toLowerCase().split(",").map(h => h.trim().replace(/^["']|["']$/g, ""));
+    const required = ["npc_handle", "content", "scheduled_date", "scheduled_time"];
+    const missing = required.filter(r => !header.includes(r));
+    if (missing.length > 0) return { rows: [], errors: [`Missing columns: ${missing.join(", ")}`] };
+    const rows = [];
+    const errors = [];
+    lines.slice(1).forEach((line, i) => {
+      // Simple CSV split — handles quoted fields with commas
+      const cols = [];
+      let cur = "", inQuote = false;
+      for (const ch of line) {
+        if (ch === '"') { inQuote = !inQuote; }
+        else if (ch === "," && !inQuote) { cols.push(cur.trim()); cur = ""; }
+        else cur += ch;
+      }
+      cols.push(cur.trim());
+      const row = {};
+      header.forEach((h, j) => { row[h] = (cols[j] || "").replace(/^["']|["']$/g, "").trim(); });
+      const rowErrors = [];
+      if (!row.npc_handle) rowErrors.push("missing npc_handle");
+      if (!row.content) rowErrors.push("missing content");
+      if (!row.scheduled_date || !/^\d{4}-\d{2}-\d{2}$/.test(row.scheduled_date)) rowErrors.push("invalid date (use YYYY-MM-DD)");
+      if (!row.scheduled_time || !/^\d{2}:\d{2}$/.test(row.scheduled_time)) rowErrors.push("invalid time (use HH:MM)");
+      const npcMatch = dbNPCs.find(n => n.handle.toLowerCase() === row.npc_handle.toLowerCase() || n.handle.toLowerCase() === row.npc_handle.toLowerCase().replace(/^@/, "@"));
+      if (!npcMatch && row.npc_handle) rowErrors.push(`NPC not found: ${row.npc_handle}`);
+      rows.push({ ...row, rowNum: i + 2, errors: rowErrors, npc: npcMatch || null, valid: rowErrors.length === 0 });
+      if (rowErrors.length > 0) errors.push(`Row ${i + 2}: ${rowErrors.join(", ")}`);
+    });
+    return { rows, errors };
+  };
+
+  const handleCsvFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const { rows, errors } = parseCsv(ev.target.result);
+      setCsvPreview(rows);
+      setCsvErrors(errors);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const confirmBulkQueue = async () => {
+    if (!csvPreview) return;
+    setCsvUploading(true);
+    const { data: { user: writerUser } } = await supabase.auth.getUser();
+    const validRows = csvPreview.filter(r => r.valid);
+    for (const row of validRows) {
+      const scheduledFor = new Date(`${row.scheduled_date}T${row.scheduled_time}`).toISOString();
+      await supabase.from("npc_scheduled_posts").insert({
+        npc_id: row.npc.id,
+        content: row.content,
+        scheduled_for: scheduledFor,
+        status: "scheduled",
+        user_id: writerUser.id,
+      });
+    }
+    await loadQueue();
+    setCsvPreview(null);
+    setCsvErrors([]);
+    setCsvUploading(false);
+  };
+
+  const saveScheduledEdit = async (id) => {
+    if (!editingScheduledContent.trim()) return;
+    const scheduledFor = new Date(`${editingScheduledDate}T${editingScheduledTime}`).toISOString();
+    await supabase.from("npc_scheduled_posts").update({ content: editingScheduledContent.trim(), scheduled_for: scheduledFor }).eq("id", id);
+    await loadQueue();
+    setEditingScheduledId(null);
+  };
     if (fromIndex === toIndex) return;
     const reordered = [...prompts];
     const [moved] = reordered.splice(fromIndex, 1);
@@ -6663,6 +6744,112 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               });
             })()}
           </div>
+
+          {/* Bulk CSV upload */}
+          <div style={{ marginTop: 32 }}>
+            <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>BULK SCHEDULE</div>
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+              <div style={{ color: C2.textMuted, fontSize: 13, marginBottom: 10 }}>
+                Upload a CSV with columns: <span style={{ color: C2.accentSoft, fontFamily: "monospace", fontSize: 12 }}>npc_handle, content, scheduled_date, scheduled_time</span>
+              </div>
+              <div style={{ color: C2.textDim, fontSize: 11, marginBottom: 12 }}>
+                Dates: YYYY-MM-DD &nbsp;|&nbsp; Times: HH:MM (24hr) &nbsp;|&nbsp; Handle must match exactly, e.g. @StayAtDaves_NPC
+              </div>
+              <label style={{ display: "inline-block", background: C2.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Upload CSV
+                <input type="file" accept=".csv" onChange={handleCsvFile} style={{ display: "none" }} />
+              </label>
+            </div>
+
+            {/* CSV preview */}
+            {csvPreview && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ color: C2.textMuted, fontSize: 13 }}>
+                    <span style={{ color: C2.green, fontWeight: 700 }}>{csvPreview.filter(r => r.valid).length} valid</span>
+                    {csvPreview.filter(r => !r.valid).length > 0 && <span style={{ color: C2.red, fontWeight: 700, marginLeft: 12 }}>{csvPreview.filter(r => !r.valid).length} errors</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setCsvPreview(null); setCsvErrors([]); }}
+                      style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 14px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                    <button onClick={confirmBulkQueue} disabled={csvUploading || csvPreview.filter(r => r.valid).length === 0}
+                      style={{ background: csvPreview.filter(r => r.valid).length > 0 ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "6px 18px", color: csvPreview.filter(r => r.valid).length > 0 ? "#fff" : C2.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      {csvUploading ? "Queuing…" : `Queue ${csvPreview.filter(r => r.valid).length} posts`}
+                    </button>
+                  </div>
+                </div>
+                {csvPreview.map((row, i) => (
+                  <div key={i} style={{ background: row.valid ? C2.surface : "#ef444410", border: "1px solid " + (row.valid ? C2.border : "#ef444444"), borderRadius: 10, padding: "10px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    {row.npc ? <Avatar initials={row.npc.avatar_initials || "?"} size={32} isNPC={true} /> : <div style={{ width: 32, height: 32, borderRadius: "50%", background: C2.surfaceRaised, flexShrink: 0 }} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: row.npc ? C2.gold : C2.red, fontSize: 12 }}>{row.npc_handle}</span>
+                        <span style={{ color: C2.textDim, fontSize: 11 }}>{row.scheduled_date} {row.scheduled_time}</span>
+                      </div>
+                      <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5 }}>{row.content}</div>
+                      {row.errors.length > 0 && <div style={{ color: C2.red, fontSize: 11, marginTop: 4 }}>{row.errors.join(" · ")}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Scheduled queue */}
+          {queue.length > 0 && (
+            <div style={{ marginTop: 32 }}>
+              <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>SCHEDULED QUEUE ({queue.length})</div>
+              {queue.map(item => {
+                const qNPC = dbNPCs.find(n => n.id === item.npc_id);
+                const isEditingThis = editingScheduledId === item.id;
+                return (
+                  <div key={item.id} style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: isEditingThis ? "flex-start" : "center" }}>
+                    <Avatar initials={qNPC?.avatar_initials || "?"} size={32} isNPC={true} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {isEditingThis ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <textarea value={editingScheduledContent} onChange={e => setEditingScheduledContent(e.target.value)}
+                            style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70, boxSizing: "border-box" }} />
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <input type="date" value={editingScheduledDate} onChange={e => setEditingScheduledDate(e.target.value)}
+                              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
+                            <input type="time" value={editingScheduledTime} onChange={e => setEditingScheduledTime(e.target.value)}
+                              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
+                            <button onClick={() => saveScheduledEdit(item.id)}
+                              style={{ background: C2.accent, border: "none", borderRadius: 8, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                            <button onClick={() => setEditingScheduledId(null)}
+                              style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{ fontWeight: 700, color: C2.gold, fontSize: 13 }}>{qNPC?.name || "Unknown NPC"}</span>
+                            <span style={{ color: C2.textDim, fontSize: 11 }}>{new Date(item.scheduled_for).toLocaleString()}</span>
+                          </div>
+                          <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{item.content}</div>
+                        </>
+                      )}
+                    </div>
+                    {!isEditingThis && (
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => {
+                          const d = new Date(item.scheduled_for);
+                          setEditingScheduledId(item.id);
+                          setEditingScheduledContent(item.content);
+                          setEditingScheduledDate(d.toISOString().slice(0, 10));
+                          setEditingScheduledTime(d.toISOString().slice(11, 16));
+                        }} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 4px" }}>Edit</button>
+                        <button onClick={() => deleteScheduled(item.id)}
+                          style={{ background: "none", border: "none", color: C2.textDim, fontSize: 12, cursor: "pointer", padding: "0 4px" }}>Del</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
         )}
         {studioTab === "characters" && (<>
         {loadingNPCs ? (
@@ -6714,29 +6901,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
           </div>
         )}
 
-        {/* Scheduled queue */}
-        {queue.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <div style={{ fontWeight: 700, color: C2.text, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Scheduled Posts</div>
-            {queue.map(item => {
-              const qNPC = dbNPCs.find(n => n.id === item.npc_id);
-              return (
-                <div key={item.id} style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <Avatar initials={qNPC?.avatar_initials || "?"} size={32} isNPC={true} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, color: C2.gold, fontSize: 13 }}>{qNPC?.name || "Unknown NPC"}</span>
-                      <span style={{ color: C2.textDim, fontSize: 11 }}>{new Date(item.scheduled_for).toLocaleString()}</span>
-                    </div>
-                    <div style={{ color: C2.textMuted, fontSize: 13, lineHeight: 1.5 }}>{item.content}</div>
-                    {item.reply_to_post_id && <div style={{ color: C2.textDim, fontSize: 11, marginTop: 4 }}>↩ reply to post</div>}
-                  </div>
-                  <button onClick={() => deleteScheduled(item.id)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 16, cursor: "pointer", padding: "0 4px", flexShrink: 0 }}>×</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
         </>)}
       </div>
     );
