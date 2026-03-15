@@ -1797,7 +1797,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-166</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-167</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6255,16 +6255,18 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     if (!csvPreview) return;
     setCsvUploading(true);
     const { data: { user: writerUser } } = await supabase.auth.getUser();
+    console.log("[bulkQueue] writerUser:", writerUser?.id);
     const validRows = csvPreview.filter(r => r.valid);
     for (const row of validRows) {
       const scheduledFor = new Date(`${row.scheduled_date}T${row.scheduled_time}`).toISOString();
-      await supabase.from("npc_scheduled_posts").insert({
+      const { data, error } = await supabase.from("npc_scheduled_posts").insert({
         npc_id: row.npc.id,
         content: row.content,
         scheduled_for: scheduledFor,
         status: "scheduled",
         user_id: writerUser.id,
-      });
+      }).select();
+      console.log("[bulkQueue] insert row:", { handle: row.npc_handle, data, error });
     }
     await loadQueue();
     setCsvPreview(null);
@@ -6541,13 +6543,14 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
     if (scheduleMode && scheduleDate && scheduleTime) {
       const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
-      await supabase.from("npc_scheduled_posts").insert({
+      const { data: schedData, error: schedError } = await supabase.from("npc_scheduled_posts").insert({
         npc_id: npcUUID,
         content: composeText.trim(),
         reply_to_post_id: selectedPost?.id || null,
         scheduled_for: scheduledFor,
         status: "scheduled",
-      });
+      }).select();
+      console.log("[handleSend] schedule insert:", { data: schedData, error: schedError });
       await loadQueue();
     } else {
       if (mode === "respond" && selectedPost) {
