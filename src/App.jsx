@@ -1147,10 +1147,12 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               </div>
               )}
               <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, textAlign: "center" }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🤝</div>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>Interested in Sponsored NPCs?</div>
-                <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>Game studios can create official character accounts tied to real game pages. Players love it.</div>
-                <button style={{ background: C.gold, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Learn More</button>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>Meet all characters</div>
+                <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>Browse all GuildLink original characters and the worlds they come from.</div>
+                <button onClick={() => setActivePage("npcs")}
+                  style={{ background: C.gold, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  See all characters
+                </button>
               </div>
             </div>
           </div>
@@ -1797,7 +1799,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-169</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-170</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1936,7 +1938,45 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
 
 // ─── CHARTS WIDGET ────────────────────────────────────────────────────────────
 
-function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, limit }) {
+function NPCSidebarWidget({ setActivePage, setCurrentNPC }) {
+  const [npcs, setNpcs] = useState([]);
+
+  useEffect(() => {
+    supabase.from("npcs").select("id, name, handle, avatar_initials, status, bio")
+      .eq("is_active", true).order("name").limit(4)
+      .then(({ data }) => { if (data) setNpcs(data); });
+  }, []);
+
+  if (npcs.length === 0) return null;
+
+  return (
+    <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>Characters</div>
+        <button onClick={() => setActivePage("npcs")}
+          style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: 0 }}>
+          See all
+        </button>
+      </div>
+      {npcs.map(npc => (
+        <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid " + C.border, cursor: "pointer" }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+          <Avatar initials={npc.avatar_initials || "?"} size={28} isNPC={true} status={npc.status} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: C.gold, fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
+            <div style={{ color: C.textDim, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.handle}</div>
+          </div>
+        </div>
+      ))}
+      <button onClick={() => setActivePage("npcs")}
+        style={{ marginTop: 10, width: "100%", background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "6px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+        Meet all characters
+      </button>
+    </div>
+  );
+}
   const [charts, setCharts] = useState([]);
   const [prevCharts, setPrevCharts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -3069,6 +3109,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
 
         <TrendingWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} />
+
+        <NPCSidebarWidget setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />
       </div>
       )}
     </div>
