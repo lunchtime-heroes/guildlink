@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-183</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-184</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2113,11 +2113,14 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
 
   const getWeekStarts = (count) => {
     const starts = [];
-    const base = new Date(getWeekStart());
+    const base = getWeekStart(); // already a YYYY-MM-DD string in Pacific time
+    const [y, m, d] = base.split("-").map(Number);
     for (let i = 0; i < count; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() - i * 7);
-      starts.push(d.toISOString().split("T")[0]);
+      const dt = new Date(y, m - 1, d - i * 7);
+      const ys = dt.getFullYear();
+      const ms = String(dt.getMonth() + 1).padStart(2, "0");
+      const ds = String(dt.getDate()).padStart(2, "0");
+      starts.push(`${ys}-${ms}-${ds}`);
     }
     return starts;
   };
@@ -3213,8 +3216,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     d.setDate(d.getDate() - d.getDay()); return d.toISOString().split("T")[0];
   };
   const getWeekStarts = (count) => {
-    const starts = []; const base = new Date(getWeekStart());
-    for (let i = 0; i < count; i++) { const d = new Date(base); d.setDate(base.getDate() - i * 7); starts.push(d.toISOString().split("T")[0]); }
+    const starts = [];
+    const base = getWeekStart();
+    const [y, m, d] = base.split("-").map(Number);
+    for (let i = 0; i < count; i++) {
+      const dt = new Date(y, m - 1, d - i * 7);
+      starts.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`);
+    }
     return starts;
   };
   const getWindowWeeks = (w) => w === "7d" ? 1 : 4;
