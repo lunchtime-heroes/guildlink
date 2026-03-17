@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-201</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-202</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2796,6 +2796,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [expandedOverall, setExpandedOverall] = useState(null);
   const [expandedGenre, setExpandedGenre] = useState({});
   const [prevRanks, setPrevRanks] = useState({});
+  const [genreLeaders, setGenreLeaders] = useState({}); // genre -> gameId of #1 in that genre
   const [sparklines, setSparklines] = useState({});
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
@@ -2855,7 +2856,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
 
   // Build fixed 9-slot sparkline data: 8 weeks oldest→newest + 1 future zero
-  const buildSparkline = (gameId, events, allWeekStarts, globalMax) => {
+  const buildSparkline = (gameId, events, allWeekStarts, globalMax, referencePoints) => {
     const weekScores = {};
     allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -2867,7 +2868,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const ordered = allWeekStarts.slice().reverse();
     const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
     const labels = [...ordered.map(w => { const d = new Date(w + "T12:00:00"); return (d.getMonth() + 1) + "/" + d.getDate(); }), ""];
-    return { points, labels, globalMax };
+    return { points, labels, globalMax, referencePoints };
+  };
+
+  // Helper: compute raw weekly scores for a game given events + week starts
+  const computePoints = (gameId, events, allWeekStarts) => {
+    const weekScores = {};
+    allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+    events.filter(e => e.game_id === gameId).forEach(e => {
+      if (!weekScores[e.week_start]) return;
+      weekScores[e.week_start].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+    });
+    const ordered = allWeekStarts.slice().reverse();
+    return [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
   };
   // Load charts
   useEffect(() => {
@@ -2915,20 +2930,44 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Find global max score across all games and all weeks for shared scale
       const allScores = top10.map(g => {
-        const weekScores = {};
-        allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
-        (sparkEvents || []).filter(e => e.game_id === g.id).forEach(e => {
-          if (!weekScores[e.week_start]) return;
-          weekScores[e.week_start].users.add(e.user_id);
-          if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-          else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
-        });
-        return Math.max(...Object.values(weekScores).map(({ score, users }) => score * (1 + Math.log(Math.max(users.size, 1)) * 0.2)));
+        const pts = computePoints(g.id, sparkEvents || [], allWeekStarts);
+        return Math.max(...pts);
       });
       const globalMax = Math.max(...allScores, 0.1);
 
+      // Overall #1 reference points
+      const overallRef = computePoints(top10[0].id, sparkEvents || [], allWeekStarts);
+
+      // Per-genre: find #1 game in each genre and compute its reference points
+      const gLeaders = {};
+      const genreRefPoints = {};
+      const genreMaxes = {};
+      Object.entries(genresFull).forEach(([genre, games]) => {
+        if (games.length === 0) return;
+        const leader = games[0]; // already sorted by score
+        gLeaders[genre] = leader.id;
+        const leaderPts = computePoints(leader.id, sparkEvents || [], allWeekStarts);
+        genreRefPoints[genre] = leaderPts;
+        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts))), 0.1);
+      });
+      setGenreLeaders(gLeaders);
+
       const newSparklines = {};
-      top10.forEach(g => { newSparklines[g.id] = buildSparkline(g.id, sparkEvents || [], allWeekStarts, globalMax); });
+      top10.forEach(g => {
+        // Determine which genre this game belongs to
+        const genre = Array.isArray(g.genre) ? g.genre[0] : (g.genre || "Other");
+        const isOverallLeader = g.id === top10[0].id;
+        // For overall: use globalMax + overallRef (but #1 gets no reference — it IS the reference)
+        // For genre: use genreMax + genreRef
+        newSparklines[g.id] = {
+          ...buildSparkline(g.id, sparkEvents || [], allWeekStarts,
+            globalMax,
+            isOverallLeader ? null : overallRef
+          ),
+          genreGlobalMax: genreMaxes[genre] || globalMax,
+          genreRefPoints: gLeaders[genre] === g.id ? null : genreRefPoints[genre] || null,
+        };
+      });
       setSparklines(newSparklines);
     };
     load();
@@ -3162,7 +3201,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   };
 
   // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
-  const Sparkline = ({ points, labels, globalMax, color = C.accent }) => {
+  const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
     const slots = 9;
@@ -3171,17 +3210,24 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
-    // Find last non-zero data index (skip index 8 = future)
     let lastDataIdx = 0;
     for (let i = 7; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
-    // Line only through data slots 0..lastDataIdx
     const dataPoints = points.slice(0, lastDataIdx + 1);
     const linePts = dataPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
     const areaPath = `M ${xPos(0)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
+    // Reference line (genre or overall leader)
+    let refLastIdx = 0;
+    if (refPoints) { for (let i = 7; i >= 0; i--) { if (refPoints[i] > 0) { refLastIdx = i; break; } } }
+    const refData = refPoints ? refPoints.slice(0, refLastIdx + 1) : null;
+    const refLinePts = refData ? refData.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+          {/* Reference line — #1 in this context */}
+          {refLinePts && (
+            <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.2" strokeDasharray="8 6" />
+          )}
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
           {dataPoints.map((v, i) => (
@@ -3210,7 +3256,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const spData = sparklines[entry.id];
     const sp = spData?.points || spData;
     const spLabels = spData?.labels || null;
-    const spGlobalMax = spData?.globalMax || null;
+    // Use genre-scoped max + ref when in a genre section, overall when in overall
+    const isOverall = section === "overall";
+    const spGlobalMax = isOverall ? (spData?.globalMax || null) : (spData?.genreGlobalMax || spData?.globalMax || null);
+    const spRefPoints = isOverall ? (spData?.referencePoints || null) : (spData?.genreRefPoints || null);
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = (() => {
       const prevRank = prevRanks[entry.id];
@@ -3238,7 +3287,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
             {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
-              : sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} color={C.accent} />
+              : sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
               {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
