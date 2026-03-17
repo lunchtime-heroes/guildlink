@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-202</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-203</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2796,7 +2796,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [expandedOverall, setExpandedOverall] = useState(null);
   const [expandedGenre, setExpandedGenre] = useState({});
   const [prevRanks, setPrevRanks] = useState({});
-  const [genreLeaders, setGenreLeaders] = useState({}); // genre -> gameId of #1 in that genre
+  const [genreLeaders, setGenreLeaders] = useState({});
+  const [genreContext, setGenreContext] = useState({}); // gameId -> { genreGlobalMax, genreRefPoints } // genre -> gameId of #1 in that genre
   const [sparklines, setSparklines] = useState({});
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
@@ -2920,31 +2921,30 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         setPrevRanks(pRanks);
       }
 
-      // Eagerly load sparklines for top 10
+      // Eagerly load sparklines for ALL ranked games (top 10 + all genre games)
       if (top10.length === 0) return;
       const allWeekStarts = getWeekStarts(8);
+      const allRankedIds = [...new Set([
+        ...top10.map(g => g.id),
+        ...Object.values(genresFull).flat().map(g => g.id),
+      ])];
       const { data: sparkEvents } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start")
-        .in("game_id", top10.map(g => g.id))
+        .in("game_id", allRankedIds)
         .in("week_start", allWeekStarts);
 
-      // Find global max score across all games and all weeks for shared scale
-      const allScores = top10.map(g => {
-        const pts = computePoints(g.id, sparkEvents || [], allWeekStarts);
-        return Math.max(...pts);
-      });
+      // Find global max across top 10
+      const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts)));
       const globalMax = Math.max(...allScores, 0.1);
-
-      // Overall #1 reference points
       const overallRef = computePoints(top10[0].id, sparkEvents || [], allWeekStarts);
 
-      // Per-genre: find #1 game in each genre and compute its reference points
+      // Per-genre: leader reference points and max
       const gLeaders = {};
       const genreRefPoints = {};
       const genreMaxes = {};
       Object.entries(genresFull).forEach(([genre, games]) => {
         if (games.length === 0) return;
-        const leader = games[0]; // already sorted by score
+        const leader = games[0];
         gLeaders[genre] = leader.id;
         const leaderPts = computePoints(leader.id, sparkEvents || [], allWeekStarts);
         genreRefPoints[genre] = leaderPts;
@@ -2952,23 +2952,23 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       });
       setGenreLeaders(gLeaders);
 
+      // Build sparklines for all ranked games
       const newSparklines = {};
-      top10.forEach(g => {
-        // Determine which genre this game belongs to
-        const genre = Array.isArray(g.genre) ? g.genre[0] : (g.genre || "Other");
-        const isOverallLeader = g.id === top10[0].id;
-        // For overall: use globalMax + overallRef (but #1 gets no reference — it IS the reference)
-        // For genre: use genreMax + genreRef
-        newSparklines[g.id] = {
-          ...buildSparkline(g.id, sparkEvents || [], allWeekStarts,
-            globalMax,
-            isOverallLeader ? null : overallRef
-          ),
+      const newGenreContext = {};
+      allRankedIds.forEach(id => {
+        const game = [...top10, ...Object.values(genresFull).flat()].find(g => g.id === id);
+        const genre = game ? (Array.isArray(game.genre) ? game.genre[0] : (game.genre || "Other")) : "Other";
+        const isOverallLeader = id === top10[0].id;
+        const isGenreLeader = gLeaders[genre] === id;
+        newSparklines[id] = {
+          ...buildSparkline(id, sparkEvents || [], allWeekStarts, globalMax, isOverallLeader ? null : overallRef),
           genreGlobalMax: genreMaxes[genre] || globalMax,
-          genreRefPoints: gLeaders[genre] === g.id ? null : genreRefPoints[genre] || null,
+          genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null),
         };
+        newGenreContext[id] = { genreGlobalMax: genreMaxes[genre] || globalMax, genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null) };
       });
       setSparklines(newSparklines);
+      setGenreContext(newGenreContext);
     };
     load();
   }, []);
@@ -2979,10 +2979,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const weekStarts = getWeekStarts(8);
     const { data: events } = await supabase.from("chart_events")
       .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
-    // Use the globalMax from the #1 game's sparkline if available
     const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
-    setSparklines(prev => ({ ...prev, [gameId]: buildSparkline(gameId, events || [], weekStarts, globalMax) }));
+    const ctx = genreContext[gameId] || {};
+    const sp = buildSparkline(gameId, events || [], weekStarts, globalMax, Object.values(sparklines)[0]?.referencePoints || null);
+    setSparklines(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -3443,7 +3444,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           </div>
 
           {(() => {
-            const genreEntries = Object.entries(byGenre).filter(([, games]) => games.length >= 2);
+            const genreEntries = Object.entries(byGenre).filter(([, games]) => games.length >= 1);
             if (genreEntries.length === 0) return null;
             return (
               <>
