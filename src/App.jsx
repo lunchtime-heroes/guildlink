@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-181</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-182</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2227,7 +2227,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     loadSparkline(gameId);
   };
 
-  const Sparkline = ({ points, color = C.accent }) => {
+  const Sparkline = ({ points, color = C.accent, labels: labelsProp }) => {
     if (!points || points.length === 0) return null;
     const w = 260, h = 60, pad = 4;
     const max = Math.max(...points, 0.1);
@@ -2244,7 +2244,10 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       }).join(" ") +
       ` L ${w - pad},${h - pad} Z`;
 
-    const labels = ["8w", "7w", "6w", "5w", "4w", "3w", "2w", "Now"];
+    const labels = labelsProp || getWeekStarts(8).slice().reverse().map(w => {
+      const d = new Date(w + "T12:00:00");
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
@@ -2284,13 +2287,32 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
     const sp = sparklines[entry.id];
     const isLoadingSp = loadingSparkline[entry.id];
-    const momentum = sp ? (() => {
+
+    // Rank movement vs last week
+    const prevRank = overall.find ? null : null; // resolved below
+    const getMovement = () => {
+      // overall array is sorted by rank, find prev rank from prevWeekOverall if available
+      // For now derive from sparkline: last point vs second-to-last
+      if (!sp || sp.length < 2) return null;
       const last = sp[sp.length - 1] || 0;
       const prev = sp[sp.length - 2] || 0;
-      if (prev === 0) return null;
-      const pct = Math.round(((last - prev) / prev) * 100);
-      return { pct, up: pct >= 0 };
-    })() : null;
+      if (prev === 0 && last === 0) return null;
+      if (prev === 0) return { label: "NEW", color: C.teal };
+      // Score went up = rank likely improved, score went down = rank likely dropped
+      // We don't have prev rank directly so show score direction as rank proxy
+      const diff = last - prev;
+      if (diff > 0) return { label: "↑", color: "#22c55e" };
+      if (diff < 0) return { label: "↓", color: "#ef4444" };
+      return { label: "—", color: C.textDim };
+    };
+    const movement = sp ? getMovement() : null;
+
+    // Generate actual date labels for x-axis from last 8 week starts
+    const weekStarts = getWeekStarts(8).slice().reverse();
+    const xLabels = weekStarts.map(w => {
+      const d = new Date(w + "T12:00:00");
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
 
     return (
       <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
@@ -2308,9 +2330,9 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{entry.name}</div>
             <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{getDominantSignal(entry)} · {entry.uniqueUsers} player{entry.uniqueUsers !== 1 ? "s" : ""}</div>
           </div>
-          {momentum && (
-            <div style={{ color: momentum.up ? "#22c55e" : "#ef4444", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-              {momentum.up ? "▲" : "▼"} {Math.abs(momentum.pct)}%
+          {movement && (
+            <div style={{ color: movement.color, fontSize: 13, fontWeight: 700, flexShrink: 0, minWidth: 24, textAlign: "center" }}>
+              {movement.label}
             </div>
           )}
           <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
@@ -3449,7 +3471,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const max = Math.max(...points, 0.1);
     const pts = points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `${x},${y}`; }).join(" ");
     const areaPath = `M ${pad},${h - pad} ` + points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `L ${x},${y}`; }).join(" ") + ` L ${w - pad},${h - pad} Z`;
-    const labels = ["8w", "7w", "6w", "5w", "4w", "3w", "2w", "Now"];
+    const labels = getWeekStarts(8).slice().reverse().map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
@@ -3478,7 +3500,16 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
     const sp = sparklines[entry.id];
     const isLoadingSp = loadingSparkline[entry.id];
-    const momentum = sp ? (() => { const last = sp[sp.length - 1] || 0; const prev = sp[sp.length - 2] || 0; if (prev === 0) return null; const pct = Math.round(((last - prev) / prev) * 100); return { pct, up: pct >= 0 }; })() : null;
+    const movement = sp ? (() => {
+      const last = sp[sp.length - 1] || 0;
+      const prev = sp[sp.length - 2] || 0;
+      if (prev === 0 && last === 0) return null;
+      if (prev === 0) return { label: "NEW", color: C.teal };
+      const diff = last - prev;
+      if (diff > 0) return { label: "↑", color: "#22c55e" };
+      if (diff < 0) return { label: "↓", color: "#ef4444" };
+      return { label: "—", color: C.textDim };
+    })() : null;
     return (
       <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
         <div onClick={() => handleExpand(entry.id, section)}
@@ -3490,7 +3521,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{entry.name}</div>
             <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{getDominantSignal(entry)} · {entry.uniqueUsers} player{entry.uniqueUsers !== 1 ? "s" : ""}</div>
           </div>
-          {momentum && <div style={{ color: momentum.up ? "#22c55e" : "#ef4444", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{momentum.up ? "▲" : "▼"} {Math.abs(momentum.pct)}%</div>}
+          {movement && <div style={{ color: movement.color, fontSize: 13, fontWeight: 700, flexShrink: 0, minWidth: 24, textAlign: "center" }}>{movement.label}</div>}
           <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
         </div>
         {isExpanded && (
