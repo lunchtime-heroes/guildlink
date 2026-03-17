@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-182</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-183</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2153,6 +2153,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setSparklines({});
       const weeks = getWindowWeeks(window);
       const weekStarts = getWeekStarts(weeks);
 
@@ -2164,7 +2165,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       if (!events) { setLoading(false); return; }
 
       const scored = scoreEvents(events);
-      setOverall(scored.slice(0, 10));
+      const top10 = scored.slice(0, 10);
+      setOverall(top10);
 
       // Group by genre — preview (top 5) and full list
       const genres = {};
@@ -2179,6 +2181,40 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       setByGenreFull(genresFull);
       setExpandedGenreAll(new Set());
       setLoading(false);
+
+      // Eagerly load sparklines for top 10 so movement shows immediately
+      const allWeekStarts = getWeekStarts(8);
+      const { data: sparkEvents } = await supabase
+        .from("chart_events")
+        .select("game_id, event_type, post_sequence, user_id, week_start")
+        .in("game_id", top10.map(g => g.id))
+        .in("week_start", allWeekStarts);
+
+      const newSparklines = {};
+      top10.forEach(g => {
+        const weekScores = {};
+        allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+        (sparkEvents || []).filter(e => e.game_id === g.id).forEach(e => {
+          if (!weekScores[e.week_start]) return;
+          weekScores[e.week_start].users.add(e.user_id);
+          if (e.event_type === "post") {
+            const seq = e.post_sequence || 1;
+            weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
+          } else {
+            weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0;
+          }
+        });
+        // oldest first, trim trailing zeros from right (no future data), keep 1 empty slot at end
+        const points = allWeekStarts.slice().reverse().map(w => {
+          const { score, users } = weekScores[w];
+          return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
+        });
+        // Find last non-zero index, keep up to that + 1
+        let lastNonZero = points.length - 1;
+        while (lastNonZero > 0 && points[lastNonZero] === 0) lastNonZero--;
+        newSparklines[g.id] = points.slice(0, Math.min(lastNonZero + 2, points.length));
+      });
+      setSparklines(newSparklines);
     };
     load();
   }, [window]);
@@ -2208,13 +2244,16 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       }
     });
 
-    // Apply breadth multiplier and reverse so oldest is first
+    // Apply breadth multiplier, oldest first, trim trailing zeros + keep 1 empty slot
     const points = weekStarts.slice().reverse().map(w => {
       const { score, users } = weekScores[w];
       return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
     });
+    let lastNonZero = points.length - 1;
+    while (lastNonZero > 0 && points[lastNonZero] === 0) lastNonZero--;
+    const trimmed = points.slice(0, Math.min(lastNonZero + 2, points.length));
 
-    setSparklines(prev => ({ ...prev, [gameId]: points }));
+    setSparklines(prev => ({ ...prev, [gameId]: trimmed }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -2232,19 +2271,22 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     const w = 260, h = 60, pad = 4;
     const max = Math.max(...points, 0.1);
     const pts = points.map((v, i) => {
-      const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+      const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
       const y = h - pad - (v / max) * (h - pad * 2);
       return `${x},${y}`;
     }).join(" ");
     const areaPath = `M ${pad},${h - pad} ` +
       points.map((v, i) => {
-        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+        const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
         const y = h - pad - (v / max) * (h - pad * 2);
         return `L ${x},${y}`;
       }).join(" ") +
       ` L ${w - pad},${h - pad} Z`;
 
-    const labels = labelsProp || getWeekStarts(8).slice().reverse().map(w => {
+    // Generate labels aligned to points — take last N week starts where N = points.length
+    const allWeekStarts = getWeekStarts(8).slice().reverse(); // oldest first
+    const relevantStarts = allWeekStarts.slice(0, points.length);
+    const labels = labelsProp || relevantStarts.map(w => {
       const d = new Date(w + "T12:00:00");
       return `${d.getMonth() + 1}/${d.getDate()}`;
     });
