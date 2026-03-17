@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-179</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0307-180</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2656,14 +2656,18 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .not("followed_user_id", "is", null);
     if (!followData || followData.length === 0) { setFollowingPosts([]); return; }
     const followedIds = followData.map(f => f.followed_user_id);
-    const { data } = await supabase
-      .from("posts")
-      .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
-      .in("user_id", followedIds)
-      .is("npc_id", null)
-      .order("created_at", { ascending: false })
-      .limit(30);
-    if (data) setFollowingPosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0, liked: false })));
+    const [{ data }, likesResult] = await Promise.all([
+      supabase
+        .from("posts")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+        .in("user_id", followedIds)
+        .is("npc_id", null)
+        .order("created_at", { ascending: false })
+        .limit(30),
+      supabase.from("post_likes").select("post_id").eq("user_id", user.id),
+    ]);
+    const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
+    if (data) setFollowingPosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0, liked: likedIds.has(p.id) })));
   };
 
   const loadPosts = async () => {
