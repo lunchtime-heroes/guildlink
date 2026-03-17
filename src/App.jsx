@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-186</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-187</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2335,31 +2335,18 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     const sp = sparklines[entry.id];
     const isLoadingSp = loadingSparkline[entry.id];
 
-    // Rank movement vs last week
-    const prevRank = overall.find ? null : null; // resolved below
-    const getMovement = () => {
-      // overall array is sorted by rank, find prev rank from prevWeekOverall if available
-      // For now derive from sparkline: last point vs second-to-last
-      if (!sp || sp.length < 2) return null;
-      const last = sp[sp.length - 1] || 0;
-      const prev = sp[sp.length - 2] || 0;
-      if (prev === 0 && last === 0) return null;
-      if (prev === 0) return { label: "NEW", color: C.teal };
-      // Score went up = rank likely improved, score went down = rank likely dropped
-      // We don't have prev rank directly so show score direction as rank proxy
-      const diff = last - prev;
+    const movement = sp ? (() => {
+      if (sp.length < 2) return sp.length === 1 ? { label: "NEW", color: C.teal } : null;
+      const current = sp[sp.length - 1] || 0;
+      const previous = sp[sp.length - 2] || 0;
+      if (previous === 0 && current === 0) return null;
+      if (previous === 0) return { label: "NEW", color: C.teal };
+      if (current === 0) return null;
+      const diff = current - previous;
+      if (Math.abs(diff) < 0.05) return { label: "—", color: C.textDim };
       if (diff > 0) return { label: "↑", color: "#22c55e" };
-      if (diff < 0) return { label: "↓", color: "#ef4444" };
-      return { label: "—", color: C.textDim };
-    };
-    const movement = sp ? getMovement() : null;
-
-    // Generate actual date labels for x-axis from last 8 week starts
-    const weekStarts = getWeekStarts(8).slice().reverse();
-    const xLabels = weekStarts.map(w => {
-      const d = new Date(w + "T12:00:00");
-      return `${d.getMonth() + 1}/${d.getDate()}`;
-    });
+      return { label: "↓", color: "#ef4444" };
+    })() : null;
 
     return (
       <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
@@ -3555,16 +3542,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     if (!points || points.length === 0) return null;
     const w = 260, h = 60, pad = 4;
     const max = Math.max(...points, 0.1);
-    const pts = points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `${x},${y}`; }).join(" ");
-    const areaPath = `M ${pad},${h - pad} ` + points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `L ${x},${y}`; }).join(" ") + ` L ${w - pad},${h - pad} Z`;
-    const labels = getWeekStarts(8).slice().reverse().map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
+    const pts = points.map((v, i) => { const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `${x},${y}`; }).join(" ");
+    const areaPath = `M ${pad},${h - pad} ` + points.map((v, i) => { const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `L ${x},${y}`; }).join(" ") + ` L ${w - pad},${h - pad} Z`;
+    // Labels aligned to points — take the oldest N week starts where N = points.length
+    const allStarts = getWeekStarts(8).slice().reverse(); // oldest first
+    const labels = allStarts.slice(0, points.length).map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => { const x = pad + (i / (points.length - 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />; })}
+          {points.map((v, i) => { const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />; })}
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2, paddingLeft: pad, paddingRight: pad }}>
           {labels.map((l, i) => <span key={i} style={{ color: C.textDim, fontSize: 9, width: w / labels.length, textAlign: "center" }}>{l}</span>)}
@@ -3587,14 +3576,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const sp = sparklines[entry.id];
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = sp ? (() => {
-      const last = sp[sp.length - 1] || 0;
-      const prev = sp[sp.length - 2] || 0;
-      if (prev === 0 && last === 0) return null;
-      if (prev === 0) return { label: "NEW", color: C.teal };
-      const diff = last - prev;
+      // Compare current week (last point) vs previous week (second to last)
+      // Only meaningful if we have at least 2 points and the second-to-last is adjacent
+      if (sp.length < 2) return sp.length === 1 ? { label: "NEW", color: C.teal } : null;
+      const current = sp[sp.length - 1] || 0;
+      const previous = sp[sp.length - 2] || 0;
+      if (previous === 0 && current === 0) return null;
+      if (previous === 0) return { label: "NEW", color: C.teal };
+      if (current === 0) return null; // no activity this period
+      const diff = current - previous;
+      if (Math.abs(diff) < 0.05) return { label: "—", color: C.textDim };
       if (diff > 0) return { label: "↑", color: "#22c55e" };
-      if (diff < 0) return { label: "↓", color: "#ef4444" };
-      return { label: "—", color: C.textDim };
+      return { label: "↓", color: "#ef4444" };
     })() : null;
     return (
       <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
