@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-190</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-191</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2185,87 +2185,42 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       setExpandedGenreAll(new Set());
       setLoading(false);
 
-      // Eagerly load sparklines for top 10 so movement shows immediately
+      // Eagerly load sparklines for top 10
       const allWeekStarts = getWeekStarts(8);
-      console.log("[sparklines] allWeekStarts:", allWeekStarts);
       const { data: sparkEvents } = await supabase
         .from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start")
         .in("game_id", top10.map(g => g.id))
         .in("week_start", allWeekStarts);
-
       const newSparklines = {};
-      top10.forEach(g => {
-        const weekScores = {};
-        allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
-        (sparkEvents || []).filter(e => e.game_id === g.id).forEach(e => {
-          if (!weekScores[e.week_start]) return;
-          weekScores[e.week_start].users.add(e.user_id);
-          if (e.event_type === "post") {
-            const seq = e.post_sequence || 1;
-            weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
-          } else {
-            weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0;
-          }
-        });
-        // oldest first, trim leading and trailing zeros
-        const orderedStarts = allWeekStarts.slice().reverse();
-        const points = orderedStarts.map(w => {
-          const { score, users } = weekScores[w];
-          return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
-        });
-        let firstNonZero = 0;
-        while (firstNonZero < points.length - 1 && points[firstNonZero] === 0) firstNonZero++;
-        let lastNonZero = points.length - 1;
-        while (lastNonZero > firstNonZero && points[lastNonZero] === 0) lastNonZero--;
-        const end = Math.min(lastNonZero + 2, points.length);
-        newSparklines[g.id] = { points: points.slice(firstNonZero, end), starts: orderedStarts.slice(firstNonZero, end) };
-      });
+      top10.forEach(g => { newSparklines[g.id] = buildSp(g.id, sparkEvents || [], allWeekStarts); });
       setSparklines(newSparklines);
     };
     load();
   }, [chartRange]);
 
+  const buildSp = (gameId, events, weekStarts) => {
+    const weekScores = {};
+    weekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+    events.filter(e => e.game_id === gameId || !e.game_id).forEach(e => {
+      if (!weekScores[e.week_start]) return;
+      weekScores[e.week_start].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+    });
+    const ordered = weekStarts.slice().reverse();
+    const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
+    const labels = [...ordered.map(w => { const d = new Date(w + "T12:00:00"); return (d.getMonth() + 1) + "/" + d.getDate(); }), ""];
+    return { points, labels };
+  };
+
   const loadSparkline = async (gameId) => {
     if (sparklines[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    // Get last 8 weeks of data for this game
     const weekStarts = getWeekStarts(8);
-    const { data: events } = await supabase
-      .from("chart_events")
-      .select("event_type, post_sequence, user_id, week_start")
-      .eq("game_id", gameId)
-      .in("week_start", weekStarts);
-
-    // Score per week
-    const weekScores = {};
-    weekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
-    (events || []).forEach(e => {
-      if (!weekScores[e.week_start]) return;
-      weekScores[e.week_start].users.add(e.user_id);
-      if (e.event_type === "post") {
-        const seq = e.post_sequence || 1;
-        weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
-      } else {
-        weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0;
-      }
-    });
-
-    // Apply breadth multiplier, oldest first, trim leading and trailing zeros
-    const orderedStarts = weekStarts.slice().reverse();
-    const points = orderedStarts.map(w => {
-      const { score, users } = weekScores[w];
-      return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
-    });
-    let firstNonZero = 0;
-    while (firstNonZero < points.length - 1 && points[firstNonZero] === 0) firstNonZero++;
-    let lastNonZero = points.length - 1;
-    while (lastNonZero > firstNonZero && points[lastNonZero] === 0) lastNonZero--;
-    const end = Math.min(lastNonZero + 2, points.length);
-    const trimmedPoints = points.slice(firstNonZero, end);
-    const trimmedStarts = orderedStarts.slice(firstNonZero, end);
-
-    setSparklines(prev => ({ ...prev, [gameId]: { points: trimmedPoints, starts: trimmedStarts } }));
+    const { data: events } = await supabase.from("chart_events")
+      .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
+    setSparklines(prev => ({ ...prev, [gameId]: buildSp(gameId, (events || []).map(e => ({ ...e, game_id: gameId })), weekStarts) }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -2278,62 +2233,75 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     loadSparkline(gameId);
   };
 
-  const Sparkline = ({ points, starts, color = C.accent }) => {
+  // Sparkline always renders 9 slots: 8 weekly data points + 1 empty future slot
+  // points must be exactly 9 values (8 scores oldest→newest, then 0 for future)
+  // labels must be exactly 9 strings
+  const Sparkline = ({ points, labels, color = C.accent }) => {
     if (!points || points.length === 0) return null;
-    const fullW = 260, h = 60, pad = 16;
-    const w = points.length <= 1 ? 80 : points.length <= 3 ? 140 : points.length <= 5 ? 200 : fullW;
+    const w = 400, h = 60, pad = 20;
+    const slots = 9;
     const max = Math.max(...points, 0.1);
-    const xPos = (i) => pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
+    const xPos = (i) => pad + (i / (slots - 1)) * (w - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
-    const pts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
-    const areaPath = `M ${xPos(0)},${h - pad} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${h - pad} Z`;
-    const labelDates = starts || getWeekStarts(8).slice().reverse().slice(0, points.length);
-    const labels = labelDates.map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
+    // Only draw line/area through non-zero segments
+    const segments = [];
+    let cur = [];
+    points.forEach((v, i) => {
+      if (v > 0) { cur.push([i, v]); }
+      else { if (cur.length > 0) { segments.push(cur); cur = []; } }
+    });
+    if (cur.length > 0) segments.push(cur);
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
           <defs>
             <linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+              <stop offset="0%" stopColor={color} stopOpacity="0.25" />
               <stop offset="100%" stopColor={color} stopOpacity="0" />
             </linearGradient>
           </defs>
-          <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
-          <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />)}
+          {segments.map((seg, si) => (
+            <g key={si}>
+              <path
+                d={`M ${xPos(seg[0][0])},${h - pad} ` + seg.map(([i, v]) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(seg[seg.length-1][0])},${h - pad} Z`}
+                fill={`url(#grad-${color.replace("#","")})`}
+              />
+              <polyline
+                points={seg.map(([i, v]) => `${xPos(i)},${yPos(v)}`).join(" ")}
+                fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+              />
+            </g>
+          ))}
+          {points.map((v, i) => v > 0 ? (
+            <circle key={i} cx={xPos(i)} cy={yPos(v)}
+              r={i === points.length - 2 ? 3.5 : 2}
+              fill={color} opacity={i === points.length - 2 ? 1 : 0.6}
+            />
+          ) : null)}
         </svg>
-        {/* Labels positioned at exact same x as dots */}
-        <div style={{ position: "relative", height: 14, marginTop: 2 }}>
+        <div style={{ position: "relative", height: 14, marginTop: 2, width: w }}>
           {labels.map((l, i) => (
-            <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
+            <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: i === slots - 1 ? "transparent" : C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
           ))}
         </div>
       </div>
     );
   };
-
-  const getDominantSignal = (entry) => {
-    if (entry.shelf_playing > 0) return `${entry.shelf_playing} playing`;
-    if (entry.review > 0) return `${entry.review} review${entry.review > 1 ? "s" : ""}`;
-    if (entry.comment > 0) return `${entry.comment} comment${entry.comment > 1 ? "s" : ""}`;
-    if (entry.shelf_want > 0) return `${entry.shelf_want} want to play`;
-    if (entry.post > 0) return `${entry.post} post${entry.post > 1 ? "s" : ""}`;
-    return `${entry.uniqueUsers} player${entry.uniqueUsers > 1 ? "s" : ""}`;
   };
 
   const ChartRow = ({ entry, rank, showRank = true, section }) => {
     const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
     const spData = sparklines[entry.id];
     const sp = spData?.points || spData;
-    const spStarts = spData?.starts || null;
+    const spLabels = spData?.labels || null;
     const isLoadingSp = loadingSparkline[entry.id];
 
     const movement = sp ? (() => {
-      if (sp.length < 2) return sp.length === 1 ? { label: "NEW", color: C.teal } : null;
-      const current = sp[sp.length - 1] || 0;
-      const previous = sp[sp.length - 2] || 0;
+      // sp has 9 slots: [week-8...week-1, future=0]. Current week = index 7, prev = index 6
+      const current = sp[7] || 0;
+      const previous = sp[6] || 0;
       if (previous === 0 && current === 0) return null;
-      if (previous === 0) return { label: "NEW", color: C.teal };
+      if (previous === 0 && current > 0) return { label: "NEW", color: C.teal };
       if (current === 0) return null;
       const diff = current - previous;
       if (Math.abs(diff) < 0.05) return { label: "—", color: C.textDim };
@@ -2371,7 +2339,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
             {isLoadingSp ? (
               <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
             ) : sp ? (
-              <Sparkline points={sp} starts={spStarts} color={C.accent} />
+              <Sparkline points={sp} labels={spLabels} color={C.accent} />
             ) : (
               <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>
             )}
@@ -3240,6 +3208,22 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     }
   }, [currentUser?.id]);
 
+
+  // Build fixed 9-slot sparkline data: 8 weeks oldest→newest + 1 future zero
+  const buildSparkline = (gameId, events, allWeekStarts) => {
+    const weekScores = {};
+    allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+    events.filter(e => e.game_id === gameId).forEach(e => {
+      if (!weekScores[e.week_start]) return;
+      weekScores[e.week_start].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+    });
+    const ordered = allWeekStarts.slice().reverse(); // oldest first
+    const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0]; // 9th slot = future
+    const labels = [...ordered.map(w => { const d = new Date(w + "T12:00:00"); return (d.getMonth() + 1) + "/" + d.getDate(); }), ""];
+    return { points, labels };
+  };
   // Load charts
   useEffect(() => {
     const load = async () => {
@@ -3271,32 +3255,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         .in("game_id", top10.map(g => g.id))
         .in("week_start", allWeekStarts);
       const newSparklines = {};
-      top10.forEach(g => {
-        const weekScores = {};
-        allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
-        (sparkEvents || []).filter(e => e.game_id === g.id).forEach(e => {
-          if (!weekScores[e.week_start]) return;
-          weekScores[e.week_start].users.add(e.user_id);
-          if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-          else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
-        });
-        const orderedStarts = allWeekStarts.slice().reverse();
-        const points = orderedStarts.map(w => {
-          const { score, users } = weekScores[w];
-          return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
-        });
-        // Trim leading zeros (no data before first activity)
-        let firstNonZero = 0;
-        while (firstNonZero < points.length - 1 && points[firstNonZero] === 0) firstNonZero++;
-        // Trim trailing zeros, keep 1 empty slot after last data point
-        let lastNonZero = points.length - 1;
-        while (lastNonZero > firstNonZero && points[lastNonZero] === 0) lastNonZero--;
-        const end = Math.min(lastNonZero + 2, points.length);
-        newSparklines[g.id] = {
-          points: points.slice(firstNonZero, end),
-          starts: orderedStarts.slice(firstNonZero, end),
-        };
-      });
+      top10.forEach(g => { newSparklines[g.id] = buildSparkline(g.id, sparkEvents || [], allWeekStarts); });
       setSparklines(newSparklines);
     };
     load();
@@ -3307,23 +3266,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
     const weekStarts = getWeekStarts(8);
     const { data: events } = await supabase.from("chart_events")
-      .select("event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
-    const weekScores = {};
-    weekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
-    (events || []).forEach(e => {
-      if (!weekScores[e.week_start]) return;
-      weekScores[e.week_start].users.add(e.user_id);
-      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
-    });
-    const orderedStarts = weekStarts.slice().reverse();
-    const points = orderedStarts.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); });
-    let firstNonZero = 0;
-    while (firstNonZero < points.length - 1 && points[firstNonZero] === 0) firstNonZero++;
-    let lastNonZero = points.length - 1;
-    while (lastNonZero > firstNonZero && points[lastNonZero] === 0) lastNonZero--;
-    const end = Math.min(lastNonZero + 2, points.length);
-    setSparklines(prev => ({ ...prev, [gameId]: { points: points.slice(firstNonZero, end), starts: orderedStarts.slice(firstNonZero, end) } }));
+      .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
+    setSparklines(prev => ({ ...prev, [gameId]: buildSparkline(gameId, events || [], weekStarts) }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -3541,34 +3485,36 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
-  const Sparkline = ({ points, starts, color = C.accent }) => {
+  // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
+  const Sparkline = ({ points, labels, color = C.accent }) => {
     if (!points || points.length === 0) return null;
-    const fullW = 260, h = 60, pad = 16;
-    const w = points.length <= 1 ? 80 : points.length <= 3 ? 140 : points.length <= 5 ? 200 : fullW;
+    const w = 400, h = 60, pad = 20;
+    const slots = 9;
     const max = Math.max(...points, 0.1);
-    const xPos = (i) => pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
+    const xPos = (i) => pad + (i / (slots - 1)) * (w - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
-    const pts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
-    const areaPath = `M ${xPos(0)},${h - pad} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${h - pad} Z`;
-    const labelDates = starts || getWeekStarts(8).slice().reverse().slice(0, points.length);
-    const labels = labelDates.map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
+    const segments = [];
+    let cur = [];
+    points.forEach((v, i) => { if (v > 0) { cur.push([i, v]); } else { if (cur.length > 0) { segments.push(cur); cur = []; } } });
+    if (cur.length > 0) segments.push(cur);
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
-          <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-          <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
-          <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />)}
-        </svg>
-        <div style={{ position: "relative", height: 14, marginTop: 2 }}>
-          {labels.map((l, i) => (
-            <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
+          <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+          {segments.map((seg, si) => (
+            <g key={si}>
+              <path d={`M ${xPos(seg[0][0])},${h - pad} ` + seg.map(([i, v]) => "L " + xPos(i) + "," + yPos(v)).join(" ") + " L " + xPos(seg[seg.length-1][0]) + "," + (h - pad) + " Z"} fill={`url(#grad-${color.replace("#","")})`} />
+              <polyline points={seg.map(([i, v]) => xPos(i) + "," + yPos(v)).join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            </g>
           ))}
+          {points.map((v, i) => v > 0 ? <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === points.length - 2 ? 3.5 : 2} fill={color} opacity={i === points.length - 2 ? 1 : 0.6} /> : null)}
+        </svg>
+        <div style={{ position: "relative", height: 14, marginTop: 2, width: w }}>
+          {labels && labels.map((l, i) => <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: i === slots - 1 ? "transparent" : C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>)}
         </div>
       </div>
     );
   };
-
   const getDominantSignal = (entry) => {
     if (entry.shelf_playing > 0) return `${entry.shelf_playing} playing`;
     if (entry.review > 0) return `${entry.review} review${entry.review > 1 ? "s" : ""}`;
@@ -3581,15 +3527,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const ChartRow = ({ entry, rank, section }) => {
     const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
     const spData = sparklines[entry.id];
-    const sp = spData?.points || spData; // handle both {points,starts} and legacy array
-    const spStarts = spData?.starts || null;
+    const sp = spData?.points || spData;
+    const spLabels = spData?.labels || null;
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = sp ? (() => {
-      if (sp.length < 2) return sp.length === 1 ? { label: "NEW", color: C.teal } : null;
-      const current = sp[sp.length - 1] || 0;
-      const previous = sp[sp.length - 2] || 0;
+      // sp has 9 slots: [week-8...week-1, future=0]. Current week = index 7, prev = index 6
+      const current = sp[7] || 0;
+      const previous = sp[6] || 0;
       if (previous === 0 && current === 0) return null;
-      if (previous === 0) return { label: "NEW", color: C.teal };
+      if (previous === 0 && current > 0) return { label: "NEW", color: C.teal };
       if (current === 0) return null;
       const diff = current - previous;
       if (Math.abs(diff) < 0.05) return { label: "—", color: C.textDim };
@@ -3614,7 +3560,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
             {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
-              : sp ? <Sparkline points={sp} starts={spStarts} color={C.accent} />
+              : sp ? <Sparkline points={sp} labels={spLabels} color={C.accent} />
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
               {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
