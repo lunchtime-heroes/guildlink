@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-194</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-196</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2796,7 +2796,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [expandedGenreAll, setExpandedGenreAll] = useState(new Set());
   const [expandedOverall, setExpandedOverall] = useState(null);
   const [expandedGenre, setExpandedGenre] = useState({});
-  const [sparklines, setSparklines] = useState({});
+  const [prevRanks, setPrevRanks] = useState({});
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
   const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
@@ -2893,6 +2893,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       });
       setByGenre(genres); setByGenreFull(genresFull);
       setExpandedGenreAll(new Set()); setChartsLoading(false);
+
+      // Calculate previous week's ranks for movement indicators
+      const prevWeekStart = getWeekStarts(2)[1];
+      const { data: prevEvents } = await supabase.from("chart_events")
+        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
+        .eq("week_start", prevWeekStart);
+      if (prevEvents && prevEvents.length > 0) {
+        const prevScored = scoreEvents(prevEvents);
+        const pRanks = {};
+        prevScored.forEach((g, i) => { pRanks[g.id] = i + 1; });
+        setPrevRanks(pRanks);
+      }
 
       // Eagerly load sparklines for top 10
       if (top10.length === 0) return;
@@ -3135,29 +3147,33 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
   const Sparkline = ({ points, labels, color = C.accent }) => {
     if (!points || points.length === 0) return null;
-    const w = 400, h = 60, pad = 20;
+    const W = 1000, h = 60, pad = 20; // use large viewBox, scale with CSS
     const slots = 9;
-    const max = Math.max(...points, 0.1);
-    const xPos = (i) => pad + (i / (slots - 1)) * (w - pad * 2);
+    const max = Math.max(...points.slice(0, 8), 0.1); // max from data only, ignore future slot
+    const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
-    const linePts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
-    const areaPath = `M ${xPos(0)},${baseline} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${baseline} Z`;
-    // Find last non-zero index for the "current" dot
-    let currentIdx = 0;
-    for (let i = points.length - 2; i >= 0; i--) { if (points[i] > 0) { currentIdx = i; break; } }
+    // Find last non-zero data index (skip index 8 = future)
+    let lastDataIdx = 0;
+    for (let i = 7; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
+    // Line only through data slots 0..lastDataIdx
+    const dataPoints = points.slice(0, lastDataIdx + 1);
+    const linePts = dataPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
+    const areaPath = `M ${xPos(0)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
     return (
-      <div style={{ marginTop: 8 }}>
-        <svg width={w} height={h} style={{ display: "block" }}>
+      <div style={{ marginTop: 8, width: "100%" }}>
+        <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
-          <polyline points={linePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => i === points.length - 1 ? null : (
-            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === currentIdx ? 3.5 : 2} fill={color} opacity={i === currentIdx ? 1 : 0.4} />
+          <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+          {dataPoints.map((v, i) => (
+            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastDataIdx ? 5 : 3} fill={color} opacity={i === lastDataIdx ? 1 : 0.4} />
           ))}
         </svg>
-        <div style={{ position: "relative", height: 14, marginTop: 2, width: w }}>
-          {labels && labels.map((l, i) => <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: i === slots - 1 ? "transparent" : C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>)}
+        <div style={{ position: "relative", height: 14, marginTop: 2 }}>
+          {labels && labels.map((l, i) => i < slots - 1 ? (
+            <span key={i} style={{ position: "absolute", left: `${(xPos(i) / W) * 100}%`, transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
+          ) : null)}
         </div>
       </div>
     );
@@ -3177,19 +3193,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const sp = spData?.points || spData;
     const spLabels = spData?.labels || null;
     const isLoadingSp = loadingSparkline[entry.id];
-    const movement = sp ? (() => {
-      // Find last two non-zero data points (skip future slot at index 8)
-      const data = sp.slice(0, 8);
-      const nonZero = data.map((v, i) => ({ v, i })).filter(x => x.v > 0);
-      if (nonZero.length === 0) return null;
-      if (nonZero.length === 1) return { label: "NEW", color: C.teal };
-      const current = nonZero[nonZero.length - 1].v;
-      const previous = nonZero[nonZero.length - 2].v;
-      const diff = current - previous;
-      if (Math.abs(diff) < 0.05) return { label: "—", color: C.textDim };
-      if (diff > 0) return { label: "↑", color: "#22c55e" };
-      return { label: "↓", color: "#ef4444" };
-    })() : null;
+    const movement = (() => {
+      const prevRank = prevRanks[entry.id];
+      if (!prevRank) return { label: "NEW", color: C.teal };
+      const diff = prevRank - rank; // positive = moved up, negative = moved down
+      if (diff === 0) return { label: "—", color: C.textDim };
+      if (diff > 0) return { label: `+${diff}`, color: "#22c55e" };
+      return { label: `${diff}`, color: "#ef4444" };
+    })();
     return (
       <div style={{ borderBottom: "1px solid " + C.border, overflow: "hidden" }}>
         <div onClick={() => handleExpand(entry.id, section)}
