@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-188</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-190</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2280,26 +2280,15 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
 
   const Sparkline = ({ points, starts, color = C.accent }) => {
     if (!points || points.length === 0) return null;
-    const w = 260, h = 60, pad = 4;
+    const fullW = 260, h = 60, pad = 16;
+    const w = points.length <= 1 ? 80 : points.length <= 3 ? 140 : points.length <= 5 ? 200 : fullW;
     const max = Math.max(...points, 0.1);
-    const pts = points.map((v, i) => {
-      const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
-      const y = h - pad - (v / max) * (h - pad * 2);
-      return `${x},${y}`;
-    }).join(" ");
-    const areaPath = `M ${pad},${h - pad} ` +
-      points.map((v, i) => {
-        const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
-        const y = h - pad - (v / max) * (h - pad * 2);
-        return `L ${x},${y}`;
-      }).join(" ") +
-      ` L ${w - pad},${h - pad} Z`;
-
+    const xPos = (i) => pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
+    const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
+    const pts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
+    const areaPath = `M ${xPos(0)},${h - pad} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${h - pad} Z`;
     const labelDates = starts || getWeekStarts(8).slice().reverse().slice(0, points.length);
-    const labels = labelDates.map(w => {
-      const d = new Date(w + "T12:00:00");
-      return `${d.getMonth() + 1}/${d.getDate()}`;
-    });
+    const labels = labelDates.map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
@@ -2311,15 +2300,12 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
           </defs>
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => {
-            const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
-            const y = h - pad - (v / max) * (h - pad * 2);
-            return <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />;
-          })}
+          {points.map((v, i) => <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />)}
         </svg>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2, paddingLeft: pad, paddingRight: pad }}>
+        {/* Labels positioned at exact same x as dots */}
+        <div style={{ position: "relative", height: 14, marginTop: 2 }}>
           {labels.map((l, i) => (
-            <span key={i} style={{ color: C.textDim, fontSize: 9, width: w / labels.length, textAlign: "center" }}>{l}</span>
+            <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
           ))}
         </div>
       </div>
@@ -3557,10 +3543,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   const Sparkline = ({ points, starts, color = C.accent }) => {
     if (!points || points.length === 0) return null;
-    const w = 260, h = 60, pad = 4;
+    const fullW = 260, h = 60, pad = 16;
+    const w = points.length <= 1 ? 80 : points.length <= 3 ? 140 : points.length <= 5 ? 200 : fullW;
     const max = Math.max(...points, 0.1);
-    const pts = points.map((v, i) => { const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `${x},${y}`; }).join(" ");
-    const areaPath = `M ${pad},${h - pad} ` + points.map((v, i) => { const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return `L ${x},${y}`; }).join(" ") + ` L ${w - pad},${h - pad} Z`;
+    const xPos = (i) => pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2);
+    const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
+    const pts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
+    const areaPath = `M ${xPos(0)},${h - pad} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${h - pad} Z`;
     const labelDates = starts || getWeekStarts(8).slice().reverse().slice(0, points.length);
     const labels = labelDates.map(w => { const d = new Date(w + "T12:00:00"); return `${d.getMonth() + 1}/${d.getDate()}`; });
     return (
@@ -3569,10 +3558,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => { const x = pad + (i / Math.max(points.length - 1, 1)) * (w - pad * 2); const y = h - pad - (v / max) * (h - pad * 2); return <circle key={i} cx={x} cy={y} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />; })}
+          {points.map((v, i) => <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === points.length - 1 ? 3.5 : 2} fill={color} opacity={i === points.length - 1 ? 1 : 0.5} />)}
         </svg>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2, paddingLeft: pad, paddingRight: pad }}>
-          {labels.map((l, i) => <span key={i} style={{ color: C.textDim, fontSize: 9, width: w / labels.length, textAlign: "center" }}>{l}</span>)}
+        <div style={{ position: "relative", height: 14, marginTop: 2 }}>
+          {labels.map((l, i) => (
+            <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
+          ))}
         </div>
       </div>
     );
