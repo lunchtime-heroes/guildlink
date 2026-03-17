@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-203</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-204</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2126,9 +2126,32 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (atMatch) {
       const query = atMatch[1].toLowerCase();
       if (query.length === 0) {
-        // Show top games by followers when just @ is typed
         const { data } = await supabase.from("games").select("id, name, followers").order("followers", { ascending: false }).limit(5);
         setMentionResults(data || []);
+      } else if (query.length >= 2) {
+        const { data: local } = await supabase.from("games").select("id, name, followers").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5);
+        const localResults = local || [];
+        setMentionResults(localResults);
+        // Fall back to IGDB if fewer than 3 local results
+        if (localResults.length < 3) {
+          try {
+            const res = await fetch("/api/igdb", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query }),
+            });
+            const { games } = await res.json();
+            if (games?.length) {
+              const localIds = new Set(localResults.map(g => g.igdb_id));
+              const newFromIGDB = games
+                .filter(g => !localIds.has(g.igdb_id) && !localResults.find(l => l.name.toLowerCase() === g.name.toLowerCase()))
+                .map(g => ({ ...g, _fromIGDB: true }));
+              setMentionResults([...localResults, ...newFromIGDB].slice(0, 8));
+            }
+          } catch (err) {
+            console.warn("[igdb] fallback failed:", err);
+          }
+        }
       } else {
         const { data } = await supabase.from("games").select("id, name, followers").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5);
         setMentionResults(data || []);
@@ -2142,6 +2165,21 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     }
   };
 
+  const addGameFromIGDB = async (game) => {
+    // Insert IGDB game into our games table
+    const { data, error } = await supabase.from("games").insert({
+      name: game.name,
+      genre: game.genre,
+      summary: game.summary,
+      cover_url: game.cover_url,
+      igdb_id: game.igdb_id,
+      first_release_date: game.first_release_date,
+      followers: 0,
+    }).select().single();
+    if (error) { console.error("[addGameFromIGDB]", error); return null; }
+    return data;
+  };
+
   const handlePostKeyDown = (e) => {
     if (mentionResults.length === 0) return;
     if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionResults.length - 1)); }
@@ -2150,15 +2188,22 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     else if (e.key === "Escape") { setMentionResults([]); setMentionQuery(null); }
   };
 
-  const selectMention = (game) => {
-    const gameName = game.name.replace(/\s+/g, "");
+  const selectMention = async (game) => {
+    let resolvedGame = game;
+    // If this came from IGDB and isn't in our DB yet, insert it first
+    if (game._fromIGDB) {
+      const inserted = await addGameFromIGDB(game);
+      if (!inserted) return;
+      resolvedGame = inserted;
+    }
+    const gameName = resolvedGame.name.replace(/\s+/g, "");
     const inserted = postText.replace(/@\w*$/, "@" + gameName) + " ";
     setPostText(inserted);
     setTaggedGames(prev => {
-      if (prev.includes(game.id) || prev.length >= 3) return prev;
-      return [...prev, game.id];
+      if (prev.includes(resolvedGame.id) || prev.length >= 3) return prev;
+      return [...prev, resolvedGame.id];
     });
-    setDbGames(prev => ({ ...prev, [game.id]: game }));
+    setDbGames(prev => ({ ...prev, [resolvedGame.id]: resolvedGame }));
     setMentionQuery(null);
     setMentionResults([]);
     setMentionIndex(0);
@@ -2600,12 +2645,15 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game, find teammates... (@ to tag a game)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
-                  <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 220, marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {mentionResults.map((game, i) => (
-                      <div key={game.id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
-                        onMouseEnter={e => { setMentionIndex(i); }}>
+                      <div key={game.id || game.igdb_id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
+                        onMouseEnter={() => setMentionIndex(i)}>
                         <span style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{game.name}</span>
-                        <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{(game.followers / 1000).toFixed(1)}k</span>
+                        {game._fromIGDB
+                          ? <span style={{ color: C.teal, fontSize: 10, marginLeft: "auto", fontWeight: 600 }}>+ Add</span>
+                          : <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{((game.followers || 0) / 1000).toFixed(1)}k</span>
+                        }
                       </div>
                     ))}
                   </div>
