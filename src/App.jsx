@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-193</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-194</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3143,17 +3143,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const baseline = h - pad;
     const linePts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
     const areaPath = `M ${xPos(0)},${baseline} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${baseline} Z`;
-    // Current week dot = index 7 (last data point, index 8 is future empty)
-    const currentIdx = points.length - 2;
+    // Find last non-zero index for the "current" dot
+    let currentIdx = 0;
+    for (let i = points.length - 2; i >= 0; i--) { if (points[i] > 0) { currentIdx = i; break; } }
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((v, i) => i < points.length - 1 ? (
-            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === currentIdx ? 3.5 : 2} fill={color} opacity={i === currentIdx ? 1 : 0.5} />
-          ) : null)}
+          {points.map((v, i) => i === points.length - 1 ? null : (
+            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === currentIdx ? 3.5 : 2} fill={color} opacity={i === currentIdx ? 1 : 0.4} />
+          ))}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2, width: w }}>
           {labels && labels.map((l, i) => <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: i === slots - 1 ? "transparent" : C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>)}
@@ -3177,12 +3178,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const spLabels = spData?.labels || null;
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = sp ? (() => {
-      // sp has 9 slots: [week-8...week-1, future=0]. Current week = index 7, prev = index 6
-      const current = sp[7] || 0;
-      const previous = sp[6] || 0;
-      if (previous === 0 && current === 0) return null;
-      if (previous === 0 && current > 0) return { label: "NEW", color: C.teal };
-      if (current === 0) return null;
+      // Find last two non-zero data points (skip future slot at index 8)
+      const data = sp.slice(0, 8);
+      const nonZero = data.map((v, i) => ({ v, i })).filter(x => x.v > 0);
+      if (nonZero.length === 0) return null;
+      if (nonZero.length === 1) return { label: "NEW", color: C.teal };
+      const current = nonZero[nonZero.length - 1].v;
+      const previous = nonZero[nonZero.length - 2].v;
       const diff = current - previous;
       if (Math.abs(diff) < 0.05) return { label: "—", color: C.textDim };
       if (diff > 0) return { label: "↑", color: "#22c55e" };
