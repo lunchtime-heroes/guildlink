@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-198</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-199</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2875,9 +2875,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setChartsLoading(true);
       setSparklines({});
       const weekStarts = getWeekStarts(8);
+      const currentWeek = weekStarts[0]; // most recent
       const { data: events } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
-        .in("week_start", weekStarts);
+        .eq("week_start", currentWeek);
       if (!events) { setChartsLoading(false); return; }
       const scored = scoreEvents(events);
       const top10 = scored.slice(0, 10);
@@ -3145,9 +3146,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
   const Sparkline = ({ points, labels, color = C.accent }) => {
     if (!points || points.length === 0) return null;
-    const W = 1000, h = 60, pad = 20; // use large viewBox, scale with CSS
+    const W = 1000, h = 80, pad = 20;
     const slots = 9;
-    const max = Math.max(...points.slice(0, 8), 0.1); // max from data only, ignore future slot
+    // Use max with headroom so chart doesn't hit the top — makes differences more visible
+    const dataMax = Math.max(...points.slice(0, 8));
+    const max = dataMax > 0 ? dataMax * 1.4 : 0.1;
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
