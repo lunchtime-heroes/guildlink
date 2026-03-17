@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-199</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-200</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2855,7 +2855,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
 
   // Build fixed 9-slot sparkline data: 8 weeks oldest→newest + 1 future zero
-  const buildSparkline = (gameId, events, allWeekStarts) => {
+  const buildSparkline = (gameId, events, allWeekStarts, globalMax) => {
     const weekScores = {};
     allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -2864,10 +2864,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
       else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
     });
-    const ordered = allWeekStarts.slice().reverse(); // oldest first
-    const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0]; // 9th slot = future
+    const ordered = allWeekStarts.slice().reverse();
+    const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
     const labels = [...ordered.map(w => { const d = new Date(w + "T12:00:00"); return (d.getMonth() + 1) + "/" + d.getDate(); }), ""];
-    return { points, labels };
+    return { points, labels, globalMax };
   };
   // Load charts
   useEffect(() => {
@@ -2912,8 +2912,23 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         .select("game_id, event_type, post_sequence, user_id, week_start")
         .in("game_id", top10.map(g => g.id))
         .in("week_start", allWeekStarts);
+
+      // Find global max score across all games and all weeks for shared scale
+      const allScores = top10.map(g => {
+        const weekScores = {};
+        allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+        (sparkEvents || []).filter(e => e.game_id === g.id).forEach(e => {
+          if (!weekScores[e.week_start]) return;
+          weekScores[e.week_start].users.add(e.user_id);
+          if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+          else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+        });
+        return Math.max(...Object.values(weekScores).map(({ score, users }) => score * (1 + Math.log(Math.max(users.size, 1)) * 0.2)));
+      });
+      const globalMax = Math.max(...allScores, 0.1);
+
       const newSparklines = {};
-      top10.forEach(g => { newSparklines[g.id] = buildSparkline(g.id, sparkEvents || [], allWeekStarts); });
+      top10.forEach(g => { newSparklines[g.id] = buildSparkline(g.id, sparkEvents || [], allWeekStarts, globalMax); });
       setSparklines(newSparklines);
     };
     load();
@@ -2925,7 +2940,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const weekStarts = getWeekStarts(8);
     const { data: events } = await supabase.from("chart_events")
       .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
-    setSparklines(prev => ({ ...prev, [gameId]: buildSparkline(gameId, events || [], weekStarts) }));
+    // Use the globalMax from the #1 game's sparkline if available
+    const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
+    const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
+    setSparklines(prev => ({ ...prev, [gameId]: buildSparkline(gameId, events || [], weekStarts, globalMax) }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -3144,13 +3162,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   };
 
   // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
-  const Sparkline = ({ points, labels, color = C.accent }) => {
+  const Sparkline = ({ points, labels, globalMax, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 80, pad = 20;
     const slots = 9;
-    // Use max with headroom so chart doesn't hit the top — makes differences more visible
     const dataMax = Math.max(...points.slice(0, 8));
-    const max = dataMax > 0 ? dataMax * 1.4 : 0.1;
+    // Use globalMax if provided so all charts share the same scale
+    const max = globalMax ? globalMax : (dataMax > 0 ? dataMax * 1.4 : 0.1);
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
@@ -3193,6 +3211,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const spData = sparklines[entry.id];
     const sp = spData?.points || spData;
     const spLabels = spData?.labels || null;
+    const spGlobalMax = spData?.globalMax || null;
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = (() => {
       const prevRank = prevRanks[entry.id];
@@ -3220,7 +3239,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
             {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
-              : sp ? <Sparkline points={sp} labels={spLabels} color={C.accent} />
+              : sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} color={C.accent} />
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
               {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
