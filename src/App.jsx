@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-192</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-193</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3140,21 +3140,20 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const max = Math.max(...points, 0.1);
     const xPos = (i) => pad + (i / (slots - 1)) * (w - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
-    const segments = [];
-    let cur = [];
-    points.forEach((v, i) => { if (v > 0) { cur.push([i, v]); } else { if (cur.length > 0) { segments.push(cur); cur = []; } } });
-    if (cur.length > 0) segments.push(cur);
+    const baseline = h - pad;
+    const linePts = points.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
+    const areaPath = `M ${xPos(0)},${baseline} ` + points.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(points.length - 1)},${baseline} Z`;
+    // Current week dot = index 7 (last data point, index 8 is future empty)
+    const currentIdx = points.length - 2;
     return (
       <div style={{ marginTop: 8 }}>
         <svg width={w} height={h} style={{ display: "block" }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-          {segments.map((seg, si) => (
-            <g key={si}>
-              <path d={`M ${xPos(seg[0][0])},${h - pad} ` + seg.map(([i, v]) => "L " + xPos(i) + "," + yPos(v)).join(" ") + " L " + xPos(seg[seg.length-1][0]) + "," + (h - pad) + " Z"} fill={`url(#grad-${color.replace("#","")})`} />
-              <polyline points={seg.map(([i, v]) => xPos(i) + "," + yPos(v)).join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-            </g>
-          ))}
-          {points.map((v, i) => v > 0 ? <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === points.length - 2 ? 3.5 : 2} fill={color} opacity={i === points.length - 2 ? 1 : 0.6} /> : null)}
+          <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
+          <polyline points={linePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          {points.map((v, i) => i < points.length - 1 ? (
+            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === currentIdx ? 3.5 : 2} fill={color} opacity={i === currentIdx ? 1 : 0.5} />
+          ) : null)}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2, width: w }}>
           {labels && labels.map((l, i) => <span key={i} style={{ position: "absolute", left: xPos(i), transform: "translateX(-50%)", color: i === slots - 1 ? "transparent" : C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>)}
