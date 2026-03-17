@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-185</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-186</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3264,13 +3264,17 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   useEffect(() => {
     const load = async () => {
       setChartsLoading(true);
+      setSparklines({});
       const weekStarts = getWeekStarts(getWindowWeeks(chartWindow));
+      console.log("[games charts] chartWindow:", chartWindow, "weekStarts:", weekStarts);
       const { data: events } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
         .in("week_start", weekStarts);
+      console.log("[games charts] events:", events?.length, "sample week_start:", events?.[0]?.week_start);
       if (!events) { setChartsLoading(false); return; }
       const scored = scoreEvents(events);
-      setOverall(scored.slice(0, 10));
+      const top10 = scored.slice(0, 10);
+      setOverall(top10);
       const genres = {}, genresFull = {};
       scored.forEach(g => {
         const pg = Array.isArray(g.genre) ? g.genre[0] : (g.genre || "Other");
@@ -3280,6 +3284,33 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       });
       setByGenre(genres); setByGenreFull(genresFull);
       setExpandedGenreAll(new Set()); setChartsLoading(false);
+
+      // Eagerly load sparklines for top 10
+      if (top10.length === 0) return;
+      const allWeekStarts = getWeekStarts(8);
+      const { data: sparkEvents } = await supabase.from("chart_events")
+        .select("game_id, event_type, post_sequence, user_id, week_start")
+        .in("game_id", top10.map(g => g.id))
+        .in("week_start", allWeekStarts);
+      const newSparklines = {};
+      top10.forEach(g => {
+        const weekScores = {};
+        allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+        (sparkEvents || []).filter(e => e.game_id === g.id).forEach(e => {
+          if (!weekScores[e.week_start]) return;
+          weekScores[e.week_start].users.add(e.user_id);
+          if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+          else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+        });
+        const points = allWeekStarts.slice().reverse().map(w => {
+          const { score, users } = weekScores[w];
+          return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2);
+        });
+        let lastNonZero = points.length - 1;
+        while (lastNonZero > 0 && points[lastNonZero] === 0) lastNonZero--;
+        newSparklines[g.id] = points.slice(0, Math.min(lastNonZero + 2, points.length));
+      });
+      setSparklines(newSparklines);
     };
     load();
   }, [chartWindow]);
@@ -3299,7 +3330,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
     });
     const points = weekStarts.slice().reverse().map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); });
-    setSparklines(prev => ({ ...prev, [gameId]: points }));
+    let lastNonZero = points.length - 1;
+    while (lastNonZero > 0 && points[lastNonZero] === 0) lastNonZero--;
+    const trimmed = points.slice(0, Math.min(lastNonZero + 2, points.length));
+    setSparklines(prev => ({ ...prev, [gameId]: trimmed }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
