@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-184</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-185</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2096,7 +2096,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
 // ─── CHARTS PAGE ──────────────────────────────────────────────────────────────
 
 function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
-  const [window, setWindow] = useState("7d");
+  const [chartRange, setChartRange] = useState("7d");
   const [loading, setLoading] = useState(true);
   const [overall, setOverall] = useState([]);
   const [byGenre, setByGenre] = useState({});
@@ -2157,8 +2157,9 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
     const load = async () => {
       setLoading(true);
       setSparklines({});
-      const weeks = getWindowWeeks(window);
+      const weeks = getWindowWeeks(chartRange);
       const weekStarts = getWeekStarts(weeks);
+      console.log("[charts] chartRange:", chartRange, "weekStarts:", weekStarts);
 
       const { data: events } = await supabase
         .from("chart_events")
@@ -2187,6 +2188,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
 
       // Eagerly load sparklines for top 10 so movement shows immediately
       const allWeekStarts = getWeekStarts(8);
+      console.log("[sparklines] allWeekStarts:", allWeekStarts);
       const { data: sparkEvents } = await supabase
         .from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start")
@@ -2220,7 +2222,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       setSparklines(newSparklines);
     };
     load();
-  }, [window]);
+  }, [chartRange]);
 
   const loadSparkline = async (gameId) => {
     if (sparklines[gameId]) return;
@@ -2425,8 +2427,8 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
       {/* Time window selector */}
       <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
         {[{ id: "7d", label: "This Week" }, { id: "30d", label: "This Month" }].map(w => (
-          <button key={w.id} onClick={() => { setWindow(w.id); setExpandedOverall(null); setExpandedGenre({}); setExpandedGenreAll(new Set()); }}
-            style={{ background: window === w.id ? C.accentGlow : C.surface, border: "1px solid " + window === w.id ? C.accentDim : C.border, borderRadius: 20, padding: "6px 16px", color: window === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: window === w.id ? 700 : 500, cursor: "pointer" }}>
+          <button key={w.id} onClick={() => { setChartRange(w.id); setExpandedOverall(null); setExpandedGenre({}); setExpandedGenreAll(new Set()); }}
+            style={{ background: chartRange === w.id ? C.accentGlow : C.surface, border: "1px solid " + chartRange === w.id ? C.accentDim : C.border, borderRadius: 20, padding: "6px 16px", color: chartRange === w.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: chartRange === w.id ? 700 : 500, cursor: "pointer" }}>
             {w.label}
           </button>
         ))}
@@ -2445,7 +2447,7 @@ function ChartsPage({ setActivePage, setCurrentGame, isMobile }) {
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
             <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
-              <div style={{ color: C.textDim, fontSize: 12 }}>{windowLabel[window]}</div>
+              <div style={{ color: C.textDim, fontSize: 12 }}>{windowLabel[chartRange]}</div>
             </div>
             {overall.map((entry, i) => (
               <ChartRow key={entry.id} entry={entry} rank={i + 1} section="overall" />
