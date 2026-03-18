@@ -1837,7 +1837,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-230</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-231</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3421,12 +3421,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                   onChange={async e => {
                     const val = e.target.value;
                     setNameSearch(val);
-                    // Strip leading @ so both "@hell" and "hell" work the same
                     const q = val.startsWith("@") ? val.slice(1) : val;
                     if (!q) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
                     if (q.length >= 2) {
-                      const { data } = await supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(5);
-                      setTypeaheadResults(data || []);
+                      const [localRes, igdbRes] = await Promise.allSettled([
+                        supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(4),
+                        fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
+                      ]);
+                      const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+                      const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+                      const localNames = new Set(local.map(g => g.name.toLowerCase()));
+                      const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+                      setTypeaheadResults([...local, ...fromIGDB].slice(0, 6));
                     } else {
                       setTypeaheadResults([]);
                     }
@@ -3447,7 +3453,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               {typeaheadResults.length > 0 && (
                 <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, marginTop: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                   {typeaheadResults.map((g, i) => (
-                    <div key={g.id} onMouseDown={() => { setCurrentGame(g.id); setActivePage("game"); setTypeaheadResults([]); setNameSearch(""); }}
+                    <div key={g.id || g.igdb_id} onMouseDown={async () => {
+                      if (g._fromIGDB) {
+                        const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
+                        if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
+                      } else { setCurrentGame(g.id); setActivePage("game"); }
+                      setTypeaheadResults([]); setNameSearch("");
+                    }}
                       style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
                       onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                       onMouseLeave={e => e.currentTarget.style.background = C.surface}>
@@ -3459,6 +3471,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
                         {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
                       </div>
+                      {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
                     </div>
                   ))}
                   <div onMouseDown={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
@@ -5199,18 +5212,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 onChange={async e => {
                   setGameSearch(e.target.value);
                   const val = e.target.value;
-                  const m = val.match(/@([^@]*)$/);
-                  if (m) {
-                    const q = m[1].trim().toLowerCase();
-                    const query = q.length === 0
-                      ? supabase.from("games").select("id, name, developer, genre, cover_url").order("followers", { ascending: false }).limit(6)
-                      : supabase.from("games").select("id, name, developer, genre, cover_url").ilike("name", `%${q}%`).limit(6);
-                    query.then(({ data }) => setGameSearchResults(data || []));
-                  } else if (val.length >= 2) {
-                    // Run local + IGDB in parallel
+                  const q = val.startsWith("@") ? val.slice(1) : val;
+                  if (q.length >= 2) {
                     const [localRes, igdbRes] = await Promise.allSettled([
-                      supabase.from("games").select("id, name, developer, genre, cover_url").ilike("name", `%${val}%`).limit(5),
-                      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: val }) }).then(r => r.json()).catch(() => ({ games: [] })),
+                      supabase.from("games").select("id, name, developer, genre, cover_url").ilike("name", `%${q}%`).limit(5),
+                      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
                     ]);
                     const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
                     const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
