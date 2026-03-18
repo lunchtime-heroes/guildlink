@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-208</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-209</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2131,31 +2131,25 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         setMentionQuery(query);
         setMentionIndex(0);
       } else {
-        const { data: local } = await supabase.from("games").select("id, name, followers, igdb_id").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(6);
-        const localResults = local || [];
-        setMentionResults(localResults);
+        // Run local DB and IGDB in parallel
+        const [localRes, igdbRes] = await Promise.allSettled([
+          supabase.from("games").select("id, name, followers, igdb_id").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5),
+          fetch("/api/igdb", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query }),
+          }).then(r => r.json()).catch(() => ({ games: [] })),
+        ]);
+        const localResults = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+        const igdbGames = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+        // Filter IGDB results to only those not already in local DB (by name)
+        const localNames = new Set(localResults.map(g => g.name.toLowerCase()));
+        const newFromIGDB = igdbGames
+          .filter(g => !localNames.has(g.name.toLowerCase()))
+          .map(g => ({ ...g, _fromIGDB: true }));
+        setMentionResults([...localResults, ...newFromIGDB].slice(0, 8));
         setMentionQuery(query);
         setMentionIndex(0);
-        // Fall back to IGDB if fewer than 3 local results
-        if (localResults.length < 3) {
-          try {
-            const res = await fetch("/api/igdb", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ query }),
-            });
-            const { games } = await res.json();
-            if (games?.length) {
-              const localNames = new Set(localResults.map(g => g.name.toLowerCase()));
-              const newFromIGDB = games
-                .filter(g => !localNames.has(g.name.toLowerCase()))
-                .map(g => ({ ...g, _fromIGDB: true }));
-              setMentionResults([...localResults, ...newFromIGDB].slice(0, 8));
-            }
-          } catch (err) {
-            console.warn("[igdb] fallback failed:", err);
-          }
-        }
       }
     } else {
       setMentionQuery(null);
