@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-211</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-212</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5608,6 +5608,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [chartEvents, setChartEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [allGames, setAllGames] = useState([]);
+  const [enriching, setEnriching] = useState({});
+  const [enrichMsg, setEnrichMsg] = useState({});
 
   useEffect(() => {
     const check = async () => {
@@ -5643,6 +5646,10 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     if (usersRes.data) setUsers(usersRes.data);
     if (postsRes.data) setPosts(postsRes.data);
     if (reviewsRes.data) setReviews(reviewsRes.data);
+
+    // Load all games for the Games tab
+    const { data: gamesData } = await supabase.from("games").select("id, name, genre, igdb_id, cover_url, summary").order("name");
+    if (gamesData) setAllGames(gamesData);
 
     // Aggregate chart events by game
     if (chartRes.data) {
@@ -5684,6 +5691,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     { id: "posts", label: "📝 Posts" },
     { id: "charts", label: "🏆 Chart Activity" },
     { id: "reviews", label: "⭐ Reviews" },
+    { id: "games", label: "🎮 Games" },
   ];
 
   return (
@@ -5842,9 +5850,84 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           ))}
         </div>
       )}
+
+      {/* Games tab */}
+      {tab === "games" && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url).length} with cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
+            <button onClick={async () => {
+              // Enrich all games missing cover art
+              const missing = allGames.filter(g => !g.cover_url);
+              for (const game of missing) {
+                await enrichGame(game);
+              }
+            }} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              Enrich All Missing →
+            </button>
+          </div>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+            {allGames.map((game, i) => (
+              <div key={game.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < allGames.length - 1 ? "1px solid " + C.border : "none" }}>
+                {game.cover_url
+                  ? <img src={game.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                  : <div style={{ width: 28, height: 37, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                }
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                  <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre || "No genre"} · {game.igdb_id ? `IGDB #${game.igdb_id}` : "No IGDB ID"}</div>
+                </div>
+                <div style={{ fontSize: 11, color: enrichMsg[game.id] ? C.teal : C.textDim, minWidth: 80, textAlign: "right" }}>
+                  {enrichMsg[game.id] || (game.cover_url ? "✓ Has art" : "No art")}
+                </div>
+                <button
+                  onClick={() => enrichGame(game)}
+                  disabled={enriching[game.id]}
+                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "5px 12px", color: C.accentSoft, fontSize: 11, fontWeight: 600, cursor: enriching[game.id] ? "default" : "pointer", flexShrink: 0, opacity: enriching[game.id] ? 0.6 : 1 }}>
+                  {enriching[game.id] ? "…" : "Enrich"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+
+  async function enrichGame(game) {
+    setEnriching(prev => ({ ...prev, [game.id]: true }));
+    try {
+      const res = await fetch("/api/igdb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: game.name }),
+      });
+      const { games } = await res.json();
+      if (!games?.length) {
+        setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" }));
+        return;
+      }
+      // Pick best match — prefer exact name match, then first result
+      const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
+      const updates = {};
+      if (match.cover_url) updates.cover_url = match.cover_url;
+      if (match.summary) updates.summary = match.summary;
+      if (match.igdb_id) updates.igdb_id = match.igdb_id;
+      if (match.genre && !game.genre) updates.genre = match.genre;
+      if (Object.keys(updates).length === 0) {
+        setEnrichMsg(prev => ({ ...prev, [game.id]: "No new data" }));
+        return;
+      }
+      const { error } = await supabase.from("games").update(updates).eq("id", game.id);
+      if (error) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" })); return; }
+      setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
+      setEnrichMsg(prev => ({ ...prev, [game.id]: "✓ Updated" }));
+    } catch {
+      setEnrichMsg(prev => ({ ...prev, [game.id]: "Failed" }));
+    } finally {
+      setEnriching(prev => ({ ...prev, [game.id]: false }));
+    }
+  }
 
 // ─── NPC STUDIO ───────────────────────────────────────────────────────────────
 
