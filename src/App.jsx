@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-226</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-227</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3409,32 +3409,32 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       {/* ── Game Discovery Card ── */}
       {!currentUser ? (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ background: C.goldGlow, border: "2px solid " + C.gold + "66", borderRadius: 20, marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 4 }}>Game Discovery</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: C.gold, marginBottom: 4, letterSpacing: "-0.3px" }}>Game Discovery</div>
             <div style={{ color: C.textMuted, fontSize: 13 }}>Game discovery works when you build your game shelf.</div>
           </div>
           <button onClick={() => onSignIn?.("Build your shelf and unlock game discovery.")}
-            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+            style={{ background: C.gold, border: "none", borderRadius: 10, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
             Sign Up Now
           </button>
         </div>
       ) : (
-      <div style={{ background: C.surface, border: "1px solid " + discoveryOpen ? C.accentDim : C.border, borderRadius: 16, marginBottom: 32, transition: "border-color 0.2s" }}>
+      <div style={{ background: C.goldGlow, border: "2px solid " + C.gold + "55", borderRadius: 20, marginBottom: 32, transition: "border-color 0.2s" }}>
         {/* Card header — always visible, click to expand */}
         <div onClick={() => setDiscoveryOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", cursor: "pointer" }}
-          onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>Game Discovery</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: C.gold, letterSpacing: "-0.3px" }}>Game Discovery</div>
             <div style={{ color: C.textMuted, fontSize: 13, marginTop: 2 }}>Find something to play based on what the community is doing.</div>
           </div>
-          <div style={{ color: C.textDim, fontSize: 12, marginLeft: 16, flexShrink: 0 }}>{discoveryOpen ? "▲" : "▼"}</div>
+          <div style={{ color: C.gold, fontSize: 12, marginLeft: 16, flexShrink: 0, opacity: 0.7 }}>{discoveryOpen ? "▲" : "▼"}</div>
         </div>
 
         {/* Expanded panel */}
         {discoveryOpen && (
-          <div style={{ borderTop: "1px solid " + C.border, padding: "20px 22px 22px" }}>
+          <div style={{ borderTop: "1px solid " + C.gold + "33", padding: "20px 22px 22px" }}>
             {/* Insight pills */}
             <div style={{ marginBottom: 18 }}>
               <div style={{ color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Discover by</div>
