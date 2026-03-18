@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-209</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-210</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2133,7 +2133,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       } else {
         // Run local DB and IGDB in parallel
         const [localRes, igdbRes] = await Promise.allSettled([
-          supabase.from("games").select("id, name, followers, igdb_id").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5),
+          supabase.from("games").select("id, name, followers, igdb_id, cover_url, genre").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5),
           fetch("/api/igdb", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2637,11 +2637,20 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game, find teammates... (@ to tag a game)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 220, maxWidth: 360, maxHeight: 280, overflowY: "auto", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 260, maxWidth: 400, maxHeight: 320, overflowY: "auto", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {mentionResults.map((game, i) => (
-                      <div key={game.id || game.igdb_id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
+                      <div key={game.id || game.igdb_id} onClick={() => selectMention(game)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
                         onMouseEnter={() => setMentionIndex(i)}>
-                        <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
+                        {/* Cover art thumbnail */}
+                        {game.cover_url
+                          ? <img src={game.cover_url} alt="" style={{ width: 32, height: 42, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                          : <div style={{ width: 32, height: 42, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🎮</div>
+                        }
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                          {game.genre && <div style={{ color: C.textDim, fontSize: 10, marginTop: 1 }}>{game.genre}</div>}
+                        </div>
                         {game._fromIGDB && (
                           <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>
                         )}
