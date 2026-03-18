@@ -42,22 +42,34 @@ export default async function handler(req, res) {
     }
 
     if (query) {
-      // No where filter — let IGDB search handle relevance
-      // Sort client-side by follows to surface popular titles
+      // Fetch more results so filtering doesn't leave us empty
       const body = `
         search "${query.replace(/"/g, "")}";
         fields name, genres.name, summary, cover.image_id, first_release_date,
                involved_companies.company.name, involved_companies.developer, follows, category;
-        limit 15;
+        limit 20;
       `;
       const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body });
       const games = await r.json();
-      // Filter out DLC (category 1), expansions (2), bundles (3), mods (6) client-side
-      // Keep main games (0), standalone expansions (4), remakes (8), remasters (9)
-      const filtered = (games || []).filter(g => ![1, 2, 3, 6].includes(g.category));
-      // Sort by follows descending
-      const sorted = filtered.sort((a, b) => (b.follows || 0) - (a.follows || 0));
-      return res.status(200).json({ games: sorted.map(formatGame) });
+
+      // Step 1: filter out DLC, expansions, bundles, mods
+      const categoryFiltered = (games || []).filter(g => ![1, 2, 3, 6].includes(g.category));
+
+      // Step 2: keep games that have cover art OR have follows > 0
+      // This eliminates fan hacks and data noise while keeping legitimate obscure titles
+      const qualityFiltered = categoryFiltered.filter(g => g.cover?.image_id || (g.follows || 0) > 0);
+
+      // Step 3: sort — games with cover art first, then by follows
+      const sorted = qualityFiltered.sort((a, b) => {
+        const aScore = (a.cover?.image_id ? 1000 : 0) + (a.follows || 0);
+        const bScore = (b.cover?.image_id ? 1000 : 0) + (b.follows || 0);
+        return bScore - aScore;
+      });
+
+      // If quality filter removed everything, fall back to category-filtered results
+      const results = sorted.length > 0 ? sorted : categoryFiltered;
+
+      return res.status(200).json({ games: results.slice(0, 10).map(formatGame) });
     }
 
     return res.status(400).json({ error: "Provide query or igdb_id" });
