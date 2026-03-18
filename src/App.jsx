@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-215</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-216</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3272,9 +3272,16 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(null);
     setDiscoveryLoading(true);
     setDiscoveryLabel(`Results for "${q}"`);
-    const { data } = await supabase.from("games").select("id, name, genre")
-      .ilike("name", `%${q}%`).limit(20);
-    setDiscoveryResults((data || []).map(g => ({ ...g, _stat: g.genre || "" })));
+    const [localRes, igdbRes] = await Promise.allSettled([
+      supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(8),
+      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
+    ]);
+    const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+    const localNames = new Set(local.map(g => g.name.toLowerCase()));
+    const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+    const all = [...local, ...fromIGDB].slice(0, 16);
+    setDiscoveryResults(all.map(g => ({ ...g, _stat: g.genre || "" })));
     setDiscoveryLoading(false);
   };
 
@@ -3481,17 +3488,33 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
               {discoveryResults.map(g => {
-                const v = gameVisuals(g);
                 const onShelf = userShelf.has(g.id);
                 return (
-                  <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
-                    style={{ background: C.surface, border: "1px solid " + onShelf ? C.accentDim : C.border, borderRadius: 12, padding: "14px 16px", cursor: "pointer" }}
+                  <div key={g.id || g.igdb_id} onClick={async () => {
+                    if (g._fromIGDB) {
+                      const { data: inserted } = await supabase.from("games").insert({
+                        name: g.name, genre: g.genre, summary: g.summary,
+                        cover_url: g.cover_url, igdb_id: g.igdb_id,
+                        first_release_date: g.first_release_date, followers: 0,
+                      }).select().single();
+                      if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
+                    } else {
+                      setCurrentGame(g.id); setActivePage("game");
+                    }
+                  }}
+                    style={{ background: C.surface, border: "1px solid " + (onShelf ? C.accentDim : C.border), borderRadius: 12, overflow: "hidden", cursor: "pointer" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = onShelf ? C.accent : C.borderHover}
                     onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
-                    <div style={{ width: 28, height: 4, borderRadius: 2, background: v.color, marginBottom: 10 }} />
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4, lineHeight: 1.3 }}>{g.name}</div>
-                    <div style={{ color: C.textDim, fontSize: 11 }}>{g._stat}</div>
-                    {onShelf && <div style={{ fontSize: 10, color: C.accentSoft, fontWeight: 700, marginTop: 6 }}>On your shelf</div>}
+                    {g.cover_url
+                      ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
+                      : <div style={{ width: "100%", aspectRatio: "3/4", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
+                    }
+                    <div style={{ padding: "10px 12px" }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>{g._stat}</div>
+                      {onShelf && <div style={{ fontSize: 10, color: C.accentSoft, fontWeight: 700, marginTop: 4 }}>On your shelf</div>}
+                      {g._fromIGDB && <div style={{ fontSize: 10, color: C.teal, fontWeight: 600, marginTop: 4 }}>+ Add to GuildLink</div>}
+                    </div>
                   </div>
                 );
               })}
