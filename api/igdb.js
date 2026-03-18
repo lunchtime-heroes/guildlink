@@ -13,7 +13,7 @@ async function getAccessToken() {
   );
   const data = await res.json();
   cachedToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in - 300) * 1000; // refresh 5min early
+  tokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
   return cachedToken;
 }
 
@@ -32,7 +32,6 @@ export default async function handler(req, res) {
     };
 
     if (igdb_id) {
-      // Fetch single game by IGDB ID (for enriching existing games)
       const body = `
         fields name, genres.name, summary, cover.image_id, first_release_date,
                involved_companies.company.name, involved_companies.developer;
@@ -45,16 +44,22 @@ export default async function handler(req, res) {
     }
 
     if (query) {
-      // Search by name
+      // category = 0 means main game (excludes DLC, expansions, bundles, mods, episodes, seasons)
+      // sort by follows descending so popular/well-known entries come first
       const body = `
         search "${query.replace(/"/g, "")}";
         fields name, genres.name, summary, cover.image_id, first_release_date,
-               involved_companies.company.name, involved_companies.developer;
+               involved_companies.company.name, involved_companies.developer,
+               follows, category;
+        where category = 0 & version_parent = null;
+        sort follows desc;
         limit 10;
       `;
       const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body });
       const games = await r.json();
-      return res.status(200).json({ games: games.map(formatGame) });
+      // Sort by follows descending as a secondary sort (IGDB search relevance takes priority)
+      const sorted = (games || []).sort((a, b) => (b.follows || 0) - (a.follows || 0));
+      return res.status(200).json({ games: sorted.map(formatGame) });
     }
 
     return res.status(400).json({ error: "Provide query or igdb_id" });
@@ -76,5 +81,6 @@ function formatGame(g) {
       : null,
     first_release_date: g.first_release_date || null,
     developer: g.involved_companies?.find(c => c.developer)?.company?.name || null,
+    follows: g.follows || 0,
   };
 }
