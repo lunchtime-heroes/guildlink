@@ -1,12 +1,10 @@
 // api/igdb.js — Vercel serverless function for IGDB queries
-// Handles token exchange and game search, keeping credentials server-side
 
 let cachedToken = null;
 let tokenExpiry = 0;
 
 async function getAccessToken() {
   if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
-
   const res = await fetch(
     `https://id.twitch.tv/oauth2/token?client_id=${process.env.IGDB_CLIENT_ID}&client_secret=${process.env.IGDB_CLIENT_SECRET}&grant_type=client_credentials`,
     { method: "POST" }
@@ -44,20 +42,19 @@ export default async function handler(req, res) {
     }
 
     if (query) {
-      // category = 0 means main game (excludes DLC, expansions, bundles, mods, episodes, seasons)
-      // sort by follows descending so popular/well-known entries come first
+      // search + where is allowed; sort is NOT allowed with search
+      // category = 0: main games only (excludes DLC, mods, ports, expansions)
+      // version_parent = null: excludes regional variants / special editions
       const body = `
         search "${query.replace(/"/g, "")}";
         fields name, genres.name, summary, cover.image_id, first_release_date,
-               involved_companies.company.name, involved_companies.developer,
-               follows, category;
+               involved_companies.company.name, involved_companies.developer, follows;
         where category = 0 & version_parent = null;
-        sort follows desc;
         limit 10;
       `;
       const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body });
       const games = await r.json();
-      // Sort by follows descending as a secondary sort (IGDB search relevance takes priority)
+      // Sort client-side by follows so popular titles surface first
       const sorted = (games || []).sort((a, b) => (b.follows || 0) - (a.follows || 0));
       return res.status(200).json({ games: sorted.map(formatGame) });
     }
