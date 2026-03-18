@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-212</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-213</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5694,6 +5694,31 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     { id: "games", label: "🎮 Games" },
   ];
 
+  const enrichGame = async (game) => {
+    setEnriching(prev => ({ ...prev, [game.id]: true }));
+    try {
+      const res = await fetch("/api/igdb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: game.name }),
+      });
+      const { games } = await res.json();
+      if (!games?.length) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" })); return; }
+      const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
+      const updates = {};
+      if (match.cover_url) updates.cover_url = match.cover_url;
+      if (match.summary) updates.summary = match.summary;
+      if (match.igdb_id) updates.igdb_id = match.igdb_id;
+      if (match.genre && !game.genre) updates.genre = match.genre;
+      if (Object.keys(updates).length === 0) { setEnrichMsg(prev => ({ ...prev, [game.id]: "No new data" })); return; }
+      const { error } = await supabase.from("games").update(updates).eq("id", game.id);
+      if (error) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" })); return; }
+      setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
+      setEnrichMsg(prev => ({ ...prev, [game.id]: "✓ Updated" }));
+    } catch { setEnrichMsg(prev => ({ ...prev, [game.id]: "Failed" })); }
+    finally { setEnriching(prev => ({ ...prev, [game.id]: false })); }
+  };
+
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header */}
@@ -5893,41 +5918,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       )}
     </div>
   );
-
-  async function enrichGame(game) {
-    setEnriching(prev => ({ ...prev, [game.id]: true }));
-    try {
-      const res = await fetch("/api/igdb", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: game.name }),
-      });
-      const { games } = await res.json();
-      if (!games?.length) {
-        setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" }));
-        return;
-      }
-      // Pick best match — prefer exact name match, then first result
-      const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
-      const updates = {};
-      if (match.cover_url) updates.cover_url = match.cover_url;
-      if (match.summary) updates.summary = match.summary;
-      if (match.igdb_id) updates.igdb_id = match.igdb_id;
-      if (match.genre && !game.genre) updates.genre = match.genre;
-      if (Object.keys(updates).length === 0) {
-        setEnrichMsg(prev => ({ ...prev, [game.id]: "No new data" }));
-        return;
-      }
-      const { error } = await supabase.from("games").update(updates).eq("id", game.id);
-      if (error) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" })); return; }
-      setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
-      setEnrichMsg(prev => ({ ...prev, [game.id]: "✓ Updated" }));
-    } catch {
-      setEnrichMsg(prev => ({ ...prev, [game.id]: "Failed" }));
-    } finally {
-      setEnriching(prev => ({ ...prev, [game.id]: false }));
-    }
-  }
+}
 
 // ─── NPC STUDIO ───────────────────────────────────────────────────────────────
 
