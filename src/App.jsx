@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-219</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-220</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1936,7 +1936,7 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase.from("user_games")
-        .select("status, games(id, name, genre)")
+        .select("status, games(id, name, genre, cover_url)")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(6)
@@ -2343,7 +2343,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!user) return;
     const { data } = await supabase
       .from("user_games")
-      .select("games(id, name, genre)")
+      .select("games(id, name, genre, cover_url)")
       .eq("user_id", user.id)
       .eq("status", "playing");
     if (data) setPlayingGames(data.map(d => d.games).filter(Boolean));
@@ -2354,7 +2354,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!user) return;
     const { data } = await supabase
       .from("follows")
-      .select("games(id, name, genre)")
+      .select("games(id, name, genre, cover_url)")
       .eq("follower_id", user.id)
       .not("followed_game_id", "is", null);
     if (data) setFollowedGames(data.map(d => d.games).filter(Boolean));
@@ -3085,7 +3085,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       run: async () => {
         const weekStarts = getWeekStarts(1);
         const { data } = await supabase.from("chart_events")
-          .select("game_id, event_type, games(id, name, genre)")
+          .select("game_id, event_type, games(id, name, genre, cover_url)")
           .in("week_start", weekStarts)
           .in("event_type", ["post", "comment"]);
         const counts = {};
@@ -3104,7 +3104,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       desc: "Most added to playing shelves recently",
       run: async () => {
         const { data } = await supabase.from("user_games")
-          .select("game_id, games(id, name, genre)")
+          .select("game_id, games(id, name, genre, cover_url)")
           .eq("status", "playing");
         const counts = {};
         (data || []).forEach(r => {
@@ -3121,7 +3121,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Hidden Gems",
       desc: "Highly reviewed but not widely followed",
       run: async () => {
-        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, followers)");
+        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url, followers)");
         const agg = {};
         (data || []).forEach(r => {
           if (!r.games) return;
@@ -3144,7 +3144,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       run: async () => {
         const [thisWeek, lastWeek] = [getWeekStarts(1)[0], getWeekStarts(2)[1]];
         const [thisData, lastData] = await Promise.all([
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre)").eq("week_start", thisWeek),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", thisWeek),
           supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", lastWeek),
         ]);
         const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
@@ -3178,7 +3178,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       desc: "Highest want-to-play across the community",
       run: async () => {
         const { data } = await supabase.from("user_games")
-          .select("game_id, games(id, name, genre)")
+          .select("game_id, games(id, name, genre, cover_url)")
           .eq("status", "want_to_play");
         const counts = {};
         (data || []).forEach(r => {
@@ -3195,7 +3195,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Critic's Choice",
       desc: "Highest rated with meaningful review volume",
       run: async () => {
-        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre)");
+        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
         const agg = {};
         (data || []).forEach(r => {
           if (!r.games) return;
@@ -3221,7 +3221,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         if (!follows?.length) return [];
         const followIds = follows.map(f => f.followed_user_id);
         const { data } = await supabase.from("user_games")
-          .select("game_id, status, games(id, name, genre)")
+          .select("game_id, status, games(id, name, genre, cover_url)")
           .in("user_id", followIds)
           .in("status", ["playing", "have_played"]);
         const counts = {};
@@ -3240,7 +3240,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       desc: "Community favorites you haven't picked up",
       run: async () => {
         const { data } = await supabase.from("user_games")
-          .select("game_id, games(id, name, genre)")
+          .select("game_id, games(id, name, genre, cover_url)")
           .in("status", ["playing", "have_played"]);
         const counts = {};
         (data || []).forEach(r => {
@@ -5486,7 +5486,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setReviews([]);
     if (mode === "feed") {
       const { data, error } = await supabase.from("reviews")
-        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
         .order("created_at", { ascending: false })
         .limit(40);
       if (error) console.error("Reviews feed error:", error);
@@ -5499,7 +5499,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
       const ids = (follows || []).map(f => f.followed_user_id).filter(Boolean);
       if (!ids.length) { setLoading(false); return; }
       const { data, error } = await supabase.from("reviews")
-        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
         .in("user_id", ids)
         .order("created_at", { ascending: false })
         .limit(40);
@@ -7458,7 +7458,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
     setLoading(true);
     let query = supabase
       .from("lfg_posts")
-      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre)")
+      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
     if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
