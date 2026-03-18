@@ -1837,7 +1837,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-231</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-232</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3879,7 +3879,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     </div>
   );
 
-  const tabs = [{ id: "pulse", label: "Pulse" }, { id: "reviews", label: "Reviews" }, { id: "tips", label: "Tips" }, { id: "posts", label: "Posts" }, { id: "developer", label: "Developer" }];
+  const tabs = [{ id: "pulse", label: "Pulse" }, { id: "reviews", label: "Reviews" }, { id: "tips", label: "Tips" }, { id: "posts", label: "Posts" }];
 
   return (
     <div style={{ paddingTop: isMobile ? 52 : 60 }}>
@@ -3893,12 +3893,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 28, color: "#fff" }}>{game.name}</h1>
-                {game.claimed && <Badge color={C.teal}>✓ Dev Claimed</Badge>}
+                {game.claimed && false && <Badge color={C.teal}>✓ Dev Claimed</Badge>}
               </div>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: isMobile ? 8 : 10 }}>{game.developer} · {game.year}</div>
               {!isMobile && <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: "0 0 16px", maxWidth: 540, lineHeight: 1.6 }}>{game.description}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0, position: "relative" }}>
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? game.color + "33" : game.color, border: "1px solid " + game.color, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? game.color + "33" : game.color, border: "1px solid " + game.color, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
                 {currentUser && (
                   <div style={{ position: "relative" }}>
                     <button onClick={() => setShowShelfMenu(m => !m)}
@@ -5303,7 +5303,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             setCurrentGame(game.id); setActivePage("game");
                           }
                         }}
-                        style={{ background: isMoving ? col.color + "22" : C.surfaceRaised, border: "1px solid " + isMoving ? col.color + "66" : C.border, borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s" }}>
+                        style={{ background: isMoving ? col.color + "22" : C.surfaceRaised, border: "1px solid " + isMoving ? col.color + "66" : C.border, borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s", position: "relative" }}
+                        onMouseEnter={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "1"; }}
+                        onMouseLeave={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "0"; }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -5311,6 +5313,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           </div>
                           {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating + "/10"}</span>}
                           {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
+                          {!isMobile && (
+                            <button className="remove-btn" onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); }}
+                              style={{ opacity: 0, transition: "opacity 0.15s", background: "transparent", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: "0 2px", lineHeight: 1, flexShrink: 0 }}>
+                              ×
+                            </button>
+                          )}
                         </div>
                       </div>
                       {/* Mobile move picker */}
