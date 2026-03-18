@@ -614,9 +614,21 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const deletePost = async () => {
     if (!post.id || !post.id.includes('-')) return;
+    if (!window.confirm("Delete this post?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", post.id);
     if (error) { console.error("[deletePost] error:", error); return; }
     setLocalPost(p => ({ ...p, deleted: true }));
+  };
+
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(post.content || "");
+
+  const saveEdit = async () => {
+    if (!editText.trim()) return;
+    const { error } = await supabase.from("posts").update({ content: editText.trim() }).eq("id", post.id);
+    if (error) { console.error("[saveEdit] error:", error); return; }
+    setLocalPost(p => ({ ...p, content: editText.trim() }));
+    setEditing(false);
   };
 
   const deleteComment = async (commentId) => {
@@ -779,7 +791,22 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           </div>
         </div>
 
-        <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
+        {editing ? (
+          <div style={{ marginBottom: 14 }}>
+            <textarea
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, lineHeight: 1.65, resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
+              autoFocus
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+              <button onClick={() => { setEditing(false); setEditText(localPost.content); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
+        )}
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid " + C.border, paddingTop: 12 }}>
@@ -820,11 +847,18 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             }}>Helpful Tip {localPost.tip_count > 0 ? localPost.tip_count : ""}</button>
           )}
           {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
-            <button onClick={deletePost} style={{
-              marginLeft: "auto", background: "transparent", border: "1px solid " + C.border,
-              borderRadius: 8, padding: "5px 12px", cursor: "pointer",
-              color: C.textDim, fontSize: 12,
-            }}>Delete</button>
+            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+              <button onClick={() => setEditing(e => !e)} style={{
+                background: "transparent", border: "1px solid " + C.border,
+                borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+                color: C.textDim, fontSize: 12,
+              }}>{editing ? "Cancel" : "Edit"}</button>
+              <button onClick={deletePost} style={{
+                background: "transparent", border: "1px solid " + C.border,
+                borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+                color: C.textDim, fontSize: 12,
+              }}>Delete</button>
+            </div>
           )}
         </div>
       </div>
@@ -1839,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-210</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-211</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
