@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-222</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-223</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2866,6 +2866,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [activeInsight, setActiveInsight] = useState(null);
   const [nameSearch, setNameSearch] = useState("");
   const [typeaheadResults, setTypeaheadResults] = useState([]);
+  const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // game id with open shelf menu
   const [discoveryResults, setDiscoveryResults] = useState(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [discoveryLabel, setDiscoveryLabel] = useState("");
@@ -3530,38 +3531,57 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
               {discoveryResults.map(g => {
+                const cardId = g.id || g.igdb_id;
                 const onShelf = userShelf.has(g.id);
+                const menuOpen = shelfMenuOpen === cardId;
                 return (
-                  <div key={g.id || g.igdb_id} onClick={async () => {
-                    if (g._fromIGDB) {
-                      const { data: inserted } = await supabase.from("games").insert({
-                        name: g.name, genre: g.genre, summary: g.summary,
-                        cover_url: g.cover_url, igdb_id: g.igdb_id,
-                        first_release_date: g.first_release_date, followers: 0,
-                      }).select().single();
-                      if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
-                    } else {
-                      setCurrentGame(g.id); setActivePage("game");
-                    }
-                  }}
-                    style={{ background: C.surface, border: "1px solid " + (onShelf ? C.accentDim : C.border), borderRadius: 12, overflow: "hidden", cursor: "pointer" }}
+                  <div key={cardId} style={{ background: C.surface, border: "1px solid " + (onShelf ? C.accentDim : C.border), borderRadius: 12, overflow: "hidden", cursor: "pointer", position: "relative" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = onShelf ? C.accent : C.borderHover}
                     onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
-                    {g.cover_url
-                      ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                      : <div style={{ width: "100%", aspectRatio: "3/4", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
-                    }
+                    <div onClick={async () => {
+                      if (g._fromIGDB) {
+                        const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
+                        if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
+                      } else { setCurrentGame(g.id); setActivePage("game"); }
+                    }}>
+                      {g.cover_url
+                        ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
+                        : <div style={{ width: "100%", aspectRatio: "3/4", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
+                      }
+                    </div>
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
                       <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g._stat}</div>
-                      {onShelf
-                        ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>✓ On your shelf</div>
-                        : <button onClick={e => { e.stopPropagation(); /* inline shelf picker handled by game page */ setCurrentGame(g.id || g.igdb_id); setActivePage("game"); }}
-                            style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                            + Add to Shelf
-                          </button>
-                      }
-                      {g._fromIGDB && <div style={{ fontSize: 10, color: C.teal, fontWeight: 600, marginTop: 4 }}>+ Add to GuildLink</div>}
+                      {currentUser && !g._fromIGDB && (
+                        <div style={{ position: "relative" }}>
+                          {onShelf
+                            ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
+                            : <>
+                                <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
+                                  style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}>
+                                  + Add to Shelf
+                                </button>
+                                {menuOpen && (
+                                  <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}>
+                                    {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
+                                      <div key={opt.id} onClick={e => {
+                                        e.stopPropagation();
+                                        addToShelf(g, opt.id);
+                                        setUserShelf(prev => new Set([...prev, g.id]));
+                                        setShelfMenuOpen(null);
+                                      }}
+                                        style={{ padding: "9px 12px", cursor: "pointer", color: C.text, fontSize: 12, fontWeight: 500, borderBottom: opt.id !== "have_played" ? "1px solid " + C.border : "none" }}
+                                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                        {opt.label}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                          }
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
