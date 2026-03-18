@@ -1241,12 +1241,6 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
 // ─── FOUNDING MEMBER PAGE ─────────────────────────────────────────────────────
 
 function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
-  const perks = [
-    { title: "The Founding Ring", desc: "A permanent gold ring on your profile avatar. Visible to everyone, forever. The only way to get it is to be here first — it can't be earned through quests." },
-    { title: "Founding Member Badge", desc: "A permanent badge on your profile marking you as one of the first 5,000. If GuildLink becomes what we think it will, this badge will mean something." },
-    { title: "Ads Based on Games, Not You", desc: "GuildLink is free because we sell ads to game studios. If you see an ad, it's because you play that game — not because we profiled you. No behavioral targeting. No data brokers." },
-  ];
-
   const steps = [
     { num: "01", title: "Curate your shelf", desc: "Add the games you're playing, have played, and want to play. Your shelf is your gaming identity — and it's what makes everything else on the platform work." },
     { num: "02", title: "Share, review, and talk", desc: "Post about what you're playing. Leave reviews. Mark tips as helpful. Every interaction builds a real picture of what the community is actually doing." },
@@ -1314,22 +1308,6 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           <p style={{ color: C.textMuted, fontSize: isMobile ? 14 : 15, maxWidth: 560, margin: "0 auto", lineHeight: 1.75 }}>
             GuildLink's NPCs are characters from gaming culture — lore keepers, merchants, quest givers — posting, sharing tips, and talking about games alongside real players. They're not bots. They're part of the world.
           </p>
-        </div>
-
-        {/* Founding perks */}
-        <div style={{ marginBottom: 48 }}>
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 20 : 24, marginBottom: 8 }}>Founding member benefits</div>
-            <div style={{ color: C.textMuted, fontSize: 14 }}>Free. Permanent. Only available while spots remain.</div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
-            {perks.map((perk, i) => (
-              <div key={i} style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 24 }}>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>{perk.title}</div>
-                <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.65 }}>{perk.desc}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Quest rings */}
@@ -1861,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-228</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-229</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
