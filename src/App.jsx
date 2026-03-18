@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-223</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-224</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3535,10 +3535,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 const onShelf = userShelf.has(g.id);
                 const menuOpen = shelfMenuOpen === cardId;
                 return (
-                  <div key={cardId} style={{ background: C.surface, border: "1px solid " + (onShelf ? C.accentDim : C.border), borderRadius: 12, overflow: "hidden", cursor: "pointer", position: "relative" }}
+                  <div key={cardId} style={{ background: C.surface, border: "1px solid " + (onShelf ? C.accentDim : C.border), borderRadius: 12, cursor: "pointer", position: "relative" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = onShelf ? C.accent : C.borderHover}
                     onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
-                    <div onClick={async () => {
+                    <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden" }} onClick={async () => {
+                      if (menuOpen) { setShelfMenuOpen(null); return; }
                       if (g._fromIGDB) {
                         const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
                         if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
@@ -3549,38 +3550,38 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         : <div style={{ width: "100%", aspectRatio: "3/4", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
                       }
                     </div>
+                    {/* Shelf menu — rendered inside card but above overflow */}
+                    {menuOpen && (
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.92)", borderRadius: 12, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
+                        {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
+                          <button key={opt.id} onClick={e => {
+                            e.stopPropagation();
+                            addToShelf(g, opt.id);
+                            setUserShelf(prev => new Set([...prev, g.id]));
+                            setShelfMenuOpen(null);
+                          }}
+                            style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "11px 12px", cursor: "pointer", color: C.text, fontSize: 13, fontWeight: 600, textAlign: "left" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = C.accent; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = C.surfaceRaised; e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.border; }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                        <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(null); }}
+                          style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", marginTop: 4 }}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
                       <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g._stat}</div>
                       {currentUser && !g._fromIGDB && (
-                        <div style={{ position: "relative" }}>
-                          {onShelf
-                            ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
-                            : <>
-                                <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
-                                  style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}>
-                                  + Add to Shelf
-                                </button>
-                                {menuOpen && (
-                                  <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.6)" }}>
-                                    {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
-                                      <div key={opt.id} onClick={e => {
-                                        e.stopPropagation();
-                                        addToShelf(g, opt.id);
-                                        setUserShelf(prev => new Set([...prev, g.id]));
-                                        setShelfMenuOpen(null);
-                                      }}
-                                        style={{ padding: "9px 12px", cursor: "pointer", color: C.text, fontSize: 12, fontWeight: 500, borderBottom: opt.id !== "have_played" ? "1px solid " + C.border : "none" }}
-                                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                                        {opt.label}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </>
-                          }
-                        </div>
+                        onShelf
+                          ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
+                          : <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
+                              style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}>
+                              + Add to Shelf
+                            </button>
                       )}
                     </div>
                   </div>
