@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-205</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-206</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2644,14 +2644,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game, find teammates... (@ to tag a game)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
-                  <div style={{ position: "absolute", bottom: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 220, maxWidth: 360, maxHeight: 280, overflowY: "auto", marginBottom: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 220, maxWidth: 360, maxHeight: 280, overflowY: "auto", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {mentionResults.map((game, i) => (
                       <div key={game.id || game.igdb_id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
                         onMouseEnter={() => setMentionIndex(i)}>
-                        <span style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{game.name}</span>
+                        <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
                         {game._fromIGDB
-                          ? <span style={{ color: C.teal, fontSize: 10, marginLeft: "auto", fontWeight: 600 }}>+ Add</span>
-                          : <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{((game.followers || 0) / 1000).toFixed(1)}k</span>
+                          ? <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>
+                          : <span style={{ color: C.textDim, fontSize: 11, flexShrink: 0 }}>{((game.followers || 0) / 1000).toFixed(1)}k</span>
                         }
                       </div>
                     ))}
@@ -3735,13 +3735,15 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     ...(hardcoded || {}),
     name: dbGame.name,
     developer: dbGame.developer,
-    description: dbGame.description,
+    description: dbGame.description || dbGame.summary,
     followers: dbGame.followers,
     genre: dbGame.genre ? [dbGame.genre] : (hardcoded?.genre || []),
     color: hardcoded?.color || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; return COLORS[(dbGame.name || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length]; })(),
     gradient: hardcoded?.gradient || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return "linear-gradient(135deg, " + c + "22 0%, #080e1a 100%)"; })(),
     icon: hardcoded?.icon || { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽','Platformer':'🕹️','Auto Battler':'♟️','RTS':'🏰','Turn-Based Strategy':'🎖️' }[dbGame.genre] || '🎮',
     claimed: dbGame.is_claimed,
+    cover_url: dbGame.cover_url || null,
+    summary: dbGame.summary || null,
     id: gameId,
   } : hardcoded;
 
@@ -3760,7 +3762,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       <div style={{ background: game.gradient, borderBottom: "1px solid " + game.color + "33" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px 20px" : "36px 24px 28px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 20, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-            <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: 16, fontSize: isMobile ? 30 : 44, background: game.color + "22", border: "2px solid " + game.color + "44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{game.icon}</div>
+            {game.cover_url
+              ? <img src={game.cover_url} alt={game.name} style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: 10, objectFit: "cover", flexShrink: 0, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)" }} />
+              : <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: 16, fontSize: isMobile ? 30 : 44, background: game.color + "22", border: "2px solid " + game.color + "44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{game.icon}</div>
+            }
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 28, color: "#fff" }}>{game.name}</h1>
