@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-224</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-225</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3554,9 +3554,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     {menuOpen && (
                       <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.92)", borderRadius: 12, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
                         {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
-                          <button key={opt.id} onClick={e => {
+                          <button key={opt.id} onClick={async e => {
                             e.stopPropagation();
-                            addToShelf(g, opt.id);
+                            const { data: { user: authUser } } = await supabase.auth.getUser();
+                            if (!authUser) return;
+                            await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() });
+                            await supabase.from("user_game_history").insert({ user_id: authUser.id, game_id: g.id, from_status: null, to_status: opt.id });
+                            const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
+                            if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
                             setUserShelf(prev => new Set([...prev, g.id]));
                             setShelfMenuOpen(null);
                           }}
