@@ -1839,7 +1839,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-207</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-208</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2126,8 +2126,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const atMatch = val.match(/@([^@]*)$/);
     if (atMatch) {
       const query = atMatch[1].trim();
-      if (query.length < 3) {
-        // Don't show anything until they've typed at least 3 chars
+      if (query.length < 2) {
         setMentionResults([]);
         setMentionQuery(query);
         setMentionIndex(0);
@@ -2649,10 +2648,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                       <div key={game.id || game.igdb_id} onClick={() => selectMention(game)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
                         onMouseEnter={() => setMentionIndex(i)}>
                         <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
-                        {game._fromIGDB
-                          ? <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>
-                          : game.followers > 0 ? <span style={{ color: C.textDim, fontSize: 11, flexShrink: 0 }}>{game.followers >= 1000 ? (game.followers / 1000).toFixed(1) + "k" : game.followers}</span> : null
-                        }
+                        {game._fromIGDB && (
+                          <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>
+                        )}
                       </div>
                     ))}
                   </div>
