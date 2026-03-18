@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-225</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-226</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4757,7 +4757,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const tabs = [
     { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
     { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
-    { id: "games", label: `Games${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
+    { id: "games", label: `My Shelf${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
     { id: "following", label: `Following${profileFollowing.length > 0 ? ` (${profileFollowing.length})` : ""}` },
     { id: "groups", label: "Groups" },
     { id: "quests", label: "Quests" },
@@ -5146,7 +5146,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             {[
               { label: "Posts", val: postCount || 0, color: C.accent, tab: "posts" },
               { label: "Reviews", val: userReviews.length, color: C.teal, tab: "reviews" },
-              { label: "Games", val: shelfCount || 0, color: C.gold, tab: "games" },
+              { label: "Shelf", val: shelfCount || 0, color: C.gold, tab: "games" },
               { label: "Groups", val: 0, color: C.purple, tab: "groups" },
             ].map(s => (
               <div key={s.label} onClick={() => setActiveTab(s.tab)}
@@ -8074,7 +8074,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   const totalGames = shelf.want_to_play.length + shelf.playing.length + shelf.have_played.length;
   const tabs = [
     { id: "posts", label: `Posts${posts.length > 0 ? ` (${posts.length})` : ""}` },
-    { id: "games", label: `Games${totalGames > 0 ? ` (${totalGames})` : ""}` },
+    { id: "games", label: `My Shelf${totalGames > 0 ? ` (${totalGames})` : ""}` },
     { id: "reviews", label: `Reviews${reviews.length > 0 ? ` (${reviews.length})` : ""}` },
   ];
 
@@ -8304,7 +8304,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     {
       speaker: "deckard",
       heading: "Everything starts with your shelf.",
-      body: "See that Games tab up there? That's your shelf. What you've played, what you're playing now, what's waiting in the queue. It's your gaming identity — and it's what makes everything else on this platform work.",
+      body: "See that My Shelf tab up there? What you've played, what you're playing now, what's waiting in the queue. It's your gaming identity — and it's what makes everything else on this platform work.",
       cta: "Makes sense",
       spotlight: "games-tab",
     },
