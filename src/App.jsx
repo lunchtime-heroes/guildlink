@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-214</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-215</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -5100,39 +5100,70 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <input
                 autoFocus
                 value={gameSearch}
-                onChange={e => {
+                onChange={async e => {
                   setGameSearch(e.target.value);
-                  const m = e.target.value.match(/@(\w*)$/);
+                  const val = e.target.value;
+                  const m = val.match(/@([^@]*)$/);
                   if (m) {
-                    const q = m[1].toLowerCase();
+                    const q = m[1].trim().toLowerCase();
                     const query = q.length === 0
-                      ? supabase.from("games").select("id, name, developer, genre").order("followers", { ascending: false }).limit(6)
-                      : supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
+                      ? supabase.from("games").select("id, name, developer, genre, cover_url").order("followers", { ascending: false }).limit(6)
+                      : supabase.from("games").select("id, name, developer, genre, cover_url").ilike("name", `%${q}%`).limit(6);
                     query.then(({ data }) => setGameSearchResults(data || []));
-                  } else if (e.target.value.length >= 2) {
-                    supabase.from("games").select("id, name, developer, genre").ilike("name", `%${e.target.value}%`).limit(6).then(({ data }) => setGameSearchResults(data || []));
+                  } else if (val.length >= 2) {
+                    // Run local + IGDB in parallel
+                    const [localRes, igdbRes] = await Promise.allSettled([
+                      supabase.from("games").select("id, name, developer, genre, cover_url").ilike("name", `%${val}%`).limit(5),
+                      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: val }) }).then(r => r.json()).catch(() => ({ games: [] })),
+                    ]);
+                    const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+                    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+                    const localNames = new Set(local.map(g => g.name.toLowerCase()));
+                    const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+                    setGameSearchResults([...local, ...fromIGDB].slice(0, 8));
                   } else {
                     setGameSearchResults([]);
                   }
                 }}
-                placeholder="@ to tag a game, or just type to search..."
+                placeholder="Search for any game..."
                 style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
               />
               {gameSearchResults.length > 0 && (
                 <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: "1px solid " + C.border }}>
                   {gameSearchResults.map(game => (
-                    <div key={game.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{game.name}</div>
+                    <div key={game.id || game.igdb_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
+                      {game.cover_url
+                        ? <img src={game.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                        : <div style={{ width: 28, height: 37, borderRadius: 4, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                      }
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}{game.genre ? " · " + game.genre : ""}</div>
                       </div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {SHELF_COLUMNS.map(col => (
-                          <button key={col.id} onClick={() => addToShelf(game, col.id)}
-                            style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                            {col.label}
-                          </button>
-                        ))}
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        {game._fromIGDB ? (
+                          SHELF_COLUMNS.map(col => (
+                            <button key={col.id} onClick={async () => {
+                              // Insert game from IGDB first, then add to shelf
+                              const { data: inserted } = await supabase.from("games").insert({
+                                name: game.name, genre: game.genre, summary: game.summary,
+                                cover_url: game.cover_url, igdb_id: game.igdb_id,
+                                first_release_date: game.first_release_date, followers: 0,
+                              }).select().single();
+                              if (inserted) { addToShelf(inserted, col.id); setGameSearchResults([]); setGameSearch(""); }
+                            }}
+                              style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                              {col.label}
+                            </button>
+                          ))
+                        ) : (
+                          SHELF_COLUMNS.map(col => (
+                            <button key={col.id} onClick={() => { addToShelf(game, col.id); setGameSearchResults([]); setGameSearch(""); }}
+                              style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                              {col.label}
+                            </button>
+                          ))
+                        )}
                       </div>
                     </div>
                   ))}
