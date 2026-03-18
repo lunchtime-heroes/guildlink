@@ -1837,7 +1837,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-232</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-233</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3862,8 +3862,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     description: dbGame.description || dbGame.summary,
     followers: dbGame.followers,
     genre: dbGame.genre ? [dbGame.genre] : (hardcoded?.genre || []),
-    color: hardcoded?.color || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; return COLORS[(dbGame.name || '').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length]; })(),
-    gradient: hardcoded?.gradient || (() => { const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8']; const c = COLORS[(dbGame.name || '').split('').reduce((a,ch)=>a+ch.charCodeAt(0),0) % COLORS.length]; return "linear-gradient(135deg, " + c + "22 0%, #080e1a 100%)"; })(),
+    color: hardcoded?.color || C.accent,
+    gradient: hardcoded?.gradient || ("linear-gradient(135deg, " + C.accent + "18 0%, #080e1a 100%)"),
     icon: hardcoded?.icon || { 'MMO':'🌐','MOBA':'⚔️','Battle Royale':'🎯','Action RPG':'🗡️','RPG':'📖','Roguelike':'🎲','Tactical Shooter':'🔫','Hero Shooter':'🦸','Looter Shooter':'💥','Soulslike':'💀','Fighting':'🥊','Farming Sim':'🌱','Life Simulation':'🏡','City Builder':'🏙️','Sandbox Survival':'⛏️','Survival':'🪓','Racing':'🏎️','Sports':'⚽','Platformer':'🕹️','Auto Battler':'♟️','RTS':'🏰','Turn-Based Strategy':'🎖️' }[dbGame.genre] || '🎮',
     claimed: dbGame.is_claimed,
     cover_url: dbGame.cover_url || null,
