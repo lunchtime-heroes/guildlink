@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-220</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-222</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3553,8 +3553,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     }
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                      <div style={{ color: C.textDim, fontSize: 11 }}>{g._stat}</div>
-                      {onShelf && <div style={{ fontSize: 10, color: C.accentSoft, fontWeight: 700, marginTop: 4 }}>On your shelf</div>}
+                      <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g._stat}</div>
+                      {onShelf
+                        ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>✓ On your shelf</div>
+                        : <button onClick={e => { e.stopPropagation(); /* inline shelf picker handled by game page */ setCurrentGame(g.id || g.igdb_id); setActivePage("game"); }}
+                            style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                            + Add to Shelf
+                          </button>
+                      }
                       {g._fromIGDB && <div style={{ fontSize: 10, color: C.teal, fontWeight: 600, marginTop: 4 }}>+ Add to GuildLink</div>}
                     </div>
                   </div>
@@ -3638,6 +3644,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   }, [gameId]);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [shelfStatus, setShelfStatus] = useState(null);
+  const [showShelfMenu, setShowShelfMenu] = useState(false);
   const [dbGame, setDbGame] = useState(null);
   const [gamePosts, setGamePosts] = useState([]);
   const [gameTips, setGameTips] = useState([]);
@@ -3766,9 +3774,22 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       if (!user || !dbGame) return;
       const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("followed_game_id", dbGame.id).maybeSingle();
       setFollowed(!!data);
+      const { data: shelfData } = await supabase.from("user_games").select("status").eq("user_id", user.id).eq("game_id", dbGame.id).maybeSingle();
+      setShelfStatus(shelfData?.status || null);
     };
     if (dbGame) checkFollow();
   }, [dbGame]);
+
+  const setShelf = async (status) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !dbGame) return;
+    await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() });
+    await supabase.from("user_game_history").insert({ user_id: user.id, game_id: dbGame.id, from_status: shelfStatus, to_status: status });
+    const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
+    if (eventMap[status]) logChartEvent(dbGame.id, eventMap[status], user.id);
+    setShelfStatus(status);
+    setShowShelfMenu(false);
+  };
 
   const toggleFollow = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -3873,8 +3894,28 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               </div>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: isMobile ? 8 : 10 }}>{game.developer} · {game.year}</div>
               {!isMobile && <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: "0 0 16px", maxWidth: 540, lineHeight: 1.6 }}>{game.description}</p>}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0, position: "relative" }}>
                 <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? game.color + "33" : game.color, border: "1px solid " + game.color, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
+                {currentUser && (
+                  <div style={{ position: "relative" }}>
+                    <button onClick={() => setShowShelfMenu(m => !m)}
+                      style={{ background: shelfStatus ? C.goldGlow : "transparent", border: "1px solid " + C.gold, borderRadius: 8, padding: "7px 18px", color: C.gold, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      {shelfStatus === "playing" ? "Playing" : shelfStatus === "want_to_play" ? "Want to Play" : shelfStatus === "have_played" ? "Played" : "+ Add to Shelf"}
+                    </button>
+                    {showShelfMenu && (
+                      <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.5)", minWidth: 160 }}>
+                        {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
+                          <div key={opt.id} onClick={() => setShelf(opt.id)}
+                            style={{ padding: "10px 16px", cursor: "pointer", color: shelfStatus === opt.id ? C.gold : C.text, fontWeight: shelfStatus === opt.id ? 700 : 500, fontSize: 13, background: shelfStatus === opt.id ? C.goldGlow : "transparent" }}
+                            onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                            onMouseLeave={e => e.currentTarget.style.background = shelfStatus === opt.id ? C.goldGlow : "transparent"}>
+                            {opt.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start" }}>
