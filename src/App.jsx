@@ -417,70 +417,6 @@ const NPCS = {
 
 // ─── GAME DATA ────────────────────────────────────────────────────────────────
 
-const GAMES = {
-  "elden-ring": {
-    id: "elden-ring", name: "Elden Ring", icon: "🗡️",
-    genre: ["Action RPG", "Souls-like", "Open World"], year: 2022, developer: "FromSoftware",
-    claimed: true, followers: 48200, activePlayers: 1840, completions: 12400,
-    reviewScore: 9.4, reviewCount: 3821, color: "#c9a84c",
-    gradient: "linear-gradient(135deg, #1a1000 0%, #3d2800 40%, #1a0a00 100%)",
-    description: "A vast open-world action RPG set in the Lands Between, crafted by FromSoftware and George R.R. Martin.",
-    trendingTopics: [
-      { tag: "Shadow of the Erdtree", posts: 4200, reactions: 18900, trend: "🔥 Hot", delta: "+340%" },
-      { tag: "Malenia Build Guide", posts: 890, reactions: 6700, trend: "📈 Rising", delta: "+89%" },
-      { tag: "Patch 1.12 Changes", posts: 2100, reactions: 9400, trend: "💬 Active", delta: "+120%" },
-      { tag: "Lore Deep Dive", posts: 560, reactions: 4200, trend: "📚 Steady", delta: "+12%" },
-    ],
-    topVoices: [
-      { name: "VaatiVidya", handle: "@vaati", avatar: "VV", score: 98400, badge: "👑", posts: 284 },
-      { name: "Let Me Solo Her", handle: "@letmesoloher", avatar: "LM", score: 76200, badge: "⚔️", posts: 142 },
-      { name: "Jordan Park", handle: "@jpark", avatar: "JP", score: 34100, badge: "🔥", posts: 98 },
-      { name: "Alex Chen", handle: "@axelstrike", avatar: "AC", score: 28900, badge: "⭐", posts: 76 },
-    ],
-    alsoLiked: [
-      { id: "hollow-knight", name: "Hollow Knight", icon: "🦋", overlap: 78, reason: "Challenging, rewarding mastery" },
-      { id: "stardew-valley", name: "Stardew Valley", icon: "🌱", overlap: 67, reason: "Fans crave a cozy contrast" },
-      { id: "dark-souls", name: "Dark Souls III", icon: "🔥", overlap: 94, reason: "The natural predecessor" },
-      { id: "animal-crossing", name: "Animal Crossing", icon: "🏝️", overlap: 61, reason: "\"I earned this peace\" 😂" },
-    ],
-    tips: [
-      { title: "Bleed builds wreck everything early", author: "JP", upvotes: 2841, category: "Build" },
-      { title: "Always explore caves before advancing areas", author: "AC", upvotes: 1920, category: "Exploration" },
-      { title: "Torrent can access areas enemies can't follow", author: "MS", upvotes: 1540, category: "Mechanic" },
-    ],
-    posts: [
-      { id: 1, user: { name: "Jordan Park", avatar: "JP", handle: "@jpark", status: "online" }, time: "2h ago", content: "Finally beat Malenia after 47 attempts. Bleed arcane build was the key 🗡️", likes: 284, comments: 47, liked: false },
-      { id: 2, user: { name: "Maya Storm", avatar: "MS", handle: "@mayastorm", status: "ingame" }, time: "5h ago", content: "The Shadow of the Erdtree DLC lore is wild. Miquella's full story recontextualizes everything. Thread incoming 🧵", likes: 892, comments: 134, liked: true },
-    ],
-  },
-  "hollow-knight": {
-    id: "hollow-knight", name: "Hollow Knight", icon: "🦋",
-    genre: ["Metroidvania", "Indie", "Platformer"], year: 2017, developer: "Team Cherry",
-    claimed: false, followers: 31400, activePlayers: 920, completions: 8700,
-    reviewScore: 9.7, reviewCount: 2940, color: "#7c6fff",
-    gradient: "linear-gradient(135deg, #080818 0%, #1a1040 50%, #080818 100%)",
-    description: "A challenging action-adventure through a vast underground kingdom of insects and heroes.",
-    trendingTopics: [
-      { tag: "Silksong Release", posts: 8900, reactions: 42000, trend: "🔥 Massive", delta: "+890%" },
-      { tag: "Pantheon Tips", posts: 1200, reactions: 8900, trend: "📈 Rising", delta: "+45%" },
-    ],
-    topVoices: [
-      { name: "Mossbag", handle: "@mossbag", avatar: "MB", score: 124000, badge: "👑", posts: 412 },
-      { name: "Taylor Kim", handle: "@taylorplays", avatar: "TK", score: 54200, badge: "🦋", posts: 198 },
-    ],
-    alsoLiked: [
-      { id: "elden-ring", name: "Elden Ring", icon: "🗡️", overlap: 78, reason: "Shared love of challenge & lore" },
-      { id: "celeste", name: "Celeste", icon: "🏔️", overlap: 84, reason: "Precision platforming fans" },
-    ],
-    tips: [
-      { title: "Get Mothwing Cloak before Fungal Wastes", author: "TK", upvotes: 3200, category: "Progression" },
-    ],
-    posts: [
-      { id: 1, user: { name: "Taylor Kim", avatar: "TK", handle: "@taylorplays", status: "ingame" }, time: "1h ago", content: "Silksong is a masterpiece. 9.5/10 🦋", likes: 1203, comments: 188, liked: false },
-    ],
-  },
-};
-
 
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
@@ -593,7 +529,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   useEffect(() => {
     const gameId = post.game_tag || post.gameId;
     if (!gameId) return;
-    if (GAMES[gameId]) { setTaggedGameName(GAMES[gameId].name); return; }
     // Look up from DB
     supabase.from("games").select("name").eq("id", gameId).single().then(({ data }) => {
       if (data) setTaggedGameName(data.name);
@@ -1837,7 +1772,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-233</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-234</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2660,7 +2595,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                   {taggedGames.map(gameId => {
-                    const game = dbGames[gameId] || GAMES[gameId];
+                    const game = dbGames[gameId];
                     return (
                       <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
                         {game?.name || gameId}
@@ -3639,7 +3574,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 // ─── GAME PAGE ────────────────────────────────────────────────────────────────
 
 function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onTabConsumed, onQuestComplete }) {
-  const hardcoded = GAMES[gameId];
+  const hardcoded = null;
   const [activeTab, setActiveTab] = useState(defaultTab || "pulse");
 
   useEffect(() => {
@@ -3662,12 +3597,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
   useEffect(() => {
     const load = async () => {
-      let query = supabase.from("games").select("*");
-      if (gameId && gameId.includes('-')) {
-        query = query.eq("id", gameId);
-      } else if (hardcoded) {
-        query = query.ilike("name", hardcoded.name);
-      } else return;
+      if (!gameId || !gameId.includes('-')) return;
+      let query = supabase.from("games").select("*").eq("id", gameId);
       const { data } = await query.single();
       if (!data) return;
       setDbGame(data);
