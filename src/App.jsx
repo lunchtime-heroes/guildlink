@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-213</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-214</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -4465,6 +4465,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       status: toStatus,
       updated_at: new Date().toISOString(),
     });
+    // Log shelf transition for developer analytics
+    await supabase.from("user_game_history").insert({
+      user_id: authUser.id,
+      game_id: gameId,
+      from_status: fromStatus,
+      to_status: toStatus,
+    });
     const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
     if (eventMap[toStatus]) logChartEvent(gameId, eventMap[toStatus], authUser.id);
     // Quest triggers — only fire for the destination status
@@ -4493,6 +4500,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       updated_at: new Date().toISOString(),
     });
     if (!error) {
+      // Log shelf addition for developer analytics (from_status null = new addition)
+      await supabase.from("user_game_history").insert({
+        user_id: authUser.id,
+        game_id: game.id,
+        from_status: null,
+        to_status: status,
+      });
       const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
       if (eventMap[status]) logChartEvent(game.id, eventMap[status], authUser.id);
       // Quest triggers
@@ -8186,6 +8200,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString() });
+    await supabase.from("user_game_history").insert({ user_id: authUser.id, game_id: game.id, from_status: null, to_status: "playing" });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
     setAddedGames(prev => [...prev, game]);
