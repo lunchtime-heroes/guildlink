@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-217</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-218</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3449,28 +3449,30 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             </div>
 
             {/* Name search */}
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", zIndex: 100 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
                 <input value={nameSearch}
                   onChange={async e => {
                     const val = e.target.value;
                     setNameSearch(val);
-                    if (!val) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
-                    if (val.length >= 2) {
-                      const { data } = await supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${val}%`).limit(5);
+                    // Strip leading @ so both "@hell" and "hell" work the same
+                    const q = val.startsWith("@") ? val.slice(1) : val;
+                    if (!q) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
+                    if (q.length >= 2) {
+                      const { data } = await supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(5);
                       setTypeaheadResults(data || []);
                     } else {
                       setTypeaheadResults([]);
                     }
                   }}
-                  onKeyDown={e => { if (e.key === "Enter") { setTypeaheadResults([]); runNameSearch(nameSearch); } }}
+                  onKeyDown={e => { if (e.key === "Enter") { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); } }}
                   onBlur={() => setTimeout(() => setTypeaheadResults([]), 150)}
-                  placeholder="Type a game name..."
+                  placeholder="Search by name or @game..."
                   style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
                 />
                 {nameSearch && (
-                  <button onClick={() => { setTypeaheadResults([]); runNameSearch(nameSearch); }}
+                  <button onClick={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
                     style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                     Search
                   </button>
@@ -3478,7 +3480,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               </div>
               {/* Live typeahead dropdown */}
               {typeaheadResults.length > 0 && (
-                <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, marginTop: 4, zIndex: 50, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, marginTop: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                   {typeaheadResults.map((g, i) => (
                     <div key={g.id} onMouseDown={() => { setCurrentGame(g.id); setActivePage("game"); setTypeaheadResults([]); setNameSearch(""); }}
                       style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
@@ -3494,11 +3496,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       </div>
                     </div>
                   ))}
-                  <div onMouseDown={() => { setTypeaheadResults([]); runNameSearch(nameSearch); }}
+                  <div onMouseDown={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
                     style={{ padding: "8px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", borderTop: "1px solid " + C.border, textAlign: "center" }}
                     onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    Search all results for "{nameSearch}" →
+                    Search all results for "{nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch}" →
                   </div>
                 </div>
               )}
