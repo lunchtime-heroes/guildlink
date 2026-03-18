@@ -42,20 +42,21 @@ export default async function handler(req, res) {
     }
 
     if (query) {
-      // search + where is allowed; sort is NOT allowed with search
-      // category = 0: main games only (excludes DLC, mods, ports, expansions)
-      // version_parent = null: excludes regional variants / special editions
+      // No where filter — let IGDB search handle relevance
+      // Sort client-side by follows to surface popular titles
       const body = `
         search "${query.replace(/"/g, "")}";
         fields name, genres.name, summary, cover.image_id, first_release_date,
-               involved_companies.company.name, involved_companies.developer, follows;
-        where category = 0 & version_parent = null;
-        limit 10;
+               involved_companies.company.name, involved_companies.developer, follows, category;
+        limit 15;
       `;
       const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body });
       const games = await r.json();
-      // Sort client-side by follows so popular titles surface first
-      const sorted = (games || []).sort((a, b) => (b.follows || 0) - (a.follows || 0));
+      // Filter out DLC (category 1), expansions (2), bundles (3), mods (6) client-side
+      // Keep main games (0), standalone expansions (4), remakes (8), remasters (9)
+      const filtered = (games || []).filter(g => ![1, 2, 3, 6].includes(g.category));
+      // Sort by follows descending
+      const sorted = filtered.sort((a, b) => (b.follows || 0) - (a.follows || 0));
       return res.status(200).json({ games: sorted.map(formatGame) });
     }
 
