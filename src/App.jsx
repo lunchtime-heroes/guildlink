@@ -1873,7 +1873,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-216</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-217</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2865,6 +2865,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
   const [activeInsight, setActiveInsight] = useState(null);
   const [nameSearch, setNameSearch] = useState("");
+  const [typeaheadResults, setTypeaheadResults] = useState([]);
   const [discoveryResults, setDiscoveryResults] = useState(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [discoveryLabel, setDiscoveryLabel] = useState("");
@@ -3448,19 +3449,58 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             </div>
 
             {/* Name search */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
-              <input value={nameSearch}
-                onChange={e => { setNameSearch(e.target.value); if (!e.target.value) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); } }}
-                onKeyDown={e => e.key === "Enter" && runNameSearch(nameSearch)}
-                placeholder="Type a game name..."
-                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
-              />
-              {nameSearch && (
-                <button onClick={() => runNameSearch(nameSearch)}
-                  style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  Search
-                </button>
+            <div style={{ position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
+                <input value={nameSearch}
+                  onChange={async e => {
+                    const val = e.target.value;
+                    setNameSearch(val);
+                    if (!val) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
+                    if (val.length >= 2) {
+                      const { data } = await supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${val}%`).limit(5);
+                      setTypeaheadResults(data || []);
+                    } else {
+                      setTypeaheadResults([]);
+                    }
+                  }}
+                  onKeyDown={e => { if (e.key === "Enter") { setTypeaheadResults([]); runNameSearch(nameSearch); } }}
+                  onBlur={() => setTimeout(() => setTypeaheadResults([]), 150)}
+                  placeholder="Type a game name..."
+                  style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
+                />
+                {nameSearch && (
+                  <button onClick={() => { setTypeaheadResults([]); runNameSearch(nameSearch); }}
+                    style={{ background: C.accent, border: "none", borderRadius: 10, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                    Search
+                  </button>
+                )}
+              </div>
+              {/* Live typeahead dropdown */}
+              {typeaheadResults.length > 0 && (
+                <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, marginTop: 4, zIndex: 50, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  {typeaheadResults.map((g, i) => (
+                    <div key={g.id} onMouseDown={() => { setCurrentGame(g.id); setActivePage("game"); setTypeaheadResults([]); setNameSearch(""); }}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                      onMouseLeave={e => e.currentTarget.style.background = C.surface}>
+                      {g.cover_url
+                        ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
+                        : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
+                      }
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                        {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
+                      </div>
+                    </div>
+                  ))}
+                  <div onMouseDown={() => { setTypeaheadResults([]); runNameSearch(nameSearch); }}
+                    style={{ padding: "8px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", borderTop: "1px solid " + C.border, textAlign: "center" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    Search all results for "{nameSearch}" →
+                  </div>
+                </div>
               )}
             </div>
           </div>
