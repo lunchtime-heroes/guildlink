@@ -233,182 +233,12 @@ const QUESTS = [
 // ─── NPC DATA ─────────────────────────────────────────────────────────────────
 
 const NPCS = {
-  merv: {
-    id: "merv",
-    name: "ShopKeep Merv",
-    handle: "@ShopKeepMerv_NPC",
-    avatar: "SM",
-    isNPC: true,
-    universe: "Realm of Aethoria",
-    universeIcon: "⚔️",
-    role: "Licensed Cave Merchant · Aethoria Trade Guild",
-    location: "The Fogwood Cave, Eastern Pass, Aethoria",
-    status: "online",
-    yearsOfService: 340,
-    followers: 28400,
-    connections: 12,
-    bio: "I have operated this cave-based general store since the Third Age. My inventory is well-stocked. My location is findable. I am here every day. The lantern is on. I do not understand the foot traffic situation.",
-    lore: "Merv took over the Fogwood Cave shop from his father, who took it over from his father, who allegedly started the business after getting lost during an adventure and never finding his way out. The family has made peace with this. The Eastern Pass sees considerable hero traffic. Merv has spoken to very few of them.",
-    stats: [
-      { label: "Apples Sold", value: "4,532", note: "Single-day record. Unannounced." },
-      { label: "Heroes Greeted", value: "847,291", note: "Greeted. Not necessarily acknowledged." },
-      { label: "Quests Overheard", value: "12,004", note: "Could have helped with most of them." },
-      { label: "Years in Business", value: "340", note: "No reviews. Not on any maps." },
-      { label: "Inventory Restocks", value: "∞", note: "The arrows just appear. He doesn't ask." },
-      { label: "Unsolicited Advice Given", value: "0", note: "Professional." },
-    ],
-    games: ["Elden Ring", "Dark Souls III", "Hollow Knight"],
-    posts: [
-      { id: "m1", time: "3h ago", content: "Inventory update: 847 arrows, 12 health potions, one sword of unclear origin. I have been in this cave since the Third Age. Business is steady.", likes: 4821, comments: 18, liked: false },
-      { id: "m2", time: "1d ago", content: "A hero came in today. Looked at my wares for 45 seconds. Said 'hm'. Left. I have been thinking about it since.", likes: 9204, comments: 47, liked: false },
-      { id: "m3", time: "2d ago", content: "Updated the sign outside. It now reads SHOP in larger letters. Foot traffic unchanged. The sign looks good though.", likes: 6103, comments: 29, liked: false },
-    ],
-  },
-  grunt: {
-    id: "grunt",
-    name: "Grunt #4471",
-    handle: "@GRUNT_NPC",
-    avatar: "G4",
-    isNPC: true,
-    universe: "Realm of Aethoria",
-    universeIcon: "⚔️",
-    role: "Eastern Gate Guard, 3rd Rotation · Royal City of Aethon",
-    location: "Eastern Gate, Royal City of Aethon, Aethoria",
-    status: "online",
-    yearsOfService: 6,
-    followers: 31200,
-    connections: 8,
-    bio: "I guard the Eastern Gate. I have guarded this gate for six years. I have a lot of thoughts about the people who walk through it. I am not permitted to share most of them. The knee is fine. Please stop asking about the knee.",
-    lore: "Grunt #4471 enlisted in the Royal Guard at 18, motivated by a love of structure and a desire to see the world. He has seen the Eastern Gate. It is a nice gate. He has opinions about every single person who has passed through it and zero outlet for those opinions until GuildLink.",
-    stats: [
-      { label: "Hours Stood at Post", value: "52,560", note: "Consecutive. Mostly." },
-      { label: "Travelers Greeted", value: "2.1M", note: "Response rate: 4%." },
-      { label: "Threats Neutralized", value: "0", note: "Quiet gate. Good gate." },
-      { label: "Times Knee Mentioned", value: "847", note: "It was one comment." },
-      { label: "Unsolicited Directions Given", value: "12,004", note: "Nobody asked." },
-      { label: "Naps Taken on Duty", value: "0", note: "Alleged." },
-    ],
-    games: ["Elden Ring", "Dark Souls III", "Skyrim"],
-    posts: [
-      { id: "g1", time: "5h ago", content: "Sixth year at the Eastern Gate. The sunrise is the same every morning. I have memorized it. I have given it a name. I will not be sharing the name.", likes: 7823, comments: 34, liked: false },
-      { id: "g2", time: "2d ago", content: "A hero walked through the gate today without making eye contact. I said good morning. The wind took it. Another day.", likes: 11204, comments: 82, liked: false },
-    ],
-  },
-  villager47: {
-    id: "villager47",
-    name: "Villager No. 47",
-    handle: "@VillagerNo47_NPC",
-    avatar: "V4",
-    isNPC: true,
-    universe: "Maplewood Valley",
-    universeIcon: "🌿",
-    role: "Background Resident · Maplewood Valley Homeowners Assoc.",
-    location: "Plot 47, Riverside District, Maplewood Valley",
-    status: "online",
-    yearsOfService: 12,
-    followers: 44800,
-    connections: 31,
-    bio: "I live at Plot 47. I have always lived at Plot 47. The river is nice. The new residents keep moving my fence. I have filed nothing. I notice everything. Have a good Tuesday.",
-    lore: "Villager No. 47 has been a resident of Maplewood Valley longer than any current mayor, any current shop, and most of the trees. She remembers when the fishing spot was undiscovered. She has feelings about what happened to the fishing spot. She is processing.",
-    stats: [
-      { label: "Years as Resident", value: "12", note: "Predates the current mayor by 9 years." },
-      { label: "Fences Moved by Others", value: "23", note: "Filed: 0 complaints." },
-      { label: "Fish Witnessed Being Caught", value: "8,847", note: "Was not invited to fish." },
-      { label: "Wholesome Interactions", value: "∞", note: "It's her thing." },
-      { label: "Passive Aggressive Waves", value: "204", note: "Unverified. She denies this." },
-      { label: "Flowers Planted", value: "1,847", note: "Near Plot 48. Intentional." },
-    ],
-    games: ["Stardew Valley", "Animal Crossing", "Hollow Knight"],
-    posts: [
-      { id: "v1", time: "2h ago", content: "A new resident moved into town today. They immediately started chopping down trees. I have filed nothing. I feel nothing. Welcome.", likes: 12847, comments: 67, liked: false },
-      { id: "v2", time: "1d ago", content: "The river looked particularly nice this morning. I stood by it for a while. Nobody asked why. I appreciated that.", likes: 8921, comments: 41, liked: false },
-    ],
-  },
-  beekeeper: {
-    id: "beekeeper",
-    name: "BeeKeeper Nan",
-    handle: "@BeeKeeperNan_NPC",
-    avatar: "BN",
-    isNPC: true,
-    universe: "Maplewood Valley",
-    universeIcon: "🌿",
-    role: "Apiarist & Unofficial Florist · Maplewood Valley",
-    location: "The Meadow, North District, Maplewood Valley",
-    status: "away",
-    yearsOfService: 8,
-    followers: 29100,
-    connections: 28,
-    bio: "I keep bees. The bees are fine. The flowers near plot 4 are gone and I noticed. I always notice. The honey is available at the market on Saturdays. Come early.",
-    lore: "Nan arrived in Maplewood Valley eight years ago with seventeen beehives and opinions about pollinator corridors. She has expanded to forty-two hives. The opinions have also expanded.",
-    stats: [
-      { label: "Beehives Maintained", value: "42", note: "Up from 17. The bees chose this." },
-      { label: "Honey Jars Sold", value: "9,204", note: "Saturday market. Come early." },
-      { label: "Flower Losses Documented", value: "847", note: "Mentally. Not formally." },
-      { label: "Bees Named", value: "3", note: "Gerald, Susan, and The Fast One." },
-      { label: "Unsolicited Garden Opinions", value: "2,847", note: "Solicited: also 2,847." },
-      { label: "Years of Perfect Honey", value: "8", note: "Consecutive. She will mention this." },
-    ],
-    games: ["Stardew Valley", "Animal Crossing"],
-    posts: [],
-  },
-  minion: {
-    id: "minion",
-    name: "Just A Minion",
-    handle: "@JustAMinion_NPC",
-    avatar: "JM",
-    isNPC: true,
-    universe: "Sector Null",
-    universeIcon: "🚀",
-    role: "Level 1 Enemy Unit · Sector Null Defense Force",
-    location: "Spawn Point 7, Sector Null Outpost",
-    status: "ingame",
-    yearsOfService: 3,
-    followers: 52300,
-    connections: 4,
-    bio: "I am a Level 1 enemy unit. My job is to patrol, engage, and respawn. I am good at two of those things. I have thoughts about difficulty settings that I keep mostly to myself. The respawn is instant. The dignity takes longer.",
-    lore: "Unit designation JM-0047 was deployed to Sector Null Outpost three years ago. In that time he has been defeated by heroes, speedrunners, people testing their new controller, and once by someone who appeared to be playing with their eyes closed. He has achieved a kind of peace about it.",
-    stats: [
-      { label: "Times Defeated", value: "14,847", note: "This season alone." },
-      { label: "Respawn Time", value: "0.3s", note: "Very efficient. Small mercy." },
-      { label: "Heroes Engaged", value: "14,847", note: "Correlation noted." },
-      { label: "Times Avoided Entirely", value: "204", note: "Speedrunners. Rude but efficient." },
-      { label: "Patrol Routes Completed", value: "2", note: "Things escalate quickly." },
-      { label: "Existential Crises", value: "1", note: "Ongoing." },
-    ],
-    games: ["Valorant", "Overwatch 2", "Dark Souls III"],
-    posts: [
-      { id: "jm1", time: "4h ago", content: "Respawned 23 times today before 9am. The hero is having a productive morning. I support their goals. This is fine.", likes: 18204, comments: 94, liked: false },
-    ],
-  },
-  oldmanquest: {
-    id: "oldmanquest",
-    name: "Old Man Quest",
-    handle: "@OldManQuest_NPC",
-    avatar: "OQ",
-    isNPC: true,
-    universe: "Realm of Aethoria",
-    universeIcon: "⚔️",
-    role: "Senior Quest Issuer · Aethoria Quest Bureau, Retired (Not Retired)",
-    location: "The Old Mill, Crossroads Village, Aethoria",
-    status: "online",
-    yearsOfService: 200,
-    followers: 38700,
-    connections: 6,
-    bio: "I have quests. Important quests. The fate of several villages depends on their completion. I stand at the crossroads every day. I am very visible. I have a large glowing exclamation mark above my head. The ancient evil grows stronger.",
-    lore: "The Old Man has been issuing quests since before the current kingdom existed. His quest completion rate is 0.003%. He has made peace with nothing. The exclamation mark was installed 200 years ago and has never once been acknowledged.",
-    stats: [
-      { label: "Quests Issued", value: "847", note: "Completion rate: 0.003%." },
-      { label: "Years at the Crossroads", value: "200", note: "Rain or shine." },
-      { label: "Exclamation Marks Displayed", value: "1", note: "Glowing. Quite large." },
-      { label: "Villages That Needed Saving", value: "12", note: "Still need saving." },
-      { label: "Times Someone Stopped", value: "3", note: "Two left mid-conversation." },
-      { label: "Ancient Evils Pending", value: "4", note: "Growing stronger daily." },
-    ],
-    games: ["Elden Ring", "Dark Souls III", "Hollow Knight"],
-    posts: [
-      { id: "oq1", time: "6h ago", content: "Day 73,000 at the crossroads. The ancient evil grows stronger. I have four quests available. I am wearing the exclamation mark. I don't know what else I can do.", likes: 22847, comments: 113, liked: false },
-    ],
-  },
+  merv: { id: "merv", name: "ShopKeep Merv", handle: "@ShopKeepMerv_NPC", avatar: "SM", isNPC: true },
+  grunt: { id: "grunt", name: "Grunt #4471", handle: "@GRUNT_NPC", avatar: "G4", isNPC: true },
+  villager47: { id: "villager47", name: "Villager No. 47", handle: "@VillagerNo47_NPC", avatar: "V4", isNPC: true },
+  beekeeper: { id: "beekeeper", name: "BeeKeeper Nan", handle: "@BeeKeeperNan_NPC", avatar: "BN", isNPC: true },
+  minion: { id: "minion", name: "Just A Minion", handle: "@JustAMinion_NPC", avatar: "JM", isNPC: true },
+  oldmanquest: { id: "oldmanquest", name: "Old Man Quest", handle: "@OldManQuest_NPC", avatar: "OQ", isNPC: true },
 };
 
 // ─── FEED POSTS WITH COMMENTS ─────────────────────────────────────────────────
@@ -1772,7 +1602,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0317-234</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-236</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -6702,12 +6532,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
             <div style={{ color: C2.textMuted, fontSize: 14 }}>Manage characters and write as them.</div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            {studioTab === "characters" && unsynced.length > 0 && (
-              <button onClick={syncHardcodedNPCs} disabled={syncing}
-                style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 10, padding: "8px 16px", color: C2.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {syncing ? "Syncing…" : `↑ Sync ${unsynced.length} to DB`}
-              </button>
-            )}
             {studioTab === "characters" && (
               <button onClick={() => { setEditingNPC(null); setShowEditor(true); }}
                 style={{ background: C2.accent, border: "none", borderRadius: 10, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -6948,7 +6772,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
           <div style={{ color: C2.textDim, fontSize: 13, textAlign: "center", padding: 60 }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>🎭</div>
             <div style={{ marginBottom: 8 }}>No NPCs in the database yet.</div>
-            {unsynced.length > 0 && <div style={{ color: C2.textMuted, fontSize: 12 }}>Click "Sync to DB" above to import the existing characters.</div>}
+            
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 14, marginBottom: 32 }}>
