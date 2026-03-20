@@ -454,6 +454,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     }
   };
 
+  const [commentReactions, setCommentReactions] = useState({}); // commentId -> { count, userReacted }
+
   const loadComments = async () => {
     if (!post.id || !post.id.includes('-')) return;
     const { data, error } = await supabase
@@ -463,7 +465,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       .order("created_at", { ascending: true });
     if (error) console.error("[loadComments] error:", error);
     if (data) {
-      // For NPC comments, look up NPC data separately for any UUID-based npc_ids
       const npcUUIDs = [...new Set(data.filter(c => c.npc_id && c.npc_id.includes('-')).map(c => c.npc_id))];
       let npcMap = {};
       if (npcUUIDs.length > 0) {
@@ -471,6 +472,39 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         if (npcRows) npcRows.forEach(n => { npcMap[n.id] = n; });
       }
       setLiveComments(data.map(c => c.npc_id && c.npc_id.includes('-') ? { ...c, npcs: npcMap[c.npc_id] || null } : c));
+
+      // Load reaction counts for all comments
+      if (data.length > 0) {
+        const commentIds = data.map(c => c.id);
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const { data: reactions } = await supabase
+          .from("comment_reactions")
+          .select("comment_id, user_id")
+          .in("comment_id", commentIds);
+        if (reactions) {
+          const reactionMap = {};
+          reactions.forEach(r => {
+            if (!reactionMap[r.comment_id]) reactionMap[r.comment_id] = { count: 0, userReacted: false };
+            reactionMap[r.comment_id].count++;
+            if (authUser && r.user_id === authUser.id) reactionMap[r.comment_id].userReacted = true;
+          });
+          setCommentReactions(reactionMap);
+        }
+      }
+    }
+  };
+
+  const toggleReaction = async (commentId) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const current = commentReactions[commentId] || { count: 0, userReacted: false };
+    if (current.userReacted) {
+      await supabase.from("comment_reactions").delete()
+        .eq("comment_id", commentId).eq("user_id", authUser.id).eq("emoji", "❤️");
+      setCommentReactions(prev => ({ ...prev, [commentId]: { count: Math.max(0, (prev[commentId]?.count || 1) - 1), userReacted: false } }));
+    } else {
+      await supabase.from("comment_reactions").insert({ comment_id: commentId, user_id: authUser.id, emoji: "❤️" });
+      setCommentReactions(prev => ({ ...prev, [commentId]: { count: (prev[commentId]?.count || 0) + 1, userReacted: true } }));
     }
   };
 
@@ -686,17 +720,36 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                     )}
                     <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
                   </div>
-                  {!isGuest && currentUser && (
-                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      <button onClick={() => { setReplyTo({ id: comment.id, name: name }); setShowComments(true); }}
-                        style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px", marginTop: 2 }}>
-                        ↩ Reply
+                  {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
+                    <div style={{ display: "flex", gap: 4, alignItems: "center", marginTop: 2 }}>
+                      <button onClick={() => currentUser && !isGuest && toggleReaction(comment.id)}
+                        style={{
+                          background: "none", border: "none", cursor: currentUser && !isGuest ? "pointer" : "default",
+                          padding: "3px 6px 3px 2px", display: "flex", alignItems: "center", gap: 4,
+                          color: commentReactions[comment.id]?.userReacted ? "#e85d75" : C.textDim,
+                          fontSize: 12, borderRadius: 6,
+                          transition: "transform 0.1s",
+                        }}
+                        onMouseEnter={e => { if (currentUser) e.currentTarget.style.transform = "scale(1.15)"; }}
+                        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                        <span style={{ fontSize: 14 }}>{commentReactions[comment.id]?.userReacted ? "❤️" : "🤍"}</span>
+                        {commentReactions[comment.id]?.count > 0 && (
+                          <span style={{ fontSize: 11, fontWeight: 600 }}>{commentReactions[comment.id].count}</span>
+                        )}
                       </button>
-                      {(comment.user_id === currentUser.id || currentUser.is_admin) && (
-                        <button onClick={() => deleteComment(comment.id)}
-                          style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 4px", marginTop: 2 }}>
-                          Delete
-                        </button>
+                      {!isGuest && currentUser && (
+                        <>
+                          <button onClick={() => { setReplyTo({ id: comment.id, name: name }); setShowComments(true); }}
+                            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px" }}>
+                            ↩ Reply
+                          </button>
+                          {(comment.user_id === currentUser.id || currentUser.is_admin) && (
+                            <button onClick={() => deleteComment(comment.id)}
+                              style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 4px" }}>
+                              Delete
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -1734,7 +1787,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-259</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-260</span>
         </div>
       </div>
     </nav>
