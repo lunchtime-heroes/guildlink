@@ -27,6 +27,15 @@ function getWeekStart() {
   return `${y}-${m}-${d}`;
 }
 
+async function logAnalytics(userId, eventType, page, metadata = {}) {
+  if (!userId) return;
+  try {
+    await supabase.from("analytics_events").insert({
+      user_id: userId, event_type: eventType, page, metadata,
+    });
+  } catch(e) { /* non-fatal */ }
+}
+
 async function logChartEvent(gameId, eventType, userId) {
   if (!gameId || !gameId.includes('-')) return;
   const weekStart = getWeekStart();
@@ -1531,6 +1540,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     { id: "games", icon: "🎮", label: "Games" },
     { id: "reviews-nav", icon: "⭐", label: "Reviews" },
     { id: "founding", icon: "⚔️", label: "About", gold: true },
+    { id: "feedback", icon: "💬", label: "Feedback" },
     ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
     ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
   ];
@@ -1722,7 +1732,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-252</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-253</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1981,6 +1991,86 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
   );
 }
 
+
+function FeedbackPage({ currentUser, isMobile, setActivePage }) {
+  const [form, setForm] = useState({ liked: "", confused: "", missing: "", rating: 0 });
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    if (!form.rating) return alert("Please give us a rating before submitting.");
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("feedback").insert({
+      user_id: user?.id || null,
+      username: currentUser?.name || "Anonymous",
+      liked: form.liked,
+      confused: form.confused,
+      missing: form.missing,
+      rating: form.rating,
+    });
+    setSubmitted(true);
+    setSubmitting(false);
+  };
+
+  if (submitted) return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: isMobile ? "80px 16px" : "100px 24px", textAlign: "center" }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
+      <div style={{ fontWeight: 800, color: C.text, fontSize: 22, marginBottom: 8 }}>Thanks for the feedback.</div>
+      <div style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>This genuinely helps. Every response gets read.</div>
+      <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 10, padding: "10px 28px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: isMobile ? "70px 16px 80px" : "80px 24px 40px" }}>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontWeight: 900, fontSize: isMobile ? 22 : 26, color: C.text, marginBottom: 6 }}>Share your feedback</div>
+        <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6 }}>GuildLink is early. Your experience matters a lot right now. Three questions — honest answers only.</div>
+      </div>
+
+      {/* Rating */}
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 4 }}>Overall, how would you rate GuildLink so far?</div>
+        <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 14 }}>1 = not for me, 10 = this is exactly what I needed</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[1,2,3,4,5,6,7,8,9,10].map(n => (
+            <button key={n} onClick={() => setForm(f => ({ ...f, rating: n }))}
+              style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid " + (form.rating === n ? C.accent : C.border), background: form.rating === n ? C.accent : C.surfaceRaised, color: form.rating === n ? "#fff" : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Three questions */}
+      {[
+        { key: "liked", label: "What did you like?", placeholder: "What felt good, intuitive, or fun..." },
+        { key: "confused", label: "What confused you?", placeholder: "What was hard to find, unclear, or unexpected..." },
+        { key: "missing", label: "What's missing?", placeholder: "A feature, a section, something you expected to find..." },
+      ].map(q => (
+        <div key={q.key} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 10 }}>{q.label}</div>
+          <textarea
+            value={form[q.key]}
+            onChange={e => setForm(f => ({ ...f, [q.key]: e.target.value }))}
+            placeholder={q.placeholder}
+            rows={3}
+            style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", lineHeight: 1.5 }}
+          />
+        </div>
+      ))}
+
+      <button onClick={submit} disabled={submitting}
+        style={{ width: "100%", background: C.accent, border: "none", borderRadius: 10, padding: "13px", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+        {submitting ? "Submitting..." : "Submit Feedback"}
+      </button>
+      <button onClick={() => setActivePage("feed")} style={{ width: "100%", background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginTop: 10, padding: "8px" }}>
+        Cancel
+      </button>
+    </div>
+  );
+}
 
 function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger }) {
   const user = currentUser;
@@ -5655,7 +5745,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [chartEvents, setChartEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [allGames, setAllGames] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [feedbackData, setFeedbackData] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [enrichMsg, setEnrichMsg] = useState({});
 
@@ -5698,6 +5789,33 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const { data: gamesData } = await supabase.from("games").select("id, name, genre, igdb_id, cover_url, summary").order("name");
     if (gamesData) setAllGames(gamesData);
 
+    // Analytics
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: analyticsEvents } = await supabase.from("analytics_events")
+      .select("user_id, event_type, page, created_at")
+      .gte("created_at", sevenDaysAgo)
+      .order("created_at", { ascending: false });
+    if (analyticsEvents) {
+      const byPage = {}, byDay = {}, uniqueUsers = new Set();
+      analyticsEvents.forEach(e => {
+        if (e.user_id) uniqueUsers.add(e.user_id);
+        if (e.page) byPage[e.page] = (byPage[e.page] || 0) + 1;
+        const day = e.created_at.split("T")[0];
+        if (!byDay[day]) byDay[day] = new Set();
+        if (e.user_id) byDay[day].add(e.user_id);
+      });
+      setAnalyticsData({
+        totalEvents: analyticsEvents.length,
+        uniqueUsers: uniqueUsers.size,
+        byPage: Object.entries(byPage).sort((a,b) => b[1]-a[1]),
+        dailyActiveUsers: Object.entries(byDay).map(([day, users]) => ({ day, count: users.size })).sort((a,b) => a.day.localeCompare(b.day)),
+      });
+    }
+
+    // Feedback
+    const { data: fbData } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
+    if (fbData) setFeedbackData(fbData);
+
     // Aggregate chart events by game
     if (chartRes.data) {
       const byGame = {};
@@ -5734,6 +5852,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
   const tabs = [
     { id: "overview", label: "📊 Overview" },
+    { id: "analytics", label: "📈 Analytics" },
+    { id: "feedback", label: "💬 Feedback" },
     { id: "users", label: "👤 Users" },
     { id: "posts", label: "📝 Posts" },
     { id: "charts", label: "🏆 Chart Activity" },
@@ -5783,6 +5903,105 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           <button key={t.id} onClick={() => setTab(t.id)} style={{ background: tab === t.id ? C.accentGlow : C.surface, border: "1px solid " + tab === t.id ? C.accentDim : C.border, borderRadius: 8, padding: "7px 14px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t.label}</button>
         ))}
       </div>
+
+      {/* Analytics */}
+      {tab === "analytics" && (
+        <div>
+          {!analyticsData ? (
+            <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: 40 }}>No analytics data yet. Data populates as users navigate the platform.</div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
+                {[
+                  { label: "Page Views (7d)", value: analyticsData.totalEvents, color: C.accent },
+                  { label: "Unique Users (7d)", value: analyticsData.uniqueUsers, color: C.online },
+                  { label: "Avg Daily Active", value: analyticsData.dailyActiveUsers.length ? Math.round(analyticsData.dailyActiveUsers.reduce((s,d) => s + d.count, 0) / analyticsData.dailyActiveUsers.length) : 0, color: C.gold },
+                ].map(s => (
+                  <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 18, textAlign: "center" }}>
+                    <div style={{ fontWeight: 800, fontSize: 28, color: s.color }}>{s.value}</div>
+                    <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Time Spent by Page</div>
+                  {analyticsData.byPage.map(([page, count]) => {
+                    const pct = Math.round((count / analyticsData.totalEvents) * 100);
+                    return (
+                      <div key={page} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ color: C.text, fontSize: 13, fontWeight: 600, textTransform: "capitalize" }}>{page}</span>
+                          <span style={{ color: C.textDim, fontSize: 12 }}>{count} views · {pct}%</span>
+                        </div>
+                        <div style={{ height: 6, background: C.surfaceRaised, borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: pct + "%", background: C.accent, borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Daily Active Users (7d)</div>
+                  {analyticsData.dailyActiveUsers.length === 0 ? (
+                    <div style={{ color: C.textDim, fontSize: 13 }}>No data yet.</div>
+                  ) : analyticsData.dailyActiveUsers.map(({ day, count }) => (
+                    <div key={day} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                      <div style={{ color: C.textDim, fontSize: 12, width: 90, flexShrink: 0 }}>{day}</div>
+                      <div style={{ flex: 1, height: 20, background: C.surfaceRaised, borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: Math.max(4, (count / Math.max(...analyticsData.dailyActiveUsers.map(d => d.count))) * 100) + "%", background: C.accent + "99", borderRadius: 4, display: "flex", alignItems: "center", paddingLeft: 6 }}>
+                          <span style={{ color: C.text, fontSize: 10, fontWeight: 700 }}>{count}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Feedback */}
+      {tab === "feedback" && (
+        <div>
+          {feedbackData.length === 0 ? (
+            <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: 40 }}>No feedback submitted yet.</div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+                {[
+                  { label: "Total Responses", value: feedbackData.length, color: C.accent },
+                  { label: "Avg Rating", value: (feedbackData.reduce((s,f) => s + (f.rating||0), 0) / feedbackData.length).toFixed(1) + "/10", color: C.gold },
+                  { label: "Rating ≥ 7", value: feedbackData.filter(f => f.rating >= 7).length, color: C.online },
+                  { label: "Rating < 5", value: feedbackData.filter(f => f.rating < 5).length, color: C.red },
+                ].map(s => (
+                  <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 16, textAlign: "center" }}>
+                    <div style={{ fontWeight: 800, fontSize: 24, color: s.color }}>{s.value}</div>
+                    <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              {feedbackData.map(f => (
+                <div key={f.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{f.username || "Anonymous"}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ background: f.rating >= 7 ? C.online + "22" : f.rating >= 5 ? C.gold + "22" : C.red + "22", color: f.rating >= 7 ? C.online : f.rating >= 5 ? C.gold : C.red, borderRadius: 8, padding: "3px 10px", fontWeight: 800, fontSize: 13 }}>{f.rating}/10</div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(f.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                  {f.liked && <div style={{ marginBottom: 8 }}><span style={{ color: C.online, fontSize: 11, fontWeight: 700 }}>LIKED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.liked}</span></div>}
+                  {f.confused && <div style={{ marginBottom: 8 }}><span style={{ color: C.gold, fontSize: 11, fontWeight: 700 }}>CONFUSED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.confused}</span></div>}
+                  {f.missing && <div><span style={{ color: C.accent, fontSize: 11, fontWeight: 700 }}>MISSING · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.missing}</span></div>}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Overview */}
       {tab === "overview" && stats && (
@@ -8620,6 +8839,7 @@ export default function GuildLink() {
     setCurrentGame(gameId);
     setActivePage("game");
     window.history.pushState({ page: "game", gameId }, "", `/game/${gameId}`);
+    supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", "game", { gameId }); });
   };
 
   const navToPlayer = async (playerId) => {
@@ -8628,12 +8848,14 @@ export default function GuildLink() {
     const { data } = await supabase.from("profiles").select("handle").eq("id", playerId).maybeSingle();
     const handle = data?.handle?.replace("@", "") || playerId;
     window.history.pushState({ page: "player", playerId, playerHandle: handle }, "", `/player/${handle}`);
+    supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", "player"); });
   };
 
   const navToPage = (page) => {
     setActivePage(page);
     const path = page === "founding" ? "/about" : `/${page}`;
     window.history.pushState({ page }, "", path);
+    supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", page); });
   };
 
   const liveUser = profile ? {
@@ -8746,6 +8968,7 @@ export default function GuildLink() {
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={navToPlayer} setActivePage={navToPage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={navToPage} isMobile={isMobile} onSignUp={openSignUp} />}
+      {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
     </div>
   );
 }
