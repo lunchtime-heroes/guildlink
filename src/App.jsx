@@ -1708,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-245</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-246</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -8629,6 +8629,27 @@ export default function GuildLink() {
     return XP_LEVELS[level]; // XP_LEVELS[level] is the threshold for level+1
   };
 
+  // URL-aware navigation wrappers — must be defined before any conditional returns
+  const navToGame = useCallback((gameId) => {
+    setCurrentGame(gameId);
+    setActivePage("game");
+    window.history.pushState({ page: "game", gameId }, "", `/game/${gameId}`);
+  }, []);
+
+  const navToPlayer = useCallback(async (playerId) => {
+    setCurrentPlayer(playerId);
+    setActivePage("player");
+    const { data } = await supabase.from("profiles").select("handle").eq("id", playerId).maybeSingle();
+    const handle = data?.handle?.replace("@", "") || playerId;
+    window.history.pushState({ page: "player", playerId, playerHandle: handle }, "", `/player/${handle}`);
+  }, []);
+
+  const navToPage = useCallback((page) => {
+    setActivePage(page);
+    const path = page === "founding" ? "/about" : `/${page}`;
+    window.history.pushState({ page }, "", path);
+  }, []);
+
   const liveUser = profile ? {
     id: profile.id,
     name: profile.username || "Gamer",
@@ -8654,28 +8675,7 @@ export default function GuildLink() {
     theme: profile.theme || "deep-space",
   } : null;
 
-  // URL-aware navigation wrappers — use these instead of raw setters
-  // so every navigation also updates the browser URL and history
-  const navToGame = useCallback((gameId) => {
-    setCurrentGame(gameId);
-    setActivePage("game");
-    window.history.pushState({ page: "game", gameId }, "", `/game/${gameId}`);
-  }, []);
 
-  const navToPlayer = useCallback(async (playerId) => {
-    setCurrentPlayer(playerId);
-    setActivePage("player");
-    // Look up handle for clean URL
-    const { data } = await supabase.from("profiles").select("handle").eq("id", playerId).maybeSingle();
-    const handle = data?.handle?.replace("@", "") || playerId;
-    window.history.pushState({ page: "player", playerId, playerHandle: handle }, "", `/player/${handle}`);
-  }, []);
-
-  const navToPage = useCallback((page) => {
-    setActivePage(page);
-    const path = page === "founding" ? "/about" : `/${page}`;
-    window.history.pushState({ page }, "", path);
-  }, []);
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, backgroundImage: C.bgPattern || "none", color: C.text }}>
@@ -8756,7 +8756,7 @@ export default function GuildLink() {
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), navToPage("feed"), null) : <ProfilePage setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={navToPlayer} setActivePage={navToPage} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={navToPage} isMobile={isMobile} onSignUp={openSignUp} />}
