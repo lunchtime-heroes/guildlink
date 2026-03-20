@@ -1534,6 +1534,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
     { id: "reviews-nav", icon: "⭐", label: "Reviews" },
+    { id: "feedback", icon: "💬", label: "Feedback" },
   ];
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
@@ -1732,12 +1733,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-253</span>
-          <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
-            onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-            onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
-            feedback
-          </a>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-254</span>
         </div>
       </div>
     </nav>
@@ -5747,6 +5743,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [authorized, setAuthorized] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [feedbackData, setFeedbackData] = useState([]);
+  const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [enrichMsg, setEnrichMsg] = useState({});
 
