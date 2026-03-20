@@ -1827,7 +1827,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-264</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-265</span>
         </div>
       </div>
     </nav>
@@ -2469,7 +2469,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
-          .select("id, content, likes, created_at, game_tag, user_id, npc_id, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
           .is("npc_id", null)
           .order("likes", { ascending: false })
           .limit(30),
@@ -2779,7 +2779,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                     );
                   })}
                   {taggedGames.length === 0 && (
-                    <span style={{ color: C.textDim, fontSize: 12 }}>@ a game to tag it</span>
+                    <span style={{ color: C.textDim, fontSize: 12 }}>@ a game, player, or NPC to tag</span>
                   )}
                 </div>
                 <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
