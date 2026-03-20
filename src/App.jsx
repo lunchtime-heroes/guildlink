@@ -758,7 +758,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                         <span style={{ color: C.accentSoft }}>@{parentName}</span>
                       </div>
                     )}
-                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{comment.content}</p>
+                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
                   </div>
                   {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
                     <div style={{ display: "flex", gap: 4, alignItems: "center", marginTop: 2 }}>
@@ -1827,7 +1827,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-266</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-267</span>
         </div>
       </div>
     </nav>
