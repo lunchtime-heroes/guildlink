@@ -1602,7 +1602,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-238</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-239</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -8167,12 +8167,11 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       {current.highlight && (
         <style>{`
           [data-tour="${current.highlight === "shelf" ? "games-tab" : "quests-tab"}"] {
-            animation: navPulse 1.2s ease-in-out infinite !important;
-            position: relative;
+            animation: navPulse 1s ease-in-out infinite !important;
           }
           @keyframes navPulse {
-            0%, 100% { box-shadow: 0 0 0 0 ${BIZMOND_COLOR}00; color: ${BIZMOND_COLOR} !important; }
-            50% { box-shadow: 0 0 12px 3px ${BIZMOND_COLOR}66; color: ${BIZMOND_COLOR} !important; }
+            0%, 100% { color: ${C.gold} !important; text-shadow: none; }
+            50% { color: ${C.gold} !important; text-shadow: 0 0 12px ${C.gold}, 0 0 24px ${C.gold}88; }
           }
         `}</style>
       )}
@@ -8237,14 +8236,6 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                 {current.body}
               </div>
 
-              {/* Nav pointer arrow */}
-              {current.arrow && (
-                <div style={{ color: BIZMOND_COLOR, fontSize: 11, fontWeight: 700, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ animation: "arrowBounce 1s ease-in-out infinite", display: "inline-block" }}>↑</span>
-                  {current.arrow.replace("↑ ", "")}
-                </div>
-              )}
-
               {/* Game search */}
               {current.showSearch && (
                 <div style={{ marginTop: 12, position: "relative" }}>
@@ -8303,12 +8294,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
         </div>
       </div>
 
-      <style>{`
-        @keyframes arrowBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-      `}</style>
+      <style>{``}</style>
     </>
   );
 }
