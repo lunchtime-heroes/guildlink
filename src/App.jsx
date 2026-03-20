@@ -1524,12 +1524,12 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
   const mobileItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
-    ...(!isGuest ? [{ id: "reviews-nav", icon: "⭐", label: "Reviews" }] : []),
+    { id: "reviews-nav", icon: "⭐", label: "Reviews" },
   ];
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
-    ...(!isGuest ? [{ id: "reviews-nav", icon: "⭐", label: "Reviews" }] : []),
+    { id: "reviews-nav", icon: "⭐", label: "Reviews" },
     { id: "founding", icon: "⚔️", label: "About", gold: true },
     ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
     ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
@@ -1722,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-251</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-252</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
