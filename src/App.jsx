@@ -1708,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-247</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-248</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -2757,7 +2757,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const uniqueUsers = userMap[id].size;
       const finalScore = rawScore * (1 + Math.log(Math.max(uniqueUsers, 1)) * 0.2);
       const g = countMap[id].game;
-      return { id, finalScore, uniqueUsers, ...countMap[id], name: g?.name, genre: g?.genre, icon: g?.icon };
+      return { id, finalScore, uniqueUsers, ...countMap[id], name: g?.name, genre: g?.genre, cover_url: g?.cover_url };
     }).sort((a, b) => b.finalScore - a.finalScore);
   };
 
@@ -2812,7 +2812,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const weekStarts = getWeekStarts(8);
       const currentWeek = weekStarts[0]; // most recent
       const { data: events } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
+        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
         .eq("week_start", currentWeek);
       if (!events) { setChartsLoading(false); return; }
       const scored = scoreEvents(events);
@@ -2831,7 +2831,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       // Calculate previous week's ranks for movement indicators
       const prevWeekStart = getWeekStarts(2)[1];
       const { data: prevEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, icon)")
+        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
         .eq("week_start", prevWeekStart);
       if (prevEvents && prevEvents.length > 0) {
         const prevScored = scoreEvents(prevEvents);
