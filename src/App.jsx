@@ -95,7 +95,6 @@ function notifLabel(n) {
     case "comment":          return "commented on your post";
     case "reply":            return "replied to your comment";
     case "follow":           return "started following you";
-    case "gamertag_request": return `wants your ${n.meta || "gamertag"}`;
     default:                 return "interacted with you";
   }
 }
@@ -1684,7 +1683,6 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       const isNPC = !!npcData;
                       const isUnread = !n.read;
                       const hasPost = !!n.post_id;
-                      const isGamertagRequest = n.type === "gamertag_request";
                       const avatarInitials = isNPC
                         ? (npcData.avatar || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
@@ -1694,8 +1692,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                             if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); }
                             else if (isGamertagRequest) { setActivePage("profile"); setShowNotifs(false); }
                           }}
-                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: isUnread ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost || isGamertagRequest) ? "pointer" : "default", transition: "background 0.1s" }}
-                          onMouseEnter={e => { if (hasPost || isGamertagRequest) e.currentTarget.style.background = C.surfaceHover; }}
+                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: isUnread ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost) ? "pointer" : "default", transition: "background 0.1s" }}
+                          onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
                           onMouseLeave={e => { e.currentTarget.style.background = isUnread ? C.accent + "0a" : "transparent"; }}
                         >
                           <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
@@ -1717,7 +1715,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                             {isUnread && <div style={{ width: 7, height: 7, borderRadius: "50%", background: isNPC ? C.gold : C.accent }} />}
-                            {(hasPost || isGamertagRequest) && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
+                            {(hasPost) && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
                           </div>
                         </div>
                       );
@@ -1733,7 +1731,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-254</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-256</span>
         </div>
       </div>
     </nav>
@@ -4273,123 +4271,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [userRewards, setUserRewards] = useState([]);
   const [questsLoaded, setQuestsLoaded] = useState(false);
   const [profileFollowing, setProfileFollowing] = useState([]);
-  const [gamertags, setGamertags] = useState([]);
-  const [gamertagForm, setGamertagForm] = useState({ platform: "", tag: "" });
-  const [addingTag, setAddingTag] = useState(false);
-  const [tagSaving, setTagSaving] = useState(false);
-  const PLATFORMS = [
-    { id: "xbox", label: "Xbox", color: "#107C10" },
-    { id: "psn", label: "PlayStation", color: "#003087" },
-    { id: "steam", label: "Steam", color: "#1b2838" },
-    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
-    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
-  ];
-  const isAdult = getAge(user.date_of_birth) >= 18;
-
-  // DOB management — separate from main profile edit
-  const [editingDob, setEditingDob] = useState(false);
-  const [dobForm, setDobForm] = useState({ month: "", day: "", year: "" });
-  const [dobSaving, setDobSaving] = useState(false);
-  const [dobError, setDobError] = useState("");
-  const canChangeDob = (user.dob_changes || 0) < 1;
-  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  const formatDob = (dob) => {
-    if (!dob) return null;
-    const d = new Date(dob + "T00:00:00"); // force local parse
-    return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-  };
-
-  const saveDob = async () => {
-    setDobError("");
-    const m = parseInt(dobForm.month), d = parseInt(dobForm.day), y = parseInt(dobForm.year);
-    if (!m || !d || !y || isNaN(m) || isNaN(d) || isNaN(y)) { setDobError("Please fill in all fields."); return; }
-    if (y < 1900 || y > new Date().getFullYear() - 5) { setDobError("Please enter a valid year."); return; }
-    if (m < 1 || m > 12) { setDobError("Please enter a valid month."); return; }
-    if (d < 1 || d > 31) { setDobError("Please enter a valid day."); return; }
-    const dateStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const test = new Date(dateStr);
-    if (isNaN(test.getTime())) { setDobError("That date doesn't look right."); return; }
-    setDobSaving(true);
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    const newChanges = (user.dob_changes || 0) + (user.date_of_birth ? 1 : 0);
-    const { error } = await supabase.from("profiles").update({
-      date_of_birth: dateStr,
-      dob_changes: newChanges,
-    }).eq("id", authUser.id);
-    if (!error) {
-      setEditingDob(false);
-      setDobForm({ month: "", day: "", year: "" });
-      onProfileSaved?.();
-      loadIncomingRequests();
-      loadApprovedConnections();
-      loadGamertags();
-    } else {
-      setDobError("Something went wrong. Please try again.");
-    }
-    setDobSaving(false);
-  };
-
-  const loadGamertags = async () => {
-    const { data } = await supabase.from("gamertags").select("*").eq("user_id", user.id);
-    if (data) setGamertags(data);
-  };
-
-  const saveGamertag = async () => {
-    if (!gamertagForm.platform || !gamertagForm.tag.trim() || tagSaving) return;
-    setTagSaving(true);
-    await supabase.from("gamertags").upsert({
-      user_id: user.id,
-      platform: gamertagForm.platform,
-      tag: gamertagForm.tag.trim(),
-    }, { onConflict: "user_id,platform" });
-    setGamertagForm({ platform: "", tag: "" });
-    setAddingTag(false);
-    setTagSaving(false);
-    loadGamertags();
-  };
-
-  const deleteGamertag = async (platform) => {
-    await supabase.from("gamertags").delete().eq("user_id", user.id).eq("platform", platform);
-    setGamertags(prev => prev.filter(t => t.platform !== platform));
-  };
-
-  // Incoming gamertag requests
-  const [incomingRequests, setIncomingRequests] = useState([]);
-
-  const loadIncomingRequests = async () => {
-    if (!isAdult) return;
-    const { data } = await supabase
-      .from("gamertag_requests")
-      .select("*, profiles!gamertag_requests_requester_id_fkey(id, username, handle, avatar_initials)")
-      .eq("target_id", user.id)
-      .eq("status", "pending");
-    if (data) setIncomingRequests(data);
-  };
-
-  const respondToRequest = async (requestId, newStatus) => {
-    await supabase.from("gamertag_requests").update({ status: newStatus }).eq("id", requestId);
-    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
-  };
-
-  // Approved connections (for revoke UI)
-  const [approvedConnections, setApprovedConnections] = useState([]);
-
-  const loadApprovedConnections = async () => {
-    if (!isAdult) return;
-    const { data } = await supabase
-      .from("gamertag_requests")
-      .select("*, profiles!gamertag_requests_requester_id_fkey(id, username, handle, avatar_initials)")
-      .eq("target_id", user.id)
-      .eq("status", "approved");
-    if (data) setApprovedConnections(data);
-  };
-
-  const revokeConnection = async (requestId) => {
-    await supabase.from("gamertag_requests").update({ status: "revoked" }).eq("id", requestId);
-    setApprovedConnections(prev => prev.filter(r => r.id !== requestId));
-  };
-
   const loadQuests = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
@@ -4884,215 +4765,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
                 <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
-            </div>
-          )}
-
-          {/* Birthday and DOB Section — only visible while editing */}
-          {editing && (
-          <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: user.date_of_birth || editingDob ? 12 : 0 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Birthday</div>
-              {user.date_of_birth && !editingDob && canChangeDob && (
-                <button onClick={() => { setEditingDob(true); setDobError(""); }} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>Change</button>
-              )}
-            </div>
-
-            {!user.date_of_birth && !editingDob && (
-              <div>
-                <div style={{ color: C.textDim, fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
-                  Add your birthday to unlock gamertag sharing and LFG at 18+.
-                </div>
-                <button onClick={() => { setEditingDob(true); setDobError(""); }}
-                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  Add Birthday
-                </button>
-              </div>
-            )}
-
-            {user.date_of_birth && !editingDob && (
-              <div>
-                <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{formatDob(user.date_of_birth)}</div>
-                {!canChangeDob ? (
-                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 6, lineHeight: 1.5 }}>
-                    Need to correct this?{" "}
-                    <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer"
-                      style={{ color: C.accentSoft, textDecoration: "none", fontWeight: 600 }}>Message a mod →</a>
-                  </div>
-                ) : (
-                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>You can change this once if you made a mistake.</div>
-                )}
-              </div>
-            )}
-
-            {editingDob && (
-              <div>
-                <div style={{ color: C.textDim, fontSize: 11, marginBottom: 10, lineHeight: 1.5 }}>
-                  {user.date_of_birth
-                    ? "This is your one allowed change. After this, contact a mod."
-                    : "Never shown publicly. Used only for age-based features and birthday celebrations."}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                  <div style={{ flex: "0 0 110px" }}>
-                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Month</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <input value={dobForm.month} onChange={e => setDobForm(f => ({ ...f, month: e.target.value }))}
-                        placeholder="1–12" maxLength={2}
-                        style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-                    </div>
-                  </div>
-                  <div style={{ flex: "0 0 80px" }}>
-                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Day</div>
-                    <input value={dobForm.day} onChange={e => setDobForm(f => ({ ...f, day: e.target.value }))}
-                      placeholder="1–31" maxLength={2}
-                      style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-                  <div style={{ flex: "0 0 90px" }}>
-                    <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Year</div>
-                    <input value={dobForm.year} onChange={e => setDobForm(f => ({ ...f, year: e.target.value }))}
-                      placeholder="e.g. 1990" maxLength={4}
-                      style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-                  </div>
-                </div>
-                {dobError && <div style={{ color: C.red, fontSize: 12, marginBottom: 8 }}>{dobError}</div>}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={saveDob} disabled={dobSaving}
-                    style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                    {dobSaving ? "Saving…" : "Save Birthday"}
-                  </button>
-                  <button onClick={() => { setEditingDob(false); setDobForm({ month: "", day: "", year: "" }); setDobError(""); }}
-                    style={{ background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          )} {/* end editing Birthday section */}
-
-          {/* Gamertag Management */}
-          <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: gamertags.length > 0 || addingTag ? 14 : 0 }}>
-              <div>
-                <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>Gamertags</div>
-                {!user.date_of_birth && (
-                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Add your birthday in Edit Profile to enable gamertag sharing.</div>
-                )}
-                {user.date_of_birth && !isAdult && (
-                  <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>Gamertag sharing is available at 18.</div>
-                )}
-              </div>
-              {isAdult && gamertags.length < 5 && !addingTag && (
-                <button onClick={() => setAddingTag(true)} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
-              )}
-            </div>
-
-            {/* Existing tags */}
-            {gamertags.map(t => {
-              const plat = PLATFORMS.find(p => p.id === t.platform);
-              return (
-                <div key={t.platform} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid " + C.border }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: plat?.color || C.textDim, flexShrink: 0 }} />
-                  <span style={{ color: C.textMuted, fontSize: 12, fontWeight: 600, width: 90, flexShrink: 0 }}>{plat?.label || t.platform}</span>
-                  <span style={{ color: C.text, fontSize: 13, flex: 1 }}>{t.tag}</span>
-                  <button onClick={() => deleteGamertag(t.platform)} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 4px" }} title="Remove">×</button>
-                </div>
-              );
-            })}
-
-            {/* Add tag form */}
-            {addingTag && isAdult && (
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div>
-                  <div style={{ color: C.textDim, fontSize: 11, marginBottom: 8 }}>Platform</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {PLATFORMS.filter(p => !gamertags.find(t => t.platform === p.id)).map(p => (
-                      <button key={p.id} onClick={() => setGamertagForm(f => ({ ...f, platform: p.id }))}
-                        style={{ background: gamertagForm.platform === p.id ? C.accentGlow : C.surface, border: "1px solid " + gamertagForm.platform === p.id ? C.accentDim : C.border, borderRadius: 8, padding: "6px 14px", color: gamertagForm.platform === p.id ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <div style={{ color: C.textDim, fontSize: 11, marginBottom: 4 }}>Gamertag</div>
-                  <input value={gamertagForm.tag} onChange={e => setGamertagForm(f => ({ ...f, tag: e.target.value }))}
-                    placeholder="Your tag on this platform"
-                    style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 10px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-                </div>
-                <button onClick={saveGamertag} disabled={!gamertagForm.platform || !gamertagForm.tag.trim() || tagSaving}
-                  style={{ background: gamertagForm.platform && gamertagForm.tag.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 16px", color: gamertagForm.platform && gamertagForm.tag.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  {tagSaving ? "Saving…" : "Save"}
-                </button>
-                <button onClick={() => { setAddingTag(false); setGamertagForm({ platform: "", tag: "" }); }}
-                  style={{ background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
-                  Cancel
-                </button>
-                </div>
-              </div>
-            )}
-
-            {isAdult && gamertags.length === 0 && !addingTag && (
-              <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>No gamertags added yet. Tags are only visible to approved followers.</div>
-            )}
-          </div>
-
-          {/* Incoming gamertag requests */}
-          {isAdult && incomingRequests.length > 0 && (
-            <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>
-                Gamertag Requests <span style={{ background: C.accent, color: C.accentText, borderRadius: 10, padding: "2px 8px", fontSize: 11, marginLeft: 6 }}>{incomingRequests.length}</span>
-              </div>
-              {incomingRequests.map(req => {
-                const plat = PLATFORMS.find(p => p.id === req.platform);
-                const requester = req.profiles;
-                return (
-                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid " + C.border }}>
-                    <Avatar initials={(requester?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={32} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{requester?.username || "Someone"}</span>
-                      <span style={{ color: C.textDim, fontSize: 12 }}> wants your </span>
-                      <span style={{ fontWeight: 600, color: plat?.color || C.textMuted, fontSize: 12 }}>{plat?.label || req.platform}</span>
-                      <span style={{ color: C.textDim, fontSize: 12 }}> gamertag</span>
-                    </div>
-                    <button onClick={() => respondToRequest(req.id, "approved")}
-                      style={{ background: C.accent, border: "none", borderRadius: 7, padding: "5px 14px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                      Approve
-                    </button>
-                    <button onClick={() => respondToRequest(req.id, "denied")}
-                      style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "5px 12px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>
-                      Deny
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Approved connections — revoke UI */}
-          {isAdult && approvedConnections.length > 0 && (
-            <div style={{ marginTop: 12, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16 }}>
-              <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Shared Gamertags</div>
-              {approvedConnections.map(req => {
-                const plat = PLATFORMS.find(p => p.id === req.platform);
-                const requester = req.profiles;
-                return (
-                  <div key={req.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid " + C.border }}>
-                    <Avatar initials={(requester?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={30} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{requester?.username || "Someone"}</span>
-                      <span style={{ color: C.textDim, fontSize: 12 }}> · </span>
-                      <span style={{ fontWeight: 600, color: plat?.color || C.textMuted, fontSize: 12 }}>{plat?.label || req.platform}</span>
-                    </div>
-                    <button onClick={() => revokeConnection(req.id)}
-                      style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "4px 12px", color: C.textDim, fontSize: 11, cursor: "pointer" }}
-                      title="Revoke access — permanent">
-                      Revoke
-                    </button>
-                  </div>
-                );
-              })}
-              <div style={{ color: C.textDim, fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>Revoking is permanent and cannot be undone by either party.</div>
             </div>
           )}
 
@@ -7859,14 +7531,10 @@ function AuthPage({ onBack, defaultMode = "login" }) {
   const [mode, setMode] = useState(defaultMode);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [dobMonth, setDobMonth] = useState("");
-  const [dobDay, setDobDay] = useState("");
-  const [dobYear, setDobYear] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const currentYear = new Date().getFullYear();
   const fakeEmail = (u) => `${u.trim().toLowerCase().replace(/\s+/g, "_")}@guildlink.gg`;
 
   const handle = async () => {
@@ -7889,17 +7557,6 @@ function AuthPage({ onBack, defaultMode = "login" }) {
         }
       }
     } else {
-      let dobStr = null;
-      const hasAnyDob = dobMonth || dobDay || dobYear;
-      if (hasAnyDob) {
-        const m = parseInt(dobMonth), d = parseInt(dobDay), y = parseInt(dobYear);
-        if (!m || !d || !y || m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > currentYear - 5) {
-          setError("Please enter a valid birthday, or leave all fields blank to set later.");
-          setLoading(false);
-          return;
-        }
-        dobStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      }
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
@@ -7908,7 +7565,6 @@ function AuthPage({ onBack, defaultMode = "login" }) {
           handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
           avatar_initials: username.trim().slice(0, 2).toUpperCase(),
         };
-        if (dobStr) profileUpdates.date_of_birth = dobStr;
         await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
       }
     }
@@ -7938,17 +7594,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} onKeyDown={e => e.key === "Enter" && handle()} />
           </div>
-          {mode === "signup" && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Birthday <span style={{ color: C.textDim, fontWeight: 400 }}>(optional)</span></div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input value={dobMonth} onChange={e => setDobMonth(e.target.value)} placeholder="MM" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
-                <input value={dobDay} onChange={e => setDobDay(e.target.value)} placeholder="DD" maxLength={2} style={{ width: 56, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 10px", color: C.text, fontSize: 14, outline: "none", textAlign: "center" }} />
-                <input value={dobYear} onChange={e => setDobYear(e.target.value)} placeholder="YYYY" maxLength={4} style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
-              </div>
-              <div style={{ color: C.textDim, fontSize: 11, marginTop: 5, lineHeight: 1.5 }}>Unlocks gamertag sharing and LFG at 18+. You can add this later in your profile.</div>
-            </div>
-          )}
+          
           {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {message && <div style={{ color: C.green, fontSize: 13, marginBottom: 16 }}>{message}</div>}
           <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
@@ -7978,53 +7624,6 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   const [loading, setLoading] = useState(true);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  // Gamertag request state
-  const [gamertagVisibility, setGamertagVisibility] = useState([]); // from get_gamertag_visibility()
-  const [requestLoading, setRequestLoading] = useState({});
-  const PLATFORMS = [
-    { id: "xbox", label: "Xbox", color: "#107C10" },
-    { id: "psn", label: "PlayStation", color: "#003087" },
-    { id: "steam", label: "Steam", color: "#1b2838" },
-    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
-    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
-  ];
-
-  // Incoming gamertag requests — belongs on ProfilePage, not here, but loaded via useEffect
-  const loadGamertagVisibility = async () => {
-    if (!currentUser || !userId || currentUser.id === userId) return;
-    const { data, error } = await supabase.rpc("get_gamertag_visibility", { target_user_id: userId });
-    if (!error && data) setGamertagVisibility(data);
-  };
-
-  const sendRequest = async (platform) => {
-    setRequestLoading(r => ({ ...r, [platform]: true }));
-    await supabase.from("gamertag_requests").insert({
-      requester_id: currentUser.id,
-      target_id: userId,
-      platform,
-    });
-    // Notify the target
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      actor_id: currentUser.id,
-      type: "gamertag_request",
-      meta: platform,
-    });
-    loadGamertagVisibility();
-    setRequestLoading(r => ({ ...r, [platform]: false }));
-  };
-
-  const cancelRequest = async (platform) => {
-    setRequestLoading(r => ({ ...r, [platform]: true }));
-    await supabase.from("gamertag_requests")
-      .update({ status: "cancelled" })
-      .eq("requester_id", currentUser.id)
-      .eq("target_id", userId)
-      .eq("platform", platform)
-      .eq("status", "pending");
-    loadGamertagVisibility();
-    setRequestLoading(r => ({ ...r, [platform]: false }));
-  };
 
   useEffect(() => {
     if (!userId) return;
@@ -8036,7 +7635,6 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       setFollowed(!!data);
     };
     checkFollow();
-    loadGamertagVisibility();
     const load = async () => {
       setLoading(true);
       try {
@@ -8207,39 +7805,6 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             ))}
           </div>
 
-          {/* Gamertag requests — only shown to 18+ followers who have tags themselves */}
-          {gamertagVisibility.length > 0 && (
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid " + C.border }}>
-              <div style={{ color: C.textDim, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10, fontWeight: 600 }}>Gamertags</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {gamertagVisibility.map(({ platform, request_status, tag }) => {
-                  const plat = PLATFORMS.find(p => p.id === platform);
-                  return (
-                    <div key={platform} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: plat?.color || C.textDim, flexShrink: 0 }} />
-                      <span style={{ color: C.textMuted, fontSize: 13, fontWeight: 600, width: 100, flexShrink: 0 }}>{plat?.label || platform}</span>
-                      {request_status === "approved" && tag ? (
-                        <span style={{ color: C.text, fontSize: 13, fontFamily: "monospace" }}>{tag}</span>
-                      ) : request_status === "pending" ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ color: C.textDim, fontSize: 12 }}>Request sent</span>
-                          <button onClick={() => cancelRequest(platform)} disabled={requestLoading[platform]}
-                            style={{ background: "none", border: "1px solid " + C.border, borderRadius: 6, padding: "3px 10px", color: C.textDim, fontSize: 11, cursor: "pointer" }}>
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button onClick={() => sendRequest(platform)} disabled={requestLoading[platform]}
-                          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                          {requestLoading[platform] ? "…" : "Request gamertag"}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
