@@ -1827,7 +1827,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-265</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-266</span>
         </div>
       </div>
     </nav>
@@ -2806,6 +2806,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               npc_id: post.npc_id,
               game_tag: post.game_tag,
               user_id: post.user_id,
+              tagged_users: post.tagged_users || [],
               user: {
                 name: displayAuthor.name || displayAuthor.username || "Gamer",
                 handle: displayAuthor.handle || "@gamer",
@@ -2816,6 +2817,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 activeRing: !isNPC ? (displayAuthor.active_ring || "none") : "none",
               },
               content: post.content,
+              tagged_users: post.tagged_users || [],
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
               liked: post.liked || false,
@@ -2876,6 +2878,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 id: post.id,
                 game_tag: post.game_tag,
                 user_id: post.user_id,
+                tagged_users: post.tagged_users || [],
                 user: {
                   name: displayAuthor.username || "Gamer",
                   handle: displayAuthor.handle || "@gamer",
@@ -4223,6 +4226,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   game_tag: post.game_tag,
                   user_id: post.user_id,
                   tip_count: post.tip_count || 0,
+                  tagged_users: post.tagged_users || [],
                   user: {
                     name: isNPC ? (author?.name || "NPC") : (author?.username || "Gamer"),
                     handle: author?.handle || "",
@@ -4257,6 +4261,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   npc_id: post.npc_id,
                   game_tag: post.game_tag,
                   user_id: post.user_id,
+                  tagged_users: post.tagged_users || [],
                   user: {
                     name: author.username || "Gamer",
                     handle: author.handle || "@gamer",
@@ -4963,6 +4968,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 activeRing: user.activeRing || "none",
               },
               content: post.content,
+              tagged_users: post.tagged_users || [],
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
               comment_count: post.comment_count || 0,
@@ -8012,6 +8018,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 activeRing: profile?.active_ring || "none",
               },
               content: post.content,
+              tagged_users: post.tagged_users || [],
               time: timeAgo(post.created_at),
               likes: post.likes || 0,
               comment_count: post.comment_count || 0,
