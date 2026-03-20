@@ -1496,10 +1496,6 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>G</div>
         <span style={{ fontWeight: 800, fontSize: 18, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
       </div>
-      <div style={{ flex: 1, maxWidth: 300, position: "relative", display: "flex", alignItems: "center" }}>
-        <span style={{ position: "absolute", left: 12, color: C.textDim, fontSize: 13 }}>🔍</span>
-        <input placeholder="Search games, players, squads..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none" }} />
-      </div>
       <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
         {desktopItems.map(item => (
           <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
@@ -1602,7 +1598,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-240</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-241</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
