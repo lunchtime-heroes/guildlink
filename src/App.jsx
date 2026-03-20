@@ -1598,7 +1598,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-241</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-242</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -3731,7 +3731,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>⭐ Latest Reviews</div>
-                  <button onClick={() => setShowReviewForm(true)} style={{ background: game.color, border: "none", borderRadius: 7, padding: "5px 12px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
+                  <button onClick={() => setShowReviewForm(true)} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
                 </div>
                 {showReviewForm && (
                   <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 18, marginBottom: 18 }}>
@@ -3935,6 +3935,11 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
         {activeTab === "reviews" && (
           <div>
+            {currentUser && !isGuest && !showReviewForm && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+                <button onClick={() => setShowReviewForm(true)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
+              </div>
+            )}
             {currentUser && !isGuest && showReviewForm && (
                   <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Your Review</div>
