@@ -335,6 +335,45 @@ function Badge({ children, color = C.accent, small }) {
 
 // ─── FEED POST CARD WITH COMMENTS ─────────────────────────────────────────────
 
+function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC, setActivePage) {
+  if (!content) return null;
+  if (!taggedUsers?.length) return <span>{content}</span>;
+
+  // Build a map of handle -> tagged user for quick lookup
+  const mentionMap = {};
+  taggedUsers.forEach(u => {
+    const handle = u.handle?.replace("@", "").toLowerCase();
+    if (handle) mentionMap[handle] = u;
+  });
+
+  // Split content on @word patterns and linkify mentions
+  const parts = content.split(/(@\S+)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("@")) {
+          const handle = part.slice(1).toLowerCase();
+          const tagged = mentionMap[handle];
+          if (tagged) {
+            return (
+              <span key={i}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (tagged.type === "npc") { setCurrentNPC(tagged.id); setActivePage("npc"); }
+                  else { setCurrentPlayer(tagged.id); setActivePage("player"); }
+                }}
+                style={{ color: tagged.type === "npc" ? "#f59e0b" : "#38bdf8", fontWeight: 600, cursor: "pointer" }}>
+                {part}
+              </span>
+            );
+          }
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
@@ -615,7 +654,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             </div>
           </div>
         ) : (
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{localPost.content}</p>
+          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
         )}
 
         {/* Actions */}
@@ -1787,7 +1826,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-262</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-263</span>
         </div>
       </div>
     </nav>
@@ -2141,6 +2180,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
   const [taggedGames, setTaggedGames] = useState([]);
+  const [taggedUsers, setTaggedUsers] = useState([]); // {id, handle, name, type: 'user'|'npc'}
   const [mentionIndex, setMentionIndex] = useState(0);
   const [dbGames, setDbGames] = useState({}); // id -> game object cache
   const [dailyPrompt, setDailyPrompt] = useState(null);
@@ -2150,7 +2190,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const handlePostTextChange = async (e) => {
     const val = e.target.value;
     setPostText(val);
-    // Match @ followed by any characters including spaces, until end of string
     const atMatch = val.match(/@([^@]*)$/);
     if (atMatch) {
       const query = atMatch[1].trim();
@@ -2159,23 +2198,20 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         setMentionQuery(query);
         setMentionIndex(0);
       } else {
-        // Run local DB and IGDB in parallel
-        const [localRes, igdbRes] = await Promise.allSettled([
-          supabase.from("games").select("id, name, followers, igdb_id, cover_url, genre").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(5),
-          fetch("/api/igdb", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query }),
-          }).then(r => r.json()).catch(() => ({ games: [] })),
+        // Search games, players, and NPCs in parallel
+        const [localRes, igdbRes, playersRes, npcsRes] = await Promise.allSettled([
+          supabase.from("games").select("id, name, followers, igdb_id, cover_url, genre").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(4),
+          fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) }).then(r => r.json()).catch(() => ({ games: [] })),
+          supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${query}%,handle.ilike.%${query}%`).limit(3),
+          supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${query}%,handle.ilike.%${query}%`).eq("is_active", true).limit(3),
         ]);
-        const localResults = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+        const localGames = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
         const igdbGames = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-        // Filter IGDB results to only those not already in local DB (by name)
-        const localNames = new Set(localResults.map(g => g.name.toLowerCase()));
-        const newFromIGDB = igdbGames
-          .filter(g => !localNames.has(g.name.toLowerCase()))
-          .map(g => ({ ...g, _fromIGDB: true }));
-        setMentionResults([...localResults, ...newFromIGDB].slice(0, 8));
+        const localNames = new Set(localGames.map(g => g.name.toLowerCase()));
+        const newFromIGDB = igdbGames.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+        const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
+        const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
+        setMentionResults([...players, ...npcs, ...localGames, ...newFromIGDB].slice(0, 10));
         setMentionQuery(query);
         setMentionIndex(0);
       }
@@ -2209,14 +2245,38 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     else if (e.key === "Escape") { setMentionResults([]); setMentionQuery(null); }
   };
 
-  const selectMention = async (game) => {
-    let resolvedGame = game;
-    if (game._fromIGDB) {
-      const inserted = await addGameFromIGDB(game);
+  const selectMention = async (item) => {
+    if (item._type === "player") {
+      const handle = item.handle?.replace("@", "") || item.username;
+      const newText = postText.replace(/@([^@]*)$/, `@${handle} `);
+      setPostText(newText);
+      setTaggedUsers(prev => {
+        if (prev.find(u => u.id === item.id)) return prev;
+        return [...prev, { id: item.id, handle: item.handle, name: item.username, type: "user" }];
+      });
+      setMentionQuery(null); setMentionResults([]); setMentionIndex(0);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+      return;
+    }
+    if (item._type === "npc") {
+      const handle = item.handle?.replace("@", "") || item.name.replace(/\s+/g, "");
+      const newText = postText.replace(/@([^@]*)$/, `@${handle} `);
+      setPostText(newText);
+      setTaggedUsers(prev => {
+        if (prev.find(u => u.id === item.id)) return prev;
+        return [...prev, { id: item.id, handle: item.handle, name: item.name, type: "npc" }];
+      });
+      setMentionQuery(null); setMentionResults([]); setMentionIndex(0);
+      setTimeout(() => textareaRef.current?.focus(), 0);
+      return;
+    }
+    // Game
+    let resolvedGame = item;
+    if (item._fromIGDB) {
+      const inserted = await addGameFromIGDB(item);
       if (!inserted) return;
       resolvedGame = inserted;
     }
-    // Replace everything after the last @ with the game name
     const newText = postText.replace(/@([^@]*)$/, "@" + resolvedGame.name.replace(/\s+/g, "") + " ");
     setPostText(newText);
     setTaggedGames(prev => {
@@ -2224,9 +2284,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       return [...prev, resolvedGame.id];
     });
     setDbGames(prev => ({ ...prev, [resolvedGame.id]: resolvedGame }));
-    setMentionQuery(null);
-    setMentionResults([]);
-    setMentionIndex(0);
+    setMentionQuery(null); setMentionResults([]); setMentionIndex(0);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
@@ -2475,6 +2533,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       user_id: authUser?.id || null,
       content: postText.trim(),
       game_tag: taggedGames[0] || null,
+      tagged_users: taggedUsers.length > 0 ? taggedUsers : [],
       likes: 0,
       comment_count: 0,
     }).select().single();
@@ -2492,6 +2551,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setLivePosts(prev => [newPost, ...prev]);
       setPostText("");
       setTaggedGames([]);
+      setTaggedUsers([]);
       if (data.game_tag) setChartRefresh(r => r + 1);
     }
     setPosting(false);
@@ -2663,24 +2723,43 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
-                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game, find teammates... (@ to tag a game)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
+                <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game... (@ to tag a game, player, or NPC)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
                   <div style={{ position: "absolute", top: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 260, maxWidth: 400, maxHeight: 320, overflowY: "auto", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {mentionResults.map((game, i) => (
-                      <div key={game.id || game.igdb_id} onClick={() => selectMention(game)}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent" }}
+                    {mentionResults.map((item, i) => (
+                      <div key={item.id || item.igdb_id} onClick={() => selectMention(item)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent", borderBottom: i < mentionResults.length - 1 ? "1px solid " + C.border : "none" }}
                         onMouseEnter={() => setMentionIndex(i)}>
-                        {/* Cover art thumbnail */}
-                        {game.cover_url
-                          ? <img src={game.cover_url} alt="" style={{ width: 32, height: 42, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                          : <div style={{ width: 32, height: 42, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🎮</div>
-                        }
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                          {game.genre && <div style={{ color: C.textDim, fontSize: 10, marginTop: 1 }}>{game.genre}</div>}
-                        </div>
-                        {game._fromIGDB && (
-                          <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>
+                        {item._type === "player" ? (
+                          <>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{(item.avatar_initials || item.username?.slice(0,2) || "GL").toUpperCase()}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{item.username}</div>
+                              <div style={{ color: C.textDim, fontSize: 10 }}>{item.handle}</div>
+                            </div>
+                            <span style={{ color: C.accent, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>Player</span>
+                          </>
+                        ) : item._type === "npc" ? (
+                          <>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.goldGlow, border: "1px solid " + C.goldBorder, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.gold, flexShrink: 0 }}>{(item.avatar_initials || "NPC").toUpperCase()}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: C.gold, fontSize: 13, fontWeight: 600 }}>{item.name}</div>
+                              <div style={{ color: C.textDim, fontSize: 10 }}>{item.handle}</div>
+                            </div>
+                            <span style={{ color: C.gold, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>NPC</span>
+                          </>
+                        ) : (
+                          <>
+                            {item.cover_url
+                              ? <img src={item.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
+                              : <div style={{ width: 28, height: 37, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                            }
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                              {item.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{item.genre}</div>}
+                            </div>
+                            {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>}
+                          </>
                         )}
                       </div>
                     ))}
