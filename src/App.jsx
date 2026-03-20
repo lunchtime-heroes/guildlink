@@ -360,7 +360,10 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   }, [post.id]);
 
   useEffect(() => {
-    if (replyTo) commentInputRef.current?.focus();
+    if (replyTo) {
+      commentInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      commentInputRef.current?.focus();
+    }
   }, [replyTo]);
   const [taggedGameName, setTaggedGameName] = useState(null);
 
@@ -1731,7 +1734,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-257</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-258</span>
         </div>
       </div>
     </nav>
