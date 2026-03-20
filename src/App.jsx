@@ -1708,7 +1708,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-246</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-247</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -8410,8 +8410,7 @@ export default function GuildLink() {
   const width = useWindowSize();
   const isMobile = width < 768;
 
-  // ── URL ↔ State sync ──────────────────────────────────────────────────────
-
+  // ── URL routing ───────────────────────────────────────────────────────────
   const parsePath = (path) => {
     const p = path.replace(/^\//, "");
     if (!p || p === "feed") return { page: "feed" };
@@ -8426,43 +8425,7 @@ export default function GuildLink() {
     return { page: "feed" };
   };
 
-  const buildPath = (page, opts = {}) => {
-    const { gameId, playerHandle } = opts;
-    if (page === "game" && gameId) return `/game/${gameId}`;
-    if (page === "player" && playerHandle) return `/player/${playerHandle.replace("@", "")}`;
-    if (page === "founding") return "/about";
-    if (page === "feed") return "/feed";
-    return `/${page}`;
-  };
-
-  // Central navigate function — updates state + URL together
-  const navigate = useCallback((page, opts = {}) => {
-    const { gameId, playerId, playerHandle, replace = false } = opts;
-    if (gameId !== undefined) setCurrentGame(gameId);
-    if (playerId !== undefined) setCurrentPlayer(playerId);
-    setActivePage(page);
-    const path = buildPath(page, { gameId, playerHandle });
-    const state = { page, gameId, playerId, playerHandle };
-    if (replace) window.history.replaceState(state, "", path);
-    else window.history.pushState(state, "", path);
-  }, []);
-
-  // On mount: parse URL and restore state
-  useEffect(() => {
-    const { page, gameId, playerHandle } = parsePath(window.location.pathname);
-    const restoreState = async () => {
-      if (gameId) setCurrentGame(gameId);
-      if (page === "player" && playerHandle) {
-        const { data } = await supabase.from("profiles").select("id").eq("handle", `@${playerHandle}`).maybeSingle();
-        if (data) setCurrentPlayer(data.id);
-      }
-      setActivePage(page);
-      window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname);
-    };
-    restoreState();
-  }, []);
-
-  // Browser back/forward
+  // Browser back/forward — only listener needed
   useEffect(() => {
     const onPop = async (e) => {
       const state = e.state;
@@ -8477,6 +8440,9 @@ export default function GuildLink() {
       setActivePage(state.page || "feed");
     };
     window.addEventListener("popstate", onPop);
+    // Seed initial history state so back works from first page
+    const { page, gameId, playerHandle } = parsePath(window.location.pathname);
+    window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
@@ -8629,26 +8595,26 @@ export default function GuildLink() {
     return XP_LEVELS[level]; // XP_LEVELS[level] is the threshold for level+1
   };
 
-  // URL-aware navigation wrappers — must be defined before any conditional returns
-  const navToGame = useCallback((gameId) => {
+  // URL-aware navigation — plain functions, no hooks
+  const navToGame = (gameId) => {
     setCurrentGame(gameId);
     setActivePage("game");
     window.history.pushState({ page: "game", gameId }, "", `/game/${gameId}`);
-  }, []);
+  };
 
-  const navToPlayer = useCallback(async (playerId) => {
+  const navToPlayer = async (playerId) => {
     setCurrentPlayer(playerId);
     setActivePage("player");
     const { data } = await supabase.from("profiles").select("handle").eq("id", playerId).maybeSingle();
     const handle = data?.handle?.replace("@", "") || playerId;
     window.history.pushState({ page: "player", playerId, playerHandle: handle }, "", `/player/${handle}`);
-  }, []);
+  };
 
-  const navToPage = useCallback((page) => {
+  const navToPage = (page) => {
     setActivePage(page);
     const path = page === "founding" ? "/about" : `/${page}`;
     window.history.pushState({ page }, "", path);
-  }, []);
+  };
 
   const liveUser = profile ? {
     id: profile.id,
