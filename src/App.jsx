@@ -1787,7 +1787,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-261</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-262</span>
         </div>
       </div>
     </nav>
@@ -4355,6 +4355,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         supabase.from("posts")
           .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
           .eq("user_id", authUser.id)
+          .is("npc_id", null)
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r),
