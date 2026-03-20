@@ -558,6 +558,42 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setShowComments(s => !s);
   };
 
+  const [commentMentionResults, setCommentMentionResults] = useState([]);
+  const [commentMentionIndex, setCommentMentionIndex] = useState(0);
+  const [commentTaggedUsers, setCommentTaggedUsers] = useState([]);
+
+  const handleCommentTextChange = async (e) => {
+    const val = e.target.value;
+    setCommentText(val);
+    const atMatch = val.match(/@([^@\s]*)$/);
+    if (atMatch && atMatch[1].length >= 2) {
+      const q = atMatch[1];
+      const [playersRes, npcsRes] = await Promise.allSettled([
+        supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(4),
+        supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(3),
+      ]);
+      const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
+      const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
+      setCommentMentionResults([...players, ...npcs].slice(0, 6));
+    } else {
+      setCommentMentionResults([]);
+    }
+  };
+
+  const selectCommentMention = (item) => {
+    const handle = item._type === "npc"
+      ? (item.handle?.replace("@", "") || item.name.replace(/\s+/g, ""))
+      : (item.handle?.replace("@", "") || item.username);
+    const newText = commentText.replace(/@([^@\s]*)$/, `@${handle} `);
+    setCommentText(newText);
+    setCommentTaggedUsers(prev => {
+      if (prev.find(u => u.id === item.id)) return prev;
+      return [...prev, { id: item.id, handle: item.handle || `@${handle}`, name: item.name || item.username, type: item._type === "npc" ? "npc" : "user" }];
+    });
+    setCommentMentionResults([]);
+    commentInputRef.current?.focus();
+  };
+
   const submitComment = async () => {
     if (isGuest) { onSignIn?.("Join the conversation and comment on posts."); return; }
     if (!commentText.trim() || submittingComment) return;
@@ -568,6 +604,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       user_id: authUser.id,
       content: commentText.trim(),
       reply_to_comment_id: replyTo?.id || null,
+      tagged_users: commentTaggedUsers.length > 0 ? commentTaggedUsers : [],
     }).select("*, profiles(username, handle, avatar_initials)").single();
     if (!error && data) {
       if (post.id && post.id.includes('-')) {
@@ -587,6 +624,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       setLiveComments(prev => [...(prev || []), data]);
       setCommentText("");
+      setCommentTaggedUsers([]);
       setReplyTo(null);
       setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
     }
@@ -758,7 +796,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                         <span style={{ color: C.accentSoft }}>@{parentName}</span>
                       </div>
                     )}
-                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
                   </div>
                   {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
                     <div style={{ display: "flex", gap: 4, alignItems: "center", marginTop: 2 }}>
@@ -812,17 +850,45 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                     <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", lineHeight: 1 }}>×</button>
                   </div>
                 )}
-                <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ display: "flex", gap: 10, position: "relative" }}>
                   <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
-                  <input
-                    ref={commentInputRef}
-                    value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && submitComment()}
-                    placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
-                    style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
-                  />
-                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <input
+                      ref={commentInputRef}
+                      value={commentText}
+                      onChange={handleCommentTextChange}
+                      onKeyDown={e => {
+                        if (commentMentionResults.length > 0) {
+                          if (e.key === "ArrowDown") { e.preventDefault(); setCommentMentionIndex(i => Math.min(i+1, commentMentionResults.length-1)); return; }
+                          if (e.key === "ArrowUp") { e.preventDefault(); setCommentMentionIndex(i => Math.max(i-1, 0)); return; }
+                          if (e.key === "Enter") { e.preventDefault(); selectCommentMention(commentMentionResults[commentMentionIndex]); return; }
+                          if (e.key === "Escape") { setCommentMentionResults([]); return; }
+                        }
+                        if (e.key === "Enter") submitComment();
+                      }}
+                      placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment… (@ to mention)"}
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                    />
+                    {commentMentionResults.length > 0 && (
+                      <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                        {commentMentionResults.map((item, i) => (
+                          <div key={item.id} onMouseDown={() => selectCommentMention(item)}
+                            style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === commentMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < commentMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
+                            onMouseEnter={() => setCommentMentionIndex(i)}>
+                            <div style={{ width: 26, height: 26, borderRadius: "50%", background: item._type === "npc" ? C.goldGlow : C.accent + "33", border: "1px solid " + (item._type === "npc" ? C.goldBorder : C.accentDim), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: item._type === "npc" ? C.gold : C.accent, flexShrink: 0 }}>
+                              {(item.avatar_initials || (item.username || item.name || "?").slice(0,2)).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: 12, color: item._type === "npc" ? C.gold : C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name || item.username}</div>
+                              <div style={{ color: C.textDim, fontSize: 10 }}>{item.handle}</div>
+                            </div>
+                            <span style={{ color: item._type === "npc" ? C.gold : C.accent, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{item._type === "npc" ? "NPC" : "Player"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                     {submittingComment ? "…" : "Reply"}
                   </button>
                 </div>
@@ -1827,7 +1893,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-267</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-268</span>
         </div>
       </div>
     </nav>
