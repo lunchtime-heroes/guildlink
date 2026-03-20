@@ -1787,7 +1787,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-260</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-261</span>
         </div>
       </div>
     </nav>
@@ -4434,9 +4434,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       }
     };
     load();
-    loadGamertags();
-    loadIncomingRequests();
-    loadApprovedConnections();
     loadQuests();
   }, []);
 
@@ -4475,9 +4472,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       onThemeChange?.(editForm.theme || "deep-space");
       setEditing(false);
       onProfileSaved?.();
-      loadIncomingRequests();
-      loadApprovedConnections();
-      loadGamertags();
     }
     setSaving(false);
   };
