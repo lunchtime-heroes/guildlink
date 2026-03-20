@@ -1602,7 +1602,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-239</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-240</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -8025,59 +8025,39 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
   const [questPopped, setQuestPopped] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
 
+  const username = currentUser?.name || currentUser?.handle?.replace("@", "") || "friend";
+
   const STEPS = [
     {
       heading: "Welcome to GuildLink. I'm Bizmond.",
       body: "I'll be your guide for the next few minutes. When I'm not enchanting scrolls or vanquishing magical beasts, I help gamers find their way around GuildLink.",
-      cta: "Thanks! Let's go!",
+      cta: `Hi Bizmond, I'm ${username}!`,
       highlight: null,
     },
     {
-      heading: "The real magic happens on your shelf.",
-      body: "GuildLink's source of power comes from what you've played, what you're playing now, and what's waiting in your queue. This is your gaming resume — and the key to helping you find your next favorite game.",
-      cta: "I can handle the power.",
+      heading: `Good to meet you, ${username}!`,
+      body: "Now that we're best friends, I'm going to tell you a secret: GuildLink's source of power comes from your shelf. What you've played, what you're playing now, and what's waiting in your queue make up your gaming lineage. And it's the key to helping you find your next favorite game.",
+      cta: "I'll keep it a secret.",
       highlight: "shelf",
-      arrow: "↑ That's your shelf tab up there",
     },
     {
-      heading: "Your shelf is your gaming identity.",
-      body: "GuildLink's recommendations aren't based on age, location, browsing habits, or any of the other dark magic some platforms use. We only know what you play. The more complete your shelf is, the better your feed and recommendations get.",
-      cta: "That's refreshing",
-      highlight: "shelf",
-      arrow: "↑ Build it out anytime",
-    },
-    {
-      heading: "Shelf data reveals new options.",
-      body: "When your shelf overlaps with someone else's, rainbows form and unicorns start singing! Er… actually, I think unicorns are just in my world… but you do get stupendous game recommendations. The overlap validates similar taste while the differences reveal new games to play.",
-      cta: "Love that!",
-      highlight: null,
-    },
-    {
-      heading: "Add your first game right now.",
-      body: "What's one game you're playing right now?",
+      heading: "I think you're ready…",
+      body: "Go ahead and add one game you're playing to your shelf.",
       cta: null,
       highlight: null,
       showSearch: true,
     },
     {
-      heading: "Makes me feel warm and fuzzy every time.",
-      body: "Your shelf just got its first entry. And you just completed your first quest.",
-      cta: "See my quests →",
+      heading: "Every time you complete a quest, a unicorn gets its wings.",
+      body: "Your shelf just got its first entry! And you just completed your first quest. Whenever you want to check your quests, check the quests tab in your profile.",
+      cta: "Quest accepted",
       highlight: "quests",
-      arrow: "↑ Your quests tab is up there",
       questPop: true,
     },
     {
-      heading: "You can't have a gaming network without quests, right?",
-      body: "As you make friends, talk games, and curate your shelf, you'll earn fun rewards like profile rings, themes, and more. Check your Quests tab anytime to see what's next.",
-      cta: "I accept this quest",
-      highlight: "quests",
-      arrow: "↑ Check your progress anytime",
-    },
-    {
-      heading: "And finally, the feed.",
-      body: "Posts tagged to games you play show up in your feed. The more games on your shelf, the richer it gets. Go add a few more games, then head to the feed and join the conversation. And if you see me there, say hi!",
-      cta: "Take me to my feed →",
+      heading: "Now to meet some new friends.",
+      body: "The main feed is where the conversation happens. Tag a game like you would a friend, follow games and gamers, and say hello to your favorite NPCs. Yep, we're here too! Ok, have fun!",
+      cta: "Take me to the feed!",
       highlight: null,
       last: true,
     },
