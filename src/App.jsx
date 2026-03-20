@@ -1399,7 +1399,111 @@ function PostModal({ postId, onClose, currentUser }) {
 }
 
 // ─── NAV BAR ──────────────────────────────────────────────────────────────────
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab }) {
+function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
+
+  const search = async (q) => {
+    if (q.length < 2) { setResults(null); return; }
+    setLoading(true);
+    const [gamesRes, usersRes, igdbRes] = await Promise.allSettled([
+      supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(4),
+      supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(4),
+      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
+    ]);
+    const games = gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : [];
+    const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
+    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+    const localNames = new Set(games.map(g => g.name.toLowerCase()));
+    const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
+    setResults({ games: [...games, ...igdbNew], users });
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => search(query), 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const close = () => { setQuery(""); setResults(null); };
+
+  const selectGame = async (game) => {
+    if (game._fromIGDB) {
+      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0 }).select().single();
+      if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
+    } else { setCurrentGame(game.id); setActivePage("game"); }
+    close();
+  };
+
+  const selectUser = (user) => { setCurrentPlayer(user.id); setActivePage("player"); close(); };
+
+  const hasResults = results && (results.games.length > 0 || results.users.length > 0);
+
+  return (
+    <div style={{ flex: 1, maxWidth: 320, position: "relative" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <span style={{ position: "absolute", left: 10, color: C.textDim, fontSize: 13, pointerEvents: "none" }}>🔍</span>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onBlur={() => setTimeout(close, 200)}
+          placeholder="Search games and players..."
+          style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+        />
+        {query && <span onClick={close} style={{ position: "absolute", right: 10, color: C.textDim, cursor: "pointer", fontSize: 14 }}>×</span>}
+      </div>
+      {(hasResults || loading) && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", maxHeight: 400, overflowY: "auto" }}>
+          {loading && <div style={{ padding: "12px 14px", color: C.textDim, fontSize: 12 }}>Searching...</div>}
+          {results?.users.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Players</div>
+              {results.users.map(u => (
+                <div key={u.id} onMouseDown={() => selectUser(u)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{u.avatar_initials || u.username?.slice(0,2).toUpperCase()}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
+                    <div style={{ color: C.textDim, fontSize: 10 }}>{u.handle}</div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {results?.games.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Games</div>
+              {results.games.map(g => (
+                <div key={g.id || g.igdb_id} onMouseDown={() => selectGame(g)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  {g.cover_url
+                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
+                    : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                    {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
+                  </div>
+                  {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
+                </div>
+              ))}
+            </>
+          )}
+          {results && !results.games.length && !results.users.length && !loading && (
+            <div style={{ padding: "14px", color: C.textDim, fontSize: 13, textAlign: "center" }}>No results for "{query}"</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab, setCurrentGame, setCurrentPlayer }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
   const isAdmin = currentUser?.is_admin;
@@ -1496,6 +1600,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>G</div>
         <span style={{ fontWeight: 800, fontSize: 18, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
       </div>
+      <NavSearch setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} />
       <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
         {desktopItems.map(item => (
           <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
@@ -1598,7 +1703,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-242</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-243</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -8541,7 +8646,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} />
+      <NavBar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} />
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentPlayer={setCurrentPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={setActivePage} setCurrentNPC={setCurrentNPC} />}
