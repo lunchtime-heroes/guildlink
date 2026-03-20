@@ -1602,7 +1602,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-236</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0318-238</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -8025,71 +8025,66 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
   const [questPopped, setQuestPopped] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
 
-  // Each step: what to say, which element to spotlight (by data-tour attr), cta label
   const STEPS = [
     {
-      speaker: "deckard",
-      heading: "Welcome. I'm Deckard.",
-      body: "I'll be your guide for the next couple minutes. No cheat codes needed — GuildLink is built to be figured out. But a little tour never hurt anyone.",
-      cta: "Let's do it",
-      spotlight: null,
+      heading: "Welcome to GuildLink. I'm Bizmond.",
+      body: "I'll be your guide for the next few minutes. When I'm not enchanting scrolls or vanquishing magical beasts, I help gamers find their way around GuildLink.",
+      cta: "Thanks! Let's go!",
+      highlight: null,
     },
     {
-      speaker: "deckard",
-      heading: "Everything starts with your shelf.",
-      body: "See that My Shelf tab up there? What you've played, what you're playing now, what's waiting in the queue. It's your gaming identity — and it's what makes everything else on this platform work.",
-      cta: "Makes sense",
-      spotlight: "games-tab",
+      heading: "The real magic happens on your shelf.",
+      body: "GuildLink's source of power comes from what you've played, what you're playing now, and what's waiting in your queue. This is your gaming resume — and the key to helping you find your next favorite game.",
+      cta: "I can handle the power.",
+      highlight: "shelf",
+      arrow: "↑ That's your shelf tab up there",
     },
     {
-      speaker: "deckard",
-      heading: "Your shelf is your signal.",
-      body: "GuildLink doesn't know your age, location, or browsing habits. It only knows what you play. The more honest your shelf is, the better your feed gets — for you and for everyone whose taste overlaps with yours.",
+      heading: "Your shelf is your gaming identity.",
+      body: "GuildLink's recommendations aren't based on age, location, browsing habits, or any of the other dark magic some platforms use. We only know what you play. The more complete your shelf is, the better your feed and recommendations get.",
       cta: "That's refreshing",
-      spotlight: "games-tab",
+      highlight: "shelf",
+      arrow: "↑ Build it out anytime",
     },
     {
-      speaker: "deckard",
-      heading: "The overlap is where the magic happens.",
-      body: "When your shelf overlaps with someone else's, you both get a signal. They might be playing something you haven't heard of yet. That's discovery — not an algorithm, just taste.",
-      cta: "Got it",
-      spotlight: null,
+      heading: "Shelf data reveals new options.",
+      body: "When your shelf overlaps with someone else's, rainbows form and unicorns start singing! Er… actually, I think unicorns are just in my world… but you do get stupendous game recommendations. The overlap validates similar taste while the differences reveal new games to play.",
+      cta: "Love that!",
+      highlight: null,
     },
     {
-      speaker: "deckard",
       heading: "Add your first game right now.",
-      body: "Start with whatever you launched last week. Don't overthink it — one game is enough to start the engine.",
+      body: "What's one game you're playing right now?",
       cta: null,
-      spotlight: "shelf-columns",
+      highlight: null,
       showSearch: true,
     },
     {
-      speaker: "deckard",
-      heading: "There it is. ✨",
+      heading: "Makes me feel warm and fuzzy every time.",
       body: "Your shelf just got its first entry. And you just completed your first quest.",
       cta: "See my quests →",
-      spotlight: "quests-tab",
+      highlight: "quests",
+      arrow: "↑ Your quests tab is up there",
       questPop: true,
     },
     {
-      speaker: "deckard",
-      heading: "Quests reward how you use the platform.",
-      body: "Reviews, posts, follows — every action that builds your taste profile earns you something. Rings, themes, profile unlocks. Check your Quests tab anytime to see what's next.",
-      cta: "Got it",
-      spotlight: "quests-tab",
+      heading: "You can't have a gaming network without quests, right?",
+      body: "As you make friends, talk games, and curate your shelf, you'll earn fun rewards like profile rings, themes, and more. Check your Quests tab anytime to see what's next.",
+      cta: "I accept this quest",
+      highlight: "quests",
+      arrow: "↑ Check your progress anytime",
     },
     {
-      speaker: "deckard",
-      heading: "One more thing — the feed.",
-      body: "Posts tagged to games you play show up in your feed. The more games on your shelf, the richer it gets. Go add a few more games, then head to the feed and see what's waiting.",
+      heading: "And finally, the feed.",
+      body: "Posts tagged to games you play show up in your feed. The more games on your shelf, the richer it gets. Go add a few more games, then head to the feed and join the conversation. And if you see me there, say hi!",
       cta: "Take me to my feed →",
-      spotlight: null,
+      highlight: null,
       last: true,
     },
   ];
 
   const current = STEPS[step] || STEPS[STEPS.length - 1];
-  const progress = ((step) / (STEPS.length - 1)) * 100;
+  const progress = (step / (STEPS.length - 1)) * 100;
 
   const addGame = async (game) => {
     if (addedGames.find(g => g.id === game.id)) return;
@@ -8124,7 +8119,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     onComplete();
   };
 
-  // @ mention tagging — mirrors post composer behavior
+  // Game search for step 4
   const [atText, setAtText] = useState("");
   const [atResults, setAtResults] = useState([]);
   const [atIndex, setAtIndex] = useState(0);
@@ -8133,138 +8128,90 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
   const handleAtInput = async (e) => {
     const val = e.target.value;
     setAtText(val);
-    const m = val.match(/@(\w*)$/);
-    if (m) {
-      const q = m[1].toLowerCase();
-      if (q.length === 0) {
-        const { data } = await supabase.from("games").select("id, name, developer, genre, followers").order("followers", { ascending: false }).limit(6);
-        setAtResults(data || []);
-      } else {
-        const { data } = await supabase.from("games").select("id, name, developer, genre, followers").ilike("name", `%${q}%`).order("followers", { ascending: false }).limit(6);
-        setAtResults(data || []);
-      }
+    const q = val.startsWith("@") ? val.slice(1) : val;
+    if (q.length >= 2) {
+      const [localRes, igdbRes] = await Promise.allSettled([
+        supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(4),
+        fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
+      ]);
+      const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+      const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+      const localNames = new Set(local.map(g => g.name.toLowerCase()));
+      const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+      setAtResults([...local, ...fromIGDB].slice(0, 6));
     } else {
       setAtResults([]);
     }
   };
 
-  const handleAtKeyDown = (e) => {
-    if (atResults.length === 0) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setAtIndex(i => Math.min(i + 1, atResults.length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setAtIndex(i => Math.max(i - 1, 0)); }
-    else if (e.key === "Enter") { e.preventDefault(); selectAtGame(atResults[atIndex]); }
-    else if (e.key === "Escape") { setAtResults([]); }
-  };
-
   const selectAtGame = async (game) => {
-    if (addedGames.find(g => g.id === game.id)) { setAtResults([]); setAtText(""); return; }
-    const replaced = atText.replace(/@\w*$/, `@${game.name.replace(/\s+/g, "")} `);
-    setAtText(replaced);
+    if (game._fromIGDB) {
+      const { data: inserted } = await supabase.from("games").insert({
+        name: game.name, genre: game.genre, summary: game.summary,
+        cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0,
+      }).select().single();
+      if (inserted) await addGame(inserted);
+    } else {
+      await addGame(game);
+    }
     setAtResults([]);
-    setAtIndex(0);
-    await addGame(game);
+    setAtText("");
     setTimeout(() => atInputRef.current?.focus(), 0);
   };
 
-  // Spotlight: always-bottom banner — scroll the PAGE so the element is in the upper portion
-  const BANNER_CLEARANCE = isMobile ? 220 : 200; // px reserved for banner at bottom
-  const [spotRect, setSpotRect] = useState(null);
-  const spotlightKey = current.spotlight;
-
-  const measureSpot = useCallback(() => {
-    if (!spotlightKey) { setSpotRect(null); return; }
-    const el = document.querySelector(`[data-tour="${spotlightKey}"]`);
-    if (el) {
-      const r = el.getBoundingClientRect();
-      setSpotRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-    } else {
-      setSpotRect(null);
-    }
-  }, [spotlightKey]);
-
-  useEffect(() => {
-    if (!spotlightKey) { setSpotRect(null); return; }
-    const el = document.querySelector(`[data-tour="${spotlightKey}"]`);
-    if (!el) { setSpotRect(null); return; }
-
-    // Target: element should sit near top of viewport, well above the banner
-    const r = el.getBoundingClientRect();
-    const safeZoneBottom = window.innerHeight - BANNER_CLEARANCE - 20;
-    const idealTop = 80; // put element near the top, just below nav
-    const needsScroll = r.top < 60 || r.top > safeZoneBottom || r.bottom > safeZoneBottom;
-    if (needsScroll) {
-      window.scrollTo({ top: window.scrollY + r.top - idealTop, behavior: "smooth" });
-      setTimeout(measureSpot, 400);
-    } else {
-      measureSpot();
-    }
-
-    window.addEventListener("scroll", measureSpot, { passive: true });
-    window.addEventListener("resize", measureSpot, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", measureSpot);
-      window.removeEventListener("resize", measureSpot);
-    };
-  }, [spotlightKey, measureSpot]);
-
-  const DECKARD_COLOR = "#a78bfa";
+  const BIZMOND_COLOR = "#a78bfa";
 
   return (
     <>
-      {/* Spotlight overlay */}
-      {spotRect && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9990, pointerEvents: "none" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.max(0, spotRect.top - 8), background: "#00000077" }} />
-          <div style={{ position: "absolute", top: spotRect.top + spotRect.height + 8, left: 0, right: 0, bottom: 0, background: "#00000077" }} />
-          <div style={{ position: "absolute", top: spotRect.top - 8, left: 0, width: Math.max(0, spotRect.left - 8), height: spotRect.height + 16, background: "#00000077" }} />
-          <div style={{ position: "absolute", top: spotRect.top - 8, left: spotRect.left + spotRect.width + 8, right: 0, height: spotRect.height + 16, background: "#00000077" }} />
-          <div style={{
-            position: "absolute",
-            top: spotRect.top - 6, left: spotRect.left - 6,
-            width: spotRect.width + 12, height: spotRect.height + 12,
-            borderRadius: 12,
-            border: "2px solid " + C.accent,
-            boxShadow: `0 0 0 4px ${C.accent}22, 0 0 20px ${C.accent}44`,
-            animation: "tourPulse 1.5s ease-in-out infinite",
-          }} />
-        </div>
+      {/* Nav highlight pulse — no position math needed */}
+      {current.highlight && (
+        <style>{`
+          [data-tour="${current.highlight === "shelf" ? "games-tab" : "quests-tab"}"] {
+            animation: navPulse 1.2s ease-in-out infinite !important;
+            position: relative;
+          }
+          @keyframes navPulse {
+            0%, 100% { box-shadow: 0 0 0 0 ${BIZMOND_COLOR}00; color: ${BIZMOND_COLOR} !important; }
+            50% { box-shadow: 0 0 12px 3px ${BIZMOND_COLOR}66; color: ${BIZMOND_COLOR} !important; }
+          }
+        `}</style>
       )}
 
-      {/* Banner — always anchored to bottom, page scrolls around it */}
+      {/* Drop-from-top panel */}
       <div style={{
-        position: "fixed", bottom: isMobile ? 68 : 24, top: "auto",
-        left: "50%", transform: "translateX(-50%)",
-        width: isMobile ? "calc(100vw - 24px)" : 560,
+        position: "fixed",
+        top: isMobile ? 52 : 60,
+        left: "50%",
+        transform: `translateX(-50%) translateY(${transitioning ? "-8px" : "0"})`,
+        width: isMobile ? "calc(100vw - 24px)" : 540,
         zIndex: 9999,
         background: `linear-gradient(135deg, ${C.surface} 0%, ${C.surfaceRaised} 100%)`,
         border: "1px solid " + C.border,
-        borderTop: `3px solid ${DECKARD_COLOR}`,
-        borderRadius: 16,
-        boxShadow: "0 -4px 40px #00000077, 0 8px 32px #00000055",
-        overflow: "hidden",
+        borderBottom: `3px solid ${BIZMOND_COLOR}`,
+        borderRadius: "0 0 18px 18px",
+        boxShadow: "0 8px 40px #00000088",
         opacity: transitioning ? 0 : 1,
-        transform: `translateX(-50%) translateY(${transitioning ? "8px" : "0"})`,
         transition: "opacity 0.2s ease, transform 0.2s ease",
       }}>
         {/* Progress bar */}
-        <div style={{ height: 2, background: C.surfaceRaised }}>
-          <div style={{ height: "100%", width: progress + "%", background: `linear-gradient(90deg, ${DECKARD_COLOR}, ${C.accent})`, transition: "width 0.4s ease" }} />
+        <div style={{ height: 3, background: C.surfaceRaised }}>
+          <div style={{ height: "100%", width: progress + "%", background: `linear-gradient(90deg, ${BIZMOND_COLOR}, ${C.accent})`, transition: "width 0.4s ease" }} />
         </div>
 
-        <div style={{ padding: isMobile ? "16px 18px" : "20px 24px" }}>
+        <div style={{ padding: isMobile ? "14px 16px 16px" : "18px 22px 20px" }}>
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-            {/* Deckard portrait */}
-            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            {/* Bizmond */}
+            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
               <div style={{
                 width: isMobile ? 44 : 52, height: isMobile ? 44 : 52,
                 borderRadius: 12,
-                background: `linear-gradient(135deg, ${DECKARD_COLOR}33, ${DECKARD_COLOR}11)`,
-                border: `2px solid ${DECKARD_COLOR}55`,
+                background: `linear-gradient(135deg, ${BIZMOND_COLOR}33, ${BIZMOND_COLOR}11)`,
+                border: `2px solid ${BIZMOND_COLOR}55`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: isMobile ? 22 : 26,
-                boxShadow: `0 0 16px ${DECKARD_COLOR}33`,
+                boxShadow: `0 0 16px ${BIZMOND_COLOR}33`,
               }}>🧙</div>
-              <div style={{ color: DECKARD_COLOR, fontSize: 9, fontWeight: 700, letterSpacing: "0.05em" }}>DECKARD</div>
+              <div style={{ color: C.gold, fontSize: 9, fontWeight: 700, letterSpacing: "0.05em" }}>BIZMOND</div>
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -8272,50 +8219,55 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
               {current.questPop && (
                 <div style={{
                   background: C.green + "15", border: "1px solid " + C.green + "44",
-                  borderRadius: 8, padding: "8px 12px", marginBottom: 10,
+                  borderRadius: 8, padding: "7px 12px", marginBottom: 10,
                   display: "flex", alignItems: "center", gap: 10,
-                  animation: "slideUp 0.3s ease",
                 }}>
-                  <span style={{ fontSize: 18 }}>🎯</span>
+                  <span style={{ fontSize: 16 }}>🎯</span>
                   <div>
-                    <div style={{ color: C.green, fontWeight: 800, fontSize: 12 }}>Quest Complete — First Game Added</div>
-                    <div style={{ color: C.gold, fontSize: 11 }}>+50 XP earned</div>
+                    <div style={{ color: C.green, fontWeight: 800, fontSize: 11 }}>Quest Complete — First Game Added</div>
+                    <div style={{ color: C.gold, fontSize: 10 }}>+50 XP earned</div>
                   </div>
                 </div>
               )}
 
-              <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, marginBottom: 5, lineHeight: 1.3 }}>
+              <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 13 : 15, marginBottom: 5, lineHeight: 1.3 }}>
                 {current.heading}
               </div>
-              <div style={{ color: C.textMuted, fontSize: isMobile ? 12 : 13, lineHeight: 1.6, marginBottom: current.showSearch ? 12 : 0 }}>
+              <div style={{ color: C.textMuted, fontSize: isMobile ? 12 : 13, lineHeight: 1.6 }}>
                 {current.body}
               </div>
 
-              {/* @ game tagging */}
+              {/* Nav pointer arrow */}
+              {current.arrow && (
+                <div style={{ color: BIZMOND_COLOR, fontSize: 11, fontWeight: 700, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ animation: "arrowBounce 1s ease-in-out infinite", display: "inline-block" }}>↑</span>
+                  {current.arrow.replace("↑ ", "")}
+                </div>
+              )}
+
+              {/* Game search */}
               {current.showSearch && (
-                <div style={{ marginTop: 10, position: "relative" }}>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      ref={atInputRef}
-                      value={atText}
-                      onChange={handleAtInput}
-                      onKeyDown={handleAtKeyDown}
-                      placeholder="Type @ to tag a game, like tagging a friend"
-                      autoFocus
-                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                    />
-                  </div>
+                <div style={{ marginTop: 12, position: "relative" }}>
+                  <input
+                    ref={atInputRef}
+                    value={atText}
+                    onChange={handleAtInput}
+                    placeholder="Search for a game..."
+                    autoFocus
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "9px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  />
                   {atResults.length > 0 && (
-                    <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, overflow: "hidden", zIndex: 10001, boxShadow: "0 -8px 24px #00000066" }}>
+                    <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, overflow: "hidden", zIndex: 10001, boxShadow: "0 8px 24px #00000066", maxHeight: 240, overflowY: "auto" }}>
                       {atResults.map((game, idx) => (
-                        <div key={game.id} onClick={() => selectAtGame(game)}
-                          style={{ padding: "10px 12px", cursor: "pointer", borderBottom: "1px solid " + C.border, display: "flex", justifyContent: "space-between", alignItems: "center", background: idx === atIndex ? C.surfaceRaised : "transparent" }}
+                        <div key={game.id || game.igdb_id} onClick={() => selectAtGame(game)}
+                          style={{ padding: "9px 12px", cursor: "pointer", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 10, background: idx === atIndex ? C.surfaceRaised : "transparent" }}
                           onMouseEnter={() => setAtIndex(idx)}>
-                          <div>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>@{game.name.replace(/\s+/g, "")}</div>
-                            <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer} · {game.genre}</div>
+                          {game.cover_url && <img src={game.cover_url} alt="" style={{ width: 22, height: 29, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                            {game.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{game.genre}</div>}
                           </div>
-                          <div style={{ color: C.accent, fontSize: 11, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>+ Add</div>
+                          {game._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
                         </div>
                       ))}
                     </div>
@@ -8323,11 +8275,11 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
                   {addedGames.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                       {addedGames.map(g => (
-                        <div key={g.id} style={{ background: C.accent + "18", border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ @{g.name.replace(/\s+/g, "")}</div>
+                        <div key={g.id} style={{ background: C.accent + "18", border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>✓ {g.name}</div>
                       ))}
                     </div>
                   )}
-                  <button onClick={() => advance(6)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "6px 0 0", display: "block" }}>
+                  <button onClick={() => advance(5)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "6px 0 0", display: "block" }}>
                     Skip for now →
                   </button>
                 </div>
@@ -8337,10 +8289,10 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
 
           {/* CTA row */}
           {current.cta && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 14, borderTop: "1px solid " + C.border }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: "1px solid " + C.border }}>
               <button
                 onClick={current.last ? finish : () => advance()}
-                style={{ background: `linear-gradient(135deg, ${DECKARD_COLOR}, ${C.accent})`, border: "none", borderRadius: 8, padding: isMobile ? "9px 18px" : "10px 22px", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                style={{ background: `linear-gradient(135deg, ${BIZMOND_COLOR}, ${C.accent})`, border: "none", borderRadius: 8, padding: isMobile ? "9px 18px" : "9px 20px", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
                 {current.cta}
               </button>
               <button onClick={skip} style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer" }}>
@@ -8352,9 +8304,9 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       </div>
 
       <style>{`
-        @keyframes tourPulse {
-          0%, 100% { box-shadow: 0 0 0 4px ${C.accent}22, 0 0 20px ${C.accent}33; }
-          50% { box-shadow: 0 0 0 6px ${C.accent}33, 0 0 32px ${C.accent}55; }
+        @keyframes arrowBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
         }
       `}</style>
     </>
