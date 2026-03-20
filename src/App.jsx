@@ -1734,7 +1734,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-258</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-259</span>
         </div>
       </div>
     </nav>
@@ -4243,7 +4243,6 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
 
 function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onProfileSaved, onThemeChange, onQuestComplete }) {
   const user = currentUser;
-  if (!user) return null;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
 
   // Re-sync if parent changes the default tab (e.g. from quest banner)
@@ -4256,7 +4255,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [saving, setSaving] = useState(false);
   const [userPosts, setUserPosts] = useState([]);
   const [userReviews, setUserReviews] = useState([]);
-  const [editingReview, setEditingReview] = useState(null); // review object being edited
+  const [editingReview, setEditingReview] = useState(null);
   const [reviewEditForm, setReviewEditForm] = useState({});
   const [savingReview, setSavingReview] = useState(false);
   const [gameLibrary, setGameLibrary] = useState([]);
@@ -4274,6 +4273,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [userRewards, setUserRewards] = useState([]);
   const [questsLoaded, setQuestsLoaded] = useState(false);
   const [profileFollowing, setProfileFollowing] = useState([]);
+
+  // Guard must be after all hooks
+  if (!user) return null;
+
   const loadQuests = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
