@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -1731,7 +1731,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-256</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-257</span>
         </div>
       </div>
     </nav>
@@ -7931,6 +7931,17 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
 
 // ─── ONBOARDING TUTORIAL ──────────────────────────────────────────────────────
 
+class OnboardingErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return null; // silently dismiss onboarding on error — user can still use the app
+    }
+    return this.props.children;
+  }
+}
+
 function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, setProfileDefaultTab }) {
   const [step, setStep] = useState(0);
   const [addedGames, setAddedGames] = useState([]);
@@ -8323,8 +8334,7 @@ export default function GuildLink() {
       setProfile(data);
       if (data.theme) applyAndSetTheme(data.theme);
       if (!data.onboarded) {
-        setActivePage("profile");
-        setProfileDefaultTab("games");
+        setActivePage("feed");
         setShowOnboarding(true);
       }
     }
@@ -8491,17 +8501,19 @@ export default function GuildLink() {
         </div>
       )}
       {showOnboarding && liveUser && (
-        <OnboardingModal
-          currentUser={liveUser}
-          isMobile={isMobile}
-          setActivePage={setActivePage}
-          setProfileDefaultTab={setProfileDefaultTab}
-          onComplete={() => {
-            setShowOnboarding(false);
-            navToPage("feed");
-            session?.user?.id && fetchProfile(session.user.id);
-          }}
-        />
+        <OnboardingErrorBoundary>
+          <OnboardingModal
+            currentUser={liveUser}
+            isMobile={isMobile}
+            setActivePage={setActivePage}
+            setProfileDefaultTab={setProfileDefaultTab}
+            onComplete={() => {
+              setShowOnboarding(false);
+              navToPage("feed");
+              session?.user?.id && fetchProfile(session.user.id);
+            }}
+          />
+        </OnboardingErrorBoundary>
       )}
       <style>{`
         * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
