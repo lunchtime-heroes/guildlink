@@ -1549,22 +1549,21 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             <div style={{ width: 28, height: 28, borderRadius: 7, background: `linear-gradient(135deg, ${C.accent}, ${C.teal})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>G</div>
             <span style={{ fontWeight: 800, fontSize: 16, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
           </div>
-          <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
-            <span style={{ position: "absolute", left: 10, color: C.textDim, fontSize: 12 }}>🔍</span>
-            <input placeholder="Search..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 10px 6px 28px", color: C.text, fontSize: 13, outline: "none" }} />
+          <div style={{ flex: 1 }}>
+            <NavSearch setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGuest ? (
-              <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Sign In</button>
+              <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Sign In</button>
             ) : (
-              <>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 18, color: C.textMuted, position: "relative", padding: "4px" }}>
-                  🔔<span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: C.accentText, borderRadius: "50%", width: 14, height: 14, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
-                </button>
-                <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-                  <Avatar initials={currentUser?.avatar || "GL"} size={30} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
-                </div>
-              </>
+              <button onClick={onMarkAllRead} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "4px 2px" }}>
+                🔔
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
+              </button>
             )}
           </div>
         </nav>
@@ -1574,21 +1573,43 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
           background: C.surface + "fc", backdropFilter: "blur(20px)",
           borderTop: "1px solid " + C.border,
-          height: 60, display: "flex", alignItems: "center",
+          height: 60,
+          display: "flex", alignItems: "stretch",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}>
           {mobileItems.map(item => {
-            const active = activePage === item.id || (item.id === "npcs" && activePage === "npc");
+            const active = activePage === item.id || (item.id === "reviews-nav" && activePage === "reviews");
             return (
               <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
+                flex: 1,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 3,
+                background: "transparent", border: "none", cursor: "pointer",
                 color: active ? C.accentSoft : C.textDim,
+                position: "relative",
+                padding: "6px 0 4px",
               }}>
-                <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
-                <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{item.label}</span>
-                {active && <div style={{ width: 4, height: 4, borderRadius: "50%", background: C.accent, position: "absolute", bottom: 8 }} />}
+                {active && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.accent, borderRadius: "0 0 2px 2px" }} />}
+                <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
+                <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.01em" }}>{item.label}</span>
               </button>
             );
           })}
+          {!isGuest && (
+            <button onClick={() => setActivePage("profile")} style={{
+              flex: 1,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: 3,
+              background: "transparent", border: "none", cursor: "pointer",
+              color: activePage === "profile" ? C.accentSoft : C.textDim,
+              position: "relative",
+              padding: "6px 0 4px",
+            }}>
+              {activePage === "profile" && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.accent, borderRadius: "0 0 2px 2px" }} />}
+              <Avatar initials={currentUser?.avatar || "GL"} size={24} ring={currentUser?.activeRing || "none"} />
+              <span style={{ fontSize: 10, fontWeight: activePage === "profile" ? 700 : 500 }}>Profile</span>
+            </button>
+          )}
         </nav>
       </>
     );
@@ -1708,7 +1729,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-249</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-250</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
@@ -1814,6 +1835,8 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
 // ─── CHARTS WIDGET ────────────────────────────────────────────────────────────
 
 function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, limit }) {
+  const isMobile = useWindowSize() < 768;
+  const [collapsed, setCollapsed] = useState(isMobile);
   const [charts, setCharts] = useState([]);
   const [prevCharts, setPrevCharts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -1918,14 +1941,17 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
 
   return (
     <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      <div onClick={() => isMobile && setCollapsed(c => !c)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: collapsed ? 0 : 12, cursor: isMobile ? "pointer" : "default" }}>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
           {category ? `${category} Charts` : "The Charts"}
         </div>
-        <div style={{ color: C.textDim, fontSize: 10 }}>This week</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ color: C.textDim, fontSize: 10 }}>This week</div>
+          {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{collapsed ? "▼" : "▲"}</span>}
+        </div>
       </div>
 
-      {loading ? (
+      {!collapsed && (loading ? (
         <div style={{ color: C.textDim, fontSize: 12, textAlign: "center", padding: "20px 0" }}>Loading...</div>
       ) : charts.length === 0 ? (
         <div style={{ color: C.textDim, fontSize: 12, textAlign: "center", padding: "20px 0", lineHeight: 1.6 }}>
@@ -1957,7 +1983,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             </button>
           )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
