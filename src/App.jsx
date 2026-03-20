@@ -1554,16 +1554,24 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGuest ? (
-              <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Sign In</button>
+              <>
+                <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Up</button>
+              </>
             ) : (
-              <button onClick={onMarkAllRead} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "4px 2px" }}>
-                🔔
-                {notifications.filter(n => !n.read).length > 0 && (
-                  <span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {notifications.filter(n => !n.read).length}
-                  </span>
-                )}
-              </button>
+              <>
+                <button onClick={onMarkAllRead} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "4px 2px" }}>
+                  🔔
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {notifications.filter(n => !n.read).length}
+                    </span>
+                  )}
+                </button>
+                <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
+                  <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} />
+                </div>
+                <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Out</button>
+              </>
             )}
           </div>
         </nav>
@@ -1595,21 +1603,6 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
               </button>
             );
           })}
-          {!isGuest && (
-            <button onClick={() => setActivePage("profile")} style={{
-              flex: 1,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: 3,
-              background: "transparent", border: "none", cursor: "pointer",
-              color: activePage === "profile" ? C.accentSoft : C.textDim,
-              position: "relative",
-              padding: "6px 0 4px",
-            }}>
-              {activePage === "profile" && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.accent, borderRadius: "0 0 2px 2px" }} />}
-              <Avatar initials={currentUser?.avatar || "GL"} size={24} ring={currentUser?.activeRing || "none"} />
-              <span style={{ fontSize: 10, fontWeight: activePage === "profile" ? 700 : 500 }}>Profile</span>
-            </button>
-          )}
         </nav>
       </>
     );
@@ -1729,7 +1722,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-250</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0319-251</span>
           <a href="https://4gbipj3w.paperform.co" target="_blank" rel="noopener noreferrer" style={{ color: C.textDim, fontSize: 10, opacity: 0.6, textDecoration: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
