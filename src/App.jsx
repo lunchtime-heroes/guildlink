@@ -1964,7 +1964,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-298</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-299</span>
         </div>
       </div>
     </nav>
@@ -4586,6 +4586,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [editingReview, setEditingReview] = useState(null);
   const [reviewEditForm, setReviewEditForm] = useState({});
   const [savingReview, setSavingReview] = useState(false);
+  const [showNewReview, setShowNewReview] = useState(false);
+  const [newReviewForm, setNewReviewForm] = useState({ rating: 0, headline: "", loved: "", didnt_love: "", content: "", time_played: "", completed: false });
+  const [newReviewGameSearch, setNewReviewGameSearch] = useState("");
+  const [newReviewGameResults, setNewReviewGameResults] = useState([]);
+  const [newReviewGame, setNewReviewGame] = useState(null);
+  const [submittingNewReview, setSubmittingNewReview] = useState(false);
   const [gameLibrary, setGameLibrary] = useState([]);
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
@@ -4836,6 +4842,36 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (!authUser) return;
     await supabase.from("user_games").delete().eq("user_id", authUser.id).eq("game_id", gameId);
     setUserShelf(prev => ({ ...prev, [status]: prev[status].filter(e => e.game_id !== gameId) }));
+  };
+
+  const submitNewReview = async () => {
+    if (!newReviewGame || !newReviewForm.rating) return;
+    setSubmittingNewReview(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setSubmittingNewReview(false); return; }
+    const { data, error } = await supabase.from("reviews").upsert({
+      user_id: authUser.id,
+      game_id: newReviewGame.id,
+      rating: newReviewForm.rating,
+      headline: newReviewForm.headline || null,
+      loved: newReviewForm.loved || null,
+      didnt_love: newReviewForm.didnt_love || null,
+      content: newReviewForm.content || null,
+      time_played: newReviewForm.time_played ? parseInt(newReviewForm.time_played) : null,
+      completed: newReviewForm.completed || false,
+    }, { onConflict: "user_id,game_id" }).select("*, games(id, name, developer, genre)").single();
+    if (!error && data) {
+      setUserReviews(prev => {
+        const existing = prev.findIndex(r => r.game_id === data.game_id);
+        if (existing >= 0) { const updated = [...prev]; updated[existing] = data; return updated; }
+        return [data, ...prev];
+      });
+    }
+    setSubmittingNewReview(false);
+    setShowNewReview(false);
+    setNewReviewForm({ rating: 0, headline: "", loved: "", didnt_love: "", content: "", time_played: "", completed: false });
+    setNewReviewGame(null);
+    setNewReviewGameSearch("");
   };
 
   const saveReview = async () => {
@@ -5425,6 +5461,67 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {/* Reviews tab */}
       {activeTab === "reviews" && (
         <div>
+          {/* Write Review button + form */}
+          <div style={{ marginBottom: 16 }}>
+            {!showNewReview ? (
+              <button onClick={() => setShowNewReview(true)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Write a Review</button>
+            ) : (
+              <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 14 }}>New Review</div>
+                <div style={{ position: "relative", marginBottom: 12 }}>
+                  {newReviewGame ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ flex: 1, fontWeight: 600, color: C.text, fontSize: 13 }}>{newReviewGame.name}</div>
+                      <button onClick={() => { setNewReviewGame(null); setNewReviewGameSearch(""); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: 0 }}>×</button>
+                    </div>
+                  ) : (
+                    <>
+                      <input value={newReviewGameSearch} onChange={async e => {
+                        const q = e.target.value;
+                        setNewReviewGameSearch(q);
+                        if (q.length < 2) { setNewReviewGameResults([]); return; }
+                        const { data } = await supabase.from("games").select("id, name, genre").ilike("name", "%" + q + "%").limit(8);
+                        setNewReviewGameResults(data || []);
+                      }} placeholder="Search for a game..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                      {newReviewGameResults.length > 0 && (
+                        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 50, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+                          {newReviewGameResults.map(g => (
+                            <div key={g.id} onClick={() => { setNewReviewGame(g); setNewReviewGameResults([]); setNewReviewGameSearch(""); }}
+                              style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border, fontSize: 13, color: C.text }}
+                              onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <div style={{ fontWeight: 600 }}>{g.name}</div>
+                              {g.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{g.genre}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <button key={n} onClick={() => setNewReviewForm(f => ({ ...f, rating: n }))}
+                      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (newReviewForm.rating >= n ? C.gold : C.border), background: newReviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: newReviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <input value={newReviewForm.headline} onChange={e => setNewReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <input value={newReviewForm.loved} onChange={e => setNewReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <input value={newReviewForm.didnt_love} onChange={e => setNewReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <textarea value={newReviewForm.content} onChange={e => setNewReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={submitNewReview} disabled={!newReviewGame || !newReviewForm.rating || submittingNewReview}
+                    style={{ background: (newReviewGame && newReviewForm.rating) ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: (newReviewGame && newReviewForm.rating) ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: (newReviewGame && newReviewForm.rating) ? "pointer" : "default" }}>
+                    {submittingNewReview ? "Saving…" : "Submit Review"}
+                  </button>
+                  <button onClick={() => { setShowNewReview(false); setNewReviewForm({ rating: 0, headline: "", loved: "", didnt_love: "", content: "", time_played: "", completed: false }); setNewReviewGame(null); setNewReviewGameSearch(""); }}
+                    style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
           {userReviews.length > 0 ? userReviews.map(review => (
             <div key={review.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
               {editingReview?.game_id === review.game_id ? (
@@ -5434,13 +5531,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setReviewEditForm(f => ({ ...f, rating: n }))}
-                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + reviewEditForm.rating >= n ? C.gold : C.border, background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (reviewEditForm.rating >= n ? C.gold : C.border), background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         {n}
                       </button>
                     ))}
                   </div>
                   <input value={reviewEditForm.headline} onChange={e => setReviewEditForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                  <input value={reviewEditForm.loved} onChange={e => setReviewEditForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <input value={reviewEditForm.didnt_love} onChange={e => setReviewEditForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={saveReview} disabled={!reviewEditForm.rating || savingReview}
                       style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -5479,7 +5578,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           )) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
-              <div style={{ fontSize: 14 }}>No reviews yet. Visit a game page to write your first.</div>
+              <div style={{ fontSize: 14 }}>No reviews yet. Use the button above to write your first.</div>
             </div>
           )}
         </div>
