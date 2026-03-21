@@ -1943,7 +1943,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-274</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-275</span>
         </div>
       </div>
     </nav>
@@ -3774,7 +3774,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                   <div key={cardId} style={{ background: C.surface, border: "1px solid " + (onShelf ? C.accentDim : C.border), borderRadius: 12, cursor: "pointer", position: "relative" }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = onShelf ? C.accent : C.borderHover}
                     onMouseLeave={e => e.currentTarget.style.borderColor = onShelf ? C.accentDim : C.border}>
-                    <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden" }} onClick={async () => {
+                    <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", height: 180 }} onClick={async () => {
                       if (menuOpen) { setShelfMenuOpen(null); return; }
                       if (g._fromIGDB) {
                         const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
@@ -3782,8 +3782,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       } else { setCurrentGame(g.id); setActivePage("game"); }
                     }}>
                       {g.cover_url
-                        ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />
-                        : <div style={{ width: "100%", aspectRatio: "3/4", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
+                        ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        : <div style={{ width: "100%", height: "100%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
                       }
                     </div>
                     {/* Shelf menu — rendered inside card but above overflow */}
