@@ -681,7 +681,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     <div style={{
       background: C.surface,
       border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
-      borderRadius: 14, marginBottom: 12, overflow: "hidden",
+      borderRadius: 14, marginBottom: 12, position: "relative",
       boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
     }}>
       <div style={{ padding: 20 }}>
@@ -779,7 +779,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
               color: tipped ? C.gold : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: 600,
               display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
-            }}>{isMobile ? "💡" : "Helpful Tip"}{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
+            }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
           )}
 
           {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
@@ -1957,7 +1957,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-283</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-284</span>
         </div>
       </div>
     </nav>
@@ -2186,7 +2186,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             const mv = getMovement(entry.id, entry.rank);
             return (
               <div key={entry.id}
-                onClick={() => { setCurrentGame(entry.id); setActivePage("game"); }}
+                onClick={() => { setCurrentGame(entry.id); }}
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < charts.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}>
                 <div style={{ width: 18, textAlign: "center", color: i < 3 ? C.gold : C.textDim, fontWeight: 800, fontSize: i < 3 ? 13 : 11, flexShrink: 0 }}>
                   {entry.rank}
@@ -4395,7 +4395,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>💡</div>
                 <div style={{ fontSize: 14, marginBottom: 8 }}>No community tips yet.</div>
-                <div style={{ fontSize: 13, color: C.textDim }}>When players mark a post as a Helpful Tip, it shows up here.</div>
+                <div style={{ fontSize: 13, color: C.textDim }}>When players mark a post as Helpful, it shows up here.</div>
               </div>
             ) : gameTips.map(post => {
               const author = post.npc_id ? post.npcs : post.profiles;
@@ -8730,6 +8730,9 @@ export default function GuildLink() {
     let tag = document.querySelector("meta[name=viewport]");
     if (!tag) { tag = document.createElement("meta"); tag.name = "viewport"; document.head.appendChild(tag); }
     tag.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
+    // Lock body background so iOS Safari never shows white behind content
+    document.body.style.background = "#080e1a";
+    document.body.style.overscrollBehaviorY = "none";
   }, []);
 
   // ── URL routing ───────────────────────────────────────────────────────────
