@@ -1966,7 +1966,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-290</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-291</span>
         </div>
       </div>
     </nav>
@@ -3203,7 +3203,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const dayScores = {};
     allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      const day = (e.created_at || "").slice(0, 10);
+      const day = utcToPacificDate(e.created_at);
       if (!dayScores[day]) return;
       dayScores[day].users.add(e.user_id);
       if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
@@ -3221,7 +3221,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const dayScores = {};
     allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      const day = (e.created_at || "").slice(0, 10);
+      const day = utcToPacificDate(e.created_at);
       if (!dayScores[day]) return;
       dayScores[day].users.add(e.user_id);
       if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
@@ -3591,7 +3591,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   };
 
   // Sparkline: 9 slots fixed (8 days data + 1 future empty)
-  const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
+  const utcToPacificDate = (isoString) => {
+    if (!isoString) return "";
+    const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+      .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+    const utc = new Date(isoString);
+    const pacific = new Date(utc.getTime() + (pacificOffset + utc.getTimezoneOffset()) * 60000);
+    return `${pacific.getFullYear()}-${String(pacific.getMonth() + 1).padStart(2, "0")}-${String(pacific.getDate()).padStart(2, "0")}`;
+  };
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
     const slots = 9;
