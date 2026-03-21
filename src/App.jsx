@@ -784,7 +784,34 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
           )}
 
-          {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (\n            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>\n              <button onClick={() => setShowPostMenu(m => !m)} style={{\n                background: "transparent", border: "1px solid " + C.border,\n                borderRadius: 8, padding: "5px 10px", cursor: "pointer",\n                color: C.textDim, fontSize: 16, lineHeight: 1,\n              }}>•••</button>\n              {showPostMenu && (\n                <>\n                  <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />\n                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>\n                    {post.user_id === currentUser.id && (\n                      <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}\n                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}\n                        onMouseLeave={e => e.currentTarget.style.background = "none"}>\n                        {editing ? "Cancel Edit" : "Edit"}\n                      </button>\n                    )}\n                    <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}\n                      onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}\n                      onMouseLeave={e => e.currentTarget.style.background = "none"}>\n                      Delete\n                    </button>\n                  </div>\n                </>\n              )}\n            </div>\n          )}
+                    {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
+            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
+              <button onClick={() => setShowPostMenu(m => !m)} style={{
+                background: "transparent", border: "1px solid " + C.border,
+                borderRadius: 8, padding: "5px 10px", cursor: "pointer",
+                color: C.textDim, fontSize: 16, lineHeight: 1,
+              }}>•••</button>
+              {showPostMenu && (
+                <>
+                  <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
+                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                    {post.user_id === currentUser.id && (
+                      <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                        onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                        {editing ? "Cancel Edit" : "Edit"}
+                      </button>
+                    )}
+                    <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1937,7 +1964,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-297</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-298</span>
         </div>
       </div>
     </nav>
