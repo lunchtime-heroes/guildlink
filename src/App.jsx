@@ -1954,7 +1954,10 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                                 </>
                               ) : (
                                 <span style={{ color: C.text }}>
-                                  <strong>{actor?.username || "Someone"}</strong> {notifLabel(n)}
+                                  <strong
+                                    onClick={e => { e.stopPropagation(); if (actor?.handle) { setCurrentPlayer?.(actor.id); setActivePage("player"); setShowNotifs(false); } }}
+                                    style={{ cursor: actor?.handle ? "pointer" : "default", color: actor?.handle ? C.accentSoft : C.text }}
+                                  >{actor?.username || "Someone"}</strong> {notifLabel(n)}
                                 </span>
                               )}
                             </div>
@@ -1978,7 +1981,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-305</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-306</span>
         </div>
       </div>
     </nav>
@@ -5444,7 +5447,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 onDrop={e => handleDrop(e, col.id)}
                 style={{ background: dragOver === col.id ? col.color + "11" : C.surface, border: "1px solid " + dragOver === col.id ? col.color + "66" : col.color + "33", borderRadius: 14, padding: 14, minHeight: isMobile ? 80 : 200, transition: "all 0.15s" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
+                  <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
                   <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
                 </div>
                 {userShelf[col.id].length > 0 ? userShelf[col.id].map(entry => {
