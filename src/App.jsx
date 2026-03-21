@@ -1966,7 +1966,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-291</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-292</span>
         </div>
       </div>
     </nav>
@@ -3599,6 +3599,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const pacific = new Date(utc.getTime() + (pacificOffset + utc.getTimezoneOffset()) * 60000);
     return `${pacific.getFullYear()}-${String(pacific.getMonth() + 1).padStart(2, "0")}-${String(pacific.getDate()).padStart(2, "0")}`;
   };
+
+  const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
     const slots = 9;
