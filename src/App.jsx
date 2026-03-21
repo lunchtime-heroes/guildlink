@@ -1943,7 +1943,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-280</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-281</span>
         </div>
       </div>
     </nav>
@@ -5818,6 +5818,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [enrichMsg, setEnrichMsg] = useState({});
+  const [mostWanted, setMostWanted] = useState([]);
 
   useEffect(() => {
     const check = async () => {
@@ -5885,6 +5886,27 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const { data: fbData } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
     if (fbData) setFeedbackData(fbData);
 
+    // Most Wanted — shelf elevations last 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: elevData } = await supabase.from("shelf_elevations")
+      .select("game_id, to_position, from_position, created_at, games(id, name, cover_url)")
+      .gte("created_at", thirtyDaysAgo)
+      .order("created_at", { ascending: false });
+    if (elevData) {
+      const byGame = {};
+      elevData.forEach(r => {
+        if (!r.games) return;
+        if (!byGame[r.game_id]) byGame[r.game_id] = { game: r.games, elevations: 0, topSlotCount: 0, score: 0, latestAt: r.created_at };
+        const posWeight = r.to_position === 0 ? 1.0 : r.to_position === 1 ? 0.8 : r.to_position === 2 ? 0.6 : 0.4;
+        const magnitude = Math.max(0, r.from_position - r.to_position);
+        byGame[r.game_id].elevations++;
+        byGame[r.game_id].score += posWeight + (magnitude * 0.1);
+        if (r.to_position === 0) byGame[r.game_id].topSlotCount++;
+        if (r.created_at > byGame[r.game_id].latestAt) byGame[r.game_id].latestAt = r.created_at;
+      });
+      setMostWanted(Object.values(byGame).sort((a, b) => b.score - a.score).slice(0, 20));
+    }
+
     // Aggregate chart events by game
     if (chartRes.data) {
       const byGame = {};
@@ -5928,6 +5950,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     { id: "charts", label: "🏆 Chart Activity" },
     { id: "reviews", label: "⭐ Reviews" },
     { id: "games", label: "🎮 Games" },
+    { id: "most_wanted", label: "🎯 Most Wanted" },
   ];
 
   const enrichGame = async (game) => {
@@ -6249,6 +6272,42 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === "most_wanted" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Most Wanted</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>Games players have elevated on their Want to Play lists — last 30 days. Score weights landing position and jump magnitude.</div>
+          </div>
+          {mostWanted.length === 0 ? (
+            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 60 }}>No elevation data yet. Start reordering Want to Play shelves to generate signal.</div>
+          ) : (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "8px 16px", borderBottom: "1px solid " + C.border }}>
+                {["#", "Game", "Elevations", "#1 Slots", "Score", "Last Elevated"].map(h => (
+                  <div key={h} style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>{h}</div>
+                ))}
+              </div>
+              {mostWanted.map((entry, i) => (
+                <div key={entry.game.id} style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "12px 16px", borderBottom: i < mostWanted.length - 1 ? "1px solid " + C.border : "none", alignItems: "center" }}>
+                  <div style={{ fontWeight: 800, color: i < 3 ? C.gold : C.textDim, fontSize: 13 }}>{i + 1}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    {entry.game.cover_url
+                      ? <img src={entry.game.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
+                      : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0 }} />
+                    }
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.game.name}</div>
+                  </div>
+                  <div style={{ color: C.text, fontSize: 13 }}>{entry.elevations}</div>
+                  <div style={{ color: entry.topSlotCount > 0 ? C.gold : C.textDim, fontSize: 13, fontWeight: entry.topSlotCount > 0 ? 700 : 400 }}>{entry.topSlotCount}</div>
+                  <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 700 }}>{entry.score.toFixed(1)}</div>
+                  <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(entry.latestAt).toLocaleDateString()}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
