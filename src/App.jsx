@@ -1966,7 +1966,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-289</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-290</span>
         </div>
       </div>
     </nav>
@@ -3602,14 +3602,20 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const baseline = h - pad;
     let lastDataIdx = 0;
     for (let i = 7; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
-    const dataPoints = points.slice(0, lastDataIdx + 1);
-    const linePts = dataPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
-    const areaPath = `M ${xPos(0)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
+    let firstDataIdx = 0;
+    for (let i = 0; i <= 7; i++) { if (points[i] > 0) { firstDataIdx = i; break; } }
+    const dataPoints = points.slice(firstDataIdx, lastDataIdx + 1);
+    const linePts = dataPoints.map((v, i) => `${xPos(i + firstDataIdx)},${yPos(v)}`).join(" ");
+    const areaPath = `M ${xPos(firstDataIdx)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i + firstDataIdx)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
     // Reference line (genre or overall leader)
     let refLastIdx = 0;
-    if (refPoints) { for (let i = 7; i >= 0; i--) { if (refPoints[i] > 0) { refLastIdx = i; break; } } }
-    const refData = refPoints ? refPoints.slice(0, refLastIdx + 1) : null;
-    const refLinePts = refData ? refData.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
+    let refFirstIdx = 0;
+    if (refPoints) {
+      for (let i = 7; i >= 0; i--) { if (refPoints[i] > 0) { refLastIdx = i; break; } }
+      for (let i = 0; i <= 7; i++) { if (refPoints[i] > 0) { refFirstIdx = i; break; } }
+    }
+    const refData = refPoints ? refPoints.slice(refFirstIdx, refLastIdx + 1) : null;
+    const refLinePts = refData ? refData.map((v, i) => `${xPos(i + refFirstIdx)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
@@ -3621,7 +3627,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
           {dataPoints.map((v, i) => (
-            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastDataIdx ? 5 : 3} fill={color} opacity={i === lastDataIdx ? 1 : 0.4} />
+            <circle key={i} cx={xPos(i + firstDataIdx)} cy={yPos(v)} r={i + firstDataIdx === lastDataIdx ? 5 : 3} fill={color} opacity={i + firstDataIdx === lastDataIdx ? 1 : 0.4} />
           ))}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2 }}>
