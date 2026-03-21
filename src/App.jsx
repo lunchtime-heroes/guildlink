@@ -1981,7 +1981,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-306</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-307</span>
         </div>
       </div>
     </nav>
@@ -9006,6 +9006,8 @@ export default function GuildLink() {
       });
       // Mark as notified
       await supabase.rpc("mark_quest_notified", { p_user_id: userId, p_quest_id: uq.quest_id });
+      // Re-fetch profile to update XP and level display
+      fetchProfile(userId);
     }
   };
 
