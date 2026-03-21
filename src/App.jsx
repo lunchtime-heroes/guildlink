@@ -531,8 +531,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       if (allHandles.size > 0) {
         const handleList = [...allHandles];
         const [profilesRes, npcsRes] = await Promise.allSettled([
-          supabase.from("profiles").select("id, username, handle, avatar_initials").in("handle", handleList.map(h => `@${h}`)),
-          supabase.from("npcs").select("id, name, handle, avatar_initials").in("handle", handleList.map(h => `@${h}`)),
+          supabase.from("profiles").select("id, username, handle, avatar_initials").or(handleList.map(h => `handle.ilike.@${h}`).join(",")),
+          supabase.from("npcs").select("id, name, handle, avatar_initials").or(handleList.map(h => `handle.ilike.@${h}`).join(",")),
         ]);
         (profilesRes.status === "fulfilled" ? profilesRes.value.data || [] : []).forEach(p => {
           resolvedUsers[p.handle.replace("@","").toLowerCase()] = { id: p.id, handle: p.handle, name: p.username, type: "user" };
@@ -1936,7 +1936,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-271</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-272</span>
         </div>
       </div>
     </nav>
@@ -2567,6 +2567,34 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (data) setFollowingPosts(data.map(p => ({ ...p, comment_count: p.comments?.length || 0, liked: likedIds.has(p.id) })));
   };
 
+  const resolveMentionsInPosts = async (posts) => {
+    const allHandles = new Set();
+    posts.forEach(p => {
+      const matches = (p.content || "").match(/@(\S+)/g) || [];
+      matches.forEach(m => allHandles.add(m.slice(1).toLowerCase()));
+    });
+    if (allHandles.size === 0) return posts;
+    const handleList = [...allHandles];
+    const [profilesRes, npcsRes] = await Promise.allSettled([
+      supabase.from("profiles").select("id, username, handle").or(handleList.map(h => `handle.ilike.@${h}`).join(",")),
+      supabase.from("npcs").select("id, name, handle").or(handleList.map(h => `handle.ilike.@${h}`).join(",")),
+    ]);
+    const resolved = {};
+    (profilesRes.status === "fulfilled" ? profilesRes.value.data || [] : []).forEach(p => {
+      resolved[p.handle.replace("@","").toLowerCase()] = { id: p.id, handle: p.handle, name: p.username, type: "user" };
+    });
+    (npcsRes.status === "fulfilled" ? npcsRes.value.data || [] : []).forEach(n => {
+      resolved[n.handle.replace("@","").toLowerCase()] = { id: n.id, handle: n.handle, name: n.name, type: "npc" };
+    });
+    return posts.map(p => {
+      const existing = p.tagged_users || [];
+      const existingHandles = new Set(existing.map(u => u.handle?.replace("@","").toLowerCase()));
+      const matches = (p.content || "").match(/@(\S+)/g) || [];
+      const extra = matches.map(m => resolved[m.slice(1).toLowerCase()]).filter(u => u && !existingHandles.has(u.handle.replace("@","").toLowerCase()));
+      return extra.length ? { ...p, tagged_users: [...existing, ...extra] } : p;
+    });
+  };
+
   const loadPosts = async () => {
     setFeedLoading(true);
     if (isGuest) {
@@ -2603,7 +2631,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       if (npcPosts[0]) feed.splice(0, 0, npcPosts[0]);
       if (npcPosts[1]) feed.splice(5, 0, npcPosts[1]);
 
-      setLivePosts(feed.slice(0, 20));
+      setLivePosts(await resolveMentionsInPosts(feed.slice(0, 20)));
       setGuestFeedDone(true);
       setFeedLoading(false);
     } else {
@@ -2624,12 +2652,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
       const tippedIds = new Set((tipsResult.data || []).map(t => t.post_id));
       if (postsResult.data) {
-        setLivePosts(postsResult.data.map(p => ({
+        const mapped = postsResult.data.map(p => ({
           ...p,
           comment_count: p.comments?.length || 0,
           liked: likedIds.has(p.id),
           tipped: tippedIds.has(p.id),
-        })));
+        }));
+        setLivePosts(await resolveMentionsInPosts(mapped));
       }
       setFeedLoading(false);
     }
