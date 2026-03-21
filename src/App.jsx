@@ -1943,7 +1943,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-281</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-282</span>
         </div>
       </div>
     </nav>
@@ -4916,7 +4916,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       sort_order: idx,
       updated_at: new Date().toISOString(),
     }));
-    await supabase.from("user_games").upsert(updates);
+    await supabase.from("user_games").upsert(updates, { onConflict: "user_id,game_id" });
 
     // Log elevations for Want to Play column — any game that moved up
     if (colId === "want_to_play") {
