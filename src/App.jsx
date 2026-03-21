@@ -1936,7 +1936,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-270</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-271</span>
         </div>
       </div>
     </nav>
@@ -7276,7 +7276,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                         setCurrentNPC={setCurrentNPC}
                         setCurrentPlayer={() => {}}
                         isMobile={isMobile}
-                        currentUser={null}
+                        currentUser={currentUser}
                       />
                       {/* Reply as NPC button + composer */}
                       {!isSelected && (
@@ -7370,56 +7370,35 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       </button>
                     </div>
                     <FeedPostCard
-                      post={feedPost}
+                      post={{
+                        ...feedPost,
+                        commentList: thread.comments.map(c => ({
+                          ...c,
+                          user: {
+                            name: c.npc_id ? (c.npcs?.name || "NPC") : (c.profiles?.username || "User"),
+                            handle: c.npc_id ? (c.npcs?.handle || "") : (c.profiles?.handle || ""),
+                            avatar: c.npc_id ? (c.npcs?.avatar_initials || "NPC") : (c.profiles?.avatar_initials || "?"),
+                            isNPC: !!c.npc_id,
+                          },
+                        })),
+                      }}
                       setActivePage={setActivePage}
                       setCurrentGame={() => {}}
                       setCurrentNPC={setCurrentNPC}
                       setCurrentPlayer={() => {}}
                       isMobile={isMobile}
-                      currentUser={null}
+                      currentUser={currentUser}
                     />
-                    {/* Comment thread */}
-                    {thread.comments.length > 0 && (
-                      <div style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 10, padding: "10px 14px", marginTop: 6, marginBottom: 4 }}>
-                        {thread.comments.map((c, ci) => {
-                          const isNPCComment = !!c.npc_id;
-                          const commenterName = isNPCComment ? (c.npcs?.name || "NPC") : (c.profiles?.username || "User");
-                          const commenterHandle = isNPCComment ? (c.npcs?.handle || "") : (c.profiles?.handle || "");
-                          const initials = isNPCComment ? (c.npcs?.avatar_initials || "NPC") : (c.profiles?.avatar_initials || "?");
-                          return (
-                            <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: ci < thread.comments.length - 1 ? 10 : 0, alignItems: "flex-start" }}>
-                              <Avatar initials={initials} size={26} isNPC={isNPCComment} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2, flexWrap: "wrap" }}>
-                                  <span style={{ fontWeight: 700, fontSize: 12, color: isNPCComment ? C2.gold : C2.text }}>{commenterName}</span>
-                                  <span style={{ color: C2.textDim, fontSize: 11 }}>{commenterHandle}</span>
-                                  <span style={{ color: C2.textDim, fontSize: 10, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
-                                </div>
-                                <p style={{ color: C2.text, fontSize: 12, margin: 0, lineHeight: 1.5 }}>{c.content}</p>
-                                {!isNPCComment && (
-                                  <button onClick={() => {
-                                    setSelectedPost(thread);
-                                    setReplyToComment({ id: c.id, name: commenterName, userId: c.user_id });
-                                    setComposeText(`@${commenterHandle?.replace("@", "")} `);
-                                  }}
-                                    style={{ background: "none", border: "none", color: C2.accentSoft, fontSize: 11, cursor: "pointer", padding: "2px 0", marginTop: 2 }}>
-                                    ↩ Reply to {commenterName}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                     {/* Reply as NPC button */}
                     <div style={{ marginTop: 6 }}>
-                      <button onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }}
-                        style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                        Reply as {npc.name.split(" ")[0]}
-                      </button>
+                      {!(selectedPost?.id === thread.id) && (
+                        <button onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }}
+                          style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          Reply as {npc.name.split(" ")[0]}
+                        </button>
+                      )}
                     </div>
-                    {/* Inline composer when this thread is selected */}
+                    {/* NPC compose box */}
                     {selectedPost?.id === thread.id && (
                       <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow, borderRadius: "0 0 14px 14px", marginTop: 4 }}>
                         {replyToComment && (
@@ -7450,6 +7429,15 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                               user_id: writerUser.id,
                               reply_to_comment_id: replyToComment?.id || null,
                             });
+                            if (replyToComment?.userId && replyToComment.userId !== writerUser.id) {
+                              await supabase.from("notifications").insert({
+                                user_id: replyToComment.userId,
+                                actor_id: writerUser.id,
+                                npc_id: selectedNPC,
+                                type: "comment",
+                                post_id: thread.id,
+                              });
+                            }
                             setSending(false);
                             if (error) { console.error("[thread reply] error:", error); return; }
                             setComposeText(""); setReplyToComment(null); setSelectedPost(null);
@@ -7931,6 +7919,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const [{ data: userPosts }, likesRes] = await Promise.all([
         supabase.from("posts").select("*").eq("user_id", userId)
+          .is("npc_id", null)
           .order("created_at", { ascending: false }).limit(20),
         authUser
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
