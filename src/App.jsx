@@ -1507,7 +1507,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
 
 // ─── POST MODAL ───────────────────────────────────────────────────────────────
 
-function PostModal({ postId, onClose, currentUser }) {
+function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1578,7 +1578,12 @@ function PostModal({ postId, onClose, currentUser }) {
                 <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                   <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={38} />
                   <div>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{post.profiles?.username || "Unknown"}</div>
+                    <div onClick={() => !post.npc_id && post.user_id && onNavigateToPlayer?.(post.user_id)}
+                      style={{ fontWeight: 700, color: C.text, fontSize: 14, cursor: !post.npc_id && post.user_id ? "pointer" : "default" }}
+                      onMouseEnter={e => { if (!post.npc_id && post.user_id) e.currentTarget.style.color = C.accentSoft; }}
+                      onMouseLeave={e => e.currentTarget.style.color = C.text}>
+                      {post.profiles?.username || "Unknown"}
+                    </div>
                     <div style={{ color: C.textDim, fontSize: 12 }}>{post.profiles?.handle} · {timeAgo(post.created_at)}</div>
                   </div>
                 </div>
@@ -1603,7 +1608,10 @@ function PostModal({ postId, onClose, currentUser }) {
                       <div style={{ flex: 1 }}>
                         <div style={{ background: C.surface, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "9px 13px" }}>
                           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name}</span>
+                            <span onClick={() => !isNPC && c.user_id && onNavigateToPlayer?.(c.user_id)}
+                              style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text, cursor: !isNPC && c.user_id ? "pointer" : "default" }}
+                              onMouseEnter={e => { if (!isNPC && c.user_id) e.currentTarget.style.color = C.accentSoft; }}
+                              onMouseLeave={e => e.currentTarget.style.color = isNPC ? C.gold : C.text}>{name}</span>
                             {isNPC && <NPCBadge />}
                             <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
                           </div>
@@ -1981,7 +1989,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-309</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-310</span>
         </div>
       </div>
     </nav>
@@ -9236,7 +9244,7 @@ export default function GuildLink() {
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
       <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} />
-      {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
+      {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} onNavigateToPlayer={(userId) => { setPostModal(null); navToPlayer(userId); setActivePage("player"); }} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "charts" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
