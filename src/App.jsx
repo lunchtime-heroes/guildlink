@@ -1966,7 +1966,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-287</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-288</span>
         </div>
       </div>
     </nav>
@@ -3131,6 +3131,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [genreLeaders, setGenreLeaders] = useState({});
   const [genreContext, setGenreContext] = useState({}); // gameId -> { genreGlobalMax, genreRefPoints } // genre -> gameId of #1 in that genre
   const [sparklines, setSparklines] = useState({});
+  const sparklinesRef = React.useRef({});
+  const setSparklinesWithRef = (updater) => {
+    setSparklines(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      sparklinesRef.current = next;
+      return next;
+    });
+  };
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
   const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
@@ -3265,7 +3273,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       // Eagerly load sparklines for ALL ranked games (top 10 + all genre games)
       if (top10.length === 0) return;
       const allDayStarts = getDayStarts(8);
-      const sparkRangeStart = allDayStarts[allDayStarts.length - 1] + "T00:00:00.000Z";
+      const sparkRangeStart = getDayStarts(30)[29] + "T00:00:00.000Z";
       const sparkRangeEnd = today + "T23:59:59.999Z";
       const allRankedIds = [...new Set([
         ...top10.map(g => g.id),
@@ -3318,21 +3326,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   }, []);
 
   const loadSparkline = async (gameId) => {
-    if (sparklines[gameId]) return;
+    if (sparklinesRef.current[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
     const allDayStarts = getDayStarts(8);
-    const sparkRangeStart = allDayStarts[allDayStarts.length - 1] + "T00:00:00.000Z";
+    const sparkRangeStart = getDayStarts(30)[29] + "T00:00:00.000Z";
     const sparkRangeEnd = allDayStarts[0] + "T23:59:59.999Z";
     const { data: events } = await supabase.from("chart_events")
       .select("game_id, event_type, post_sequence, user_id, created_at")
       .eq("game_id", gameId)
       .gte("created_at", sparkRangeStart)
       .lte("created_at", sparkRangeEnd);
-    const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
+    const existingMax = Object.values(sparklinesRef.current).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
     const ctx = genreContext[gameId] || {};
-    const sp = buildSparkline(gameId, events || [], allDayStarts, globalMax, Object.values(sparklines)[0]?.referencePoints || null);
-    setSparklines(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
+    const sp = buildSparkline(gameId, events || [], allDayStarts, globalMax, Object.values(sparklinesRef.current)[0]?.referencePoints || null);
+    setSparklinesWithRef(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -3666,8 +3674,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         {isExpanded && (
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 days</div>
-            {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
-              : sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
+            {sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
+              : isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
               {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
