@@ -31,30 +31,44 @@ async function logAnalytics(userId, eventType, page, metadata = {}) {
 
 async function logChartEvent(gameId, eventType, userId) {
   if (!gameId || !gameId.includes('-')) return;
-  const dayStart = getDayStart();
+  const today = getDayStart();
+  const todayStart = today + "T00:00:00.000Z";
+  const todayEnd = today + "T23:59:59.999Z";
 
   if (eventType === 'post') {
-    // Find current post sequence for this user/game/week
+    // Find current post sequence for this user/game/day
     const { data: existing } = await supabase
       .from("chart_events")
       .select("post_sequence")
       .eq("game_id", gameId)
       .eq("user_id", userId)
       .eq("event_type", "post")
-      .eq("week_start", dayStart)
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd)
       .order("post_sequence", { ascending: false })
       .limit(1);
     const nextSeq = existing && existing.length > 0 ? existing[0].post_sequence + 1 : 1;
     await supabase.from("chart_events").insert({
       game_id: gameId, user_id: userId, event_type: eventType,
-      week_start: dayStart, post_sequence: nextSeq,
+      post_sequence: nextSeq,
     });
   } else {
-    // All other events: upsert (dedup per day via unique index)
-    await supabase.from("chart_events").upsert({
-      game_id: gameId, user_id: userId, event_type: eventType,
-      week_start: dayStart, post_sequence: 1,
-    }, { onConflict: "user_id,game_id,event_type,week_start", ignoreDuplicates: true });
+    // Non-post events: only log once per user/game/event_type per day
+    const { data: existing } = await supabase
+      .from("chart_events")
+      .select("id")
+      .eq("game_id", gameId)
+      .eq("user_id", userId)
+      .eq("event_type", eventType)
+      .gte("created_at", todayStart)
+      .lte("created_at", todayEnd)
+      .limit(1);
+    if (!existing || existing.length === 0) {
+      await supabase.from("chart_events").insert({
+        game_id: gameId, user_id: userId, event_type: eventType,
+        post_sequence: 1,
+      });
+    }
   }
 }
 
@@ -1952,7 +1966,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-286</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-287</span>
         </div>
       </div>
     </nav>
@@ -2063,14 +2077,17 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get current day start (Pacific midnight)
+      // Get today's date range (Pacific)
       const dayStart = getDayStart();
+      const rangeStart = dayStart + "T00:00:00.000Z";
+      const rangeEnd = dayStart + "T23:59:59.999Z";
 
       // Live scores from chart_events today
       let query = supabase
         .from("chart_events")
         .select("game_id, event_type, games(id, name, category, genre)")
-        .eq("week_start", dayStart);
+        .gte("created_at", rangeStart)
+        .lte("created_at", rangeEnd);
       if (category) query = query.eq("games.category", category);
 
       const { data: events } = await query;
@@ -3173,44 +3190,49 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
 
   // Build fixed 9-slot sparkline data: 8 days oldest→newest + 1 future zero
-  const buildSparkline = (gameId, events, allWeekStarts, globalMax, referencePoints) => {
-    const weekScores = {};
-    allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+  const buildSparkline = (gameId, events, allDayStarts, globalMax, referencePoints) => {
+    const dayScores = {};
+    allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      if (!weekScores[e.week_start]) return;
-      weekScores[e.week_start].users.add(e.user_id);
-      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+      const day = (e.created_at || "").slice(0, 10);
+      if (!dayScores[day]) return;
+      dayScores[day].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { dayScores[day].score += WEIGHTS[e.event_type] || 0; }
     });
-    const ordered = allWeekStarts.slice().reverse();
-    const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
-    const labels = [...ordered.map(w => { const d = new Date(w + "T12:00:00"); return (d.getMonth() + 1) + "/" + d.getDate(); }), ""];
+    const ordered = allDayStarts.slice().reverse();
+    const points = [...ordered.map(d => { const { score, users } = dayScores[d]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
+    const labels = [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
     return { points, labels, globalMax, referencePoints };
   };
 
-  // Helper: compute raw weekly scores for a game given events + week starts
-  const computePoints = (gameId, events, allWeekStarts) => {
-    const weekScores = {};
-    allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+  // Helper: compute raw daily scores for a game given events + day starts
+  const computePoints = (gameId, events, allDayStarts) => {
+    const dayScores = {};
+    allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      if (!weekScores[e.week_start]) return;
-      weekScores[e.week_start].users.add(e.user_id);
-      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+      const day = (e.created_at || "").slice(0, 10);
+      if (!dayScores[day]) return;
+      dayScores[day].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { dayScores[day].score += WEIGHTS[e.event_type] || 0; }
     });
-    const ordered = allWeekStarts.slice().reverse();
-    return [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
+    const ordered = allDayStarts.slice().reverse();
+    return [...ordered.map(d => { const { score, users } = dayScores[d]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
   };
   // Load charts
   useEffect(() => {
     const load = async () => {
       setChartsLoading(true);
       setSparklines({});
-      const weekStarts = getDayStarts(8);
-      const currentWeek = weekStarts[0]; // most recent
+      const dayStarts = getDayStarts(8);
+      const today = dayStarts[0];
+      const rangeStart = today + "T00:00:00.000Z";
+      const rangeEnd = today + "T23:59:59.999Z";
       const { data: events } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .eq("week_start", currentWeek);
+        .select("game_id, event_type, post_sequence, user_id, created_at, games(id, name, genre, cover_url)")
+        .gte("created_at", rangeStart)
+        .lte("created_at", rangeEnd);
       if (!events) { setChartsLoading(false); return; }
       const scored = scoreEvents(events);
       const top10 = scored.slice(0, 10);
@@ -3225,11 +3247,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setByGenre(genres); setByGenreFull(genresFull);
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
-      // Calculate previous week's ranks for movement indicators
-      const prevWeekStart = getDayStarts(2)[1];
+      // Calculate previous day's ranks for movement indicators
+      const prevDay = getDayStarts(2)[1];
+      const prevStart = prevDay + "T00:00:00.000Z";
+      const prevEnd = prevDay + "T23:59:59.999Z";
       const { data: prevEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .eq("week_start", prevWeekStart);
+        .select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)")
+        .gte("created_at", prevStart)
+        .lte("created_at", prevEnd);
       if (prevEvents && prevEvents.length > 0) {
         const prevScored = scoreEvents(prevEvents);
         const pRanks = {};
@@ -3239,20 +3264,23 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Eagerly load sparklines for ALL ranked games (top 10 + all genre games)
       if (top10.length === 0) return;
-      const allWeekStarts = getDayStarts(8);
+      const allDayStarts = getDayStarts(8);
+      const sparkRangeStart = allDayStarts[allDayStarts.length - 1] + "T00:00:00.000Z";
+      const sparkRangeEnd = today + "T23:59:59.999Z";
       const allRankedIds = [...new Set([
         ...top10.map(g => g.id),
         ...Object.values(genresFull).flat().map(g => g.id),
       ])];
       const { data: sparkEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start")
+        .select("game_id, event_type, post_sequence, user_id, created_at")
         .in("game_id", allRankedIds)
-        .in("week_start", allWeekStarts);
+        .gte("created_at", sparkRangeStart)
+        .lte("created_at", sparkRangeEnd);
 
       // Find global max across top 10
-      const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts)));
+      const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allDayStarts)));
       const globalMax = Math.max(...allScores, 0.1);
-      const overallRef = computePoints(top10[0].id, sparkEvents || [], allWeekStarts);
+      const overallRef = computePoints(top10[0].id, sparkEvents || [], allDayStarts);
 
       // Per-genre: leader reference points and max
       const gLeaders = {};
@@ -3262,9 +3290,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         if (games.length === 0) return;
         const leader = games[0];
         gLeaders[genre] = leader.id;
-        const leaderPts = computePoints(leader.id, sparkEvents || [], allWeekStarts);
+        const leaderPts = computePoints(leader.id, sparkEvents || [], allDayStarts);
         genreRefPoints[genre] = leaderPts;
-        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts))), 0.1);
+        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allDayStarts))), 0.1);
       });
       setGenreLeaders(gLeaders);
 
@@ -3277,7 +3305,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         const isOverallLeader = id === top10[0].id;
         const isGenreLeader = gLeaders[genre] === id;
         newSparklines[id] = {
-          ...buildSparkline(id, sparkEvents || [], allWeekStarts, globalMax, isOverallLeader ? null : overallRef),
+          ...buildSparkline(id, sparkEvents || [], allDayStarts, globalMax, isOverallLeader ? null : overallRef),
           genreGlobalMax: genreMaxes[genre] || globalMax,
           genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null),
         };
@@ -3292,13 +3320,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const loadSparkline = async (gameId) => {
     if (sparklines[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    const weekStarts = getWeekStarts(8);
+    const allDayStarts = getDayStarts(8);
+    const sparkRangeStart = allDayStarts[allDayStarts.length - 1] + "T00:00:00.000Z";
+    const sparkRangeEnd = allDayStarts[0] + "T23:59:59.999Z";
     const { data: events } = await supabase.from("chart_events")
-      .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
+      .select("game_id, event_type, post_sequence, user_id, created_at")
+      .eq("game_id", gameId)
+      .gte("created_at", sparkRangeStart)
+      .lte("created_at", sparkRangeEnd);
     const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
     const ctx = genreContext[gameId] || {};
-    const sp = buildSparkline(gameId, events || [], weekStarts, globalMax, Object.values(sparklines)[0]?.referencePoints || null);
+    const sp = buildSparkline(gameId, events || [], allDayStarts, globalMax, Object.values(sparklines)[0]?.referencePoints || null);
     setSparklines(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
@@ -3316,10 +3349,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Most Talked About",
       desc: "Highest combined posts and comments today",
       run: async () => {
-        const weekStarts = getWeekStarts(1);
+        const today = getDayStart();
         const { data } = await supabase.from("chart_events")
           .select("game_id, event_type, games(id, name, genre, cover_url)")
-          .in("week_start", weekStarts)
+          .gte("created_at", today + "T00:00:00.000Z")
+          .lte("created_at", today + "T23:59:59.999Z")
           .in("event_type", ["post", "comment"]);
         const counts = {};
         (data || []).forEach(e => {
@@ -3375,10 +3409,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Blowing Up",
       desc: "Biggest day-over-day momentum spike",
       run: async () => {
-        const [thisWeek, lastWeek] = [getWeekStarts(1)[0], getWeekStarts(2)[1]];
+        const [today, yesterday] = [getDayStart(), getDayStarts(2)[1]];
         const [thisData, lastData] = await Promise.all([
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", thisWeek),
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", lastWeek),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").gte("created_at", today + "T00:00:00.000Z").lte("created_at", today + "T23:59:59.999Z"),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").gte("created_at", yesterday + "T00:00:00.000Z").lte("created_at", yesterday + "T23:59:59.999Z"),
         ]);
         const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
         const score = (events) => {
