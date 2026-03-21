@@ -11,16 +11,12 @@ const supabase = createClient(
 // We detect DST automatically via Intl
 function getWeekStart() {
   const now = new Date();
-  // Get current Pacific offset in minutes
   const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
     .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-  // Shift now to Pacific time
   const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-  // Roll back to the most recent Sunday
-  const dayOfWeek = pacificNow.getDay(); // 0 = Sunday
+  const dayOfWeek = pacificNow.getDay();
   const sunday = new Date(pacificNow);
   sunday.setDate(pacificNow.getDate() - dayOfWeek);
-  // Return as YYYY-MM-DD using Pacific date components
   const y = sunday.getFullYear();
   const m = String(sunday.getMonth() + 1).padStart(2, '0');
   const d = String(sunday.getDate()).padStart(2, '0');
@@ -41,7 +37,6 @@ async function logChartEvent(gameId, eventType, userId) {
   const weekStart = getWeekStart();
 
   if (eventType === 'post') {
-    // Find current post sequence for this user/game/week
     const { data: existing } = await supabase
       .from("chart_events")
       .select("post_sequence")
@@ -57,11 +52,11 @@ async function logChartEvent(gameId, eventType, userId) {
       week_start: weekStart, post_sequence: nextSeq,
     });
   } else {
-    // All other events: upsert (dedup via unique index)
     await supabase.from("chart_events").upsert({
       game_id: gameId, user_id: userId, event_type: eventType,
       week_start: weekStart, post_sequence: 1,
     }, { onConflict: "user_id,game_id,event_type,week_start", ignoreDuplicates: true });
+  }
   }
 }
 
@@ -1959,7 +1954,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-285</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-293</span>
         </div>
       </div>
     </nav>
@@ -2070,14 +2065,15 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get current week start (Sunday midnight Pacific)
-      const weekStart = getWeekStart();
+      // Get today's date range (Pacific)
+      const dayStart = getWeekStart();
+      const rangeStart = dayStart;
 
       // Live scores from chart_events this week
       let query = supabase
         .from("chart_events")
         .select("game_id, event_type, games(id, name, category, genre)")
-        .eq("week_start", weekStart);
+        .eq("week_start", dayStart);
       if (category) query = query.eq("games.category", category);
 
       const { data: events } = await query;
@@ -2130,11 +2126,11 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
         setCharts(sorted);
 
         // Get last week's rankings for movement arrows
-        const lastWeek = new Date(new Date(weekStart).setDate(new Date(weekStart).getDate() - 7)).toISOString().split('T')[0];
+        const yesterday = new Date(new Date(dayStart).setDate(new Date(dayStart).getDate() - 7)).toISOString().split('T')[0];
         const { data: history } = await supabase
           .from("chart_history")
           .select("game_id, rank")
-          .eq("week_start", lastWeek);
+          .eq("week_start", yesterday);
         if (history) {
           const prev = {};
           history.forEach(h => prev[h.game_id] = h.rank);
@@ -3121,6 +3117,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [genreLeaders, setGenreLeaders] = useState({});
   const [genreContext, setGenreContext] = useState({}); // gameId -> { genreGlobalMax, genreRefPoints } // genre -> gameId of #1 in that genre
   const [sparklines, setSparklines] = useState({});
+  const sparklinesRef = React.useRef({});
+  const setSparklinesWithRef = (updater) => {
+    setSparklines(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      sparklinesRef.current = next;
+      return next;
+    });
+  };
   const [loadingSparkline, setLoadingSparkline] = useState({});
 
   const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
@@ -3179,45 +3183,49 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   }, [currentUser?.id]);
 
 
-  // Build fixed 9-slot sparkline data: 8 weeks oldest→newest + 1 future zero
-  const buildSparkline = (gameId, events, allWeekStarts, globalMax, referencePoints) => {
-    const weekScores = {};
-    allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+  // Build fixed 9-slot sparkline data: 8 days oldest→newest + 1 future zero
+  const buildSparkline = (gameId, events, allDayStarts, globalMax, referencePoints) => {
+    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const dayScores = {};
+    allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      if (!weekScores[e.week_start]) return;
-      weekScores[e.week_start].users.add(e.user_id);
-      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+      const day = e.week_start;
+      if (!dayScores[day]) return;
+      dayScores[day].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { dayScores[day].score += WEIGHTS[e.event_type] || 0; }
     });
-    const ordered = allWeekStarts.slice().reverse();
-    const points = [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
-    const labels = [...ordered.map(w => { const d = new Date(w + "T12:00:00"); return (d.getMonth() + 1) + "/" + d.getDate(); }), ""];
+    const ordered = allDayStarts.slice().reverse();
+    const points = [...ordered.map(d => { const { score, users } = dayScores[d]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
+    const labels = [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
     return { points, labels, globalMax, referencePoints };
   };
 
-  // Helper: compute raw weekly scores for a game given events + week starts
-  const computePoints = (gameId, events, allWeekStarts) => {
-    const weekScores = {};
-    allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
+  // Helper: compute raw daily scores for a game given events + day starts
+  const computePoints = (gameId, events, allDayStarts) => {
+    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const dayScores = {};
+    allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      if (!weekScores[e.week_start]) return;
-      weekScores[e.week_start].users.add(e.user_id);
-      if (e.event_type === "post") { const seq = e.post_sequence || 1; weekScores[e.week_start].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
-      else { weekScores[e.week_start].score += WEIGHTS[e.event_type] || 0; }
+      const day = e.week_start;
+      if (!dayScores[day]) return;
+      dayScores[day].users.add(e.user_id);
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
+      else { dayScores[day].score += WEIGHTS[e.event_type] || 0; }
     });
-    const ordered = allWeekStarts.slice().reverse();
-    return [...ordered.map(w => { const { score, users } = weekScores[w]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
+    const ordered = allDayStarts.slice().reverse();
+    return [...ordered.map(d => { const { score, users } = dayScores[d]; return score * (1 + Math.log(Math.max(users.size, 1)) * 0.2); }), 0];
   };
   // Load charts
   useEffect(() => {
     const load = async () => {
       setChartsLoading(true);
       setSparklines({});
-      const weekStarts = getWeekStarts(8);
-      const currentWeek = weekStarts[0]; // most recent
+      const dayStarts = getWeekStarts(8);
+      const today = dayStarts[0];
       const { data: events } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .eq("week_start", currentWeek);
+        .select("game_id, event_type, post_sequence, user_id, created_at, games(id, name, genre, cover_url)")
+        .eq("week_start", today);
       if (!events) { setChartsLoading(false); return; }
       const scored = scoreEvents(events);
       const top10 = scored.slice(0, 10);
@@ -3233,10 +3241,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
       // Calculate previous week's ranks for movement indicators
-      const prevWeekStart = getWeekStarts(2)[1];
+      const prevDay = getWeekStarts(2)[1];
       const { data: prevEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .eq("week_start", prevWeekStart);
+        .select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)")
+        .eq("week_start", prevDay);
       if (prevEvents && prevEvents.length > 0) {
         const prevScored = scoreEvents(prevEvents);
         const pRanks = {};
@@ -3246,7 +3254,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Eagerly load sparklines for ALL ranked games (top 10 + all genre games)
       if (top10.length === 0) return;
-      const allWeekStarts = getWeekStarts(8);
+      const allDayStarts = getWeekStarts(8);
       const allRankedIds = [...new Set([
         ...top10.map(g => g.id),
         ...Object.values(genresFull).flat().map(g => g.id),
@@ -3254,12 +3262,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const { data: sparkEvents } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start")
         .in("game_id", allRankedIds)
-        .in("week_start", allWeekStarts);
+        .in("week_start", allDayStarts);
 
       // Find global max across top 10
-      const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts)));
+      const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allDayStarts)));
       const globalMax = Math.max(...allScores, 0.1);
-      const overallRef = computePoints(top10[0].id, sparkEvents || [], allWeekStarts);
+      const overallRef = computePoints(top10[0].id, sparkEvents || [], allDayStarts);
 
       // Per-genre: leader reference points and max
       const gLeaders = {};
@@ -3269,9 +3277,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         if (games.length === 0) return;
         const leader = games[0];
         gLeaders[genre] = leader.id;
-        const leaderPts = computePoints(leader.id, sparkEvents || [], allWeekStarts);
+        const leaderPts = computePoints(leader.id, sparkEvents || [], allDayStarts);
         genreRefPoints[genre] = leaderPts;
-        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts))), 0.1);
+        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allDayStarts))), 0.1);
       });
       setGenreLeaders(gLeaders);
 
@@ -3284,7 +3292,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         const isOverallLeader = id === top10[0].id;
         const isGenreLeader = gLeaders[genre] === id;
         newSparklines[id] = {
-          ...buildSparkline(id, sparkEvents || [], allWeekStarts, globalMax, isOverallLeader ? null : overallRef),
+          ...buildSparkline(id, sparkEvents || [], allDayStarts, globalMax, isOverallLeader ? null : overallRef),
           genreGlobalMax: genreMaxes[genre] || globalMax,
           genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null),
         };
@@ -3297,16 +3305,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   }, []);
 
   const loadSparkline = async (gameId) => {
-    if (sparklines[gameId]) return;
+    if (sparklinesRef.current[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    const weekStarts = getWeekStarts(8);
+    const allDayStarts = getWeekStarts(8);
     const { data: events } = await supabase.from("chart_events")
-      .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
-    const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
+      .select("game_id, event_type, post_sequence, user_id, week_start")
+      .eq("game_id", gameId)
+      .in("week_start", allDayStarts);
+    const existingMax = Object.values(sparklinesRef.current).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
     const ctx = genreContext[gameId] || {};
-    const sp = buildSparkline(gameId, events || [], weekStarts, globalMax, Object.values(sparklines)[0]?.referencePoints || null);
-    setSparklines(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
+    const sp = buildSparkline(gameId, events || [], allDayStarts, globalMax, Object.values(sparklinesRef.current)[0]?.referencePoints || null);
+    setSparklinesWithRef(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
@@ -3323,10 +3333,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Most Talked About",
       desc: "Highest combined posts and comments this week",
       run: async () => {
-        const weekStarts = getWeekStarts(1);
+        const today = getWeekStart();
         const { data } = await supabase.from("chart_events")
           .select("game_id, event_type, games(id, name, genre, cover_url)")
-          .in("week_start", weekStarts)
+          .eq("week_start", today)
           .in("event_type", ["post", "comment"]);
         const counts = {};
         (data || []).forEach(e => {
@@ -3382,10 +3392,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       label: "Blowing Up",
       desc: "Biggest week-over-week momentum spike",
       run: async () => {
-        const [thisWeek, lastWeek] = [getWeekStarts(1)[0], getWeekStarts(2)[1]];
+        const [today, yesterday] = [getWeekStart(), getWeekStarts(2)[1]];
         const [thisData, lastData] = await Promise.all([
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", thisWeek),
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", lastWeek),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", today),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", yesterday),
         ]);
         const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
         const score = (events) => {
@@ -3553,7 +3563,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
-  // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
+  // Sparkline: 9 slots fixed (8 days data + 1 future empty)
   const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
@@ -3565,14 +3575,20 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const baseline = h - pad;
     let lastDataIdx = 0;
     for (let i = 7; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
-    const dataPoints = points.slice(0, lastDataIdx + 1);
-    const linePts = dataPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
-    const areaPath = `M ${xPos(0)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
+    let firstDataIdx = 0;
+    for (let i = 0; i <= 7; i++) { if (points[i] > 0) { firstDataIdx = i; break; } }
+    const dataPoints = points.slice(firstDataIdx, lastDataIdx + 1);
+    const linePts = dataPoints.map((v, i) => `${xPos(i + firstDataIdx)},${yPos(v)}`).join(" ");
+    const areaPath = `M ${xPos(firstDataIdx)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i + firstDataIdx)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
     // Reference line (genre or overall leader)
     let refLastIdx = 0;
-    if (refPoints) { for (let i = 7; i >= 0; i--) { if (refPoints[i] > 0) { refLastIdx = i; break; } } }
-    const refData = refPoints ? refPoints.slice(0, refLastIdx + 1) : null;
-    const refLinePts = refData ? refData.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
+    let refFirstIdx = 0;
+    if (refPoints) {
+      for (let i = 7; i >= 0; i--) { if (refPoints[i] > 0) { refLastIdx = i; break; } }
+      for (let i = 0; i <= 7; i++) { if (refPoints[i] > 0) { refFirstIdx = i; break; } }
+    }
+    const refData = refPoints ? refPoints.slice(refFirstIdx, refLastIdx + 1) : null;
+    const refLinePts = refData ? refData.map((v, i) => `${xPos(i + refFirstIdx)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
@@ -3584,7 +3600,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <path d={areaPath} fill={`url(#grad-${color.replace("#","")})`} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
           {dataPoints.map((v, i) => (
-            <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastDataIdx ? 5 : 3} fill={color} opacity={i === lastDataIdx ? 1 : 0.4} />
+            <circle key={i} cx={xPos(i + firstDataIdx)} cy={yPos(v)} r={i + firstDataIdx === lastDataIdx ? 5 : 3} fill={color} opacity={i + firstDataIdx === lastDataIdx ? 1 : 0.4} />
           ))}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2 }}>
@@ -3639,8 +3655,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         {isExpanded && (
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
-            {isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
-              : sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
+            {sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
+              : isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
               {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
