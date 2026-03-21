@@ -1981,7 +1981,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-307</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-308</span>
         </div>
       </div>
     </nav>
@@ -8455,7 +8455,12 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: isMobile ? 18 : 22 }}>{profile.username}</h1>
-                {profile.level && <Badge color={C.gold}>Lv.{profile.level}</Badge>}
+                {profile.xp !== undefined && (() => {
+                  const XP_LEVELS = [0, 100, 250, 450, 750, 1150, 1650, 2250, 3000, 3900];
+                  let level = 1;
+                  for (let i = 1; i < XP_LEVELS.length; i++) { if ((profile.xp || 0) >= XP_LEVELS[i]) level = i + 1; else break; }
+                  return <Badge color={C.gold}>Lv.{Math.min(level, 10)}</Badge>;
+                })()}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
               {profile.bio && <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{profile.bio}</p>}
@@ -8546,7 +8551,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
           {SHELF_COLUMNS.map(col => (
             <div key={col.id} style={{ background: C.surface, border: "1px solid " + col.color + "33", borderRadius: 14, padding: 14, minHeight: 160 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
+                <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
                 <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{shelf[col.id].length}</div>
               </div>
               {shelf[col.id].length > 0 ? shelf[col.id].map(entry => {
