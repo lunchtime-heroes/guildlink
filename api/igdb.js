@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
       // Step 2: keep games that have cover art OR have follows > 0
       // This eliminates fan hacks and data noise while keeping legitimate obscure titles
-      const qualityFiltered = categoryFiltered.filter(g => g.cover?.image_id || (g.follows || 0) > 0);
+      const qualityFiltered = categoryFiltered.filter(g => g.cover?.image_id || (g.follows || 0) > 0 || g.category === 0);
 
       // Step 3: sort — games with cover art first, then by follows
       const sorted = qualityFiltered.sort((a, b) => {
