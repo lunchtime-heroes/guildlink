@@ -1576,16 +1576,30 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
               {/* The post */}
               <div style={{ padding: 20, borderBottom: "1px solid " + C.border }}>
                 <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                  <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={38} />
-                  <div>
-                    <div onClick={() => !post.npc_id && post.user_id && onNavigateToPlayer?.(post.user_id)}
-                      style={{ fontWeight: 700, color: C.text, fontSize: 14, cursor: !post.npc_id && post.user_id ? "pointer" : "default" }}
-                      onMouseEnter={e => { if (!post.npc_id && post.user_id) e.currentTarget.style.color = C.accentSoft; }}
-                      onMouseLeave={e => e.currentTarget.style.color = C.text}>
-                      {post.profiles?.username || "Unknown"}
-                    </div>
-                    <div style={{ color: C.textDim, fontSize: 12 }}>{post.profiles?.handle} · {timeAgo(post.created_at)}</div>
-                  </div>
+                  {(() => {
+                    const npcData = post.npc_id ? NPCS[post.npc_id] : null;
+                    const isNPC = !!npcData;
+                    const name = npcData?.name || post.profiles?.username || "Unknown";
+                    const avatar = npcData?.avatar || post.profiles?.avatar_initials || "?";
+                    const handle = npcData ? ("@" + npcData.handle?.replace("@","")) : post.profiles?.handle;
+                    return (
+                      <>
+                        <Avatar initials={avatar.slice(0,2).toUpperCase()} size={38} isNPC={isNPC} />
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div onClick={() => !isNPC && post.user_id && onNavigateToPlayer?.(post.user_id)}
+                              style={{ fontWeight: 700, color: isNPC ? C.gold : C.text, fontSize: 14, cursor: !isNPC && post.user_id ? "pointer" : "default" }}
+                              onMouseEnter={e => { if (!isNPC && post.user_id) e.currentTarget.style.color = C.accentSoft; }}
+                              onMouseLeave={e => e.currentTarget.style.color = isNPC ? C.gold : C.text}>
+                              {name}
+                            </div>
+                            {isNPC && <NPCBadge />}
+                          </div>
+                          <div style={{ color: C.textDim, fontSize: 12 }}>{handle} · {timeAgo(post.created_at)}</div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <p style={{ color: C.text, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{post.content}</p>
                 <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>♥ {post.likes || 0} · 💬 {comments.length}</div>
@@ -1989,7 +2003,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-310</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-311</span>
         </div>
       </div>
     </nav>
