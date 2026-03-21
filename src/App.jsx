@@ -784,29 +784,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
           )}
 
-          {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
-            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
-              <button onClick={() => setShowPostMenu(m => !m)} style={{
-                background: "transparent", border: "1px solid " + C.border,
-                borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-                color: C.textDim, fontSize: 16, lineHeight: 1,
-              }}>•••</button>
-              {showPostMenu && (
-                <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                  <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
-                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                    {editing ? "Cancel Edit" : "Edit"}
-                  </button>
-                  <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
-                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (\n            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>\n              <button onClick={() => setShowPostMenu(m => !m)} style={{\n                background: "transparent", border: "1px solid " + C.border,\n                borderRadius: 8, padding: "5px 10px", cursor: "pointer",\n                color: C.textDim, fontSize: 16, lineHeight: 1,\n              }}>•••</button>\n              {showPostMenu && (\n                <>\n                  <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />\n                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>\n                    {post.user_id === currentUser.id && (\n                      <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}\n                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}\n                        onMouseLeave={e => e.currentTarget.style.background = "none"}>\n                        {editing ? "Cancel Edit" : "Edit"}\n                      </button>\n                    )}\n                    <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}\n                      onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}\n                      onMouseLeave={e => e.currentTarget.style.background = "none"}>\n                      Delete\n                    </button>\n                  </div>\n                </>\n              )}\n            </div>\n          )}
         </div>
       </div>
 
@@ -1959,7 +1937,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-295</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-297</span>
         </div>
       </div>
     </nav>
@@ -7537,8 +7515,8 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                             <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); setScheduleMode(false); }}
                               style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-                            <button onClick={handleSend} disabled={!composeText.trim() || sending}
-                              style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
+                            <button onClick={handleSend} disabled={!composeText.trim() || sending || (scheduleMode && (!scheduleDate || !scheduleTime))}
+                              style={{ background: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "pointer" : "default" }}>
                               {sending ? "Sending…" : sent ? "✓ Sent" : scheduleMode ? "Schedule" : "Reply Now"}
                             </button>
                           </div>
@@ -7707,8 +7685,8 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button onClick={() => setComposeText("")}
                   style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 18px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
-                <button onClick={handleSend} disabled={!composeText.trim() || sending}
-                  style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 14, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
+                <button onClick={handleSend} disabled={!composeText.trim() || sending || (scheduleMode && (!scheduleDate || !scheduleTime))}
+                  style={{ background: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "#fff" : C2.textDim, fontSize: 14, fontWeight: 700, cursor: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "pointer" : "default" }}>
                   {sending ? "Sending…" : sent ? "✓ Posted" : scheduleMode ? "Schedule" : "Post Now"}
                 </button>
               </div>
@@ -7723,7 +7701,14 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     return (
       <div style={{ marginBottom: 12 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: scheduleMode ? 10 : 0 }}>
-          <input type="checkbox" checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)}
+          <input type="checkbox" checked={scheduleMode} onChange={e => {
+            setScheduleMode(e.target.checked);
+            if (e.target.checked) {
+              const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+              setScheduleDate(tomorrow.toISOString().split("T")[0]);
+              setScheduleTime("09:00");
+            }
+          }}
             style={{ accentColor: C2.accent }} />
           <span style={{ color: C2.textMuted, fontSize: 13 }}>Schedule for later</span>
         </label>
