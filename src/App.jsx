@@ -1943,7 +1943,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-279</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-280</span>
         </div>
       </div>
     </nav>
@@ -3475,6 +3475,28 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
           .map(r => ({ ...r.game, _stat: `${r.count} players` }));
       }
+    },
+    {
+      id: "most_wanted",
+      label: "Most Wanted",
+      desc: "Games players are actively elevating on their lists",
+      run: async () => {
+        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+        const { data } = await supabase.from("shelf_elevations")
+          .select("game_id, to_position, games(id, name, genre, cover_url)")
+          .gte("created_at", since);
+        const scores = {};
+        (data || []).forEach(r => {
+          if (!r.games) return;
+          if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0, count: 0 };
+          // Weight by position: #1 = 1.0, #2 = 0.8, #3 = 0.6, deeper = 0.4
+          const posWeight = r.to_position === 0 ? 1.0 : r.to_position === 1 ? 0.8 : r.to_position === 2 ? 0.6 : 0.4;
+          scores[r.game_id].score += posWeight;
+          scores[r.game_id].count++;
+        });
+        return Object.values(scores).sort((a, b) => b.score - a.score).slice(0, 12)
+          .map(r => ({ ...r.game, _stat: `${r.count} elevation${r.count !== 1 ? "s" : ""} this fortnight` }));
+      }
     }] : []),
   ];
 
@@ -4895,6 +4917,28 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       updated_at: new Date().toISOString(),
     }));
     await supabase.from("user_games").upsert(updates);
+
+    // Log elevations for Want to Play column — any game that moved up
+    if (colId === "want_to_play") {
+      const prevOrder = userShelf.want_to_play;
+      const elevations = orderedEntries
+        .map((entry, toIdx) => {
+          const fromIdx = prevOrder.findIndex(e => e.game_id === entry.game_id);
+          if (fromIdx === -1 || toIdx >= fromIdx) return null; // didn't move up
+          return { game_id: entry.game_id, from_position: fromIdx, to_position: toIdx };
+        })
+        .filter(Boolean);
+      if (elevations.length > 0) {
+        await supabase.from("shelf_elevations").insert(
+          elevations.map(e => ({
+            user_id: authUser.id,
+            game_id: e.game_id,
+            from_position: e.from_position,
+            to_position: e.to_position,
+          }))
+        );
+      }
+    }
   };
 
   const handleDrop = (e, toStatus) => {
