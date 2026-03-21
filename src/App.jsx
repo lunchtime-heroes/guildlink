@@ -206,6 +206,8 @@ const C = { ...THEMES["deep-space"] };
 function applyTheme(themeId) {
   const palette = THEMES[themeId] || THEMES["deep-space"];
   Object.assign(C, palette);
+  document.body.style.background = palette.bg;
+  document.documentElement.style.background = palette.bg;
 }
 
 // ─── FOUNDING / RING / QUEST DATA ────────────────────────────────────────────
@@ -778,7 +780,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               border: "1px solid " + (tipped ? C.gold + "44" : C.border),
               borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
               color: tipped ? C.gold : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+              display: "flex", alignItems: "center", gap: 4, flexShrink: 0, alignSelf: "stretch",
             }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
           )}
 
@@ -1957,7 +1959,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-284</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-285</span>
         </div>
       </div>
     </nav>
