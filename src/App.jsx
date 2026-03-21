@@ -9,14 +9,17 @@ const supabase = createClient(
 // Week start helper — Sunday 12:00am Pacific time
 // Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
 // We detect DST automatically via Intl
-function getDayStart() {
+function getWeekStart() {
   const now = new Date();
   const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
     .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
   const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-  const y = pacificNow.getFullYear();
-  const m = String(pacificNow.getMonth() + 1).padStart(2, '0');
-  const d = String(pacificNow.getDate()).padStart(2, '0');
+  const dayOfWeek = pacificNow.getDay();
+  const sunday = new Date(pacificNow);
+  sunday.setDate(pacificNow.getDate() - dayOfWeek);
+  const y = sunday.getFullYear();
+  const m = String(sunday.getMonth() + 1).padStart(2, '0');
+  const d = String(sunday.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
@@ -31,44 +34,29 @@ async function logAnalytics(userId, eventType, page, metadata = {}) {
 
 async function logChartEvent(gameId, eventType, userId) {
   if (!gameId || !gameId.includes('-')) return;
-  const today = getDayStart();
-  const todayStart = today + "T00:00:00.000Z";
-  const todayEnd = today + "T23:59:59.999Z";
+  const weekStart = getWeekStart();
 
   if (eventType === 'post') {
-    // Find current post sequence for this user/game/day
     const { data: existing } = await supabase
       .from("chart_events")
       .select("post_sequence")
       .eq("game_id", gameId)
       .eq("user_id", userId)
       .eq("event_type", "post")
-      .gte("created_at", todayStart)
-      .lte("created_at", todayEnd)
+      .eq("week_start", weekStart)
       .order("post_sequence", { ascending: false })
       .limit(1);
     const nextSeq = existing && existing.length > 0 ? existing[0].post_sequence + 1 : 1;
     await supabase.from("chart_events").insert({
       game_id: gameId, user_id: userId, event_type: eventType,
-      post_sequence: nextSeq,
+      week_start: weekStart, post_sequence: nextSeq,
     });
   } else {
-    // Non-post events: only log once per user/game/event_type per day
-    const { data: existing } = await supabase
-      .from("chart_events")
-      .select("id")
-      .eq("game_id", gameId)
-      .eq("user_id", userId)
-      .eq("event_type", eventType)
-      .gte("created_at", todayStart)
-      .lte("created_at", todayEnd)
-      .limit(1);
-    if (!existing || existing.length === 0) {
-      await supabase.from("chart_events").insert({
-        game_id: gameId, user_id: userId, event_type: eventType,
-        post_sequence: 1,
-      });
-    }
+    await supabase.from("chart_events").upsert({
+      game_id: gameId, user_id: userId, event_type: eventType,
+      week_start: weekStart, post_sequence: 1,
+    }, { onConflict: "user_id,game_id,event_type,week_start", ignoreDuplicates: true });
+  }
   }
 }
 
@@ -1966,7 +1954,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-292</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-293</span>
         </div>
       </div>
     </nav>
@@ -2078,16 +2066,14 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
       setLoading(true);
 
       // Get today's date range (Pacific)
-      const dayStart = getDayStart();
-      const rangeStart = dayStart + "T00:00:00.000Z";
-      const rangeEnd = dayStart + "T23:59:59.999Z";
+      const dayStart = getWeekStart();
+      const rangeStart = dayStart;
 
-      // Live scores from chart_events today
+      // Live scores from chart_events this week
       let query = supabase
         .from("chart_events")
         .select("game_id, event_type, games(id, name, category, genre)")
-        .gte("created_at", rangeStart)
-        .lte("created_at", rangeEnd);
+        .eq("week_start", dayStart);
       if (category) query = query.eq("games.category", category);
 
       const { data: events } = await query;
@@ -2139,8 +2125,8 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           }));
         setCharts(sorted);
 
-        // Get yesterday's rankings for movement arrows
-        const yesterday = new Date(new Date(dayStart).setDate(new Date(dayStart).getDate() - 1)).toISOString().split('T')[0];
+        // Get last week's rankings for movement arrows
+        const yesterday = new Date(new Date(dayStart).setDate(new Date(dayStart).getDate() - 7)).toISOString().split('T')[0];
         const { data: history } = await supabase
           .from("chart_history")
           .select("game_id, rank")
@@ -2181,7 +2167,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           {category ? `${category} Charts` : "The Charts"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ color: C.textDim, fontSize: 10 }}>Today</div>
+          <div style={{ color: C.textDim, fontSize: 10 }}>This week</div>
           {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{collapsed ? "▼" : "▲"}</span>}
         </div>
       </div>
@@ -2190,7 +2176,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
         <div style={{ color: C.textDim, fontSize: 12, textAlign: "center", padding: "20px 0" }}>Loading...</div>
       ) : charts.length === 0 ? (
         <div style={{ color: C.textDim, fontSize: 12, textAlign: "center", padding: "20px 0", lineHeight: 1.6 }}>
-          Charts fill up as the community posts, reviews, and plays games today.
+          Charts fill up as the community posts, reviews, and plays games this week.
         </div>
       ) : (
         <div>
@@ -3035,7 +3021,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.7, maxWidth: 300, margin: "0 auto 20px" }}>
                 {following.length === 0
                   ? "Follow players from the feed or their profiles and their posts will show up here."
-                  : "The people you follow haven't posted yet today. Check back soon."}
+                  : "The people you follow haven't posted yet this week. Check back soon."}
               </div>
               {following.length === 0 && (
                 <button onClick={() => setFeedTab("forYou")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "9px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse For You</button>
@@ -3150,16 +3136,16 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     return { color: COLORS[colorIndex] };
   };
 
-  const getDayStart = () => {
+  const getWeekStart = () => {
     const d = new Date(); d.setHours(0,0,0,0);
-    return d.toISOString().split("T")[0];
+    d.setDate(d.getDate() - d.getDay()); return d.toISOString().split("T")[0];
   };
-  const getDayStarts = (count) => {
+  const getWeekStarts = (count) => {
     const starts = [];
-    const base = getDayStart();
+    const base = getWeekStart();
     const [y, m, d] = base.split("-").map(Number);
     for (let i = 0; i < count; i++) {
-      const dt = new Date(y, m - 1, d - i);
+      const dt = new Date(y, m - 1, d - i * 7);
       starts.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`);
     }
     return starts;
@@ -3203,7 +3189,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const dayScores = {};
     allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      const day = utcToPacificDate(e.created_at);
+      const day = e.week_start;
       if (!dayScores[day]) return;
       dayScores[day].users.add(e.user_id);
       if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
@@ -3221,7 +3207,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const dayScores = {};
     allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
-      const day = utcToPacificDate(e.created_at);
+      const day = e.week_start;
       if (!dayScores[day]) return;
       dayScores[day].users.add(e.user_id);
       if (e.event_type === "post") { const seq = e.post_sequence || 1; dayScores[day].score += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; }
@@ -3235,14 +3221,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const load = async () => {
       setChartsLoading(true);
       setSparklines({});
-      const dayStarts = getDayStarts(8);
+      const dayStarts = getWeekStarts(8);
       const today = dayStarts[0];
-      const rangeStart = today + "T00:00:00.000Z";
-      const rangeEnd = today + "T23:59:59.999Z";
       const { data: events } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, created_at, games(id, name, genre, cover_url)")
-        .gte("created_at", rangeStart)
-        .lte("created_at", rangeEnd);
+        .eq("week_start", today);
       if (!events) { setChartsLoading(false); return; }
       const scored = scoreEvents(events);
       const top10 = scored.slice(0, 10);
@@ -3257,14 +3240,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setByGenre(genres); setByGenreFull(genresFull);
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
-      // Calculate previous day's ranks for movement indicators
-      const prevDay = getDayStarts(2)[1];
-      const prevStart = prevDay + "T00:00:00.000Z";
-      const prevEnd = prevDay + "T23:59:59.999Z";
+      // Calculate previous week's ranks for movement indicators
+      const prevDay = getWeekStarts(2)[1];
       const { data: prevEvents } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)")
-        .gte("created_at", prevStart)
-        .lte("created_at", prevEnd);
+        .eq("week_start", prevDay);
       if (prevEvents && prevEvents.length > 0) {
         const prevScored = scoreEvents(prevEvents);
         const pRanks = {};
@@ -3274,18 +3254,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Eagerly load sparklines for ALL ranked games (top 10 + all genre games)
       if (top10.length === 0) return;
-      const allDayStarts = getDayStarts(8);
-      const sparkRangeStart = getDayStarts(30)[29] + "T00:00:00.000Z";
-      const sparkRangeEnd = today + "T23:59:59.999Z";
+      const allDayStarts = getWeekStarts(8);
       const allRankedIds = [...new Set([
         ...top10.map(g => g.id),
         ...Object.values(genresFull).flat().map(g => g.id),
       ])];
       const { data: sparkEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, created_at")
+        .select("game_id, event_type, post_sequence, user_id, week_start")
         .in("game_id", allRankedIds)
-        .gte("created_at", sparkRangeStart)
-        .lte("created_at", sparkRangeEnd);
+        .in("week_start", allDayStarts);
 
       // Find global max across top 10
       const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allDayStarts)));
@@ -3330,14 +3307,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const loadSparkline = async (gameId) => {
     if (sparklinesRef.current[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    const allDayStarts = getDayStarts(8);
-    const sparkRangeStart = getDayStarts(30)[29] + "T00:00:00.000Z";
-    const sparkRangeEnd = allDayStarts[0] + "T23:59:59.999Z";
+    const allDayStarts = getWeekStarts(8);
     const { data: events } = await supabase.from("chart_events")
-      .select("game_id, event_type, post_sequence, user_id, created_at")
+      .select("game_id, event_type, post_sequence, user_id, week_start")
       .eq("game_id", gameId)
-      .gte("created_at", sparkRangeStart)
-      .lte("created_at", sparkRangeEnd);
+      .in("week_start", allDayStarts);
     const existingMax = Object.values(sparklinesRef.current).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
     const ctx = genreContext[gameId] || {};
@@ -3357,13 +3331,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "most_talked_about",
       label: "Most Talked About",
-      desc: "Highest combined posts and comments today",
+      desc: "Highest combined posts and comments this week",
       run: async () => {
-        const today = getDayStart();
+        const today = getWeekStart();
         const { data } = await supabase.from("chart_events")
           .select("game_id, event_type, games(id, name, genre, cover_url)")
-          .gte("created_at", today + "T00:00:00.000Z")
-          .lte("created_at", today + "T23:59:59.999Z")
+          .eq("week_start", today)
           .in("event_type", ["post", "comment"]);
         const counts = {};
         (data || []).forEach(e => {
@@ -3417,12 +3390,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "blowing_up",
       label: "Blowing Up",
-      desc: "Biggest day-over-day momentum spike",
+      desc: "Biggest week-over-week momentum spike",
       run: async () => {
-        const [today, yesterday] = [getDayStart(), getDayStarts(2)[1]];
+        const [today, yesterday] = [getWeekStart(), getWeekStarts(2)[1]];
         const [thisData, lastData] = await Promise.all([
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").gte("created_at", today + "T00:00:00.000Z").lte("created_at", today + "T23:59:59.999Z"),
-          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").gte("created_at", yesterday + "T00:00:00.000Z").lte("created_at", yesterday + "T23:59:59.999Z"),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", today),
+          supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", yesterday),
         ]);
         const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
         const score = (events) => {
@@ -3446,7 +3419,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           .filter(r => r.game && r.pct > 0)
           .sort((a, b) => b.pct - a.pct)
           .slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `+${r.pct}% today` }));
+          .map(r => ({ ...r.game, _stat: `+${r.pct}% this week` }));
       }
     },
     {
@@ -3591,15 +3564,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   };
 
   // Sparkline: 9 slots fixed (8 days data + 1 future empty)
-  const utcToPacificDate = (isoString) => {
-    if (!isoString) return "";
-    const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-      .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-    const utc = new Date(isoString);
-    const pacific = new Date(utc.getTime() + (pacificOffset + utc.getTimezoneOffset()) * 60000);
-    return `${pacific.getFullYear()}-${String(pacific.getMonth() + 1).padStart(2, "0")}-${String(pacific.getDate()).padStart(2, "0")}`;
-  };
-
   const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
@@ -3690,7 +3654,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         </div>
         {isExpanded && (
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
-            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 days</div>
+            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 weeks</div>
             {sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
               : isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
@@ -3943,7 +3907,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
             <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
-              <div style={{ color: C.textDim, fontSize: 12 }}>Last 8 days</div>
+              <div style={{ color: C.textDim, fontSize: 12 }}>Last 8 weeks</div>
             </div>
             {overall.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="overall" />)}
           </div>
@@ -4294,11 +4258,11 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               <div style={{ background: C.surface, border: "1px solid " + game.color + "44", borderRadius: 14, padding: 22, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>The Charts</div>
-                  <span style={{ color: C.textDim, fontSize: 12 }}>Today</span>
+                  <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                   {[
-                    { label: "Posts Today", value: chartsData?.weeklyPosts ?? "—", color: game.color },
+                    { label: "Posts This Week", value: chartsData?.weeklyPosts ?? "—", color: game.color },
                     { label: "New Reviews", value: chartsData?.weeklyReviews ?? "—", color: C.teal },
                     { label: "Avg Rating", value: chartsData?.avgRating ? chartsData.avgRating + "/10" : "—", color: C.gold },
                   ].map(s => (
@@ -6261,9 +6225,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       {tab === "charts" && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
-            Chart events today — top 15 games
+            Chart events this week — top 15 games
           </div>
-          {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet today.</div>}
+          {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet this week.</div>}
           {chartEvents.map((g, i) => (
             <div key={g.name} style={{ padding: "12px 20px", borderBottom: i < chartEvents.length - 1 ? "1px solid " + C.border : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
