@@ -1964,7 +1964,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-301</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-302</span>
         </div>
       </div>
     </nav>
@@ -3167,7 +3167,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     }
     return starts;
   };
-  const scoreEvents = (events) => {
+  const scoreEvents = (events, recencyWeights) => {
     const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
     const scoreMap = {}, countMap = {}, userMap = {};
     events.forEach(e => {
@@ -3175,8 +3175,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const id = e.game_id;
       if (!scoreMap[id]) { scoreMap[id] = 0; countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }; userMap[id] = new Set(); }
       userMap[id].add(e.user_id);
-      if (e.event_type === "post") { const seq = e.post_sequence || 1; scoreMap[id] += seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1; countMap[id].post++; }
-      else { scoreMap[id] += WEIGHTS[e.event_type] || 0; if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++; }
+      const rw = recencyWeights ? (recencyWeights[e.week_start] || 0.1) : 1.0;
+      if (e.event_type === "post") { const seq = e.post_sequence || 1; scoreMap[id] += (seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1) * rw; countMap[id].post++; }
+      else { scoreMap[id] += (WEIGHTS[e.event_type] || 0) * rw; if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++; }
     });
     return Object.entries(scoreMap).map(([id, rawScore]) => {
       const uniqueUsers = userMap[id].size;
@@ -3237,12 +3238,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setChartsLoading(true);
       setSparklines({});
       const weekStarts = getWeekStarts(8);
-      const currentWeek = weekStarts[0]; // most recent
+      const currentWeek = weekStarts[0];
+      const rollingWeeks = weekStarts.slice(0, 4);
+      const recencyWeights = { [rollingWeeks[0]]: 1.0, [rollingWeeks[1]]: 0.6, [rollingWeeks[2]]: 0.3, [rollingWeeks[3]]: 0.1 };
       const { data: events } = await supabase.from("chart_events")
         .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .eq("week_start", currentWeek);
+        .in("week_start", rollingWeeks);
       if (!events) { setChartsLoading(false); return; }
-      const scored = scoreEvents(events);
+      const scored = scoreEvents(events, recencyWeights);
       const top10 = scored.slice(0, 10);
       setOverall(top10);
       const genres = {}, genresFull = {};
@@ -3261,7 +3264,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
         .eq("week_start", prevWeekStart);
       if (prevEvents && prevEvents.length > 0) {
-        const prevScored = scoreEvents(prevEvents);
+        const prevScored = scoreEvents(prevEvents, null);
         const pRanks = {};
         prevScored.forEach((g, i) => { pRanks[g.id] = i + 1; });
         setPrevRanks(pRanks);
