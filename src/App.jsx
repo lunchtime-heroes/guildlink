@@ -375,7 +375,7 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger, readOnly }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -879,7 +879,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             );
           })}
           {/* Comment input */}
-          <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid " + C.border }}>
+          {!readOnly && <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid " + C.border }}>
             {isGuest ? (
               <div onClick={() => onSignIn?.("Join the conversation and comment on posts.")}
                 style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
@@ -939,7 +939,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             ) : (
               <div style={{ color: C.textDim, fontSize: 13 }}>Sign in to comment</div>
             )}
-          </div>
+          </div>}
         </div>
       )}
     </div>
@@ -1936,7 +1936,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-272</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-273</span>
         </div>
       </div>
     </nav>
@@ -7306,6 +7306,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                         setCurrentPlayer={() => {}}
                         isMobile={isMobile}
                         currentUser={currentUser}
+                        readOnly={true}
                       />
                       {/* Reply as NPC button + composer */}
                       {!isSelected && (
@@ -7417,6 +7418,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       setCurrentPlayer={() => {}}
                       isMobile={isMobile}
                       currentUser={currentUser}
+                      readOnly={true}
                     />
                     {/* Reply as NPC button */}
                     <div style={{ marginTop: 6 }}>
