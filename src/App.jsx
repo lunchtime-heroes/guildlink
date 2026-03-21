@@ -39,29 +39,43 @@ async function logAnalytics(userId, eventType, page, metadata = {}) {
 async function logChartEvent(gameId, eventType, userId) {
   if (!gameId || !gameId.includes('-')) return;
   const weekStart = getWeekStart();
+  const today = new Date();
+  const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+    .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+  const pacificNow = new Date(today.getTime() + (pacificOffset + today.getTimezoneOffset()) * 60000);
+  const todayDate = `${pacificNow.getFullYear()}-${String(pacificNow.getMonth() + 1).padStart(2, "0")}-${String(pacificNow.getDate()).padStart(2, "0")}`;
 
   if (eventType === 'post') {
-    // Find current post sequence for this user/game/week
     const { data: existing } = await supabase
       .from("chart_events")
       .select("post_sequence")
       .eq("game_id", gameId)
       .eq("user_id", userId)
       .eq("event_type", "post")
-      .eq("week_start", weekStart)
+      .eq("date", todayDate)
       .order("post_sequence", { ascending: false })
       .limit(1);
     const nextSeq = existing && existing.length > 0 ? existing[0].post_sequence + 1 : 1;
     await supabase.from("chart_events").insert({
       game_id: gameId, user_id: userId, event_type: eventType,
-      week_start: weekStart, post_sequence: nextSeq,
+      week_start: weekStart, date: todayDate, post_sequence: nextSeq,
     });
   } else {
-    // All other events: upsert (dedup via unique index)
-    await supabase.from("chart_events").upsert({
-      game_id: gameId, user_id: userId, event_type: eventType,
-      week_start: weekStart, post_sequence: 1,
-    }, { onConflict: "user_id,game_id,event_type,week_start", ignoreDuplicates: true });
+    // Dedup per user/game/event_type per day
+    const { data: existing } = await supabase
+      .from("chart_events")
+      .select("id")
+      .eq("game_id", gameId)
+      .eq("user_id", userId)
+      .eq("event_type", eventType)
+      .eq("date", todayDate)
+      .limit(1);
+    if (!existing || existing.length === 0) {
+      await supabase.from("chart_events").insert({
+        game_id: gameId, user_id: userId, event_type: eventType,
+        week_start: weekStart, date: todayDate, post_sequence: 1,
+      });
+    }
   }
 }
 
@@ -1964,7 +1978,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-302</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-303</span>
         </div>
       </div>
     </nav>
@@ -2075,81 +2089,48 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get last 4 week starts for rolling window
-      const weekStart = getWeekStart();
-      const [y, m, d] = weekStart.split("-").map(Number);
-      const weekStarts = [0, 1, 2, 3].map(i => {
-        const dt = new Date(y, m - 1, d - i * 7);
-        return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-      });
-      // Recency weights: this week = 1.0, last week = 0.6, 2 weeks ago = 0.3, 3 weeks ago = 0.1
-      const recencyWeight = { [weekStarts[0]]: 1.0, [weekStarts[1]]: 0.6, [weekStarts[2]]: 0.3, [weekStarts[3]]: 0.1 };
+      // Get yesterday's date in Pacific time
+      const now = new Date();
+      const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+        .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+      const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
+      const yesterday = new Date(pacificNow);
+      yesterday.setDate(pacificNow.getDate() - 1);
+      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
 
-      // Query events across rolling 4-week window
-      let query = supabase
-        .from("chart_events")
-        .select("game_id, event_type, week_start, games(id, name, category, genre)")
-        .in("week_start", weekStarts);
-      if (category) query = query.eq("games.category", category);
+      // Query daily_chart_scores for yesterday
+      const { data: scores } = await supabase
+        .from("daily_chart_scores")
+        .select("game_id, score, games(id, name, genre)")
+        .eq("date", yesterdayStr)
+        .order("score", { ascending: false })
+        .limit(limit || 10);
 
-      const { data: events } = await query;
-
-      if (events) {
-        // Aggregate scores per game with decay for posts, dedup for others
-        const scoreMap = {};
-        const countMap = {};
-        const userMap = {}; // track unique users per game
-
-        // Group post sequences per user per game
-        const postSeqs = {};
-        events.forEach(e => {
-          if (!e.games) return;
-          const id = e.game_id;
-          if (!scoreMap[id]) {
-            scoreMap[id] = 0;
-            countMap[id] = { game: e.games, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 };
-            userMap[id] = new Set();
-          }
-          userMap[id].add(e.user_id);
-          const rw = recencyWeight[e.week_start] || 0.1;
-          if (e.event_type === 'post') {
-            const seq = e.post_sequence || 1;
-            const weight = seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
-            scoreMap[id] += weight * rw;
-            countMap[id].post++;
-          } else {
-            const weights = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
-            scoreMap[id] += (weights[e.event_type] || 0) * rw;
-            if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++;
-          }
-        });
-
-        // Apply breadth multiplier: 1 + ln(unique_users) * 0.2
-        const sorted = Object.entries(scoreMap)
-          .map(([id, rawScore]) => {
-            const uniqueUsers = userMap[id].size;
-            const finalScore = rawScore * (1 + Math.log(Math.max(uniqueUsers, 1)) * 0.2);
-            return { id, rawScore, finalScore, uniqueUsers, ...countMap[id] };
-          })
-          .sort((a, b) => b.finalScore - a.finalScore)
-          .slice(0, limit || 10)
-          .map((entry, i) => ({
+      if (scores && scores.length > 0) {
+        const sorted = scores
+          .filter(s => s.games)
+          .map((s, i) => ({
             rank: i + 1,
-            ...entry,
-            name: entry.game.name,
-            dominantSignal: getDominantSignal(entry),
+            id: s.game_id,
+            finalScore: s.score,
+            name: s.games.name,
+            genre: s.games.genre,
+            dominantSignal: "",
           }));
         setCharts(sorted);
 
-        // Get last week's rankings for movement arrows
-        const lastWeek = new Date(new Date(weekStart).setDate(new Date(weekStart).getDate() - 7)).toISOString().split('T')[0];
-        const { data: history } = await supabase
-          .from("chart_history")
-          .select("game_id, rank")
-          .eq("week_start", lastWeek);
-        if (history) {
+        // Get day before yesterday for movement arrows
+        const d2 = new Date(yesterday);
+        d2.setDate(yesterday.getDate() - 1);
+        const d2Str = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}-${String(d2.getDate()).padStart(2, "0")}`;
+        const { data: prevScores } = await supabase
+          .from("daily_chart_scores")
+          .select("game_id, score")
+          .eq("date", d2Str)
+          .order("score", { ascending: false });
+        if (prevScores) {
           const prev = {};
-          history.forEach(h => prev[h.game_id] = h.rank);
+          prevScores.forEach((s, i) => { prev[s.game_id] = i + 1; });
           setPrevCharts(prev);
         }
       }
@@ -3237,20 +3218,35 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const load = async () => {
       setChartsLoading(true);
       setSparklines({});
-      const weekStarts = getWeekStarts(8);
-      const currentWeek = weekStarts[0];
-      const rollingWeeks = weekStarts.slice(0, 4);
-      const recencyWeights = { [rollingWeeks[0]]: 1.0, [rollingWeeks[1]]: 0.6, [rollingWeeks[2]]: 0.3, [rollingWeeks[3]]: 0.1 };
-      const { data: events } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .in("week_start", rollingWeeks);
-      if (!events) { setChartsLoading(false); return; }
-      const scored = scoreEvents(events, recencyWeights);
-      const top10 = scored.slice(0, 10);
+
+      // Get yesterday in Pacific time
+      const now = new Date();
+      const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+        .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+      const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
+      const yesterday = new Date(pacificNow);
+      yesterday.setDate(pacificNow.getDate() - 1);
+      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+      // Query yesterday's scores from daily_chart_scores
+      const { data: scores } = await supabase
+        .from("daily_chart_scores")
+        .select("game_id, score, games(id, name, genre, cover_url)")
+        .eq("date", yesterdayStr)
+        .order("score", { ascending: false });
+
+      if (!scores) { setChartsLoading(false); return; }
+
+      const top10 = scores
+        .filter(s => s.games)
+        .slice(0, 10)
+        .map(s => ({ id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url, uniqueUsers: 1, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }));
+
       setOverall(top10);
       const genres = {}, genresFull = {};
-      scored.forEach(g => {
-        const pg = Array.isArray(g.genre) ? g.genre[0] : (g.genre || "Other");
+      scores.filter(s => s.games).forEach(s => {
+        const g = { id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url };
+        const pg = Array.isArray(s.games.genre) ? s.games.genre[0] : (s.games.genre || "Other");
         if (!genres[pg]) { genres[pg] = []; genresFull[pg] = []; }
         genresFull[pg].push(g);
         if (genres[pg].length < 5) genres[pg].push(g);
@@ -3258,50 +3254,73 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setByGenre(genres); setByGenreFull(genresFull);
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
-      // Calculate previous week's ranks for movement indicators
-      const prevWeekStart = getWeekStarts(2)[1];
-      const { data: prevEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start, games(id, name, genre, cover_url)")
-        .eq("week_start", prevWeekStart);
-      if (prevEvents && prevEvents.length > 0) {
-        const prevScored = scoreEvents(prevEvents, null);
+      // Previous day for movement indicators
+      const d2 = new Date(yesterday);
+      d2.setDate(yesterday.getDate() - 1);
+      const d2Str = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}-${String(d2.getDate()).padStart(2, "0")}`;
+      const { data: prevScores } = await supabase
+        .from("daily_chart_scores")
+        .select("game_id, score")
+        .eq("date", d2Str)
+        .order("score", { ascending: false });
+      if (prevScores) {
         const pRanks = {};
-        prevScored.forEach((g, i) => { pRanks[g.id] = i + 1; });
+        prevScores.forEach((s, i) => { pRanks[s.game_id] = i + 1; });
         setPrevRanks(pRanks);
       }
 
-      // Eagerly load sparklines for ALL ranked games (top 10 + all genre games)
+      // Eagerly load sparklines for ALL ranked games from daily_chart_scores
       if (top10.length === 0) return;
-      const allWeekStarts = getWeekStarts(8);
       const allRankedIds = [...new Set([
         ...top10.map(g => g.id),
         ...Object.values(genresFull).flat().map(g => g.id),
       ])];
-      const { data: sparkEvents } = await supabase.from("chart_events")
-        .select("game_id, event_type, post_sequence, user_id, week_start")
+
+      // Get last 8 days of scores for sparklines
+      const sparkDates = [];
+      for (let i = 0; i < 8; i++) {
+        const d = new Date(yesterday);
+        d.setDate(yesterday.getDate() - i);
+        sparkDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+      }
+      const { data: sparkScores } = await supabase
+        .from("daily_chart_scores")
+        .select("game_id, score, date")
         .in("game_id", allRankedIds)
-        .in("week_start", allWeekStarts);
+        .in("date", sparkDates);
 
-      // Find global max across top 10
-      const allScores = top10.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts)));
-      const globalMax = Math.max(...allScores, 0.1);
-      const overallRef = computePoints(top10[0].id, sparkEvents || [], allWeekStarts);
+      // Build score map: gameId -> { date -> score }
+      const scoresByGame = {};
+      (sparkScores || []).forEach(s => {
+        if (!scoresByGame[s.game_id]) scoresByGame[s.game_id] = {};
+        scoresByGame[s.game_id][s.date] = s.score;
+      });
 
-      // Per-genre: leader reference points and max
+      // Build points arrays (oldest to newest, + 1 future zero slot)
+      const buildPoints = (gameId) => {
+        const ordered = sparkDates.slice().reverse(); // oldest first
+        return [...ordered.map(d => scoresByGame[gameId]?.[d] || 0), 0];
+      };
+      const buildLabels = () => {
+        const ordered = sparkDates.slice().reverse();
+        return [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
+      };
+
+      const globalMax = Math.max(...top10.map(g => Math.max(...buildPoints(g.id))), 0.1);
+      const overallRef = buildPoints(top10[0].id);
+      const labels = buildLabels();
+
       const gLeaders = {};
       const genreRefPoints = {};
       const genreMaxes = {};
       Object.entries(genresFull).forEach(([genre, games]) => {
         if (games.length === 0) return;
-        const leader = games[0];
-        gLeaders[genre] = leader.id;
-        const leaderPts = computePoints(leader.id, sparkEvents || [], allWeekStarts);
-        genreRefPoints[genre] = leaderPts;
-        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...computePoints(g.id, sparkEvents || [], allWeekStarts))), 0.1);
+        gLeaders[genre] = games[0].id;
+        genreRefPoints[genre] = buildPoints(games[0].id);
+        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...buildPoints(g.id))), 0.1);
       });
       setGenreLeaders(gLeaders);
 
-      // Build sparklines for all ranked games
       const newSparklines = {};
       const newGenreContext = {};
       allRankedIds.forEach(id => {
@@ -3309,8 +3328,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         const genre = game ? (Array.isArray(game.genre) ? game.genre[0] : (game.genre || "Other")) : "Other";
         const isOverallLeader = id === top10[0].id;
         const isGenreLeader = gLeaders[genre] === id;
+        const points = buildPoints(id);
         newSparklines[id] = {
-          ...buildSparkline(id, sparkEvents || [], allWeekStarts, globalMax, isOverallLeader ? null : overallRef),
+          points, labels,
+          globalMax,
+          referencePoints: isOverallLeader ? null : overallRef,
           genreGlobalMax: genreMaxes[genre] || globalMax,
           genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null),
         };
@@ -3325,14 +3347,32 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const loadSparkline = async (gameId) => {
     if (sparklines[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    const weekStarts = getWeekStarts(8);
-    const { data: events } = await supabase.from("chart_events")
-      .select("game_id, event_type, post_sequence, user_id, week_start").eq("game_id", gameId).in("week_start", weekStarts);
+    const now = new Date();
+    const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+      .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+    const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
+    const yesterday = new Date(pacificNow);
+    yesterday.setDate(pacificNow.getDate() - 1);
+    const sparkDates = [];
+    for (let i = 0; i < 8; i++) {
+      const d = new Date(yesterday);
+      d.setDate(yesterday.getDate() - i);
+      sparkDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    }
+    const { data: sparkScores } = await supabase
+      .from("daily_chart_scores")
+      .select("game_id, score, date")
+      .eq("game_id", gameId)
+      .in("date", sparkDates);
+    const scoreMap = {};
+    (sparkScores || []).forEach(s => { scoreMap[s.date] = s.score; });
+    const ordered = sparkDates.slice().reverse();
+    const points = [...ordered.map(d => scoreMap[d] || 0), 0];
+    const labels = [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
     const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
     const ctx = genreContext[gameId] || {};
-    const sp = buildSparkline(gameId, events || [], weekStarts, globalMax, Object.values(sparklines)[0]?.referencePoints || null);
-    setSparklines(prev => ({ ...prev, [gameId]: { ...sp, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
+    setSparklines(prev => ({ ...prev, [gameId]: { points, labels, globalMax, referencePoints: null, genreGlobalMax: ctx.genreGlobalMax || globalMax, genreRefPoints: ctx.genreRefPoints || null } }));
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
