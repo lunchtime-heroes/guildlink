@@ -1943,7 +1943,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-278</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-279</span>
         </div>
       </div>
     </nav>
@@ -4545,8 +4545,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
-  const [dragging, setDragging] = useState(null);
-  const [dragOver, setDragOver] = useState(null);
+  const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
+  const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
+  const [dragOverCard, setDragOverCard] = useState(null); // { gameId, position: "above"|"below" }
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [addingGame, setAddingGame] = useState(false);
   const [gameSearch, setGameSearch] = useState("");
@@ -4620,7 +4621,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       const { data: shelfData } = await supabase
         .from("user_games")
         .select("*, games(id, name, developer, genre)")
-        .eq("user_id", authUser.id);
+        .eq("user_id", authUser.id)
+        .order("sort_order", { ascending: true, nullsFirst: false });
       if (shelfData) {
         const shelf = { want_to_play: [], playing: [], have_played: [] };
         shelfData.forEach(entry => {
@@ -4711,10 +4713,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (fromStatus === toStatus) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
+    const destLength = userShelf[toStatus].length;
     await supabase.from("user_games").upsert({
       user_id: authUser.id,
       game_id: gameId,
       status: toStatus,
+      sort_order: destLength,
       updated_at: new Date().toISOString(),
     });
     // Log shelf transition for developer analytics
@@ -4859,12 +4863,69 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   };
 
   const handleDragStart = (gameId, fromStatus) => setDragging({ gameId, fromStatus });
-  const handleDragOver = (e, status) => { e.preventDefault(); setDragOver(status); };
-  const handleDrop = (e, toStatus) => {
+
+  const handleDragOver = (e, colId) => {
     e.preventDefault();
-    if (dragging) moveGame(dragging.gameId, dragging.fromStatus, toStatus);
+    setDragOver(colId);
+  };
+
+  const handleCardDragOver = (e, colId, targetGameId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(colId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    setDragOverCard({ gameId: targetGameId, position: e.clientY < midY ? "above" : "below" });
+  };
+
+  const handleDragEnd = () => {
     setDragging(null);
     setDragOver(null);
+    setDragOverCard(null);
+  };
+
+  const saveSortOrder = async (colId, orderedEntries) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const updates = orderedEntries.map((entry, idx) => ({
+      user_id: authUser.id,
+      game_id: entry.game_id,
+      status: colId,
+      sort_order: idx,
+      updated_at: new Date().toISOString(),
+    }));
+    await supabase.from("user_games").upsert(updates);
+  };
+
+  const handleDrop = (e, toStatus) => {
+    e.preventDefault();
+    if (!dragging) return;
+    const { gameId, fromStatus } = dragging;
+
+    if (fromStatus === toStatus) {
+      // Reorder within column
+      const col = [...userShelf[toStatus]];
+      const fromIdx = col.findIndex(e => e.game_id === gameId);
+      if (fromIdx === -1) { handleDragEnd(); return; }
+      let toIdx;
+      if (dragOverCard && userShelf[toStatus].find(e => e.game_id === dragOverCard.gameId)) {
+        const targetIdx = col.findIndex(e => e.game_id === dragOverCard.gameId);
+        toIdx = dragOverCard.position === "above" ? targetIdx : targetIdx + 1;
+        if (toIdx > fromIdx) toIdx -= 1;
+      } else {
+        toIdx = col.length - 1;
+      }
+      if (fromIdx === toIdx) { handleDragEnd(); return; }
+      const reordered = [...col];
+      const [moved] = reordered.splice(fromIdx, 1);
+      reordered.splice(toIdx, 0, moved);
+      setUserShelf(prev => ({ ...prev, [toStatus]: reordered }));
+      saveSortOrder(toStatus, reordered);
+    } else {
+      // Move to different column — append to end with new sort_order
+      moveGame(gameId, fromStatus, toStatus);
+    }
+    handleDragEnd();
   };
 
   const SHELF_COLUMNS = [
@@ -5227,9 +5288,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   const isMoving = mobileMoveCard?.gameId === entry.game_id;
                   return (
                     <div key={entry.game_id}>
+                      {/* Drop indicator above */}
+                      {dragOverCard?.gameId === entry.game_id && dragOverCard?.position === "above" && dragging?.fromStatus === col.id && (
+                        <div style={{ height: 3, borderRadius: 2, background: col.color, marginBottom: 4, opacity: 0.8 }} />
+                      )}
                       <div
                         draggable={!isMobile}
                         onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
+                        onDragEnd={!isMobile ? handleDragEnd : undefined}
+                        onDragOver={!isMobile ? e => handleCardDragOver(e, col.id, entry.game_id) : undefined}
                         onClick={() => {
                           if (isMobile) {
                             if (isMoving) { setMobileMoveCard(null); }
@@ -5270,6 +5337,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             Remove
                           </button>
                         </div>
+                      )}
+                      {/* Drop indicator below */}
+                      {dragOverCard?.gameId === entry.game_id && dragOverCard?.position === "below" && dragging?.fromStatus === col.id && (
+                        <div style={{ height: 3, borderRadius: 2, background: col.color, marginTop: -4, marginBottom: 4, opacity: 0.8 }} />
                       )}
                     </div>
                   );
