@@ -511,7 +511,42 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         const { data: npcRows } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcUUIDs);
         if (npcRows) npcRows.forEach(n => { npcMap[n.id] = n; });
       }
-      setLiveComments(data.map(c => c.npc_id && c.npc_id.includes('-') ? { ...c, npcs: npcMap[c.npc_id] || null } : c));
+
+      // Extract all @handles from comment text and resolve them
+      const allHandles = new Set();
+      data.forEach(c => {
+        const matches = (c.content || "").match(/@(\S+)/g) || [];
+        matches.forEach(m => allHandles.add(m.slice(1).toLowerCase()));
+      });
+      let resolvedUsers = {};
+      let resolvedNPCs = {};
+      if (allHandles.size > 0) {
+        const handleList = [...allHandles];
+        const [profilesRes, npcsRes] = await Promise.allSettled([
+          supabase.from("profiles").select("id, username, handle, avatar_initials").in("handle", handleList.map(h => `@${h}`)),
+          supabase.from("npcs").select("id, name, handle, avatar_initials").in("handle", handleList.map(h => `@${h}`)),
+        ]);
+        (profilesRes.status === "fulfilled" ? profilesRes.value.data || [] : []).forEach(p => {
+          resolvedUsers[p.handle.replace("@","").toLowerCase()] = { id: p.id, handle: p.handle, name: p.username, type: "user" };
+        });
+        (npcsRes.status === "fulfilled" ? npcsRes.value.data || [] : []).forEach(n => {
+          resolvedNPCs[n.handle.replace("@","").toLowerCase()] = { id: n.id, handle: n.handle, name: n.name, type: "npc" };
+        });
+      }
+      const allResolved = { ...resolvedUsers, ...resolvedNPCs };
+
+      // Merge resolved users into each comment's tagged_users
+      const enriched = data.map(c => {
+        const npc = c.npc_id && c.npc_id.includes('-') ? { ...c, npcs: npcMap[c.npc_id] || null } : c;
+        const existing = c.tagged_users || [];
+        const existingHandles = new Set(existing.map(u => u.handle?.replace("@","").toLowerCase()));
+        const matches = (c.content || "").match(/@(\S+)/g) || [];
+        const extra = matches
+          .map(m => allResolved[m.slice(1).toLowerCase()])
+          .filter(u => u && !existingHandles.has(u.handle.replace("@","").toLowerCase()));
+        return { ...npc, tagged_users: [...existing, ...extra] };
+      });
+      setLiveComments(enriched);
 
       // Load reaction counts for all comments
       if (data.length > 0) {
@@ -1893,7 +1928,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-268</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-269</span>
         </div>
       </div>
     </nav>
