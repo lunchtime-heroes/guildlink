@@ -375,7 +375,7 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger, readOnly }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -860,7 +860,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                       </button>
                       {!isGuest && currentUser && (
                         <>
-                          <button onClick={() => { setReplyTo({ id: comment.id, name: name }); setShowComments(true); }}
+                          <button onClick={() => {
+                              if (readOnly && onCommentReply) {
+                                onCommentReply({ id: comment.id, name, userId: comment.user_id });
+                              } else {
+                                setReplyTo({ id: comment.id, name });
+                                setShowComments(true);
+                              }
+                            }}
                             style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px" }}>
                             ↩ Reply
                           </button>
@@ -1936,7 +1943,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-273</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-274</span>
         </div>
       </div>
     </nav>
@@ -7307,6 +7314,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                         isMobile={isMobile}
                         currentUser={currentUser}
                         readOnly={true}
+                        onCommentReply={c => { setSelectedPost(post); setReplyToComment(c); }}
                       />
                       {/* Reply as NPC button + composer */}
                       {!isSelected && (
@@ -7419,6 +7427,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       isMobile={isMobile}
                       currentUser={currentUser}
                       readOnly={true}
+                      onCommentReply={c => { setSelectedPost(thread); setReplyToComment(c); }}
                     />
                     {/* Reply as NPC button */}
                     <div style={{ marginTop: 6 }}>
