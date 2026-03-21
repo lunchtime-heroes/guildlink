@@ -375,11 +375,12 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [showPostMenu, setShowPostMenu] = useState(false);
   const [liveComments, setLiveComments] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const commentInputRef = useRef(null);
@@ -740,21 +741,23 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid " + C.border, paddingTop: 12 }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", borderTop: "1px solid " + C.border, paddingTop: 12, flexWrap: "nowrap" }}>
           <button onClick={toggleLike} style={{
             background: localPost.liked ? C.red + "18" : "transparent",
-            border: "1px solid " + localPost.liked ? C.red + "44" : C.border,
-            borderRadius: 8, padding: "5px 14px", cursor: "pointer",
+            border: "1px solid " + (localPost.liked ? C.red + "44" : C.border),
+            borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
             color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 5, transition: "all 0.15s",
-          }}>{localPost.liked ? "❤️" : "🤍"} {localPost.likes}</button>
+            display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", flexShrink: 0,
+          }}>{localPost.liked ? "❤️" : "🤍"} <span>{localPost.likes}</span></button>
+
           <button onClick={toggleComments} style={{
-              background: showComments ? C.accentGlow : "transparent",
-              border: "1px solid " + showComments ? C.accentDim : C.border,
-              borderRadius: 8, padding: "5px 14px", cursor: "pointer",
-              color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 5,
-            }}>💬 {liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</button>
+            background: showComments ? C.accentGlow : "transparent",
+            border: "1px solid " + (showComments ? C.accentDim : C.border),
+            borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
+            color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+          }}>💬 <span>{liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</span></button>
+
           {!isGuest && (
             <button onClick={() => {
               if (!showComments) {
@@ -764,31 +767,42 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               setTimeout(() => commentInputRef.current?.focus(), 50);
             }} style={{
               background: "transparent", border: "1px solid " + C.border,
-              borderRadius: 8, padding: "5px 14px", cursor: "pointer",
-              color: C.textMuted, fontSize: 13, fontWeight: 600,
-            }}>↩ Reply</button>
+              borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
+              color: C.textMuted, fontSize: 13, fontWeight: 600, flexShrink: 0,
+            }}>↩{!isMobile && " Reply"}</button>
           )}
+
           {(post.game_tag || localPost.game_tag) && !isGuest && (
             <button onClick={toggleTip} style={{
               background: tipped ? C.gold + "18" : "transparent",
               border: "1px solid " + (tipped ? C.gold + "44" : C.border),
-              borderRadius: 8, padding: "5px 14px", cursor: "pointer",
-              color: tipped ? C.gold : C.textMuted, fontSize: 13, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 5,
-            }}>Helpful Tip {localPost.tip_count > 0 ? localPost.tip_count : ""}</button>
+              borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
+              color: tipped ? C.gold : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+            }}>{isMobile ? "💡" : "Helpful Tip"}{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
           )}
+
           {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
-            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-              <button onClick={() => setEditing(e => !e)} style={{
+            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
+              <button onClick={() => setShowPostMenu(m => !m)} style={{
                 background: "transparent", border: "1px solid " + C.border,
-                borderRadius: 8, padding: "5px 12px", cursor: "pointer",
-                color: C.textDim, fontSize: 12,
-              }}>{editing ? "Cancel" : "Edit"}</button>
-              <button onClick={deletePost} style={{
-                background: "transparent", border: "1px solid " + C.border,
-                borderRadius: 8, padding: "5px 12px", cursor: "pointer",
-                color: C.textDim, fontSize: 12,
-              }}>Delete</button>
+                borderRadius: 8, padding: "5px 10px", cursor: "pointer",
+                color: C.textDim, fontSize: 16, lineHeight: 1,
+              }}>•••</button>
+              {showPostMenu && (
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    {editing ? "Cancel Edit" : "Edit"}
+                  </button>
+                  <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    Delete
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1803,9 +1817,9 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
           background: C.surface + "fc", backdropFilter: "blur(20px)",
           borderTop: "1px solid " + C.border,
-          height: 60,
           display: "flex", alignItems: "stretch",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          minHeight: 56,
         }}>
           {mobileItems.map(item => {
             const active = activePage === item.id || (item.id === "reviews-nav" && activePage === "reviews");
@@ -1943,7 +1957,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-282</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-283</span>
         </div>
       </div>
     </nav>
@@ -4228,7 +4242,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>The Charts</div>
                   <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                   {[
                     { label: "Posts This Week", value: chartsData?.weeklyPosts ?? "—", color: game.color },
                     { label: "New Reviews", value: chartsData?.weeklyReviews ?? "—", color: C.teal },
@@ -8711,6 +8725,13 @@ export default function GuildLink() {
   const width = useWindowSize();
   const isMobile = width < 768;
 
+  // Prevent mobile zoom on tap/login
+  useEffect(() => {
+    let tag = document.querySelector("meta[name=viewport]");
+    if (!tag) { tag = document.createElement("meta"); tag.name = "viewport"; document.head.appendChild(tag); }
+    tag.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
+  }, []);
+
   // ── URL routing ───────────────────────────────────────────────────────────
   const parsePath = (path) => {
     const p = path.replace(/^\//, "");
@@ -8730,13 +8751,20 @@ export default function GuildLink() {
   useEffect(() => {
     const onPop = async (e) => {
       const state = e.state;
-      if (!state) { setActivePage("feed"); return; }
-      if (state.gameId) setCurrentGame(state.gameId);
+      if (!state) { setActivePage("feed"); setCurrentGame(null); setCurrentPlayer(null); return; }
+      if (state.gameId) {
+        setCurrentGame(state.gameId);
+      } else {
+        setCurrentGame(null);
+      }
       if (state.playerId) {
         setCurrentPlayer(state.playerId);
       } else if (state.playerHandle) {
         const { data } = await supabase.from("profiles").select("id").eq("handle", `@${state.playerHandle}`).maybeSingle();
         if (data) setCurrentPlayer(data.id);
+        else setCurrentPlayer(null);
+      } else {
+        setCurrentPlayer(null);
       }
       setActivePage(state.page || "feed");
     };
