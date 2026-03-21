@@ -453,23 +453,31 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
   };
 
+  const [tipping, setTipping] = useState(false);
+
   const toggleTip = async () => {
     if (isGuest) { onSignIn?.("Sign in to mark helpful tips."); return; }
     if (!post.id || !post.id.includes('-') || !post.game_tag) return;
+    if (tipping) return;
+    setTipping(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
-    const newTipped = !tipped;
-    setTipped(newTipped);
-    setLocalPost(p => ({ ...p, tip_count: Math.max(0, (p.tip_count || 0) + (newTipped ? 1 : -1)) }));
-    if (newTipped) {
-      await supabase.from("tip_votes").upsert({ post_id: post.id, user_id: authUser.id });
-      await supabase.rpc("increment_tip", { row_id: post.id });
-    } else {
+    if (!authUser) { setTipping(false); return; }
+    // Check actual DB state to prevent double-counting
+    const { data: existing } = await supabase.from("tip_votes")
+      .select("id").eq("post_id", post.id).eq("user_id", authUser.id).maybeSingle();
+    const alreadyTipped = !!existing;
+    if (alreadyTipped) {
+      setTipped(false);
       await supabase.from("tip_votes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
       await supabase.rpc("decrement_tip", { row_id: post.id });
+    } else {
+      setTipped(true);
+      await supabase.from("tip_votes").insert({ post_id: post.id, user_id: authUser.id });
+      await supabase.rpc("increment_tip", { row_id: post.id });
     }
     const { data: fresh } = await supabase.from("posts").select("tip_count").eq("id", post.id).single();
     if (fresh) setLocalPost(p => ({ ...p, tip_count: fresh.tip_count || 0 }));
+    setTipping(false);
   };
 
   const toggleLike = async () => {
@@ -1928,7 +1936,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-269</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0320-270</span>
         </div>
       </div>
     </nav>
