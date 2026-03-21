@@ -1964,7 +1964,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-300</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-301</span>
         </div>
       </div>
     </nav>
@@ -2075,14 +2075,21 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get current week start (Sunday midnight Pacific)
+      // Get last 4 week starts for rolling window
       const weekStart = getWeekStart();
+      const [y, m, d] = weekStart.split("-").map(Number);
+      const weekStarts = [0, 1, 2, 3].map(i => {
+        const dt = new Date(y, m - 1, d - i * 7);
+        return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+      });
+      // Recency weights: this week = 1.0, last week = 0.6, 2 weeks ago = 0.3, 3 weeks ago = 0.1
+      const recencyWeight = { [weekStarts[0]]: 1.0, [weekStarts[1]]: 0.6, [weekStarts[2]]: 0.3, [weekStarts[3]]: 0.1 };
 
-      // Live scores from chart_events this week
+      // Query events across rolling 4-week window
       let query = supabase
         .from("chart_events")
-        .select("game_id, event_type, games(id, name, category, genre)")
-        .eq("week_start", weekStart);
+        .select("game_id, event_type, week_start, games(id, name, category, genre)")
+        .in("week_start", weekStarts);
       if (category) query = query.eq("games.category", category);
 
       const { data: events } = await query;
@@ -2104,15 +2111,15 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             userMap[id] = new Set();
           }
           userMap[id].add(e.user_id);
+          const rw = recencyWeight[e.week_start] || 0.1;
           if (e.event_type === 'post') {
-            // Decay: seq 1=1.0, 2=0.5, 3=0.25, 4+=0.1
             const seq = e.post_sequence || 1;
             const weight = seq === 1 ? 1.0 : seq === 2 ? 0.5 : seq === 3 ? 0.25 : 0.1;
-            scoreMap[id] += weight;
+            scoreMap[id] += weight * rw;
             countMap[id].post++;
           } else {
             const weights = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
-            scoreMap[id] += weights[e.event_type] || 0;
+            scoreMap[id] += (weights[e.event_type] || 0) * rw;
             if (countMap[id][e.event_type] !== undefined) countMap[id][e.event_type]++;
           }
         });
