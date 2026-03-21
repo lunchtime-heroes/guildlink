@@ -1964,7 +1964,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-299</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-300</span>
         </div>
       </div>
     </nav>
@@ -3138,8 +3138,17 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   };
 
   const getWeekStart = () => {
-    const d = new Date(); d.setHours(0,0,0,0);
-    d.setDate(d.getDate() - d.getDay()); return d.toISOString().split("T")[0];
+    const now = new Date();
+    const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+      .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
+    const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
+    const dayOfWeek = pacificNow.getDay();
+    const sunday = new Date(pacificNow);
+    sunday.setDate(pacificNow.getDate() - dayOfWeek);
+    const y = sunday.getFullYear();
+    const m = String(sunday.getMonth() + 1).padStart(2, "0");
+    const d = String(sunday.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   };
   const getWeekStarts = (count) => {
     const starts = [];
