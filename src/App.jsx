@@ -1966,7 +1966,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-288</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-289</span>
         </div>
       </div>
     </nav>
@@ -3199,6 +3199,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   // Build fixed 9-slot sparkline data: 8 days oldest→newest + 1 future zero
   const buildSparkline = (gameId, events, allDayStarts, globalMax, referencePoints) => {
+    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
     const dayScores = {};
     allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -3216,6 +3217,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   // Helper: compute raw daily scores for a game given events + day starts
   const computePoints = (gameId, events, allDayStarts) => {
+    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
     const dayScores = {};
     allDayStarts.forEach(d => { dayScores[d] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
