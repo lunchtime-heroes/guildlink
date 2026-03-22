@@ -2028,7 +2028,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-316</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-317</span>
         </div>
       </div>
     </nav>
@@ -5507,7 +5507,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
                   <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
                 </div>
-                {userShelf[col.id].length > 0 ? userShelf[col.id].map(entry => {
+                {userShelf[col.id].length > 0 ? (col.id === "have_played"
+                  ? [...userShelf[col.id]].sort((a, b) => {
+                      const rank = v => v === true ? 0 : v === null || v === undefined ? 1 : 2;
+                      return rank(a.liked) - rank(b.liked);
+                    })
+                  : userShelf[col.id]
+                ).map(entry => {
                   const game = entry.games;
                   if (!game) return null;
                   const review = userReviews.find(r => r.game_id === game.id);
@@ -5534,6 +5540,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         style={{ background: isMoving ? col.color + "22" : col.id === "have_played" && entry.liked === true ? "#10b98118" : col.id === "have_played" && entry.liked === false ? "#ef444418" : C.surfaceRaised, border: "1px solid " + (isMoving ? col.color + "66" : col.id === "have_played" && entry.liked === true ? "#10b98144" : col.id === "have_played" && entry.liked === false ? "#ef444444" : C.border), borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s", position: "relative" }}
                         onMouseEnter={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "1"; }}
                         onMouseLeave={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "0"; }}>
+                        {/* X button — top right corner */}
+                        {!isMobile && (
+                          <button className="remove-btn" onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); }}
+                            style={{ opacity: 0, transition: "opacity 0.15s", position: "absolute", top: 4, right: 6, background: "transparent", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: "0 2px", lineHeight: 1, zIndex: 2 }}>
+                            ×
+                          </button>
+                        )}
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, color: col.id === "have_played" && entry.liked === true ? "#10b981" : col.id === "have_played" && entry.liked === false ? "#ef4444" : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -5553,12 +5566,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             </div>
                           )}
                           {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
-                          {!isMobile && (
-                            <button className="remove-btn" onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); }}
-                              style={{ opacity: 0, transition: "opacity 0.15s", background: "transparent", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: "0 2px", lineHeight: 1, flexShrink: 0 }}>
-                              ×
-                            </button>
-                          )}
                         </div>
                       </div>
                       {/* Mobile move picker */}
