@@ -266,7 +266,7 @@ const QUESTS = [
   { id: "npc_replies_5", title: "In the Mix", desc: "Get 5 NPC replies on your posts", reward: "XP", progress: 0, total: 5, done: false, ring: null },
   { id: "follow_first_npc", title: "Meet the Locals", desc: "Follow your first NPC", reward: "XP", progress: 0, total: 1, done: false, ring: null },
   { id: "npc_follow_3", title: "Making Friends", desc: "Follow 3 NPCs", reward: "XP", progress: 0, total: 3, done: false, ring: null },
-  { id: "npc_follow_all", title: "One of the Regulars", desc: "Follow all NPCs", reward: "NPC Friend Ring", progress: 0, total: 6, done: false, ring: "npc" },
+  { id: "npc_follow_all", title: "One of the Regulars", desc: "Follow 6 NPCs", reward: "NPC Friend Ring", progress: 0, total: 6, done: false, ring: "npc" },
 ];
 
 // ─── NPC DATA ─────────────────────────────────────────────────────────────────
@@ -2028,7 +2028,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-313</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-314</span>
         </div>
       </div>
     </nav>
