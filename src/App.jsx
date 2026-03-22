@@ -233,8 +233,8 @@ const FOUNDING = {
 
 const PROFILE_RINGS = [
   { id: "none", label: "No Ring", color: "transparent", description: "Standard member", alwaysUnlocked: true },
-  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", icon: "⚔️", foundingOnly: true, how: "Founding Members only" },
-  { id: "bronze", label: "Bronze Ring", color: "#cd7f32", glow: "#cd7f3233", description: "A simple bronze frame. Everyone starts somewhere.", icon: "🥉", questId: "reply_first_npc", how: "Quest: Join the Conversation" },
+  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", icon: "⚔️", foundingOnly: true, how: "Founding Members only", double: true },
+  { id: "bronze", label: "Bronze Ring", color: "#a0522d", glow: "#a0522d33", description: "A simple bronze frame. Everyone starts somewhere.", icon: "🥉", questId: "reply_first_npc", how: "Quest: Join the Conversation" },
   { id: "silver", label: "Silver Ring", color: "#c0c0c0", glow: "#c0c0c033", description: "You're finding your groove.", icon: "🥈", questId: "shelf_25", how: "Quest: Committed" },
   { id: "gold", label: "Gold Ring", color: "#f59e0b", glow: "#f59e0b44", description: "A seasoned player. Your shelf speaks for itself.", icon: "🥇", questId: "shelf_100", how: "Quest: Legendary Library" },
   { id: "npc", label: "NPC Friend Ring", color: "#a78bfa", glow: "#a78bfa33", description: "You talk to NPCs. Enough said.", icon: "🤝", questId: "npc_follow_all", how: "Quest: One of the Regulars" },
@@ -297,6 +297,7 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
   const ringColor = ringData?.color || (showFoundingRing ? C.gold : null);
   const ringGlow = ringData?.glow || (showFoundingRing ? C.goldBorder : null);
   const hasRing = ringColor && ringColor !== "transparent";
+  const isDouble = ringData?.double || (showFoundingRing);
 
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
@@ -307,6 +308,15 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
           borderRadius: "50%",
           border: `3px solid ${ringColor}`,
           boxShadow: `0 0 ${size * 0.3}px ${ringGlow || ringColor + "44"}, inset 0 0 ${size * 0.15}px ${ringGlow || ringColor + "22"}`,
+          zIndex: 1, pointerEvents: "none",
+        }} />
+      )}
+      {/* Double ring for founding members */}
+      {hasRing && isDouble && (
+        <div style={{
+          position: "absolute", inset: -7,
+          borderRadius: "50%",
+          border: `2px solid ${ringColor}88`,
           zIndex: 1, pointerEvents: "none",
         }} />
       )}
@@ -2018,7 +2028,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-312</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-313</span>
         </div>
       </div>
     </nav>
