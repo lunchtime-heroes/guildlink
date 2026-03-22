@@ -234,24 +234,39 @@ const FOUNDING = {
 const PROFILE_RINGS = [
   { id: "none", label: "No Ring", color: "transparent", description: "Standard member", alwaysUnlocked: true },
   { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", icon: "⚔️", foundingOnly: true, how: "Founding Members only" },
-  { id: "rpg", label: "RPG Ring", color: "#a78bfa", glow: "#a78bfa33", description: "For the devoted RPG adventurer.", icon: "📖", questId: "rpg_fan", questLabel: "Quest: RPG Fan", how: "Quest: RPG Fan" },
-  { id: "platinum", label: "Platinum Ring", color: "#e2e8f0", glow: "#e2e8f033", description: "Complete 50 game reviews.", icon: "📝", questId: "the_critic", questLabel: "Quest: The Critic", how: "Quest: The Critic" },
-  { id: "crimson", label: "Crimson Ring", color: "#ef4444", glow: "#ef444433", description: "Reach Top Voice on any game page.", icon: "🏆", questId: "top_of_feed", questLabel: "Quest: Top of the Feed", how: "Quest: Top of the Feed" },
-  { id: "void", label: "Void Ring", color: "#7c3aed", glow: "#7c3aed33", description: "Complete 10 games to 100%.", icon: "💯", questId: "completionist", questLabel: "Quest: The Completionist", how: "Quest: The Completionist" },
-  { id: "emerald", label: "Emerald Ring", color: "#10b981", glow: "#10b98133", description: "Help 100 players find a squad.", icon: "🤝", questId: "the_connector", questLabel: "Quest: The Connector", how: "Quest: The Connector" },
-  { id: "celestial", label: "Celestial Ring", color: "#38bdf8", glow: "#38bdf833", description: "500 followers on GuildLink.", icon: "⭐", questId: "rising_star", questLabel: "Quest: Rising Star", how: "Quest: Rising Star" },
-  { id: "onyx", label: "Onyx Ring", color: "#334155", glow: "#0f172a88", description: "1 year as a GuildLink member.", icon: "🕯️", questId: "veteran", questLabel: "Quest: Veteran", how: "Quest: Veteran" },
+  { id: "bronze", label: "Bronze Ring", color: "#cd7f32", glow: "#cd7f3233", description: "A simple bronze frame. Everyone starts somewhere.", icon: "🥉", questId: "reply_first_npc", how: "Quest: Join the Conversation" },
+  { id: "silver", label: "Silver Ring", color: "#c0c0c0", glow: "#c0c0c033", description: "You're finding your groove.", icon: "🥈", questId: "shelf_25", how: "Quest: Committed" },
+  { id: "gold", label: "Gold Ring", color: "#f59e0b", glow: "#f59e0b44", description: "A seasoned player. Your shelf speaks for itself.", icon: "🥇", questId: "shelf_100", how: "Quest: Legendary Library" },
+  { id: "npc", label: "NPC Friend Ring", color: "#a78bfa", glow: "#a78bfa33", description: "You talk to NPCs. Enough said.", icon: "🤝", questId: "npc_follow_all", how: "Quest: One of the Regulars" },
 ];
 
 const QUESTS = [
-  { id: "q1", title: "First Words", desc: "Post for the first time", reward: "10 XP", progress: 1, total: 1, done: true, ring: null },
-  { id: "q2", title: "The Critic", desc: "Write 50 game reviews", reward: "Platinum Ring", progress: 32, total: 50, done: false, ring: "platinum" },
-  { id: "q3", title: "Top of the Feed", desc: "Reach Top Voice status on any game page", reward: "Crimson Ring", progress: 0, total: 1, done: false, ring: "crimson" },
-  { id: "q4", title: "The Completionist", desc: "Mark 10 games as 100% complete", reward: "Void Ring", progress: 3, total: 10, done: false, ring: "void" },
-  { id: "q5", title: "The Connector", desc: "Have 100 players join squads you posted", reward: "Emerald Ring", progress: 14, total: 100, done: false, ring: "emerald" },
-  { id: "q6", title: "Rising Star", desc: "Reach 500 followers", reward: "Celestial Ring", progress: 312, total: 500, done: false, ring: "celestial" },
-  { id: "q7", title: "Veteran", desc: "Be a GuildLink member for 1 year", reward: "Onyx Ring", progress: 0, total: 12, done: false, ring: "onyx", unit: "months" },
-  { id: "q8", title: "NPC Whisperer", desc: "Get 10 NPC replies on your posts", reward: "500 XP + Badge", progress: 7, total: 10, done: false, ring: null },
+  { id: "add_first_game", title: "Add Your First Game", desc: "Add a game to your shelf", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "shelf_5", title: "Getting Started", desc: "Add 5 games to your shelf", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "shelf_10", title: "Building a Library", desc: "Add 10 games to your shelf", reward: "XP", progress: 0, total: 10, done: false, ring: null },
+  { id: "shelf_25", title: "Committed", desc: "Add 25 games to your shelf", reward: "Silver Ring", progress: 0, total: 25, done: false, ring: "silver" },
+  { id: "shelf_50", title: "The Collection", desc: "Add 50 games to your shelf", reward: "XP", progress: 0, total: 50, done: false, ring: null },
+  { id: "shelf_100", title: "Legendary Library", desc: "Add 100 games to your shelf", reward: "Gold Ring", progress: 0, total: 100, done: false, ring: "gold" },
+  { id: "played_10", title: "Veteran", desc: "Mark 10 games as played", reward: "XP", progress: 0, total: 10, done: false, ring: null },
+  { id: "played_25", title: "Road Warrior", desc: "Mark 25 games as played", reward: "Retro Theme", progress: 0, total: 25, done: false, ring: null },
+  { id: "played_50", title: "Hall of Fame", desc: "Mark 50 games as played", reward: "XP", progress: 0, total: 50, done: false, ring: null },
+  { id: "played_100", title: "The Veteran's Veteran", desc: "Mark 100 games as played", reward: "XP", progress: 0, total: 100, done: false, ring: null },
+  { id: "want_5", title: "The Wishlist", desc: "Add 5 games to Want to Play", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "want_25", title: "Eternal Backlog", desc: "Add 25 games to Want to Play", reward: "XP", progress: 0, total: 25, done: false, ring: null },
+  { id: "first_review", title: "Write Your First Review", desc: "Write your first game review", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "reviews_5", title: "Critic", desc: "Write 5 game reviews", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "reviews_10", title: "Trusted Voice", desc: "Write 10 game reviews", reward: "8-Bit Theme", progress: 0, total: 10, done: false, ring: null },
+  { id: "reviews_25", title: "The Authority", desc: "Write 25 game reviews", reward: "XP", progress: 0, total: 25, done: false, ring: null },
+  { id: "genre_explorer", title: "Genre Explorer", desc: "Play games across 5 genres", reward: "RPG Theme", progress: 0, total: 5, done: false, ring: null },
+  { id: "genre_master", title: "Genre Master", desc: "Play games across 10 genres", reward: "Space Theme", progress: 0, total: 10, done: false, ring: null },
+  { id: "first_like", title: "You're Noticed", desc: "Get your first like", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "likes_10", title: "People Like You", desc: "Get 10 likes on your posts", reward: "XP", progress: 0, total: 10, done: false, ring: null },
+  { id: "first_comment", title: "Starting a Thread", desc: "Leave your first comment", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "reply_first_npc", title: "Join the Conversation", desc: "Reply to an NPC", reward: "Bronze Ring", progress: 0, total: 1, done: false, ring: "bronze" },
+  { id: "npc_replies_5", title: "In the Mix", desc: "Get 5 NPC replies on your posts", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "follow_first_npc", title: "Meet the Locals", desc: "Follow your first NPC", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "npc_follow_3", title: "Making Friends", desc: "Follow 3 NPCs", reward: "XP", progress: 0, total: 3, done: false, ring: null },
+  { id: "npc_follow_all", title: "One of the Regulars", desc: "Follow all NPCs", reward: "NPC Friend Ring", progress: 0, total: 6, done: false, ring: "npc" },
 ];
 
 // ─── NPC DATA ─────────────────────────────────────────────────────────────────
@@ -1948,12 +1963,12 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
                     ) : notifications.map((n, i) => {
                       const actor = n.actor;
-                      const npcData = n.npc_id ? NPCS[n.npc_id] : null;
+                      const npcData = n.npc || null;
                       const isNPC = !!npcData;
                       const isUnread = !n.read;
                       const hasPost = !!n.post_id;
                       const avatarInitials = isNPC
-                        ? (npcData.avatar || npcData.name || "NPC").slice(0,2).toUpperCase()
+                        ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                       return (
                         <div key={n.id}
@@ -2003,7 +2018,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-311</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-312</span>
         </div>
       </div>
     </nav>
@@ -9075,7 +9090,7 @@ export default function GuildLink() {
   const fetchNotifications = async (userId) => {
     const { data } = await supabase
       .from("notifications")
-      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials)")
+      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials), npc:npcs!notifications_npc_id_fkey(id, name, handle, avatar_initials)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30);
