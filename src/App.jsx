@@ -2028,7 +2028,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-317</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-319</span>
         </div>
       </div>
     </nav>
@@ -2140,13 +2140,8 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
       setLoading(true);
 
       // Get yesterday's date in Pacific time
-      const now = new Date();
-      const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-        .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-      const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-      const yesterday = new Date(pacificNow);
-      yesterday.setDate(pacificNow.getDate() - 1);
-      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+      const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
+      const yesterdayStr = getPacificDate(1);
 
       // Query daily_chart_scores for yesterday
       const { data: scores } = await supabase
@@ -2170,9 +2165,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
         setCharts(sorted);
 
         // Get day before yesterday for movement arrows
-        const d2 = new Date(yesterday);
-        d2.setDate(yesterday.getDate() - 1);
-        const d2Str = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}-${String(d2.getDate()).padStart(2, "0")}`;
+        const d2Str = getPacificDate(2);
         const { data: prevScores } = await supabase
           .from("daily_chart_scores")
           .select("game_id, score")
@@ -3269,14 +3262,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setChartsLoading(true);
       setSparklines({});
 
-      // Get yesterday in Pacific time
-      const now = new Date();
-      const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-        .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-      const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-      const yesterday = new Date(pacificNow);
-      yesterday.setDate(pacificNow.getDate() - 1);
-      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+      // Get dates in Pacific time
+      const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
+      const yesterdayStr = getPacificDate(1);
 
       // Query yesterday's scores from daily_chart_scores
       const { data: scores } = await supabase
@@ -3305,9 +3293,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
       // Previous day for movement indicators
-      const d2 = new Date(yesterday);
-      d2.setDate(yesterday.getDate() - 1);
-      const d2Str = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}-${String(d2.getDate()).padStart(2, "0")}`;
+      const d2Str = getPacificDate(2);
       const { data: prevScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score")
@@ -3328,11 +3314,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Get last 8 days of scores for sparklines
       const sparkDates = [];
-      for (let i = 0; i < 8; i++) {
-        const d = new Date(yesterday);
-        d.setDate(yesterday.getDate() - i);
-        sparkDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-      }
+      for (let i = 1; i <= 8; i++) { sparkDates.push(getPacificDate(i)); }
       const { data: sparkScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, date")
@@ -3397,18 +3379,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const loadSparkline = async (gameId) => {
     if (sparklines[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    const now = new Date();
-    const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-      .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-    const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-    const yesterday = new Date(pacificNow);
-    yesterday.setDate(pacificNow.getDate() - 1);
+    const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
     const sparkDates = [];
-    for (let i = 0; i < 8; i++) {
-      const d = new Date(yesterday);
-      d.setDate(yesterday.getDate() - i);
-      sparkDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-    }
+    for (let i = 1; i <= 8; i++) { sparkDates.push(getPacificDate(i)); }
     const { data: sparkScores } = await supabase
       .from("daily_chart_scores")
       .select("game_id, score, date")
@@ -9129,11 +9102,19 @@ export default function GuildLink() {
   const fetchNotifications = async (userId) => {
     const { data } = await supabase
       .from("notifications")
-      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials), npc:npcs!notifications_npc_id_fkey(id, name, handle, avatar_initials)")
+      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(id, username, handle, avatar_initials)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30);
-    if (data) setNotifications(data);
+    if (!data) return;
+    // Enrich NPC notifications by fetching NPC names separately
+    const npcIds = [...new Set(data.filter(n => n.npc_id).map(n => n.npc_id))];
+    let npcMap = {};
+    if (npcIds.length > 0) {
+      const { data: npcs } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcIds);
+      if (npcs) npcs.forEach(n => { npcMap[n.id] = n; });
+    }
+    setNotifications(data.map(n => ({ ...n, npc: n.npc_id ? npcMap[n.npc_id] || null : null })));
   };
 
   const markAllRead = async (userId) => {
