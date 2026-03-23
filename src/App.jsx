@@ -2028,7 +2028,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-320</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-321</span>
         </div>
       </div>
     </nav>
@@ -3660,7 +3660,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     // Reference line (genre or overall leader)
     let refLastIdx = 0;
     let refFirstIdx = 0;
-    const refLinePts = refPoints ? refPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
+    const refLinePts = refPoints ? refPoints.slice(0, 8).map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
