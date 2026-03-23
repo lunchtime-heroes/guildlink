@@ -2028,7 +2028,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-322</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-323</span>
         </div>
       </div>
     </nav>
@@ -4038,6 +4038,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [topVoices, setTopVoices] = useState([]);
   const [latestReviews, setLatestReviews] = useState([]);
   const [chartsData, setChartsData] = useState(null);
+  const [shelfCounts, setShelfCounts] = useState({ want_to_play: 0, playing: 0, have_played: 0 });
+  const [shelfPlayers, setShelfPlayers] = useState({ want_to_play: [], playing: [], have_played: [] });
+  const [shelfDrawer, setShelfDrawer] = useState(null); // "want_to_play" | "playing" | "have_played" | null
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -4106,6 +4109,24 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         .order("created_at", { ascending: false })
         .limit(20);
       if (reviews) setLatestReviews(reviews);
+
+      // Shelf counts — how many users have this game in each status
+      const { data: shelfData } = await supabase
+        .from("user_games")
+        .select("status, user_id, profiles(id, username, handle, avatar_initials, active_ring, is_founding)")
+        .eq("game_id", dbId);
+      if (shelfData) {
+        const counts = { want_to_play: 0, playing: 0, have_played: 0 };
+        const players = { want_to_play: [], playing: [], have_played: [] };
+        shelfData.forEach(e => {
+          if (counts[e.status] !== undefined) {
+            counts[e.status]++;
+            if (e.profiles) players[e.status].push(e.profiles);
+          }
+        });
+        setShelfCounts(counts);
+        setShelfPlayers(players);
+      }
 
       // Check if current user already reviewed this game
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -4348,6 +4369,41 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   </div>
                 )}
               </div>
+
+              {/* Community Shelf */}
+              {(shelfCounts.want_to_play + shelfCounts.playing + shelfCounts.have_played) > 0 && (
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 14 }}>🎮 Community Shelf</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {[
+                      { key: "playing", label: "Playing", color: C.green },
+                      { key: "want_to_play", label: "Want to Play", color: C.accent },
+                      { key: "have_played", label: "Have Played", color: C.gold },
+                    ].map(({ key, label, color }) => shelfCounts[key] > 0 && (
+                      <button key={key} onClick={() => setShelfDrawer(shelfDrawer === key ? null : key)}
+                        style={{ background: shelfDrawer === key ? color + "22" : C.surfaceRaised, border: "1px solid " + (shelfDrawer === key ? color + "66" : C.border), borderRadius: 10, padding: "10px 16px", cursor: "pointer", textAlign: "center", flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: 20, color }}>{shelfCounts[key]}</div>
+                        <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{label}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {shelfDrawer && shelfPlayers[shelfDrawer]?.length > 0 && (
+                    <div style={{ marginTop: 14, borderTop: "1px solid " + C.border, paddingTop: 14 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {shelfPlayers[shelfDrawer].map(p => (
+                          <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+                            style={{ display: "flex", alignItems: "center", gap: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px 5px 6px", cursor: "pointer" }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} />
+                            <span style={{ color: C.text, fontSize: 12, fontWeight: 600 }}>{p.username}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Latest Reviews */}
               <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
