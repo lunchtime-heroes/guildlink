@@ -2030,7 +2030,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-325</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-326</span>
         </div>
       </div>
     </nav>
@@ -9151,21 +9151,30 @@ export default function GuildLink() {
   };
 
   const fetchNotifications = async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notifications")
-      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(id, username, handle, avatar_initials)")
+      .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30);
-    if (!data) return;
-    // Enrich NPC notifications by fetching NPC names separately
+    if (error || !data) return;
+    // Enrich with actor profiles
+    const actorIds = [...new Set(data.filter(n => n.actor_id).map(n => n.actor_id))];
     const npcIds = [...new Set(data.filter(n => n.npc_id).map(n => n.npc_id))];
-    let npcMap = {};
+    let actorMap = {}, npcMap = {};
+    if (actorIds.length > 0) {
+      const { data: actors } = await supabase.from("profiles").select("id, username, handle, avatar_initials").in("id", actorIds);
+      if (actors) actors.forEach(a => { actorMap[a.id] = a; });
+    }
     if (npcIds.length > 0) {
       const { data: npcs } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcIds);
       if (npcs) npcs.forEach(n => { npcMap[n.id] = n; });
     }
-    setNotifications(data.map(n => ({ ...n, npc: n.npc_id ? npcMap[n.npc_id] || null : null })));
+    setNotifications(data.map(n => ({
+      ...n,
+      actor: n.actor_id ? actorMap[n.actor_id] || null : null,
+      npc: n.npc_id ? npcMap[n.npc_id] || null : null,
+    })));
   };
 
   const markAllRead = async (userId) => {
