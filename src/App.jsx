@@ -963,10 +963,10 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 <div style={{ display: "flex", gap: 10, position: "relative" }}>
                   <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
                   <div style={{ flex: 1, position: "relative" }}>
-                    <input
+                    <textarea
                       ref={commentInputRef}
                       value={commentText}
-                      onChange={handleCommentTextChange}
+                      onChange={e => { handleCommentTextChange(e); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
                       onKeyDown={e => {
                         if (commentMentionResults.length > 0) {
                           if (e.key === "ArrowDown") { e.preventDefault(); setCommentMentionIndex(i => Math.min(i+1, commentMentionResults.length-1)); return; }
@@ -974,10 +974,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                           if (e.key === "Enter") { e.preventDefault(); selectCommentMention(commentMentionResults[commentMentionIndex]); return; }
                           if (e.key === "Escape") { setCommentMentionResults([]); return; }
                         }
-                        if (e.key === "Enter") submitComment();
+                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
                       }}
                       placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment… (@ to mention)"}
-                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                      rows={1}
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
                     />
                     {commentMentionResults.length > 0 && (
                       <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
@@ -1683,10 +1684,11 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
             )}
             <div style={{ display: "flex", gap: 10 }}>
               <Avatar initials={currentUser.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
-              <input ref={modalInputRef} value={commentText} onChange={e => setCommentText(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && submitComment()}
+              <textarea ref={modalInputRef} value={commentText} onChange={e => { setCommentText(e.target.value); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
                 placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
-                style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+                rows={1}
+                style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
               />
               <button onClick={submitComment} disabled={submitting || !commentText.trim()}
                 style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 16px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -2028,7 +2030,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-323</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-324</span>
         </div>
       </div>
     </nav>
