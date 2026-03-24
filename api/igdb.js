@@ -15,9 +15,52 @@ async function getAccessToken() {
   return cachedToken;
 }
 
+function formatPlatformName(name) {
+  const map = {
+    "PC (Microsoft Windows)": "PC",
+    "PlayStation 5": "PS5", "PlayStation 4": "PS4", "PlayStation 3": "PS3",
+    "PlayStation 2": "PS2", "PlayStation": "PS1",
+    "Xbox Series X|S": "Xbox Series X/S", "Xbox One": "Xbox One",
+    "Xbox 360": "Xbox 360", "Xbox": "Xbox",
+    "Nintendo Switch": "Switch", "Nintendo 3DS": "3DS", "Nintendo DS": "DS",
+    "Wii U": "Wii U", "Wii": "Wii", "Game Boy Advance": "GBA",
+    "iOS": "iOS", "Android": "Android", "Mac": "Mac", "Linux": "Linux",
+  };
+  return map[name] || name;
+}
+
+function formatGame(g) {
+  const MAJOR_PLATFORMS = ["PC (Microsoft Windows)", "PlayStation 5", "PlayStation 4",
+    "PlayStation 3", "Xbox Series X|S", "Xbox One", "Xbox 360", "Nintendo Switch", "iOS", "Android", "Mac"];
+  let platforms = null;
+  if (g.platforms?.length) {
+    const names = g.platforms.map(p => p.name);
+    const sorted = [
+      ...names.filter(n => MAJOR_PLATFORMS.includes(n)),
+      ...names.filter(n => !MAJOR_PLATFORMS.includes(n)),
+    ];
+    platforms = sorted.slice(0, 4).map(formatPlatformName).join(", ");
+  }
+  return {
+    igdb_id: g.id,
+    name: g.name,
+    summary: g.summary || null,
+    genre: g.genres?.[0]?.name || null,
+    platforms,
+    cover_url: g.cover?.image_id
+      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
+      : null,
+    first_release_date: g.first_release_date || null,
+    developer: g.involved_companies?.find(c => c.developer)?.company?.name || null,
+    follows: g.follows || 0,
+  };
+}
+
+const FIELDS = "name, genres.name, summary, cover.image_id, first_release_date, involved_companies.company.name, involved_companies.developer, platforms.name";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  const { query, igdb_id } = req.body;
+  const { query, igdb_id, slug } = req.body;
   try {
     const token = await getAccessToken();
     const headers = {
@@ -26,75 +69,36 @@ export default async function handler(req, res) {
       "Content-Type": "text/plain",
     };
 
+    if (slug) {
+      const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `fields ${FIELDS}; where slug = "${slug}"; limit 1;` });
+      return res.status(200).json({ games: (await r.json()).map(formatGame) });
+    }
+
     if (igdb_id) {
-      const body = `
-        fields name, genres.name, summary, cover.image_id, first_release_date,
-               involved_companies.company.name, involved_companies.developer;
-        where id = ${igdb_id};
-        limit 1;
-      `;
-      const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body });
-      const games = await r.json();
-      return res.status(200).json({ games: games.map(formatGame) });
+      const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `fields ${FIELDS}; where id = ${igdb_id}; limit 1;` });
+      return res.status(200).json({ games: (await r.json()).map(formatGame) });
     }
 
     if (query) {
-      const body = `
-        search "${query.replace(/"/g, "")}";
-        fields name, genres.name, summary, cover.image_id, first_release_date,
-               involved_companies.company.name, involved_companies.developer, follows, category, rating, rating_count;
-        limit 30;
-      `;
-      const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body });
+      const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${query.replace(/"/g, "")}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 30;` });
       const games = await r.json();
-
-      // Only filter out DLC (1), expansions (2), and mods (6)
-      // Keep bundles (3), episodes (4), seasons (5), remakes (8), remasters (9), ports (10), forks (11)
-      const EXCLUDED_CATEGORIES = [1, 2, 6];
-      const categoryFiltered = (games || []).filter(g => !EXCLUDED_CATEGORIES.includes(g.category));
-
-      // Loose quality filter: remove games with NO cover AND NO rating AND NO follows
-      // This catches true shovelware while keeping any game with any signal of legitimacy
+      const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
-        g.cover?.image_id ||
-        (g.rating_count || 0) > 0 ||
-        (g.follows || 0) > 0 ||
-        g.category === 0
+        g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
       );
-
-      // Sort: cover art first, then by rating count + follows as combined signal
       const sorted = qualityFiltered.sort((a, b) => {
         const aScore = (a.cover?.image_id ? 10000 : 0) + (a.rating_count || 0) * 10 + (a.follows || 0);
         const bScore = (b.cover?.image_id ? 10000 : 0) + (b.rating_count || 0) * 10 + (b.follows || 0);
         return bScore - aScore;
       });
-
-      // Fall back to just category-filtered if quality filter removes everything
-      const results = sorted.length > 0 ? sorted : categoryFiltered;
-      return res.status(200).json({ games: results.slice(0, 10).map(formatGame) });
+      return res.status(200).json({ games: (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10).map(formatGame) });
     }
 
     return res.status(400).json({ error: "Provide query or igdb_id" });
   } catch (err) {
-    // Clear cached token on error so next request gets a fresh one
     cachedToken = null;
     tokenExpiry = 0;
     console.error("[igdb] error:", err);
     return res.status(500).json({ error: "IGDB request failed" });
   }
-}
-
-function formatGame(g) {
-  return {
-    igdb_id: g.id,
-    name: g.name,
-    summary: g.summary || null,
-    genre: g.genres?.[0]?.name || null,
-    cover_url: g.cover?.image_id
-      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
-      : null,
-    first_release_date: g.first_release_date || null,
-    developer: g.involved_companies?.find(c => c.developer)?.company?.name || null,
-    follows: g.follows || 0,
-  };
 }
