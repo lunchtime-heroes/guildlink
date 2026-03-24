@@ -2070,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-333</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-335</span>
         </div>
       </div>
     </nav>
@@ -3579,7 +3579,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           const { data: follows } = await supabase.from("follows")
             .select("followed_user_id").eq("follower_id", currentUser.id);
           if (!follows?.length) return [];
-          const followIds = follows.map(f => f.followed_user_id);
+          const followIds = follows.map(f => f.followed_user_id).filter(Boolean);
+          if (!followIds.length) return [];
           const { data } = await supabase.from("user_games")
             .select("game_id, games(id, name, genre, cover_url)")
             .in("user_id", followIds)
@@ -3620,7 +3621,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           const { data: follows } = await supabase.from("follows")
             .select("followed_user_id").eq("follower_id", currentUser.id);
           if (!follows?.length) return [];
-          const followIds = follows.map(f => f.followed_user_id);
+          const followIds = follows.map(f => f.followed_user_id).filter(Boolean);
+          if (!followIds.length) return [];
           // Get all games from followed users' shelves
           const [shelfRes, reviewRes, likedRes] = await Promise.all([
             supabase.from("user_games").select("game_id, status, games(id, name, genre, cover_url)").in("user_id", followIds).eq("status", "want_to_play"),
@@ -3657,7 +3659,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             supabase.from("user_games").select("game_id"),
             supabase.from("follows").select("followed_user_id").eq("follower_id", currentUser.id),
           ]);
-          const followIds = new Set((followRes.data || []).map(f => f.followed_user_id));
+          const followIds = new Set((followRes.data || []).map(f => f.followed_user_id).filter(Boolean));
           // Total shelf entries per game
           const shelfCounts = {};
           (shelfCountRes.data || []).forEach(r => {
@@ -4021,7 +4023,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     )}
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                      <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g._stat}</div>
+                      {g._stat && g._stat.includes("avg") && (
+                        <div style={{ display: "inline-block", background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 7px", color: C.gold, fontWeight: 800, fontSize: 11, marginBottom: 4 }}>
+                          {g._stat.split(" avg")[0]}/10
+                        </div>
+                      )}
                       {currentUser && !g._fromIGDB && (
                         onShelf
                           ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
