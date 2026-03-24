@@ -2070,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-335</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-336</span>
         </div>
       </div>
     </nav>
@@ -3542,32 +3542,22 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "critics_choice",
       label: "Critic's Choice",
-      desc: "Highest rated across reviews and have-played likes",
+      desc: "Highest rated games by community reviews",
       run: async () => {
-        const [reviewsRes, likedRes] = await Promise.all([
-          supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)"),
-          supabase.from("user_games").select("game_id, liked, games(id, name, genre, cover_url)").eq("status", "have_played").not("liked", "is", null),
-        ]);
+        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
         const agg = {};
-        (reviewsRes.data || []).forEach(r => {
+        (data || []).forEach(r => {
           if (!r.games) return;
-          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, signals: 0 };
-          agg[r.game_id].score += r.rating;
-          agg[r.game_id].signals++;
-        });
-        (likedRes.data || []).forEach(r => {
-          if (!r.games) return;
-          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, signals: 0 };
-          // liked = true adds 8 pts, liked = false adds 2 pts (still a signal)
-          agg[r.game_id].score += r.liked ? 8 : 2;
-          agg[r.game_id].signals++;
+          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 };
+          agg[r.game_id].total += r.rating;
+          agg[r.game_id].count++;
         });
         return Object.values(agg)
-          .filter(g => g.signals >= 1)
-          .map(g => ({ ...g, avg: g.score / g.signals }))
+          .filter(g => g.count >= 1)
+          .map(g => ({ ...g, avg: g.total / g.count }))
           .sort((a, b) => b.avg - a.avg)
           .slice(0, 12)
-          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.signals} signal${g.signals !== 1 ? "s" : ""}` }));
+          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} review${g.count !== 1 ? "s" : ""}` }));
       }
     },
     ...(currentUser ? [
