@@ -2070,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-332</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-333</span>
         </div>
       </div>
     </nav>
@@ -3471,7 +3471,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "everyone_playing",
       label: "Everyone's Playing",
-      desc: "Most added to playing shelves recently",
+      desc: "Top games on currently playing shelves",
       run: async () => {
         const { data } = await supabase.from("user_games")
           .select("game_id, games(id, name, genre, cover_url)")
@@ -3484,27 +3484,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         });
         return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
           .map(r => ({ ...r.game, _stat: `${r.count} playing now` }));
-      }
-    },
-    {
-      id: "hidden_gems",
-      label: "Hidden Gems",
-      desc: "Highly reviewed but not widely followed",
-      run: async () => {
-        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url, followers)");
-        const agg = {};
-        (data || []).forEach(r => {
-          if (!r.games) return;
-          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 };
-          agg[r.game_id].total += r.rating;
-          agg[r.game_id].count++;
-        });
-        return Object.values(agg)
-          .map(g => ({ ...g, avg: g.total / g.count }))
-          .filter(g => g.avg >= 7 && g.count >= 2 && (g.followers || 0) < 500)
-          .sort((a, b) => b.avg - a.avg)
-          .slice(0, 12)
-          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} review${g.count !== 1 ? "s" : ""}` }));
       }
     },
     {
@@ -3563,87 +3542,148 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "critics_choice",
       label: "Critic's Choice",
-      desc: "Highest rated with meaningful review volume",
+      desc: "Highest rated across reviews and have-played likes",
       run: async () => {
-        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
+        const [reviewsRes, likedRes] = await Promise.all([
+          supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)"),
+          supabase.from("user_games").select("game_id, liked, games(id, name, genre, cover_url)").eq("status", "have_played").not("liked", "is", null),
+        ]);
         const agg = {};
-        (data || []).forEach(r => {
+        (reviewsRes.data || []).forEach(r => {
           if (!r.games) return;
-          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 };
-          agg[r.game_id].total += r.rating;
-          agg[r.game_id].count++;
+          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, signals: 0 };
+          agg[r.game_id].score += r.rating;
+          agg[r.game_id].signals++;
+        });
+        (likedRes.data || []).forEach(r => {
+          if (!r.games) return;
+          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, signals: 0 };
+          // liked = true adds 8 pts, liked = false adds 2 pts (still a signal)
+          agg[r.game_id].score += r.liked ? 8 : 2;
+          agg[r.game_id].signals++;
         });
         return Object.values(agg)
-          .filter(g => g.count >= 2)
-          .map(g => ({ ...g, avg: g.total / g.count }))
+          .filter(g => g.signals >= 1)
+          .map(g => ({ ...g, avg: g.score / g.signals }))
           .sort((a, b) => b.avg - a.avg)
           .slice(0, 12)
-          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} reviews` }));
+          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.signals} signal${g.signals !== 1 ? "s" : ""}` }));
       }
     },
-    ...(currentUser ? [{
-      id: "your_people",
-      label: "Your People Are Playing",
-      desc: "On the shelves of people you follow",
-      run: async () => {
-        const { data: follows } = await supabase.from("follows")
-          .select("followed_user_id").eq("follower_id", currentUser.id);
-        if (!follows?.length) return [];
-        const followIds = follows.map(f => f.followed_user_id);
-        const { data } = await supabase.from("user_games")
-          .select("game_id, status, games(id, name, genre, cover_url)")
-          .in("user_id", followIds)
-          .in("status", ["playing", "have_played"]);
-        const counts = {};
-        (data || []).forEach(r => {
-          if (!r.games || userShelf.has(r.game_id)) return;
-          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
-          counts[r.game_id].count++;
-        });
-        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `${r.count} of your people played it` }));
-      }
-    },
-    {
-      id: "not_on_shelf",
-      label: "Not on Your Shelf Yet",
-      desc: "Community favorites you haven't picked up",
-      run: async () => {
-        const { data } = await supabase.from("user_games")
-          .select("game_id, games(id, name, genre, cover_url)")
-          .in("status", ["playing", "have_played"]);
-        const counts = {};
-        (data || []).forEach(r => {
-          if (!r.games || userShelf.has(r.game_id)) return;
-          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
-          counts[r.game_id].count++;
-        });
-        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `${r.count} players` }));
-      }
-    },
-    {
-      id: "most_wanted",
-      label: "Most Wanted",
-      desc: "Games players are actively elevating on their lists",
-      run: async () => {
-        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-        const { data } = await supabase.from("shelf_elevations")
-          .select("game_id, to_position, games(id, name, genre, cover_url)")
-          .gte("created_at", since);
-        const scores = {};
-        (data || []).forEach(r => {
-          if (!r.games) return;
-          if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0, count: 0 };
-          // Weight by position: #1 = 1.0, #2 = 0.8, #3 = 0.6, deeper = 0.4
-          const posWeight = r.to_position === 0 ? 1.0 : r.to_position === 1 ? 0.8 : r.to_position === 2 ? 0.6 : 0.4;
-          scores[r.game_id].score += posWeight;
-          scores[r.game_id].count++;
-        });
-        return Object.values(scores).sort((a, b) => b.score - a.score).slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `${r.count} elevation${r.count !== 1 ? "s" : ""} this fortnight` }));
-      }
-    }] : []),
+    ...(currentUser ? [
+      {
+        id: "your_people",
+        label: "Your People Are Playing",
+        desc: "On the currently playing shelf of people you follow",
+        run: async () => {
+          const { data: follows } = await supabase.from("follows")
+            .select("followed_user_id").eq("follower_id", currentUser.id);
+          if (!follows?.length) return [];
+          const followIds = follows.map(f => f.followed_user_id);
+          const { data } = await supabase.from("user_games")
+            .select("game_id, games(id, name, genre, cover_url)")
+            .in("user_id", followIds)
+            .eq("status", "playing");
+          const counts = {};
+          (data || []).forEach(r => {
+            if (!r.games) return;
+            if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+            counts[r.game_id].count++;
+          });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: `${r.count} of your people playing` }));
+        }
+      },
+      {
+        id: "not_on_shelf",
+        label: "Not on Your Shelf Yet",
+        desc: "Community favorites you haven't added",
+        run: async () => {
+          const { data } = await supabase.from("user_games")
+            .select("game_id, games(id, name, genre, cover_url)")
+            .in("status", ["playing", "have_played"]);
+          const counts = {};
+          (data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+            counts[r.game_id].count++;
+          });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: `${r.count} player${r.count !== 1 ? "s" : ""}` }));
+        }
+      },
+      {
+        id: "something_new",
+        label: "Something New",
+        desc: "Top picks from your network not on your shelf",
+        run: async () => {
+          const { data: follows } = await supabase.from("follows")
+            .select("followed_user_id").eq("follower_id", currentUser.id);
+          if (!follows?.length) return [];
+          const followIds = follows.map(f => f.followed_user_id);
+          // Get all games from followed users' shelves
+          const [shelfRes, reviewRes, likedRes] = await Promise.all([
+            supabase.from("user_games").select("game_id, status, games(id, name, genre, cover_url)").in("user_id", followIds).eq("status", "want_to_play"),
+            supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)").in("user_id", followIds),
+            supabase.from("user_games").select("game_id, liked, games(id, name, genre, cover_url)").in("user_id", followIds).eq("status", "have_played").eq("liked", true),
+          ]);
+          const scores = {};
+          (shelfRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0 };
+            scores[r.game_id].score += 1.5; // want to play signal
+          });
+          (reviewRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0 };
+            scores[r.game_id].score += r.rating / 10 * 2; // normalized review score
+          });
+          (likedRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0 };
+            scores[r.game_id].score += 2; // liked = strong signal
+          });
+          return Object.values(scores).sort((a, b) => b.score - a.score).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: `recommended by your network` }));
+        }
+      },
+      {
+        id: "hidden_gems",
+        label: "Hidden Gems",
+        desc: "Highly reviewed, on less than 10% of shelves — doubled for people you follow",
+        run: async () => {
+          const [reviewRes, shelfCountRes, followRes] = await Promise.all([
+            supabase.from("reviews").select("game_id, rating, user_id, games(id, name, genre, cover_url)"),
+            supabase.from("user_games").select("game_id"),
+            supabase.from("follows").select("followed_user_id").eq("follower_id", currentUser.id),
+          ]);
+          const followIds = new Set((followRes.data || []).map(f => f.followed_user_id));
+          // Total shelf entries per game
+          const shelfCounts = {};
+          (shelfCountRes.data || []).forEach(r => {
+            shelfCounts[r.game_id] = (shelfCounts[r.game_id] || 0) + 1;
+          });
+          const totalUsers = await supabase.from("profiles").select("id", { count: "exact", head: true });
+          const userCount = Math.max(totalUsers.count || 1, 1);
+          const threshold = userCount * 0.1; // 10% of users
+          // Aggregate review scores, doubling scores from followed users
+          const agg = {};
+          (reviewRes.data || []).forEach(r => {
+            if (!r.games) return;
+            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, count: 0 };
+            const multiplier = followIds.has(r.user_id) ? 2 : 1;
+            agg[r.game_id].score += r.rating * multiplier;
+            agg[r.game_id].count++;
+          });
+          return Object.values(agg)
+            .filter(g => (shelfCounts[g.id] || 0) < threshold && g.count >= 1)
+            .map(g => ({ ...g, avg: g.score / g.count }))
+            .sort((a, b) => b.avg - a.avg)
+            .slice(0, 12)
+            .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${shelfCounts[g.id] || 0} shelves` }));
+        }
+      },
+    ] : []),
   ];
 
   const runInsight = async (insight) => {
