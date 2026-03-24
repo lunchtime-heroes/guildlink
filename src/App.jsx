@@ -1947,8 +1947,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         ) : (
           <>
             <div style={{ position: "relative" }}>
-              <button onClick={() => { setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
-                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "1px solid " + showNotifs ? C.accentDim : "transparent", borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "4px 8px", display: "flex", alignItems: "center" }}>
+              <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
+                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "8px 12px", display: "flex", alignItems: "center", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
                 🔔
                 {unreadCount > 0 && (
                   <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: C.accentText, borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
@@ -2030,7 +2030,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-327</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-328</span>
         </div>
       </div>
     </nav>
