@@ -2070,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-329</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-330</span>
         </div>
       </div>
     </nav>
@@ -2990,8 +2990,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                         ) : (
                           <>
                             {item.cover_url
-                              ? <img src={item.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
-                              : <div style={{ width: 28, height: 37, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                              ? <img src={item.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                              : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                             }
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
@@ -5519,10 +5519,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               {gameSearchResults.length > 0 && (
                 <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: "1px solid " + C.border }}>
                   {gameSearchResults.map(game => (
-                    <div key={game.id || game.igdb_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
+                    <div key={game.id || game.igdb_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
                       {game.cover_url
-                        ? <img src={game.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                        : <div style={{ width: 28, height: 37, borderRadius: 4, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                        ? <img src={game.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                        : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                       }
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -6581,8 +6581,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
             {allGames.map((game, i) => (
               <div key={game.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < allGames.length - 1 ? "1px solid " + C.border : "none" }}>
                 {game.cover_url
-                  ? <img src={game.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                  : <div style={{ width: 28, height: 37, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                  ? <img src={game.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                  : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                 }
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
