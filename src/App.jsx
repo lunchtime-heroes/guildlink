@@ -1957,7 +1957,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 )}
               </button>
               {showNotifs && (
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, background: C.surface, border: "1px solid " + C.border, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden" }}>
+                <div style={{ position: "fixed", top: isMobile ? 56 : "auto", right: isMobile ? 0 : 0, left: isMobile ? 0 : "auto", marginTop: isMobile ? 0 : 8, width: isMobile ? "100%" : 340, background: C.surface, border: "1px solid " + C.border, borderRadius: isMobile ? "0 0 14px 14px" : 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden", maxHeight: isMobile ? "70vh" : "auto" }}>
                   <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1970,7 +1970,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 0 }}>×</button>
                     </div>
                   </div>
-                  <div style={{ maxHeight: 420, overflowY: "auto" }}>
+                  <div style={{ maxHeight: isMobile ? "calc(70vh - 60px)" : 420, overflowY: "auto" }}>
                     {(!notifications || notifications.length === 0) ? (
                       <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
                     ) : notifications.map((n, i) => {
@@ -2030,7 +2030,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-326</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-327</span>
         </div>
       </div>
     </nav>
