@@ -2070,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-331</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-332</span>
         </div>
       </div>
     </nav>
@@ -5126,8 +5126,40 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const searchGames = async (q) => {
     setGameSearch(q);
     if (q.length < 2) { setGameSearchResults([]); return; }
-    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
-    setGameSearchResults(data || []);
+    // Search local DB first
+    const { data: localGames } = await supabase
+      .from("games")
+      .select("id, name, developer, genre, cover_url, platforms, igdb_id")
+      .ilike("name", `%${q}%`)
+      .limit(6);
+
+    const results = localGames || [];
+    setGameSearchResults(results);
+
+    // Also search IGDB for games not in DB yet
+    try {
+      const igdbRes = await fetch("/api/igdb", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      const { games: igdbGames } = await igdbRes.json();
+      if (igdbGames?.length) {
+        const localIgdbIds = new Set(results.map(g => g.igdb_id).filter(Boolean));
+        const newGames = igdbGames.filter(g => !localIgdbIds.has(g.igdb_id)).map(g => ({ ...g, _fromIGDB: true }));
+        setGameSearchResults([...results, ...newGames].slice(0, 10));
+
+        // Background enrich: update any local games missing platforms
+        results.forEach(async (g) => {
+          if (!g.platforms && g.igdb_id) {
+            const match = igdbGames.find(ig => ig.igdb_id === g.igdb_id);
+            if (match?.platforms) {
+              await supabase.from("games").update({ platforms: match.platforms, cover_url: match.cover_url || g.cover_url }).eq("id", g.id);
+              setGameSearchResults(prev => prev.map(r => r.id === g.id ? { ...r, platforms: match.platforms, cover_url: match.cover_url || r.cover_url } : r));
+            }
+          }
+        });
+      }
+    } catch (e) { /* IGDB unavailable, local results are fine */ }
   };
 
   const handleDragStart = (gameId, fromStatus) => setDragging({ gameId, fromStatus });
