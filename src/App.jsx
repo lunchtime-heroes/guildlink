@@ -1735,7 +1735,7 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
 
   const selectGame = async (game) => {
     if (game._fromIGDB) {
-      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0 }).select().single();
+      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0, platforms: game.platforms || null }).select().single();
       if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
     } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }
     close();
@@ -2070,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-330</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-331</span>
         </div>
       </div>
     </nav>
@@ -2995,7 +2995,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                             }
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
-                              {item.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{item.genre}</div>}
+                              {(item.platforms || item.genre) && <div style={{ color: C.textDim, fontSize: 10 }}>{item.platforms || item.genre}</div>}
                             </div>
                             {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>}
                           </>
@@ -5526,7 +5526,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       }
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}{game.genre ? " · " + game.genre : ""}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.platforms || game.genre || game.developer || ""}</div>
                       </div>
                       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                         {game._fromIGDB ? (
@@ -5537,6 +5537,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                 name: game.name, genre: game.genre, summary: game.summary,
                                 cover_url: game.cover_url, igdb_id: game.igdb_id,
                                 first_release_date: game.first_release_date, followers: 0,
+                                platforms: game.platforms || null,
                               }).select().single();
                               if (inserted) { addToShelf(inserted, col.id); setGameSearchResults([]); setGameSearch(""); }
                             }}
@@ -8882,6 +8883,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       const { data: inserted } = await supabase.from("games").insert({
         name: game.name, genre: game.genre, summary: game.summary,
         cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0,
+        platforms: game.platforms || null,
       }).select().single();
       if (inserted) await addGame(inserted);
     } else {
