@@ -1865,7 +1865,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
               </>
             ) : (
               <>
-                <button onClick={onMarkAllRead} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "4px 2px" }}>
+                <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && notifications.filter(n => !n.read).length > 0) onMarkAllRead?.(); }}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "8px 6px", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
                   🔔
                   {notifications.filter(n => !n.read).length > 0 && (
                     <span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1873,6 +1874,45 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                     </span>
                   )}
                 </button>
+                {showNotifs && (
+                  <div style={{ position: "fixed", top: 52, left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: "0 0 14px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden", maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
+                    <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+                      <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
+                      <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer" }}>×</button>
+                    </div>
+                    <div style={{ overflowY: "auto", flex: 1 }}>
+                      {(!notifications || notifications.length === 0) ? (
+                        <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
+                      ) : notifications.map((n, i) => {
+                        const actor = n.actor;
+                        const npcData = n.npc || null;
+                        const isNPC = !!npcData;
+                        const hasPost = !!n.post_id;
+                        const avatarInitials = isNPC
+                          ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
+                          : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
+                        const notifText = n.type === "comment" ? "commented on your post" : n.type === "reply" ? "replied to your comment" : n.type === "follow" ? "started following you" : "mentioned you";
+                        return (
+                          <div key={n.id} onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
+                            style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: !n.read ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default" }}>
+                            <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+                                {isNPC ? (
+                                  <><strong style={{ color: C.gold }}>{npcData.name}</strong> <span style={{ color: C.gold }}>{notifText}</span></>
+                                ) : (
+                                  <span style={{ color: C.text }}><strong>{actor?.username || "Someone"}</strong> {notifText}</span>
+                                )}
+                              </div>
+                              <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{timeAgo(n.created_at)}</div>
+                            </div>
+                            {hasPost && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
                   <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} />
                 </div>
@@ -2030,7 +2070,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-328</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-329</span>
         </div>
       </div>
     </nav>
