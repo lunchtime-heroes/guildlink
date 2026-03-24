@@ -2030,7 +2030,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-324</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0323-325</span>
         </div>
       </div>
     </nav>
@@ -5580,11 +5580,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           {col.id === "have_played" && (
                             <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                               <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
-                                style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 6, padding: "2px 6px", fontSize: 12, cursor: "pointer", lineHeight: 1 }}>
+                                style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>
                                 👍
                               </button>
                               <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === false ? null : false); }}
-                                style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 6, padding: "2px 6px", fontSize: 12, cursor: "pointer", lineHeight: 1 }}>
+                                style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>
                                 👎
                               </button>
                             </div>
