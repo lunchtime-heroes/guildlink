@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-351</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-352</span>
         </div>
       </div>
     </nav>
@@ -2631,15 +2631,21 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get yesterday's date in Pacific time
+      // Get most recent date with chart scores (handles cron gaps)
       const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-      const yesterdayStr = getPacificDate(1);
+      const { data: latestDate } = await supabase
+        .from("daily_chart_scores")
+        .select("date")
+        .order("date", { ascending: false })
+        .limit(1)
+        .single();
+      const chartDate = latestDate?.date || getPacificDate(1);
 
-      // Query daily_chart_scores for yesterday
+      // Query daily_chart_scores for most recent date
       const { data: scores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, games(id, name, genre)")
-        .eq("date", yesterdayStr)
+        .eq("date", chartDate)
         .order("score", { ascending: false })
         .limit(limit || 10);
 
@@ -2656,12 +2662,14 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           }));
         setCharts(sorted);
 
-        // Get day before yesterday for movement arrows
-        const d2Str = getPacificDate(2);
+        // Get previous date for movement arrows
+        const prevDate = new Date(chartDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+        const prevDateStr = prevDate.toISOString().slice(0, 10);
         const { data: prevScores } = await supabase
           .from("daily_chart_scores")
           .select("game_id, score")
-          .eq("date", d2Str)
+          .eq("date", prevDateStr)
           .order("score", { ascending: false });
         if (prevScores) {
           const prev = {};
@@ -3823,15 +3831,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setChartsLoading(true);
       setSparklines({});
 
-      // Get dates in Pacific time
+      // Get most recent date with chart scores (handles cron gaps)
       const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-      const yesterdayStr = getPacificDate(1);
+      const { data: latestDateRow } = await supabase
+        .from("daily_chart_scores")
+        .select("date")
+        .order("date", { ascending: false })
+        .limit(1)
+        .single();
+      const chartDate = latestDateRow?.date || getPacificDate(1);
 
-      // Query yesterday's scores from daily_chart_scores
+      // Query most recent scores from daily_chart_scores
       const { data: scores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, games(id, name, genre, cover_url)")
-        .eq("date", yesterdayStr)
+        .eq("date", chartDate)
         .order("score", { ascending: false });
 
       if (!scores) { setChartsLoading(false); return; }
@@ -3854,7 +3868,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
       // Previous day for movement indicators
-      const d2Str = getPacificDate(2);
+      const prevDate = new Date(chartDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const d2Str = prevDate.toISOString().slice(0, 10);
       const { data: prevScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score")
