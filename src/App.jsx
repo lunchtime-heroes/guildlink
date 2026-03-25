@@ -357,6 +357,14 @@ function LinkPreviewFetcher({ url, onExit }) {
   return <LinkPreviewCard preview={preview} onExit={onExit} />;
 }
 
+function decodeHtml(str) {
+  if (!str) return str;
+  return str.replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+            .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+            .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, " ");
+}
+
 function LinkPreviewCard({ preview, onExit }) {
   if (!preview?.url) return null;
   return (
@@ -367,8 +375,8 @@ function LinkPreviewCard({ preview, onExit }) {
       {preview.image && <img src={preview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />}
       <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
         <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{preview.domain} ↗</div>
-        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{preview.title || preview.url}</div>
-        {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview.description}</div>}
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{decodeHtml(preview.title) || preview.url}</div>
+        {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(preview.description)}</div>}
       </div>
     </div>
   );
@@ -2167,7 +2175,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-338</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-339</span>
         </div>
       </div>
     </nav>
@@ -3180,8 +3188,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   {linkPreview.image && <img src={linkPreview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} />}
                   <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
                     <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{linkPreview.domain}</div>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{linkPreview.title || linkPreview.url}</div>
-                    {linkPreview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{linkPreview.description}</div>}
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{decodeHtml(linkPreview.title) || linkPreview.url}</div>
+                    {linkPreview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(linkPreview.description)}</div>}
                   </div>
                   <button onClick={() => { setLinkPreview(null); setLinkWarning(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "8px", alignSelf: "flex-start", flexShrink: 0 }}>×</button>
                 </div>
