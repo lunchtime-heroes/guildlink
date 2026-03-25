@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-352</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-353</span>
         </div>
       </div>
     </nav>
@@ -2633,13 +2633,13 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
 
       // Get most recent date with chart scores (handles cron gaps)
       const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-      const { data: latestDate } = await supabase
+      const { data: latestDate, error: dateErr2 } = await supabase
         .from("daily_chart_scores")
         .select("date")
         .order("date", { ascending: false })
         .limit(1)
         .single();
-      const chartDate = latestDate?.date || getPacificDate(1);
+      const chartDate = latestDate?.date || getPacificDate(0);
 
       // Query daily_chart_scores for most recent date
       const { data: scores } = await supabase
@@ -3833,13 +3833,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Get most recent date with chart scores (handles cron gaps)
       const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-      const { data: latestDateRow } = await supabase
+      const { data: latestDateRow, error: dateErr } = await supabase
         .from("daily_chart_scores")
         .select("date")
         .order("date", { ascending: false })
         .limit(1)
         .single();
-      const chartDate = latestDateRow?.date || getPacificDate(1);
+      const chartDate = latestDateRow?.date || getPacificDate(0); // fallback to today not yesterday
 
       // Query most recent scores from daily_chart_scores
       const { data: scores } = await supabase
