@@ -333,12 +333,6 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
         fontSize: size * 0.35, fontWeight: 700, color: isNPC ? C.gold : "#fff",
         letterSpacing: "-0.5px", position: "relative", zIndex: 0, flexShrink: 0,
       }}>{initials}</div>
-      {status && <div style={{
-        position: "absolute", bottom: 1, right: 1,
-        width: size * 0.28, height: size * 0.28, borderRadius: "50%",
-        background: statusColors[status] || C.textDim,
-        border: "2px solid " + C.surface, zIndex: 2,
-      }} />}
     </div>
   );
 }
@@ -589,7 +583,6 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
       {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: `2px solid ${ringColor}88`, zIndex: 1, pointerEvents: "none" }} />}
       <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
         dangerouslySetInnerHTML={{ __html: svgStr }} />
-      {status && <div style={{ position: "absolute", bottom: 1, right: 1, width: size*0.22, height: size*0.22, borderRadius: "50%", background: statusColors[status]||C.textDim, border: "2px solid "+C.surface, zIndex: 2 }} />}
     </div>
   );
 }
@@ -618,7 +611,6 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
     { id: "hair", label: "Hair" },
     { id: "outfit", label: "Outfit" },
     { id: "class", label: "Class" },
-    { id: "extras", label: "Extras" },
   ];
 
   const Swatch = ({ value, current, onClick, color, label, locked }) => (
@@ -640,7 +632,7 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
         {/* Header */}
         <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Avatar Builder</div>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Character Builder</div>
             <div style={{ color: C.textDim, fontSize: 12 }}>Design your pixel art character</div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 22, cursor: "pointer" }}>×</button>
@@ -676,9 +668,9 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
             </OptionGrid>
             <Label>Eyes</Label>
             <OptionGrid>
-              {["normal","determined","sleepy","wide","stern","sharp","friendly","soft"].map(e => (
+              {["normal","determined","sleepy","wide","stern","friendly"].map(e => (
                 <button key={e} onClick={() => set("eyes", e)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.eyes === e ? C.accent : C.border), background: cfg.eyes === e ? C.accentGlow : C.surfaceRaised, color: cfg.eyes === e ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.eyes === e ? C.accent : C.border), background: cfg.eyes === e ? C.accentGlow : C.surfaceRaised, color: cfg.eyes === e ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
                   {e}
                 </button>
               ))}
@@ -688,9 +680,9 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
           {activeTab === "hair" && <>
             <Label>Hair Style</Label>
             <OptionGrid>
-              {["short","spiky","long","curly","bun","braids","mohawk","buzz","wavy","bald"].map(h => (
+              {["short","spiky","long","bun","bald"].map(h => (
                 <button key={h} onClick={() => set("hairStyle", h)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.hairStyle === h ? C.accent : C.border), background: cfg.hairStyle === h ? C.accentGlow : C.surfaceRaised, color: cfg.hairStyle === h ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.hairStyle === h ? C.accent : C.border), background: cfg.hairStyle === h ? C.accentGlow : C.surfaceRaised, color: cfg.hairStyle === h ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
                   {h}
                 </button>
               ))}
@@ -706,29 +698,26 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
           {activeTab === "outfit" && <>
             <Label>Torso</Label>
             <OptionGrid>
-              {Object.keys(AVATAR_TORSO_COLORS).map(t => (
+              {["hoodie","tee","armor","robe"].map(t => (
                 <button key={t} onClick={() => set("torso", t)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.torso === t ? C.accent : C.border), background: cfg.torso === t ? C.accentGlow : C.surfaceRaised, color: cfg.torso === t ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.torso === t ? C.accent : C.border), background: cfg.torso === t ? C.accentGlow : C.surfaceRaised, color: cfg.torso === t ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
                   {t}
                 </button>
               ))}
             </OptionGrid>
             <Label>Accessory</Label>
             <OptionGrid>
-              {["none","glasses","sunglasses","cap","headband","beanie","eyepatch","monocle","crown","wizardhat","laurel"].map(a => {
-                const locked = !unlockedAccessories.has(a);
-                return (
-                  <button key={a} onClick={() => !locked && set("accessory", a)}
-                    style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.accessory === a ? C.accent : C.border), background: cfg.accessory === a ? C.accentGlow : C.surfaceRaised, color: cfg.accessory === a ? C.accentSoft : locked ? C.textDim : C.textMuted, fontSize: 11, fontWeight: 600, cursor: locked ? "default" : "pointer", opacity: locked ? 0.5 : 1, position: "relative" }}>
-                    {locked ? "🔒 " : ""}{a}
-                  </button>
-                );
-              })}
+              {["none","glasses","sunglasses","cap","headband","beanie","eyepatch"].map(a => (
+                <button key={a} onClick={() => set("accessory", a)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.accessory === a ? C.accent : C.border), background: cfg.accessory === a ? C.accentGlow : C.surfaceRaised, color: cfg.accessory === a ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                  {a}
+                </button>
+              ))}
             </OptionGrid>
           </>}
 
           {activeTab === "class" && <>
-            <Label>Class Archetype</Label>
+            <Label>Class</Label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
               {Object.entries(AVATAR_CLASS_COLORS).map(([k, color]) => (
                 <button key={k} onClick={() => set("classType", k)}
@@ -748,26 +737,6 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
             </OptionGrid>
           </>}
 
-          {activeTab === "extras" && <>
-            <Label>Weather Effect</Label>
-            <OptionGrid>
-              {["none","snow","rain","sparkles","stars","confetti","lightning","leaves"].map(w => {
-                const locked = !unlockedWeather.has(w);
-                const icons = { none:"☀️",snow:"❄️",rain:"🌧️",sparkles:"✨",stars:"⭐",confetti:"🎊",lightning:"⚡",leaves:"🍃" };
-                return (
-                  <button key={w} onClick={() => !locked && set("weather", w)}
-                    style={{ padding: "8px 12px", borderRadius: 10, border: "2px solid " + (cfg.weather === w ? C.accent : C.border), background: cfg.weather === w ? C.accentGlow : C.surfaceRaised, color: cfg.weather === w ? C.accentSoft : locked ? C.textDim : C.textMuted, fontSize: 11, fontWeight: 600, cursor: locked ? "default" : "pointer", opacity: locked ? 0.5 : 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                    <span style={{ fontSize: 18 }}>{icons[w]}</span>
-                    <span>{locked ? "🔒" : w}</span>
-                  </button>
-                );
-              })}
-            </OptionGrid>
-            <div style={{ marginTop: 16, padding: 12, background: C.surfaceRaised, borderRadius: 10, border: "1px solid " + C.border }}>
-              <div style={{ color: C.textDim, fontSize: 12 }}>🔒 Locked items are unlocked through quests and events. Keep playing to earn more!</div>
-            </div>
-          </>}
-
         </div>
 
         {/* Footer */}
@@ -775,7 +744,7 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
           <button onClick={onClose} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
           <button onClick={save} disabled={saving}
             style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            {saving ? "Saving…" : "Save Avatar"}
+            {saving ? "Saving…" : "Save Character"}
           </button>
         </div>
       </div>
@@ -2566,7 +2535,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-349</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-350</span>
         </div>
       </div>
     </nav>
@@ -5905,7 +5874,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             ) : (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
-                <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🎨 Build Avatar</button>
+                <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
               </div>
             )}
           </div>
