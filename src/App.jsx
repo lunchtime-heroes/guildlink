@@ -1174,139 +1174,148 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
       borderRadius: 14, marginBottom: 12, position: "relative",
       boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
+      overflow: "hidden",
     }}>
-      <div style={{ padding: 20 }}>
-        {/* Post header */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-          <div style={{ cursor: "pointer" }}
-            onClick={() => {
-              if (localPost.user.isNPC) {
-                if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
-                else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-              } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
-            }}>
-            <Avatar initials={localPost.user.avatar} size={64} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} avatarConfig={localPost.user.avatarConfig} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
-                onClick={() => {
-                  if (localPost.user.isNPC) {
-                    if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
-                    else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-                  } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
-                }}
-              >{localPost.user.name}</span>
-              {localPost.user.isNPC && <NPCBadge />}
-              <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
-              {(localPost.game || localPost.game_tag) && (() => {
-                const gameId = localPost.gameId || localPost.game_tag;
-                const displayName = taggedGameName || localPost.game;
-                return displayName ? (
-                  <span onClick={() => { if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
-                    style={{ cursor: gameId ? "pointer" : "default" }}>
-                    <Badge small color={C.accent}>{displayName}</Badge>
-                  </span>
-                ) : null;
-              })()}
-            </div>
-            <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{localPost.time}</div>
-          </div>
+      {/* Main post body */}
+      <div style={{ display: "flex", gap: 0 }}>
+
+        {/* Avatar column */}
+        <div style={{ padding: "16px 0 16px 16px", flexShrink: 0, cursor: "pointer" }}
+          onClick={() => {
+            if (localPost.user.isNPC) {
+              if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+              else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+            } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
+          }}>
+          <Avatar initials={localPost.user.avatar} size={64} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} avatarConfig={localPost.user.avatarConfig} />
         </div>
 
-        {editing ? (
-          <div style={{ marginBottom: 14 }}>
-            <textarea
-              value={editText}
-              onChange={e => setEditText(e.target.value)}
-              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, lineHeight: 1.65, resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
-              autoFocus
-            />
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
-              <button onClick={() => { setEditing(false); setEditText(localPost.content); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
-            </div>
+        {/* Content column */}
+        <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
+          {/* Name + handle + timestamp row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+            <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
+              onClick={() => {
+                if (localPost.user.isNPC) {
+                  if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+                  else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+                } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
+              }}
+            >{localPost.user.name}</span>
+            {localPost.user.isNPC && <NPCBadge />}
+            <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
+            <span style={{ color: C.textDim, fontSize: 12 }}>·</span>
+            <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.time}</span>
+            {(localPost.game || localPost.game_tag) && (() => {
+              const gameId = localPost.gameId || localPost.game_tag;
+              const displayName = taggedGameName || localPost.game;
+              return displayName ? (
+                <span onClick={() => { if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
+                  style={{ cursor: gameId ? "pointer" : "default" }}>
+                  <Badge small color={C.accent}>{displayName}</Badge>
+                </span>
+              ) : null;
+            })()}
           </div>
-        ) : (
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+
+          {/* Post content */}
+          {editing ? (
+            <div style={{ marginBottom: 14 }}>
+              <textarea
+                value={editText}
+                onChange={e => setEditText(e.target.value)}
+                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, lineHeight: 1.65, resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                <button onClick={() => { setEditing(false); setEditText(localPost.content); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+          )}
+
+          {/* Link preview */}
+          {localPost.link_url && onExit && (
+            <div style={{ marginBottom: 12 }}>
+              <LinkPreviewFetcher url={localPost.link_url} onExit={onExit} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action bar — full width, bottom of card */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: "1px solid " + C.border, padding: "10px 16px", flexWrap: "nowrap" }}>
+        <button onClick={toggleLike} style={{
+          background: localPost.liked ? C.red + "18" : "transparent",
+          border: "1px solid " + (localPost.liked ? C.red + "44" : C.border),
+          borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+          color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
+          display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", flexShrink: 0,
+        }}>{localPost.liked ? "❤️" : "🤍"} <span>{localPost.likes}</span></button>
+
+        <button onClick={toggleComments} style={{
+          background: showComments ? C.accentGlow : "transparent",
+          border: "1px solid " + (showComments ? C.accentDim : C.border),
+          borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+          color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
+          display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+        }}>💬 <span>{liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</span></button>
+
+        {!isGuest && (
+          <button onClick={() => {
+            if (!showComments) {
+              if (liveComments === null) loadComments();
+              setShowComments(true);
+            }
+            setTimeout(() => commentInputRef.current?.focus(), 50);
+          }} style={{
+            background: "transparent", border: "1px solid " + C.border,
+            borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+            color: C.textMuted, fontSize: 13, fontWeight: 600, flexShrink: 0,
+          }}>↩ Reply</button>
         )}
 
-        {/* Link preview */}
-        {localPost.link_url && onExit && (
-          <LinkPreviewFetcher url={localPost.link_url} onExit={onExit} />
-        )}
-
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", borderTop: "1px solid " + C.border, paddingTop: 12, flexWrap: "nowrap" }}>
-          <button onClick={toggleLike} style={{
-            background: localPost.liked ? C.red + "18" : "transparent",
-            border: "1px solid " + (localPost.liked ? C.red + "44" : C.border),
-            borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-            color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", flexShrink: 0,
-          }}>{localPost.liked ? "❤️" : "🤍"} <span>{localPost.likes}</span></button>
-
-          <button onClick={toggleComments} style={{
-            background: showComments ? C.accentGlow : "transparent",
-            border: "1px solid " + (showComments ? C.accentDim : C.border),
-            borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-            color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
+        {(post.game_tag || localPost.game_tag) && !isGuest && (
+          <button onClick={toggleTip} style={{
+            background: tipped ? C.gold + "18" : "transparent",
+            border: "1px solid " + (tipped ? C.gold + "44" : C.border),
+            borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+            color: tipped ? C.gold : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
-          }}>💬 <span>{liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</span></button>
+          }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
+        )}
 
-          {!isGuest && (
-            <button onClick={() => {
-              if (!showComments) {
-                if (liveComments === null) loadComments();
-                setShowComments(true);
-              }
-              setTimeout(() => commentInputRef.current?.focus(), 50);
-            }} style={{
+        {/* Three dots — right aligned */}
+        {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
+          <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
+            <button onClick={() => setShowPostMenu(m => !m)} style={{
               background: "transparent", border: "1px solid " + C.border,
-              borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-              color: C.textMuted, fontSize: 13, fontWeight: 600, flexShrink: 0,
-            }}>↩{!isMobile && " Reply"}</button>
-          )}
-
-          {(post.game_tag || localPost.game_tag) && !isGuest && (
-            <button onClick={toggleTip} style={{
-              background: tipped ? C.gold + "18" : "transparent",
-              border: "1px solid " + (tipped ? C.gold + "44" : C.border),
-              borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-              color: tipped ? C.gold : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 4, flexShrink: 0, alignSelf: "stretch",
-            }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
-          )}
-
-                    {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
-            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
-              <button onClick={() => setShowPostMenu(m => !m)} style={{
-                background: "transparent", border: "1px solid " + C.border,
-                borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-                color: C.textDim, fontSize: 16, lineHeight: 1,
-              }}>•••</button>
-              {showPostMenu && (
-                <>
-                  <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {post.user_id === currentUser.id && (
-                      <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
-                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-                        onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                        {editing ? "Cancel Edit" : "Edit"}
-                      </button>
-                    )}
-                    <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+              borderRadius: 8, padding: "5px 10px", cursor: "pointer",
+              color: C.textDim, fontSize: 16, lineHeight: 1,
+            }}>•••</button>
+            {showPostMenu && (
+              <>
+                <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
+                <div style={{ position: "absolute", right: 0, bottom: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  {post.user_id === currentUser.id && (
+                    <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
                       onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
                       onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                      Delete
+                      {editing ? "Cancel Edit" : "Edit"}
                     </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                  )}
+                  <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Comments */}
@@ -1314,7 +1323,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         <div style={{ background: C.surfaceHover, borderTop: "1px solid " + C.border, padding: "14px 20px" }}>
           {(liveComments || localPost.commentList).map((comment, i) => {
             const isNPC = !!comment.npc_id;
-            // Resolve NPC author: DB join first, then legacy hardcoded key, then give up
             const npcData = isNPC
               ? (comment.npcs || NPCS[comment.npc_id] || null)
               : null;
@@ -2558,7 +2566,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-347</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-348</span>
         </div>
       </div>
     </nav>
