@@ -290,7 +290,10 @@ const NPCS = {
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
-function Avatar({ initials, size = 40, status, isNPC = false, ring = null, founding = false }) {
+function Avatar({ initials, size = 40, status, isNPC = false, ring = null, founding = false, avatarConfig = null }) {
+  if (avatarConfig && !isNPC) {
+    return <AvatarPixel config={avatarConfig} size={size} ring={ring} founding={founding} status={status} />;
+  }
   const statusColors = { online: C.online, away: C.gold, ingame: C.purple, offline: C.textDim };
   const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
   const showFoundingRing = founding && !ring;
@@ -330,12 +333,6 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
         fontSize: size * 0.35, fontWeight: 700, color: isNPC ? C.gold : "#fff",
         letterSpacing: "-0.5px", position: "relative", zIndex: 0, flexShrink: 0,
       }}>{initials}</div>
-      {status && <div style={{
-        position: "absolute", bottom: 1, right: 1,
-        width: size * 0.28, height: size * 0.28, borderRadius: "50%",
-        background: statusColors[status] || C.textDim,
-        border: "2px solid " + C.surface, zIndex: 2,
-      }} />}
     </div>
   );
 }
@@ -397,6 +394,343 @@ function ExitModal({ url, onClose }) {
           <button onClick={onClose} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
           <button onClick={() => { window.open(url, "_blank", "noopener,noreferrer"); onClose(); }}
             style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Continue →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AVATAR ENGINE ────────────────────────────────────────────────────────────
+
+const AVATAR_SKIN_TONES = {
+  s1: { skin: "#FDDBB4", shadow: "#E8B88A", lip: "#C4956A" },
+  s2: { skin: "#F5C5A3", shadow: "#D4956A", lip: "#B87050" },
+  s3: { skin: "#D4956A", shadow: "#B57040", lip: "#8B4513" },
+  s4: { skin: "#C68642", shadow: "#9B6320", lip: "#7B4010" },
+  s5: { skin: "#8D5524", shadow: "#6B3A10", lip: "#4A2008" },
+  s6: { skin: "#4A2511", shadow: "#2D1508", lip: "#1A0A04" },
+};
+const AVATAR_HAIR_COLORS = {
+  black: "#1a1a1a", darkbrown: "#3b1f0e", brown: "#6b3a2a",
+  auburn: "#8b2500", red: "#cc2200", blonde: "#d4a843",
+  platinum: "#f0e6c8", white: "#f5f5f5", gray: "#888888",
+  blue: "#1a4480", purple: "#5b2d8e", green: "#1a6b3a",
+};
+const AVATAR_BG_COLORS = {
+  navy: "#0f1923", forest: "#0d2818", purple: "#1a0d2e",
+  crimson: "#2e0d0d", slate: "#1a1f2e", gold: "#2e2000",
+  teal: "#0d2e2e", charcoal: "#1a1a1a",
+  gradBlue: ["#0f1923", "#1a3a5c"], gradPurple: ["#1a0d2e", "#3d1a6b"],
+  gradGreen: ["#0d2818", "#1a5c38"], gradGold: ["#2e2000", "#6b4400"],
+};
+const AVATAR_CLASS_COLORS = {
+  warrior: "#cc3300", mage: "#6633cc", rogue: "#339933",
+  ranger: "#996633", healer: "#33cccc", bard: "#cc33cc",
+};
+const AVATAR_CLASS_ICONS = {
+  warrior: "⚔", mage: "✦", rogue: "◆", ranger: "◉", healer: "✚", bard: "♪",
+};
+const AVATAR_TORSO_COLORS = {
+  hoodie: { main: "#2a4a7f", shadow: "#1a3060", accent: "#3a6aaf" },
+  tee: { main: "#4a4a4a", shadow: "#2a2a2a", accent: "#6a6a6a" },
+  armor: { main: "#8a7a5a", shadow: "#5a4a2a", accent: "#c0a060" },
+  robe: { main: "#4a2a6a", shadow: "#2a1a4a", accent: "#7a4a9a" },
+  cloak: { main: "#1a1a1a", shadow: "#0a0a0a", accent: "#3a3a3a" },
+  jersey: { main: "#8a1a1a", shadow: "#5a0a0a", accent: "#aa3a3a" },
+};
+
+function renderAvatarSVG(config = {}, size = 40) {
+  const {
+    skin: skinKey = "s1", hairStyle = "short", hairColor: hairColorKey = "darkbrown",
+    eyes: eyeStyle = "normal", bg: bgKey = "navy", classType = "warrior",
+    accessory = "none", torso = "hoodie", weather = "none",
+  } = config;
+
+  // Always render on a 16x16 grid, scale via viewBox
+  const s = 1;
+  const W = 16; const H = 16;
+  const skin = AVATAR_SKIN_TONES[skinKey] || AVATAR_SKIN_TONES.s1;
+  const hairColor = AVATAR_HAIR_COLORS[hairColorKey] || AVATAR_HAIR_COLORS.darkbrown;
+  const classColor = AVATAR_CLASS_COLORS[classType] || AVATAR_CLASS_COLORS.warrior;
+  const bgDef = AVATAR_BG_COLORS[bgKey];
+  const bgIsGrad = Array.isArray(bgDef);
+  const bgId = "avbg" + bgKey + size;
+  const tc = AVATAR_TORSO_COLORS[torso] || AVATAR_TORSO_COLORS.hoodie;
+
+  const px = (x, y, color) => `<rect x="${x*s}" y="${y*s}" width="${s}" height="${s}" fill="${color}"/>`;
+  const row = (xs, y, color) => xs.map(x => px(x, y, color)).join("");
+
+  let svg = `<svg width="${size}" height="${size}" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
+
+  // Background
+  if (bgIsGrad) {
+    svg += `<defs><linearGradient id="${bgId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${bgDef[0]}"/><stop offset="100%" stop-color="${bgDef[1]}"/></linearGradient></defs>`;
+    svg += `<rect width="${W}" height="${H}" fill="url(#${bgId})"/>`;
+  } else {
+    svg += `<rect width="${W}" height="${H}" fill="${bgDef || "#0f1923"}"/>`;
+  }
+
+  // Class accent strip
+  svg += `<rect x="0" y="${H-s}" width="${W}" height="${s}" fill="${classColor}" opacity="0.6"/>`;
+
+  // Body/torso
+  [[9,[5,6,7,8,9,10]],[10,[4,5,6,7,8,9,10,11]],[11,[4,5,6,7,8,9,10,11]],[12,[3,4,5,6,7,8,9,10,11,12]],[13,[3,4,5,6,7,8,9,10,11,12]],[14,[3,4,5,6,7,8,9,10,11,12]],[15,[3,4,5,6,7,8,9,10,11,12]]].forEach(([y,xs]) => svg += row(xs, y, tc.main));
+  svg += px(4,9,tc.shadow)+px(11,9,tc.shadow)+row([7,8],10,tc.accent)+row([7,8],11,tc.accent);
+  svg += row([3,2],10,tc.main)+row([12,13],10,tc.main)+row([2,3],11,tc.shadow)+row([12,13],11,tc.shadow)+px(2,12,tc.main)+px(13,12,tc.main)+px(2,13,skin.skin)+px(13,13,skin.skin);
+  svg += row([7,8],8,skin.skin)+px(7,9,skin.shadow);
+
+  // Face
+  [[3,[5,6,7,8,9,10]],[4,[4,5,6,7,8,9,10,11]],[5,[4,5,6,7,8,9,10,11]],[6,[4,5,6,7,8,9,10,11]],[7,[5,6,7,8,9,10]]].forEach(([y,xs]) => svg += row(xs, y, skin.skin));
+  svg += px(4,4,skin.shadow)+px(11,4,skin.shadow)+px(4,6,skin.shadow)+px(11,6,skin.shadow);
+
+  // Eyes
+  const eyeMap = {
+    normal: () => { svg += px(6,5,"#1a1a1a")+px(9,5,"#1a1a1a")+px(6,4,"#ffffff44")+px(9,4,"#ffffff44"); },
+    determined: () => { svg += row([5,6],5,"#1a1a1a")+row([9,10],5,"#1a1a1a")+px(5,4,"#1a1a1a")+px(10,4,"#1a1a1a"); },
+    sleepy: () => { svg += px(6,5,"#1a1a1a")+px(9,5,"#1a1a1a")+row([5,6,7],5,skin.shadow)+row([8,9,10],5,skin.shadow); },
+    wide: () => { svg += px(6,5,"#1a1a1a")+px(9,5,"#1a1a1a")+px(5,5,"#1a1a1a")+px(10,5,"#1a1a1a")+px(6,4,"#ffffff66")+px(9,4,"#ffffff66"); },
+    stern: () => { svg += px(6,5,"#2a1a0a")+px(9,5,"#2a1a0a")+row([5,6,7],4,"#2a1a0a")+row([8,9,10],4,"#2a1a0a"); },
+    sharp: () => { svg += px(6,5,"#1a1a3a")+px(9,5,"#1a1a3a")+px(7,4,"#1a1a3a")+px(8,4,"#1a1a3a"); },
+    friendly: () => { svg += px(6,5,"#3a2a1a")+px(9,5,"#3a2a1a")+px(6,6,"#3a2a1a")+px(9,6,"#3a2a1a"); },
+    soft: () => { svg += px(6,5,"#3a3a5a")+px(9,5,"#3a3a5a"); },
+  };
+  (eyeMap[eyeStyle] || eyeMap.normal)();
+
+  // Mouth
+  svg += row([7,8],7,skin.lip)+px(6,7,skin.shadow)+px(9,7,skin.shadow);
+
+  // Hair
+  const hairMap = {
+    short: () => { svg += row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor); },
+    spiky: () => { svg += px(6,0,hairColor)+px(8,0,hairColor)+px(10,0,hairColor)+row([5,6,7,8,9,10],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+px(4,3,hairColor)+px(11,3,hairColor); },
+    long: () => { svg += row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor)+px(4,5,hairColor)+px(11,5,hairColor)+px(4,6,hairColor)+px(11,6,hairColor)+px(3,7,hairColor)+px(12,7,hairColor); },
+    curly: () => { svg += row([5,6,7,8,9,10],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+px(3,3,hairColor)+px(12,3,hairColor)+px(3,4,hairColor)+px(12,4,hairColor)+px(4,5,hairColor)+px(11,5,hairColor); },
+    bun: () => { svg += row([6,7,8,9],0,hairColor)+row([5,6,7,8,9,10],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+px(4,3,hairColor)+px(11,3,hairColor); },
+    braids: () => { svg += row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor)+px(4,5,hairColor)+px(11,5,hairColor)+px(3,6,hairColor)+px(12,6,hairColor)+px(3,7,hairColor)+px(12,7,hairColor)+px(3,8,hairColor)+px(12,8,hairColor); },
+    mohawk: () => { svg += row([7,8],0,hairColor)+row([7,8],1,hairColor)+row([6,7,8,9],2,hairColor)+row([5,6,9,10],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor); },
+    buzz: () => { svg += row([5,6,7,8,9,10],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor); },
+    wavy: () => { svg += row([5,7,9,11],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor)+px(3,5,hairColor)+px(12,5,hairColor); },
+    bald: () => { svg += row([6,7,8,9],2,skin.shadow); },
+  };
+  (hairMap[hairStyle] || hairMap.short)();
+
+  // Accessories
+  const accMap = {
+    glasses: () => { svg += row([5,6,7],5,"#888888")+row([8,9,10],5,"#888888")+px(7,5,"#666666")+px(6,5,"#ffffff22")+px(9,5,"#ffffff22"); },
+    sunglasses: () => { svg += row([5,6,7],5,"#111111")+row([8,9,10],5,"#111111")+px(7,5,"#333333")+px(4,5,"#111111")+px(11,5,"#111111"); },
+    monocle: () => { svg += row([9,10],4,"#c0a060")+row([9,10],6,"#c0a060")+px(8,5,"#c0a060")+px(11,5,"#c0a060")+px(9,5,"#ffffff22"); },
+    cap: () => { svg += row([4,5,6,7,8,9,10,11],2,classColor)+row([3,4,5,6,7,8,9,10,11,12],1,classColor); },
+    wizardhat: () => { svg += px(8,-1,classColor)+row([7,8,9],0,classColor)+row([6,7,8,9,10],1,classColor)+row([4,5,6,7,8,9,10,11,12],2,classColor)+px(7,0,"#ffcc00")+px(10,1,"#ffcc00"); },
+    crown: () => { svg += row([4,6,8,10,12],1,"#ffcc00")+row([4,5,6,7,8,9,10,11,12],2,"#ffcc00")+px(5,1,"#cc0000")+px(8,0,"#cc0000")+px(11,1,"#cc0000"); },
+    headband: () => { svg += row([4,5,6,7,8,9,10,11],3,classColor); },
+    beanie: () => { svg += row([4,5,6,7,8,9,10,11],1,"#4a7abf")+row([4,5,6,7,8,9,10,11],2,"#3a6aaf")+row([4,5,6,7,8,9,10,11],3,"#2a4a7f")+px(7,0,"#3a6aaf")+px(8,0,"#3a6aaf"); },
+    eyepatch: () => { svg += row([5,6,7],4,"#1a1a1a")+row([5,6,7],5,"#1a1a1a")+row([4,5,6,7,8],5,"#333333"); },
+    laurel: () => { svg += px(4,3,"#2d6a2d")+px(5,2,"#2d6a2d")+px(3,4,"#2d6a2d")+px(3,5,"#3d8a3d")+px(11,3,"#2d6a2d")+px(10,2,"#2d6a2d")+px(12,4,"#2d6a2d")+px(12,5,"#3d8a3d"); },
+  };
+  if (accMap[accessory]) accMap[accessory]();
+
+  // Class icon
+  svg += `<text x="${W-s*1.5}" y="${H-s*0.8}" font-size="${s*2}" text-anchor="middle" dominant-baseline="middle" fill="${classColor}" opacity="0.9">${AVATAR_CLASS_ICONS[classType]||"⚔"}</text>`;
+
+  // Weather
+  if (weather === "snow") {
+    [[3,2],[8,1],[13,4],[5,7],[11,5],[2,10],[9,8],[14,11],[6,13],[12,3]].forEach(([x,y],i) => {
+      svg += `<circle cx="${x*s}" cy="${y*s}" r="${s*0.4}" fill="white" opacity="0.8"><animate attributeName="cy" from="${-s}" to="${H+s}" dur="${2+i*0.3}s" repeatCount="indefinite" begin="${(-i*0.3).toFixed(1)}s"/></circle>`;
+    });
+  } else if (weather === "rain") {
+    [[2,1],[5,3],[9,0],[13,2],[7,5],[11,4],[3,7],[14,6]].forEach(([x,y],i) => {
+      svg += `<line x1="${x*s}" y1="${-s}" x2="${x*s}" y2="${s*2}" stroke="#88aacc" stroke-width="${s*0.3}" opacity="0.7"><animate attributeName="y1" from="${-s*2}" to="${H+s}" dur="${0.8+i*0.1}s" repeatCount="indefinite" begin="${(-i*0.1).toFixed(1)}s"/><animate attributeName="y2" from="${s*2}" to="${H+s*3}" dur="${0.8+i*0.1}s" repeatCount="indefinite" begin="${(-i*0.1).toFixed(1)}s"/></line>`;
+    });
+  } else if (weather === "sparkles") {
+    [[2,2],[7,1],[13,3],[4,6],[11,5],[9,8],[6,13],[12,11]].forEach(([x,y],i) => {
+      svg += `<text x="${x*s}" y="${y*s}" font-size="${s*2}" fill="#ffdd44" opacity="0" text-anchor="middle">✦<animate attributeName="opacity" values="0;1;0" dur="${1.5+i*0.2}s" repeatCount="indefinite" begin="${(-i*0.2).toFixed(1)}s"/></text>`;
+    });
+  } else if (weather === "stars") {
+    [[1,1],[4,3],[8,0],[12,2],[15,4],[2,6],[11,7],[14,10],[3,12],[9,13]].forEach(([x,y],i) => {
+      svg += `<circle cx="${x*s}" cy="${y*s}" r="${s*0.3}" fill="white"><animate attributeName="opacity" values="0.2;1;0.2" dur="${2+i*0.25}s" repeatCount="indefinite" begin="${(-i*0.25).toFixed(1)}s"/></circle>`;
+    });
+  } else if (weather === "confetti") {
+    const cc = ["#ff3333","#33ff33","#3333ff","#ffff33","#ff33ff","#33ffff"];
+    [[2,0],[6,1],[10,0],[14,2],[4,4],[8,3],[12,5],[3,7],[9,6],[13,8],[1,10],[7,9]].forEach(([x,y],i) => {
+      svg += `<rect x="${x*s}" y="${y*s}" width="${s*0.8}" height="${s*0.8}" fill="${cc[i%cc.length]}" opacity="0.8"><animate attributeName="y" from="${-s}" to="${H+s}" dur="${2+i*0.15}s" repeatCount="indefinite" begin="${(-i*0.15).toFixed(1)}s"/></rect>`;
+    });
+  } else if (weather === "lightning") {
+    svg += `<path d="M${9*s},${s} L${7*s},${7*s} L${9*s},${7*s} L${7*s},${14*s}" stroke="#ffdd00" stroke-width="${s*0.6}" fill="none" opacity="0"><animate attributeName="opacity" values="0;0;0;0.9;0;0;0;0.7;0;0" dur="4s" repeatCount="indefinite"/></path>`;
+  } else if (weather === "leaves") {
+    [[3,1],[10,0],[14,3],[5,5],[12,7]].forEach(([x,y],i) => {
+      svg += `<text x="${x*s}" y="${y*s}" font-size="${s*2}" opacity="0.9"><animate attributeName="y" from="${-s}" to="${H+s}" dur="${3+i*0.4}s" repeatCount="indefinite" begin="${(-i*0.4).toFixed(1)}s"/>🍃</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function AvatarPixel({ config, size = 40, ring = null, founding = false, status = null }) {
+  const svgStr = renderAvatarSVG(config, size);
+  const statusColors = { online: C.online, away: C.gold, offline: C.textDim };
+  const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
+  const showFoundingRing = founding && !ring;
+  const ringColor = ringData?.color || (showFoundingRing ? C.gold : null);
+  const ringGlow = ringData?.glow || (showFoundingRing ? C.goldBorder : null);
+  const hasRing = ringColor && ringColor !== "transparent";
+  const isDouble = ringData?.double || showFoundingRing;
+  return (
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
+      {hasRing && <div style={{ position: "absolute", inset: -3, borderRadius: "16%", border: `3px solid ${ringColor}`, boxShadow: `0 0 ${size*0.3}px ${ringGlow||ringColor+"44"}`, zIndex: 1, pointerEvents: "none" }} />}
+      {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: `2px solid ${ringColor}88`, zIndex: 1, pointerEvents: "none" }} />}
+      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
+        dangerouslySetInnerHTML={{ __html: svgStr }} />
+    </div>
+  );
+}
+
+function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
+  const DEFAULT_CONFIG = { skin: "s1", hairStyle: "short", hairColor: "darkbrown", eyes: "normal", bg: "navy", classType: "warrior", accessory: "none", torso: "hoodie", weather: "none" };
+  const [cfg, setCfg] = React.useState(() => ({ ...DEFAULT_CONFIG, ...(currentUser?.avatarConfig || {}), weather: "none" }));
+  const [saving, setSaving] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("face");
+  const set = (k, v) => setCfg(p => ({ ...p, [k]: v }));
+
+  const unlockedAccessories = new Set(["none","glasses","sunglasses","cap","headband","beanie","eyepatch",...(userRewards||[]).map(r => r.reward_id)]);
+  const unlockedWeather = new Set(["none","snow","rain",...(userRewards||[]).map(r => r.reward_id)]);
+
+  const save = async () => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("profiles").update({ avatar_config: cfg }).eq("id", user.id);
+    onSave?.(cfg);
+    setSaving(false);
+    onClose();
+  };
+
+  const tabs = [
+    { id: "face", label: "Face" },
+    { id: "hair", label: "Hair" },
+    { id: "outfit", label: "Outfit" },
+    { id: "background", label: "Background" },
+  ];
+
+  const Swatch = ({ value, current, onClick, color, label, locked }) => (
+    <button onClick={locked ? undefined : onClick}
+      title={label}
+      style={{ width: 36, height: 36, borderRadius: 8, background: color || C.surfaceRaised, border: "2px solid " + (value === current ? C.accent : C.border), cursor: locked ? "not-allowed" : "pointer", position: "relative", opacity: locked ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.text, fontWeight: 600, overflow: "hidden" }}>
+      {label && !color && <span style={{ fontSize: 9, textAlign: "center", lineHeight: 1.2 }}>{label}</span>}
+      {locked && <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🔒</span>}
+    </button>
+  );
+
+  const OptionGrid = ({ children }) => <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{children}</div>;
+  const Label = ({ children }) => <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, marginBottom: 6, marginTop: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{children}</div>;
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 20, width: "100%", maxWidth: 560, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Character Builder</div>
+            <div style={{ color: C.textDim, fontSize: 12 }}>Design your pixel art character</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+
+        {/* Preview */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "20px 0 16px", background: C.surface, borderBottom: "1px solid " + C.border }}>
+          <AvatarPixel config={cfg} size={96} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "1px solid " + C.border, background: C.surface }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{ flex: 1, padding: "10px 0", background: "none", border: "none", borderBottom: "2px solid " + (activeTab === t.id ? C.accent : "transparent"), color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Options panel */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 20px" }}>
+
+          {activeTab === "face" && <>
+            <Label>Skin Tone</Label>
+            <OptionGrid>
+              {Object.entries(AVATAR_SKIN_TONES).map(([k, v]) => (
+                <Swatch key={k} value={k} current={cfg.skin} onClick={() => set("skin", k)} color={v.skin} label={k} />
+              ))}
+            </OptionGrid>
+            <Label>Eyes</Label>
+            <OptionGrid>
+              {["normal","determined","sleepy","wide","stern","friendly"].map(e => (
+                <button key={e} onClick={() => set("eyes", e)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.eyes === e ? C.accent : C.border), background: cfg.eyes === e ? C.accentGlow : C.surfaceRaised, color: cfg.eyes === e ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                  {e}
+                </button>
+              ))}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "hair" && <>
+            <Label>Hair Style</Label>
+            <OptionGrid>
+              {["short","spiky","long","bun","bald"].map(h => (
+                <button key={h} onClick={() => set("hairStyle", h)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.hairStyle === h ? C.accent : C.border), background: cfg.hairStyle === h ? C.accentGlow : C.surfaceRaised, color: cfg.hairStyle === h ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                  {h}
+                </button>
+              ))}
+            </OptionGrid>
+            <Label>Hair Color</Label>
+            <OptionGrid>
+              {Object.entries(AVATAR_HAIR_COLORS).map(([k, v]) => (
+                <Swatch key={k} value={k} current={cfg.hairColor} onClick={() => set("hairColor", k)} color={v} label={k} />
+              ))}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "outfit" && <>
+            <Label>Torso</Label>
+            <OptionGrid>
+              {["hoodie","tee","armor","robe"].map(t => (
+                <button key={t} onClick={() => set("torso", t)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.torso === t ? C.accent : C.border), background: cfg.torso === t ? C.accentGlow : C.surfaceRaised, color: cfg.torso === t ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                  {t}
+                </button>
+              ))}
+            </OptionGrid>
+            <Label>Accessory</Label>
+            <OptionGrid>
+              {["none","glasses","sunglasses","cap","headband","beanie"].map(a => (
+                <button key={a} onClick={() => set("accessory", a)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.accessory === a ? C.accent : C.border), background: cfg.accessory === a ? C.accentGlow : C.surfaceRaised, color: cfg.accessory === a ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+                  {a}
+                </button>
+              ))}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "background" && <>
+            <Label>Background</Label>
+            <OptionGrid>
+              {Object.keys(AVATAR_BG_COLORS).map(k => {
+                const v = AVATAR_BG_COLORS[k];
+                const bg = Array.isArray(v) ? `linear-gradient(to bottom, ${v[0]}, ${v[1]})` : v;
+                return <Swatch key={k} value={k} current={cfg.bg} onClick={() => set("bg", k)} color={bg} label={k} />;
+              })}
+            </OptionGrid>
+          </>}
+
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "14px 20px", borderTop: "1px solid " + C.border, display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={save} disabled={saving}
+            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            {saving ? "Saving…" : "Save Character"}
+          </button>
         </div>
       </div>
     </div>
@@ -617,7 +951,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     if (!post.id || !post.id.includes('-')) return;
     const { data, error } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     if (error) console.error("[loadComments] error:", error);
@@ -759,7 +1093,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       reply_to_comment_id: replyTo?.id || null,
       tagged_users: commentTaggedUsers.length > 0 ? commentTaggedUsers : [],
       link_url: commentLinkPreview?.url || commentUrls?.[0] || null,
-    }).select("*, profiles(username, handle, avatar_initials)").single();
+    }).select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
     if (!error && data) {
       if (post.id && post.id.includes('-')) {
         await supabase.from("posts").update({ comment_count: (localPost.comment_count || 0) + (liveComments?.length || 0) + 1 }).eq("id", post.id);
@@ -794,139 +1128,148 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
       borderRadius: 14, marginBottom: 12, position: "relative",
       boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
+      overflow: "hidden",
     }}>
-      <div style={{ padding: 20 }}>
-        {/* Post header */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-          <div style={{ cursor: "pointer" }}
-            onClick={() => {
-              if (localPost.user.isNPC) {
-                if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
-                else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-              } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
-            }}>
-            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
-                onClick={() => {
-                  if (localPost.user.isNPC) {
-                    if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
-                    else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-                  } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
-                }}
-              >{localPost.user.name}</span>
-              {localPost.user.isNPC && <NPCBadge />}
-              <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
-              {(localPost.game || localPost.game_tag) && (() => {
-                const gameId = localPost.gameId || localPost.game_tag;
-                const displayName = taggedGameName || localPost.game;
-                return displayName ? (
-                  <span onClick={() => { if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
-                    style={{ cursor: gameId ? "pointer" : "default" }}>
-                    <Badge small color={C.accent}>{displayName}</Badge>
-                  </span>
-                ) : null;
-              })()}
-            </div>
-            <div style={{ color: C.textDim, fontSize: 12, marginTop: 2 }}>{localPost.time}</div>
-          </div>
+      {/* Main post body */}
+      <div style={{ display: "flex", gap: 0 }}>
+
+        {/* Avatar column */}
+        <div style={{ padding: "16px 0 16px 16px", flexShrink: 0, cursor: "pointer" }}
+          onClick={() => {
+            if (localPost.user.isNPC) {
+              if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+              else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+            } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
+          }}>
+          <Avatar initials={localPost.user.avatar} size={64} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} avatarConfig={localPost.user.avatarConfig} />
         </div>
 
-        {editing ? (
-          <div style={{ marginBottom: 14 }}>
-            <textarea
-              value={editText}
-              onChange={e => setEditText(e.target.value)}
-              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, lineHeight: 1.65, resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
-              autoFocus
-            />
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
-              <button onClick={() => { setEditing(false); setEditText(localPost.content); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
-            </div>
+        {/* Content column */}
+        <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
+          {/* Name + handle + timestamp row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+            <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
+              onClick={() => {
+                if (localPost.user.isNPC) {
+                  if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+                  else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+                } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
+              }}
+            >{localPost.user.name}</span>
+            {localPost.user.isNPC && <NPCBadge />}
+            <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
+            <span style={{ color: C.textDim, fontSize: 12 }}>·</span>
+            <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.time}</span>
+            {(localPost.game || localPost.game_tag) && (() => {
+              const gameId = localPost.gameId || localPost.game_tag;
+              const displayName = taggedGameName || localPost.game;
+              return displayName ? (
+                <span onClick={() => { if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
+                  style={{ cursor: gameId ? "pointer" : "default" }}>
+                  <Badge small color={C.accent}>{displayName}</Badge>
+                </span>
+              ) : null;
+            })()}
           </div>
-        ) : (
-          <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+
+          {/* Post content */}
+          {editing ? (
+            <div style={{ marginBottom: 14 }}>
+              <textarea
+                value={editText}
+                onChange={e => setEditText(e.target.value)}
+                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, lineHeight: 1.65, resize: "vertical", minHeight: 80, boxSizing: "border-box" }}
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                <button onClick={() => { setEditing(false); setEditText(localPost.content); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+          )}
+
+          {/* Link preview */}
+          {localPost.link_url && onExit && (
+            <div style={{ marginBottom: 12 }}>
+              <LinkPreviewFetcher url={localPost.link_url} onExit={onExit} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action bar — full width, bottom of card */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: "1px solid " + C.border, padding: "10px 16px", flexWrap: "nowrap" }}>
+        <button onClick={toggleLike} style={{
+          background: localPost.liked ? C.red + "18" : "transparent",
+          border: "1px solid " + (localPost.liked ? C.red + "44" : C.border),
+          borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+          color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
+          display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", flexShrink: 0,
+        }}>{localPost.liked ? "❤️" : "🤍"} <span>{localPost.likes}</span></button>
+
+        <button onClick={toggleComments} style={{
+          background: showComments ? C.accentGlow : "transparent",
+          border: "1px solid " + (showComments ? C.accentDim : C.border),
+          borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+          color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
+          display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+        }}>💬 <span>{liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</span></button>
+
+        {!isGuest && (
+          <button onClick={() => {
+            if (!showComments) {
+              if (liveComments === null) loadComments();
+              setShowComments(true);
+            }
+            setTimeout(() => commentInputRef.current?.focus(), 50);
+          }} style={{
+            background: "transparent", border: "1px solid " + C.border,
+            borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+            color: C.textMuted, fontSize: 13, fontWeight: 600, flexShrink: 0,
+          }}>↩ Reply</button>
         )}
 
-        {/* Link preview */}
-        {localPost.link_url && onExit && (
-          <LinkPreviewFetcher url={localPost.link_url} onExit={onExit} />
-        )}
-
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", borderTop: "1px solid " + C.border, paddingTop: 12, flexWrap: "nowrap" }}>
-          <button onClick={toggleLike} style={{
-            background: localPost.liked ? C.red + "18" : "transparent",
-            border: "1px solid " + (localPost.liked ? C.red + "44" : C.border),
-            borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-            color: localPost.liked ? C.red : C.textMuted, fontSize: 13, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", flexShrink: 0,
-          }}>{localPost.liked ? "❤️" : "🤍"} <span>{localPost.likes}</span></button>
-
-          <button onClick={toggleComments} style={{
-            background: showComments ? C.accentGlow : "transparent",
-            border: "1px solid " + (showComments ? C.accentDim : C.border),
-            borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-            color: showComments ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600,
+        {(post.game_tag || localPost.game_tag) && !isGuest && (
+          <button onClick={toggleTip} style={{
+            background: tipped ? C.gold + "18" : "transparent",
+            border: "1px solid " + (tipped ? C.gold + "44" : C.border),
+            borderRadius: 8, padding: "5px 12px", cursor: "pointer",
+            color: tipped ? C.gold : C.textMuted, fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
-          }}>💬 <span>{liveComments !== null ? liveComments.length : (localPost.comment_count || localPost.comments || 0)}</span></button>
+          }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
+        )}
 
-          {!isGuest && (
-            <button onClick={() => {
-              if (!showComments) {
-                if (liveComments === null) loadComments();
-                setShowComments(true);
-              }
-              setTimeout(() => commentInputRef.current?.focus(), 50);
-            }} style={{
+        {/* Three dots — right aligned */}
+        {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
+          <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
+            <button onClick={() => setShowPostMenu(m => !m)} style={{
               background: "transparent", border: "1px solid " + C.border,
-              borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-              color: C.textMuted, fontSize: 13, fontWeight: 600, flexShrink: 0,
-            }}>↩{!isMobile && " Reply"}</button>
-          )}
-
-          {(post.game_tag || localPost.game_tag) && !isGuest && (
-            <button onClick={toggleTip} style={{
-              background: tipped ? C.gold + "18" : "transparent",
-              border: "1px solid " + (tipped ? C.gold + "44" : C.border),
-              borderRadius: 8, padding: isMobile ? "6px 10px" : "5px 14px", cursor: "pointer",
-              color: tipped ? C.gold : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 4, flexShrink: 0, alignSelf: "stretch",
-            }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
-          )}
-
-                    {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
-            <div style={{ marginLeft: "auto", position: "relative", flexShrink: 0 }}>
-              <button onClick={() => setShowPostMenu(m => !m)} style={{
-                background: "transparent", border: "1px solid " + C.border,
-                borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-                color: C.textDim, fontSize: 16, lineHeight: 1,
-              }}>•••</button>
-              {showPostMenu && (
-                <>
-                  <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {post.user_id === currentUser.id && (
-                      <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
-                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-                        onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                        {editing ? "Cancel Edit" : "Edit"}
-                      </button>
-                    )}
-                    <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+              borderRadius: 8, padding: "5px 10px", cursor: "pointer",
+              color: C.textDim, fontSize: 16, lineHeight: 1,
+            }}>•••</button>
+            {showPostMenu && (
+              <>
+                <div onClick={() => setShowPostMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
+                <div style={{ position: "absolute", right: 0, bottom: "calc(100% + 4px)", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  {post.user_id === currentUser.id && (
+                    <button onClick={() => { setEditing(e => !e); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}
                       onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
                       onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                      Delete
+                      {editing ? "Cancel Edit" : "Edit"}
                     </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                  )}
+                  <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.red, fontSize: 13, cursor: "pointer", textAlign: "left" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Comments */}
@@ -934,7 +1277,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         <div style={{ background: C.surfaceHover, borderTop: "1px solid " + C.border, padding: "14px 20px" }}>
           {(liveComments || localPost.commentList).map((comment, i) => {
             const isNPC = !!comment.npc_id;
-            // Resolve NPC author: DB join first, then legacy hardcoded key, then give up
             const npcData = isNPC
               ? (comment.npcs || NPCS[comment.npc_id] || null)
               : null;
@@ -948,6 +1290,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             const avatar = isNPC
               ? (npcData?.avatar_initials || npcData?.avatar || "NPC")
               : (comment.profiles?.avatar_initials || comment.user?.avatar || "GL");
+            const avatarConfig = !isNPC ? (comment.profiles?.avatar_config || comment.user?.avatarConfig || null) : null;
             const allComments = liveComments || localPost.commentList;
             // Find the comment being replied to
             const parentComment = comment.reply_to_comment_id
@@ -959,7 +1302,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             const isMyComment = !isNPC && currentUser && comment.user_id === currentUser.id;
             return (
               <div key={comment.id} style={{ display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0 }}>
-                <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} />
+                <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} avatarConfig={avatarConfig} />
                 <div style={{ flex: 1 }}>
                   <div style={{ background: C.surfaceRaised, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
@@ -1037,7 +1380,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10, position: "relative" }}>
-                  <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
+                  <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} avatarConfig={currentUser?.avatarConfig} />
                   <div style={{ flex: 1, position: "relative" }}>
                     <textarea
                       ref={commentInputRef}
@@ -1660,7 +2003,7 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
         .single();
       const { data: c } = await supabase
         .from("comments")
-        .select("*, profiles(username, handle, avatar_initials)")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
       if (p) setPost(p);
@@ -1679,7 +2022,7 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
       user_id: au.id,
       content: commentText.trim(),
       reply_to_comment_id: replyTo?.id || null,
-    }).select("*, profiles(username, handle, avatar_initials)").single();
+    }).select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
     if (!error && data) {
       setComments(prev => [...prev, data]);
       setCommentText("");
@@ -1788,7 +2131,7 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 10 }}>
-              <Avatar initials={currentUser.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
+              <Avatar initials={currentUser.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} avatarConfig={currentUser?.avatarConfig} />
               <textarea ref={modalInputRef} value={commentText} onChange={e => { setCommentText(e.target.value); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
                 placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
@@ -1996,11 +2339,12 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                         const avatarInitials = isNPC
                           ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                           : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
+                        const notifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
                         const notifText = n.type === "comment" ? "commented on your post" : n.type === "reply" ? "replied to your comment" : n.type === "follow" ? "started following you" : "mentioned you";
                         return (
                           <div key={n.id} onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
                             style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: !n.read ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default" }}>
-                            <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
+                            <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={notifAvatarConfig} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
                                 {isNPC ? (
@@ -2019,7 +2363,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                   </div>
                 )}
                 <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-                  <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} />
+                  <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
                 </div>
                 <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Out</button>
               </>
@@ -2127,6 +2471,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       const avatarInitials = isNPC
                         ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
+                      const mobileNotifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
                       return (
                         <div key={n.id}
                           onClick={() => {
@@ -2137,7 +2482,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
                           onMouseLeave={e => { e.currentTarget.style.background = isUnread ? C.accent + "0a" : "transparent"; }}
                         >
-                          <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
+                          <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={mobileNotifAvatarConfig} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, lineHeight: 1.5 }}>
                               {isNPC ? (
@@ -2169,13 +2514,13 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
               )}
             </div>
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-              <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
+              <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
             </div>
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-339</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-351</span>
         </div>
       </div>
     </nav>
@@ -2802,7 +3147,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const [{ data }, likesResult] = await Promise.all([
       supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), comments(id)")
         .in("user_id", followedIds)
         .is("npc_id", null)
         .order("created_at", { ascending: false })
@@ -2852,7 +3197,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
-          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .is("npc_id", null)
           .order("likes", { ascending: false })
           .limit(30),
@@ -2884,7 +3229,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const [postsResult, likesResult, tipsResult] = await Promise.all([
         supabase.from("posts")
-          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .order("created_at", { ascending: false })
           .limit(20),
         authUser
@@ -2994,9 +3339,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           </div>
         ) : user ? (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)` }} />
-            <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
-              <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} />
+            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)`, borderRadius: "14px 14px 0 0" }} />
+            <div style={{ padding: "0 16px 16px", marginTop: -22, overflow: "visible" }}>
+              <Avatar initials={user.avatar} size={64} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
@@ -3050,7 +3395,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} />
+                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                   {p.sharedGame && <div style={{ color: C.textDim, fontSize: 11 }}>Also plays {p.sharedGame}</div>}
@@ -3109,7 +3454,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         {!isGuest && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
-            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} />
+            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 48 : 56} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game... (@ to tag a game, player, or NPC)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
@@ -3225,6 +3570,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 isNPC: isNPC,
                 isFounding: !isNPC && (displayAuthor.is_founding || false),
                 activeRing: !isNPC ? (displayAuthor.active_ring || "none") : "none",
+                avatarConfig: !isNPC ? (displayAuthor.avatar_config || null) : null,
               },
               content: post.content,
               tagged_users: post.tagged_users || [],
@@ -3298,6 +3644,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   isNPC: false,
                   isFounding: displayAuthor.is_founding || false,
                   activeRing: displayAuthor.active_ring || "none",
+                  avatarConfig: displayAuthor.avatar_config || null,
                 },
                 content: post.content,
                 time: timeAgo(post.created_at),
@@ -4309,7 +4656,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Posts
       const { data: posts } = await supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -4318,7 +4665,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Tips — posts with tip votes, sorted by tip count
       const { data: tips } = await supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .gte("tip_count", 1)
         .order("tip_count", { ascending: false })
@@ -4337,7 +4684,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Top Voices — users with most likes on posts for this game
       const { data: voicePosts } = await supabase
         .from("posts")
-        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_tag", dbId)
         .not("user_id", "is", null);
       if (voicePosts) {
@@ -4355,7 +4702,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Latest reviews — filtered to this game
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_id", dbId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -4483,7 +4830,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       }
       // Refresh reviews
       const { data: reviews } = await supabase.from("reviews")
-        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(20);
       if (reviews) setLatestReviews(reviews);
       const { data: avgData } = await supabase.from("reviews").select("rating").eq("game_id", dbGame.id);
@@ -4646,7 +4993,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                             style={{ display: "flex", alignItems: "center", gap: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px 5px 6px", cursor: "pointer" }}
                             onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                             onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} />
+                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} avatarConfig={p.avatar_config} />
                             <span style={{ color: C.text, fontSize: 12, fontWeight: 600 }}>{p.username}</span>
                           </div>
                         ))}
@@ -4695,7 +5042,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 {latestReviews.length > 0 ? latestReviews.map((review, i) => (
                   <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? "1px solid " + C.border : "none" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
+                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} avatarConfig={review.profiles?.avatar_config} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · ✓ Completed" : ""}</div>
@@ -4756,7 +5103,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                  <Avatar initials={voice.avatar_initials || "GL"} size={34} founding={voice.is_founding} ring={voice.active_ring} />
+                  <Avatar initials={voice.avatar_initials || "GL"} size={56} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
@@ -4811,6 +5158,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     isNPC,
                     isFounding: !isNPC && (author?.is_founding || false),
                     activeRing: !isNPC ? (author?.active_ring || "none") : "none",
+                    avatarConfig: !isNPC ? (author?.avatar_config || null) : null,
                   },
                   content: post.content,
                   time: timeAgo(post.created_at),
@@ -4846,6 +5194,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     isNPC,
                     isFounding: author.is_founding || false,
                     activeRing: !isNPC ? (author.active_ring || "none") : "none",
+                    avatarConfig: !isNPC ? (author.avatar_config || null) : null,
                   },
                   content: post.content,
                   time: timeAgo(post.created_at),
@@ -4902,7 +5251,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               ) : latestReviews.map((review, idx) => (
                 <div key={idx} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <Avatar initials={review.profiles?.avatar_initials || "GL"} size={32} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
+                    <Avatar initials={review.profiles?.avatar_initials || "GL"} size={32} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} avatarConfig={review.profiles?.avatar_config} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                       <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}</div>
@@ -4964,6 +5313,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (defaultTab) setActiveTab(defaultTab);
   }, [defaultTab]);
   const [editing, setEditing] = useState(false);
+  const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
+  const [localAvatarConfig, setLocalAvatarConfig] = useState(null);
   const [previewThemeId, setPreviewThemeId] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
   const [saving, setSaving] = useState(false);
@@ -5021,7 +5372,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Real posts + liked state
       const [postsResult, likesResult] = await Promise.all([
         supabase.from("posts")
-          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
+          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .eq("user_id", authUser.id)
           .is("npc_id", null)
           .order("created_at", { ascending: false })
@@ -5049,7 +5400,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Reviews with game info
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("*, games(id, name, developer, genre)")
+        .select("*, games(id, name, developer, genre, cover_url)")
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false });
       if (reviews) setUserReviews(reviews);
@@ -5481,7 +5832,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
-            <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} />
+            <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={localAvatarConfig || user.avatarConfig} />
           </div>
           {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
@@ -5506,7 +5857,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
-              <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+                <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
+              </div>
             )}
           </div>
 
@@ -6001,8 +6355,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                     <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
-                      style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default" }}>
-                      <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                      style={{ width: 36, height: 48, borderRadius: 6, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default", overflow: "hidden" }}>
+                      {review.games?.cover_url
+                        ? <img src={review.games.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                      }
                     </div>
                     <div style={{ flex: 1 }}>
                       <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
@@ -6048,7 +6405,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} />
+                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={56} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} avatarConfig={p.type !== "npc" ? p.avatar_config : null} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, color: p.type === "npc" ? C.gold : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{p.handle}{p.type === "npc" ? " · NPC" : ""}</div>
@@ -6132,6 +6489,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         </div>
       )}
 
+      {showAvatarBuilder && (
+        <AvatarBuilderModal
+          currentUser={user}
+          userRewards={userRewards}
+          onSave={(cfg) => { setLocalAvatarConfig(cfg); onProfileSaved?.(); }}
+          onClose={() => setShowAvatarBuilder(false)}
+        />
+      )}
+
     </div>
   );
 }
@@ -6151,7 +6517,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setReviews([]);
     if (mode === "feed") {
       const { data, error } = await supabase.from("reviews")
-        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
         .order("created_at", { ascending: false })
         .limit(40);
       if (error) console.error("Reviews feed error:", error);
@@ -6164,7 +6530,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
       const ids = (follows || []).map(f => f.followed_user_id).filter(Boolean);
       if (!ids.length) { setLoading(false); return; }
       const { data, error } = await supabase.from("reviews")
-        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
         .in("user_id", ids)
         .order("created_at", { ascending: false })
         .limit(40);
@@ -6201,38 +6567,64 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     const game = review.games;
     if (!game) return null;
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
+    const coverW = isMobile ? 72 : 96;
     return (
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 14 : 20, marginBottom: 10 }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div onClick={() => profile?.id && setCurrentPlayer(profile.id) && setActivePage("player")} style={{ cursor: profile?.id ? "pointer" : "default" }}>
-            <Avatar initials={initials} size={36} founding={profile?.is_founding} ring={profile?.active_ring} />
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+        <div style={{ display: "flex" }}>
+          {/* Game cover — left column, full height */}
+          <div onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+            style={{ width: coverW, flexShrink: 0, cursor: "pointer", alignSelf: "stretch", overflow: "hidden", position: "relative" }}>
+            {game.cover_url
+              ? <img src={game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: coverW * 1.4 }} />
+              : <div style={{ width: "100%", minHeight: coverW * 1.4, background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+            }
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); } }} style={{ fontWeight: 700, color: C.text, fontSize: 13, cursor: profile?.id ? "pointer" : "default" }}>{profile?.username || "Guildies Member"}</span>
-              <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
-              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }} style={{ fontWeight: 700, color: C.accentSoft, fontSize: 13, cursor: "pointer" }}>{game.name}</span>
+
+          {/* Content — right column */}
+          <div style={{ flex: 1, minWidth: 0, padding: isMobile ? "12px 14px" : "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {/* Game name + rating */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, cursor: "pointer", lineHeight: 1.3 }}>
+                {game.name}
+              </span>
+              <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "3px 10px", color: C.gold, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                {review.rating}/10
+              </div>
             </div>
-            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}</div>
-          </div>
-          {currentUser && review.user_id === currentUser.id && (
-            <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
-              style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
-          )}
-          <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
-            {review.rating + "/10"}
+
+            {/* Reviewer + timestamp */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div onClick={() => profile?.id && (setCurrentPlayer(profile.id), setActivePage("player"))} style={{ cursor: profile?.id ? "pointer" : "default", flexShrink: 0 }}>
+                <Avatar initials={initials} size={20} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
+              </div>
+              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); } }}
+                style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: profile?.id ? "pointer" : "default" }}>
+                {profile?.username || "Guildies Member"}
+              </span>
+              <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(review.created_at)}</span>
+              {review.time_played && <span style={{ color: C.textDim, fontSize: 11 }}>· {review.time_played}h</span>}
+              {currentUser && review.user_id === currentUser.id && (
+                <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
+                  style={{ marginLeft: "auto", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", color: C.textMuted, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+              )}
+            </div>
+
+            {/* Headline */}
+            {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.headline}</div>}
+
+            {/* Loved / didn't love */}
+            {review.loved && <div style={{ color: C.textMuted, fontSize: 12 }}>✓ {review.loved}</div>}
+            {review.didnt_love && <div style={{ color: C.textDim, fontSize: 12 }}>✗ {review.didnt_love}</div>}
           </div>
         </div>
-        {/* Content */}
-        {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
-        {/* Game tag */}
-        <div style={{ marginTop: 10 }}>
-          <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-            style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-            {game.name}
-          </span>
-        </div>
+
+        {/* Full review text — below the two-column section */}
+        {review.content && (
+          <div style={{ padding: isMobile ? "10px 14px 12px" : "10px 16px 14px", borderTop: "1px solid " + C.border }}>
+            <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>
+          </div>
+        )}
       </div>
     );
   };
@@ -6415,7 +6807,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
-      supabase.from("reviews").select("*, profiles(username, active_ring, is_founding), games(name)").order("created_at", { ascending: false }).limit(20),
+      supabase.from("reviews").select("*, profiles(username, avatar_initials, active_ring, is_founding, avatar_config), games(name)").order("created_at", { ascending: false }).limit(20),
       supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
@@ -7302,7 +7694,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     setLoadingComments(prev => ({ ...prev, [postId]: true }));
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
     setExpandedComments(prev => ({ ...prev, [postId]: data || [] }));
@@ -7433,7 +7825,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     // Fetch all comments for those posts
     const { data: allComments, error: commentsError } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .in("post_id", postIds)
       .order("created_at", { ascending: true });
     if (commentsError) console.error("[loadThreads] comments error:", commentsError);
@@ -8341,7 +8733,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
     setLoading(true);
     let query = supabase
       .from("lfg_posts")
-      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
+      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
     if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
@@ -8547,7 +8939,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
         const isOwn = currentUser?.id === profile?.id;
         return (
           <div key={post.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
-            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={44} founding={profile?.is_founding} ring={profile?.active_ring} />
+            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={64} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
                 <span style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: "pointer" }}
@@ -8829,7 +9221,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: isMobile ? 100 : 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: isMobile ? -28 : -36, left: isMobile ? 16 : 28 }}>
-            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} />
+            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} avatarConfig={profile.avatar_config} />
           </div>
         </div>
         <div style={{ padding: isMobile ? "40px 16px 20px" : "48px 28px 24px" }}>
@@ -9446,7 +9838,7 @@ export default function GuildLink() {
     const npcIds = [...new Set(data.filter(n => n.npc_id).map(n => n.npc_id))];
     let actorMap = {}, npcMap = {};
     if (actorIds.length > 0) {
-      const { data: actors } = await supabase.from("profiles").select("id, username, handle, avatar_initials").in("id", actorIds);
+      const { data: actors } = await supabase.from("profiles").select("id, username, handle, avatar_initials, avatar_config").in("id", actorIds);
       if (actors) actors.forEach(a => { actorMap[a.id] = a; });
     }
     if (npcIds.length > 0) {
@@ -9562,6 +9954,7 @@ export default function GuildLink() {
     date_of_birth: profile.date_of_birth || null,
     dob_changes: profile.dob_changes || 0,
     theme: profile.theme || "deep-space",
+    avatarConfig: profile.avatar_config || null,
   } : null;
 
 
