@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-353</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-354</span>
         </div>
       </div>
     </nav>
@@ -3889,9 +3889,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         ...Object.values(genresFull).flat().map(g => g.id),
       ])];
 
-      // Get last 8 days of scores for sparklines
+      // Get last 8 days of scores for sparklines (including today)
       const sparkDates = [];
-      for (let i = 1; i <= 8; i++) { sparkDates.push(getPacificDate(i)); }
+      for (let i = 7; i >= 0; i--) { sparkDates.push(getPacificDate(i)); }
       const { data: sparkScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, date")
@@ -3905,14 +3905,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         scoresByGame[s.game_id][s.date] = s.score;
       });
 
-      // Build points arrays (oldest to newest, + 1 future zero slot)
+      // Build points arrays (oldest to newest, no future slot)
       const buildPoints = (gameId) => {
-        const ordered = sparkDates.slice().reverse(); // oldest first
-        return [...ordered.map(d => scoresByGame[gameId]?.[d] || 0), 0];
+        return sparkDates.map(d => scoresByGame[gameId]?.[d] || 0);
       };
       const buildLabels = () => {
-        const ordered = sparkDates.slice().reverse();
-        return [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
+        return sparkDates.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); });
       };
 
       const globalMax = Math.max(...top10.map(g => Math.max(...buildPoints(g.id))), 0.1);
@@ -4251,30 +4249,26 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
-  // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
+  // Sparkline: 8 slots (8 days of data, no future projection)
   const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
-    const slots = 9;
-    const dataMax = Math.max(...points.slice(0, 8));
+    const slots = 8;
+    const dataMax = Math.max(...points);
     const max = globalMax ? globalMax : (dataMax > 0 ? dataMax : 0.1);
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
     let lastDataIdx = 0;
-    for (let i = 7; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
+    for (let i = slots - 1; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
     const dataPoints = points.slice(0, lastDataIdx + 1);
     const linePts = dataPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
     const areaPath = `M ${xPos(0)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
-    // Reference line (genre or overall leader)
-    let refLastIdx = 0;
-    let refFirstIdx = 0;
-    const refLinePts = refPoints ? refPoints.slice(0, 8).map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
+    const refLinePts = refPoints ? refPoints.slice(0, slots).map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-          {/* Reference line — #1 in this context */}
           {refLinePts && (
             <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.2" strokeDasharray="8 6" />
           )}
@@ -4285,7 +4279,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           ))}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2 }}>
-          {labels && labels.map((l, i) => i < slots - 1 ? (
+          {labels && labels.map((l, i) => i < slots ? (
             <span key={i} style={{ position: "absolute", left: `${(xPos(i) / W) * 100}%`, transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
           ) : null)}
         </div>
