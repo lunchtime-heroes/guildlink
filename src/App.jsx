@@ -233,25 +233,40 @@ const FOUNDING = {
 
 const PROFILE_RINGS = [
   { id: "none", label: "No Ring", color: "transparent", description: "Standard member", alwaysUnlocked: true },
-  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", icon: "⚔️", foundingOnly: true, how: "Founding Members only" },
-  { id: "rpg", label: "RPG Ring", color: "#a78bfa", glow: "#a78bfa33", description: "For the devoted RPG adventurer.", icon: "📖", questId: "rpg_fan", questLabel: "Quest: RPG Fan", how: "Quest: RPG Fan" },
-  { id: "platinum", label: "Platinum Ring", color: "#e2e8f0", glow: "#e2e8f033", description: "Complete 50 game reviews.", icon: "📝", questId: "the_critic", questLabel: "Quest: The Critic", how: "Quest: The Critic" },
-  { id: "crimson", label: "Crimson Ring", color: "#ef4444", glow: "#ef444433", description: "Reach Top Voice on any game page.", icon: "🏆", questId: "top_of_feed", questLabel: "Quest: Top of the Feed", how: "Quest: Top of the Feed" },
-  { id: "void", label: "Void Ring", color: "#7c3aed", glow: "#7c3aed33", description: "Complete 10 games to 100%.", icon: "💯", questId: "completionist", questLabel: "Quest: The Completionist", how: "Quest: The Completionist" },
-  { id: "emerald", label: "Emerald Ring", color: "#10b981", glow: "#10b98133", description: "Help 100 players find a squad.", icon: "🤝", questId: "the_connector", questLabel: "Quest: The Connector", how: "Quest: The Connector" },
-  { id: "celestial", label: "Celestial Ring", color: "#38bdf8", glow: "#38bdf833", description: "500 followers on GuildLink.", icon: "⭐", questId: "rising_star", questLabel: "Quest: Rising Star", how: "Quest: Rising Star" },
-  { id: "onyx", label: "Onyx Ring", color: "#334155", glow: "#0f172a88", description: "1 year as a GuildLink member.", icon: "🕯️", questId: "veteran", questLabel: "Quest: Veteran", how: "Quest: Veteran" },
+  { id: "founding", label: "Founding Ring", color: "#f59e0b", glow: "#f59e0b44", description: "Permanent. Earned by founding members.", icon: "⚔️", foundingOnly: true, how: "Founding Members only", double: true },
+  { id: "bronze", label: "Bronze Ring", color: "#a0522d", glow: "#a0522d33", description: "A simple bronze frame. Everyone starts somewhere.", icon: "🥉", questId: "reply_first_npc", how: "Quest: Join the Conversation" },
+  { id: "silver", label: "Silver Ring", color: "#c0c0c0", glow: "#c0c0c033", description: "You're finding your groove.", icon: "🥈", questId: "shelf_25", how: "Quest: Committed" },
+  { id: "gold", label: "Gold Ring", color: "#f59e0b", glow: "#f59e0b44", description: "A seasoned player. Your shelf speaks for itself.", icon: "🥇", questId: "shelf_100", how: "Quest: Legendary Library" },
+  { id: "npc", label: "NPC Friend Ring", color: "#a78bfa", glow: "#a78bfa33", description: "You talk to NPCs. Enough said.", icon: "🤝", questId: "npc_follow_all", how: "Quest: One of the Regulars" },
 ];
 
 const QUESTS = [
-  { id: "q1", title: "First Words", desc: "Post for the first time", reward: "10 XP", progress: 1, total: 1, done: true, ring: null },
-  { id: "q2", title: "The Critic", desc: "Write 50 game reviews", reward: "Platinum Ring", progress: 32, total: 50, done: false, ring: "platinum" },
-  { id: "q3", title: "Top of the Feed", desc: "Reach Top Voice status on any game page", reward: "Crimson Ring", progress: 0, total: 1, done: false, ring: "crimson" },
-  { id: "q4", title: "The Completionist", desc: "Mark 10 games as 100% complete", reward: "Void Ring", progress: 3, total: 10, done: false, ring: "void" },
-  { id: "q5", title: "The Connector", desc: "Have 100 players join squads you posted", reward: "Emerald Ring", progress: 14, total: 100, done: false, ring: "emerald" },
-  { id: "q6", title: "Rising Star", desc: "Reach 500 followers", reward: "Celestial Ring", progress: 312, total: 500, done: false, ring: "celestial" },
-  { id: "q7", title: "Veteran", desc: "Be a GuildLink member for 1 year", reward: "Onyx Ring", progress: 0, total: 12, done: false, ring: "onyx", unit: "months" },
-  { id: "q8", title: "NPC Whisperer", desc: "Get 10 NPC replies on your posts", reward: "500 XP + Badge", progress: 7, total: 10, done: false, ring: null },
+  { id: "add_first_game", title: "Add Your First Game", desc: "Add a game to your shelf", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "shelf_5", title: "Getting Started", desc: "Add 5 games to your shelf", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "shelf_10", title: "Building a Library", desc: "Add 10 games to your shelf", reward: "XP", progress: 0, total: 10, done: false, ring: null },
+  { id: "shelf_25", title: "Committed", desc: "Add 25 games to your shelf", reward: "Silver Ring", progress: 0, total: 25, done: false, ring: "silver" },
+  { id: "shelf_50", title: "The Collection", desc: "Add 50 games to your shelf", reward: "XP", progress: 0, total: 50, done: false, ring: null },
+  { id: "shelf_100", title: "Legendary Library", desc: "Add 100 games to your shelf", reward: "Gold Ring", progress: 0, total: 100, done: false, ring: "gold" },
+  { id: "played_10", title: "Veteran", desc: "Mark 10 games as played", reward: "XP", progress: 0, total: 10, done: false, ring: null },
+  { id: "played_25", title: "Road Warrior", desc: "Mark 25 games as played", reward: "Retro Theme", progress: 0, total: 25, done: false, ring: null },
+  { id: "played_50", title: "Hall of Fame", desc: "Mark 50 games as played", reward: "XP", progress: 0, total: 50, done: false, ring: null },
+  { id: "played_100", title: "The Veteran's Veteran", desc: "Mark 100 games as played", reward: "XP", progress: 0, total: 100, done: false, ring: null },
+  { id: "want_5", title: "The Wishlist", desc: "Add 5 games to Want to Play", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "want_25", title: "Eternal Backlog", desc: "Add 25 games to Want to Play", reward: "XP", progress: 0, total: 25, done: false, ring: null },
+  { id: "first_review", title: "Write Your First Review", desc: "Write your first game review", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "reviews_5", title: "Critic", desc: "Write 5 game reviews", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "reviews_10", title: "Trusted Voice", desc: "Write 10 game reviews", reward: "8-Bit Theme", progress: 0, total: 10, done: false, ring: null },
+  { id: "reviews_25", title: "The Authority", desc: "Write 25 game reviews", reward: "XP", progress: 0, total: 25, done: false, ring: null },
+  { id: "genre_explorer", title: "Genre Explorer", desc: "Play games across 5 genres", reward: "RPG Theme", progress: 0, total: 5, done: false, ring: null },
+  { id: "genre_master", title: "Genre Master", desc: "Play games across 10 genres", reward: "Space Theme", progress: 0, total: 10, done: false, ring: null },
+  { id: "first_like", title: "You're Noticed", desc: "Get your first like", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "likes_10", title: "People Like You", desc: "Get 10 likes on your posts", reward: "XP", progress: 0, total: 10, done: false, ring: null },
+  { id: "first_comment", title: "Starting a Thread", desc: "Leave your first comment", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "reply_first_npc", title: "Join the Conversation", desc: "Reply to an NPC", reward: "Bronze Ring", progress: 0, total: 1, done: false, ring: "bronze" },
+  { id: "npc_replies_5", title: "In the Mix", desc: "Get 5 NPC replies on your posts", reward: "XP", progress: 0, total: 5, done: false, ring: null },
+  { id: "follow_first_npc", title: "Meet the Locals", desc: "Follow your first NPC", reward: "XP", progress: 0, total: 1, done: false, ring: null },
+  { id: "npc_follow_3", title: "Making Friends", desc: "Follow 3 NPCs", reward: "XP", progress: 0, total: 3, done: false, ring: null },
+  { id: "npc_follow_all", title: "One of the Regulars", desc: "Follow 6 NPCs", reward: "NPC Friend Ring", progress: 0, total: 6, done: false, ring: "npc" },
 ];
 
 // ─── NPC DATA ─────────────────────────────────────────────────────────────────
@@ -275,13 +290,17 @@ const NPCS = {
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
-function Avatar({ initials, size = 40, status, isNPC = false, ring = null, founding = false }) {
+function Avatar({ initials, size = 40, status, isNPC = false, ring = null, founding = false, avatarConfig = null }) {
+  if (avatarConfig && !isNPC) {
+    return <AvatarPixel config={avatarConfig} size={size} ring={ring} founding={founding} status={status} />;
+  }
   const statusColors = { online: C.online, away: C.gold, ingame: C.purple, offline: C.textDim };
   const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
   const showFoundingRing = founding && !ring;
   const ringColor = ringData?.color || (showFoundingRing ? C.gold : null);
   const ringGlow = ringData?.glow || (showFoundingRing ? C.goldBorder : null);
   const hasRing = ringColor && ringColor !== "transparent";
+  const isDouble = ringData?.double || (showFoundingRing);
 
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
@@ -292,6 +311,15 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
           borderRadius: "50%",
           border: `3px solid ${ringColor}`,
           boxShadow: `0 0 ${size * 0.3}px ${ringGlow || ringColor + "44"}, inset 0 0 ${size * 0.15}px ${ringGlow || ringColor + "22"}`,
+          zIndex: 1, pointerEvents: "none",
+        }} />
+      )}
+      {/* Double ring for founding members */}
+      {hasRing && isDouble && (
+        <div style={{
+          position: "absolute", inset: -7,
+          borderRadius: "50%",
+          border: `2px solid ${ringColor}88`,
           zIndex: 1, pointerEvents: "none",
         }} />
       )}
@@ -311,6 +339,445 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
         background: statusColors[status] || C.textDim,
         border: "2px solid " + C.surface, zIndex: 2,
       }} />}
+    </div>
+  );
+}
+
+function LinkPreviewFetcher({ url, onExit }) {
+  const [preview, setPreview] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/link-preview", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).then(r => r.json()).then(data => {
+      if (!cancelled && data.allowed) setPreview(data);
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [url]);
+  if (loading || !preview) return null;
+  return <LinkPreviewCard preview={preview} onExit={onExit} />;
+}
+
+function decodeHtml(str) {
+  if (!str) return str;
+  return str.replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+            .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+            .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, " ");
+}
+
+function LinkPreviewCard({ preview, onExit }) {
+  if (!preview?.url) return null;
+  return (
+    <div onClick={e => { e.stopPropagation(); onExit(preview.url); }}
+      style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none" }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+      onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+      {preview.image && <img src={preview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />}
+      <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
+        <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{preview.domain} ↗</div>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{decodeHtml(preview.title) || preview.url}</div>
+        {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(preview.description)}</div>}
+      </div>
+    </div>
+  );
+}
+
+function ExitModal({ url, onClose }) {
+  if (!url) return null;
+  let domain;
+  try { domain = new URL(url).hostname; } catch { domain = url; }
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 28, maxWidth: 400, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🔗</div>
+        <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 8 }}>Leaving GuildLink</div>
+        <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 6 }}>You're about to visit:</div>
+        <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, marginBottom: 20, wordBreak: "break-all" }}>{domain}</div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button onClick={onClose} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => { window.open(url, "_blank", "noopener,noreferrer"); onClose(); }}
+            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Continue →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AVATAR ENGINE ────────────────────────────────────────────────────────────
+
+const AVATAR_SKIN_TONES = {
+  s1: { skin: "#FDDBB4", shadow: "#E8B88A", lip: "#C4956A" },
+  s2: { skin: "#F5C5A3", shadow: "#D4956A", lip: "#B87050" },
+  s3: { skin: "#D4956A", shadow: "#B57040", lip: "#8B4513" },
+  s4: { skin: "#C68642", shadow: "#9B6320", lip: "#7B4010" },
+  s5: { skin: "#8D5524", shadow: "#6B3A10", lip: "#4A2008" },
+  s6: { skin: "#4A2511", shadow: "#2D1508", lip: "#1A0A04" },
+  s7: { skin: "#FFE0BD", shadow: "#FFCD94", lip: "#D4956A" },
+  s8: { skin: "#F1C27D", shadow: "#C68642", lip: "#9B5E2A" },
+};
+const AVATAR_HAIR_COLORS = {
+  black: "#1a1a1a", darkbrown: "#3b1f0e", brown: "#6b3a2a",
+  auburn: "#8b2500", red: "#cc2200", blonde: "#d4a843",
+  platinum: "#f0e6c8", white: "#f5f5f5", gray: "#888888",
+  blue: "#1a4480", purple: "#5b2d8e", green: "#1a6b3a",
+};
+const AVATAR_BG_COLORS = {
+  navy: "#0f1923", forest: "#0d2818", purple: "#1a0d2e",
+  crimson: "#2e0d0d", slate: "#1a1f2e", gold: "#2e2000",
+  teal: "#0d2e2e", charcoal: "#1a1a1a",
+  gradBlue: ["#0f1923", "#1a3a5c"], gradPurple: ["#1a0d2e", "#3d1a6b"],
+  gradGreen: ["#0d2818", "#1a5c38"], gradGold: ["#2e2000", "#6b4400"],
+};
+const AVATAR_CLASS_COLORS = {
+  warrior: "#cc3300", mage: "#6633cc", rogue: "#339933",
+  ranger: "#996633", healer: "#33cccc", bard: "#cc33cc",
+};
+const AVATAR_CLASS_ICONS = {
+  warrior: "⚔", mage: "✦", rogue: "◆", ranger: "◉", healer: "✚", bard: "♪",
+};
+const AVATAR_TORSO_COLORS = {
+  hoodie: { main: "#2a4a7f", shadow: "#1a3060", accent: "#3a6aaf" },
+  tee: { main: "#4a4a4a", shadow: "#2a2a2a", accent: "#6a6a6a" },
+  armor: { main: "#8a7a5a", shadow: "#5a4a2a", accent: "#c0a060" },
+  robe: { main: "#4a2a6a", shadow: "#2a1a4a", accent: "#7a4a9a" },
+  cloak: { main: "#1a1a1a", shadow: "#0a0a0a", accent: "#3a3a3a" },
+  jersey: { main: "#8a1a1a", shadow: "#5a0a0a", accent: "#aa3a3a" },
+};
+
+function renderAvatarSVG(config = {}, size = 40) {
+  const {
+    skin: skinKey = "s1", hairStyle = "short", hairColor: hairColorKey = "darkbrown",
+    eyes: eyeStyle = "normal", bg: bgKey = "navy", classType = "warrior",
+    accessory = "none", torso = "hoodie", weather = "none",
+  } = config;
+
+  const s = Math.max(1, Math.floor(size / 16));
+  const W = 16 * s; const H = 16 * s;
+  const skin = AVATAR_SKIN_TONES[skinKey] || AVATAR_SKIN_TONES.s1;
+  const hairColor = AVATAR_HAIR_COLORS[hairColorKey] || AVATAR_HAIR_COLORS.darkbrown;
+  const classColor = AVATAR_CLASS_COLORS[classType] || AVATAR_CLASS_COLORS.warrior;
+  const bgDef = AVATAR_BG_COLORS[bgKey];
+  const bgIsGrad = Array.isArray(bgDef);
+  const bgId = "avbg" + bgKey + size;
+  const tc = AVATAR_TORSO_COLORS[torso] || AVATAR_TORSO_COLORS.hoodie;
+
+  const px = (x, y, color) => `<rect x="${x*s}" y="${y*s}" width="${s}" height="${s}" fill="${color}"/>`;
+  const row = (xs, y, color) => xs.map(x => px(x, y, color)).join("");
+
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
+
+  // Background
+  if (bgIsGrad) {
+    svg += `<defs><linearGradient id="${bgId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${bgDef[0]}"/><stop offset="100%" stop-color="${bgDef[1]}"/></linearGradient></defs>`;
+    svg += `<rect width="${W}" height="${H}" fill="url(#${bgId})"/>`;
+  } else {
+    svg += `<rect width="${W}" height="${H}" fill="${bgDef || "#0f1923"}"/>`;
+  }
+
+  // Class accent strip
+  svg += `<rect x="0" y="${H-s}" width="${W}" height="${s}" fill="${classColor}" opacity="0.6"/>`;
+
+  // Body/torso
+  [[9,[5,6,7,8,9,10]],[10,[4,5,6,7,8,9,10,11]],[11,[4,5,6,7,8,9,10,11]],[12,[3,4,5,6,7,8,9,10,11,12]],[13,[3,4,5,6,7,8,9,10,11,12]],[14,[3,4,5,6,7,8,9,10,11,12]],[15,[3,4,5,6,7,8,9,10,11,12]]].forEach(([y,xs]) => svg += row(xs, y, tc.main));
+  svg += px(4,9,tc.shadow)+px(11,9,tc.shadow)+row([7,8],10,tc.accent)+row([7,8],11,tc.accent);
+  svg += row([3,2],10,tc.main)+row([12,13],10,tc.main)+row([2,3],11,tc.shadow)+row([12,13],11,tc.shadow)+px(2,12,tc.main)+px(13,12,tc.main)+px(2,13,skin.skin)+px(13,13,skin.skin);
+  svg += row([7,8],8,skin.skin)+px(7,9,skin.shadow);
+
+  // Face
+  [[3,[5,6,7,8,9,10]],[4,[4,5,6,7,8,9,10,11]],[5,[4,5,6,7,8,9,10,11]],[6,[4,5,6,7,8,9,10,11]],[7,[5,6,7,8,9,10]]].forEach(([y,xs]) => svg += row(xs, y, skin.skin));
+  svg += px(4,4,skin.shadow)+px(11,4,skin.shadow)+px(4,6,skin.shadow)+px(11,6,skin.shadow);
+
+  // Eyes
+  const eyeMap = {
+    normal: () => { svg += px(6,5,"#1a1a1a")+px(9,5,"#1a1a1a")+px(6,4,"#ffffff44")+px(9,4,"#ffffff44"); },
+    determined: () => { svg += row([5,6],5,"#1a1a1a")+row([9,10],5,"#1a1a1a")+px(5,4,"#1a1a1a")+px(10,4,"#1a1a1a"); },
+    sleepy: () => { svg += px(6,5,"#1a1a1a")+px(9,5,"#1a1a1a")+row([5,6,7],5,skin.shadow)+row([8,9,10],5,skin.shadow); },
+    wide: () => { svg += px(6,5,"#1a1a1a")+px(9,5,"#1a1a1a")+px(5,5,"#1a1a1a")+px(10,5,"#1a1a1a")+px(6,4,"#ffffff66")+px(9,4,"#ffffff66"); },
+    stern: () => { svg += px(6,5,"#2a1a0a")+px(9,5,"#2a1a0a")+row([5,6,7],4,"#2a1a0a")+row([8,9,10],4,"#2a1a0a"); },
+    sharp: () => { svg += px(6,5,"#1a1a3a")+px(9,5,"#1a1a3a")+px(7,4,"#1a1a3a")+px(8,4,"#1a1a3a"); },
+    friendly: () => { svg += px(6,5,"#3a2a1a")+px(9,5,"#3a2a1a")+px(6,6,"#3a2a1a")+px(9,6,"#3a2a1a"); },
+    soft: () => { svg += px(6,5,"#3a3a5a")+px(9,5,"#3a3a5a"); },
+  };
+  (eyeMap[eyeStyle] || eyeMap.normal)();
+
+  // Mouth
+  svg += row([7,8],7,skin.lip)+px(6,7,skin.shadow)+px(9,7,skin.shadow);
+
+  // Hair
+  const hairMap = {
+    short: () => { svg += row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor); },
+    spiky: () => { svg += px(6,0,hairColor)+px(8,0,hairColor)+px(10,0,hairColor)+row([5,6,7,8,9,10],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+px(4,3,hairColor)+px(11,3,hairColor); },
+    long: () => { svg += row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor)+px(4,5,hairColor)+px(11,5,hairColor)+px(4,6,hairColor)+px(11,6,hairColor)+px(3,7,hairColor)+px(12,7,hairColor); },
+    curly: () => { svg += row([5,6,7,8,9,10],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+px(3,3,hairColor)+px(12,3,hairColor)+px(3,4,hairColor)+px(12,4,hairColor)+px(4,5,hairColor)+px(11,5,hairColor); },
+    bun: () => { svg += row([6,7,8,9],0,hairColor)+row([5,6,7,8,9,10],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+px(4,3,hairColor)+px(11,3,hairColor); },
+    braids: () => { svg += row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor)+px(4,5,hairColor)+px(11,5,hairColor)+px(3,6,hairColor)+px(12,6,hairColor)+px(3,7,hairColor)+px(12,7,hairColor)+px(3,8,hairColor)+px(12,8,hairColor); },
+    mohawk: () => { svg += row([7,8],0,hairColor)+row([7,8],1,hairColor)+row([6,7,8,9],2,hairColor)+row([5,6,9,10],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor); },
+    buzz: () => { svg += row([5,6,7,8,9,10],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor); },
+    wavy: () => { svg += row([5,7,9,11],1,hairColor)+row([4,5,6,7,8,9,10,11],2,hairColor)+row([4,5,6,7,8,9,10,11],3,hairColor)+px(4,4,hairColor)+px(11,4,hairColor)+px(3,5,hairColor)+px(12,5,hairColor); },
+    bald: () => { svg += row([6,7,8,9],2,skin.shadow); },
+  };
+  (hairMap[hairStyle] || hairMap.short)();
+
+  // Accessories
+  const accMap = {
+    glasses: () => { svg += row([5,6,7],5,"#888888")+row([8,9,10],5,"#888888")+px(7,5,"#666666")+px(6,5,"#ffffff22")+px(9,5,"#ffffff22"); },
+    sunglasses: () => { svg += row([5,6,7],5,"#111111")+row([8,9,10],5,"#111111")+px(7,5,"#333333")+px(4,5,"#111111")+px(11,5,"#111111"); },
+    monocle: () => { svg += row([9,10],4,"#c0a060")+row([9,10],6,"#c0a060")+px(8,5,"#c0a060")+px(11,5,"#c0a060")+px(9,5,"#ffffff22"); },
+    cap: () => { svg += row([4,5,6,7,8,9,10,11],2,classColor)+row([3,4,5,6,7,8,9,10,11,12],1,classColor); },
+    wizardhat: () => { svg += px(8,-1,classColor)+row([7,8,9],0,classColor)+row([6,7,8,9,10],1,classColor)+row([4,5,6,7,8,9,10,11,12],2,classColor)+px(7,0,"#ffcc00")+px(10,1,"#ffcc00"); },
+    crown: () => { svg += row([4,6,8,10,12],1,"#ffcc00")+row([4,5,6,7,8,9,10,11,12],2,"#ffcc00")+px(5,1,"#cc0000")+px(8,0,"#cc0000")+px(11,1,"#cc0000"); },
+    headband: () => { svg += row([4,5,6,7,8,9,10,11],3,classColor); },
+    beanie: () => { svg += row([4,5,6,7,8,9,10,11],1,"#4a7abf")+row([4,5,6,7,8,9,10,11],2,"#3a6aaf")+row([4,5,6,7,8,9,10,11],3,"#2a4a7f")+px(7,0,"#3a6aaf")+px(8,0,"#3a6aaf"); },
+    eyepatch: () => { svg += row([5,6,7],4,"#1a1a1a")+row([5,6,7],5,"#1a1a1a")+row([4,5,6,7,8],5,"#333333"); },
+    laurel: () => { svg += px(4,3,"#2d6a2d")+px(5,2,"#2d6a2d")+px(3,4,"#2d6a2d")+px(3,5,"#3d8a3d")+px(11,3,"#2d6a2d")+px(10,2,"#2d6a2d")+px(12,4,"#2d6a2d")+px(12,5,"#3d8a3d"); },
+  };
+  if (accMap[accessory]) accMap[accessory]();
+
+  // Class icon
+  svg += `<text x="${W-s*1.5}" y="${H-s*0.8}" font-size="${s*2}" text-anchor="middle" dominant-baseline="middle" fill="${classColor}" opacity="0.9">${AVATAR_CLASS_ICONS[classType]||"⚔"}</text>`;
+
+  // Weather
+  if (weather === "snow") {
+    [[3,2],[8,1],[13,4],[5,7],[11,5],[2,10],[9,8],[14,11],[6,13],[12,3]].forEach(([x,y],i) => {
+      svg += `<circle cx="${x*s}" cy="${y*s}" r="${s*0.4}" fill="white" opacity="0.8"><animate attributeName="cy" from="${-s}" to="${H+s}" dur="${2+i*0.3}s" repeatCount="indefinite" begin="${(-i*0.3).toFixed(1)}s"/></circle>`;
+    });
+  } else if (weather === "rain") {
+    [[2,1],[5,3],[9,0],[13,2],[7,5],[11,4],[3,7],[14,6]].forEach(([x,y],i) => {
+      svg += `<line x1="${x*s}" y1="${-s}" x2="${x*s}" y2="${s*2}" stroke="#88aacc" stroke-width="${s*0.3}" opacity="0.7"><animate attributeName="y1" from="${-s*2}" to="${H+s}" dur="${0.8+i*0.1}s" repeatCount="indefinite" begin="${(-i*0.1).toFixed(1)}s"/><animate attributeName="y2" from="${s*2}" to="${H+s*3}" dur="${0.8+i*0.1}s" repeatCount="indefinite" begin="${(-i*0.1).toFixed(1)}s"/></line>`;
+    });
+  } else if (weather === "sparkles") {
+    [[2,2],[7,1],[13,3],[4,6],[11,5],[9,8],[6,13],[12,11]].forEach(([x,y],i) => {
+      svg += `<text x="${x*s}" y="${y*s}" font-size="${s*2}" fill="#ffdd44" opacity="0" text-anchor="middle">✦<animate attributeName="opacity" values="0;1;0" dur="${1.5+i*0.2}s" repeatCount="indefinite" begin="${(-i*0.2).toFixed(1)}s"/></text>`;
+    });
+  } else if (weather === "stars") {
+    [[1,1],[4,3],[8,0],[12,2],[15,4],[2,6],[11,7],[14,10],[3,12],[9,13]].forEach(([x,y],i) => {
+      svg += `<circle cx="${x*s}" cy="${y*s}" r="${s*0.3}" fill="white"><animate attributeName="opacity" values="0.2;1;0.2" dur="${2+i*0.25}s" repeatCount="indefinite" begin="${(-i*0.25).toFixed(1)}s"/></circle>`;
+    });
+  } else if (weather === "confetti") {
+    const cc = ["#ff3333","#33ff33","#3333ff","#ffff33","#ff33ff","#33ffff"];
+    [[2,0],[6,1],[10,0],[14,2],[4,4],[8,3],[12,5],[3,7],[9,6],[13,8],[1,10],[7,9]].forEach(([x,y],i) => {
+      svg += `<rect x="${x*s}" y="${y*s}" width="${s*0.8}" height="${s*0.8}" fill="${cc[i%cc.length]}" opacity="0.8"><animate attributeName="y" from="${-s}" to="${H+s}" dur="${2+i*0.15}s" repeatCount="indefinite" begin="${(-i*0.15).toFixed(1)}s"/></rect>`;
+    });
+  } else if (weather === "lightning") {
+    svg += `<path d="M${9*s},${s} L${7*s},${7*s} L${9*s},${7*s} L${7*s},${14*s}" stroke="#ffdd00" stroke-width="${s*0.6}" fill="none" opacity="0"><animate attributeName="opacity" values="0;0;0;0.9;0;0;0;0.7;0;0" dur="4s" repeatCount="indefinite"/></path>`;
+  } else if (weather === "leaves") {
+    [[3,1],[10,0],[14,3],[5,5],[12,7]].forEach(([x,y],i) => {
+      svg += `<text x="${x*s}" y="${y*s}" font-size="${s*2}" opacity="0.9"><animate attributeName="y" from="${-s}" to="${H+s}" dur="${3+i*0.4}s" repeatCount="indefinite" begin="${(-i*0.4).toFixed(1)}s"/>🍃</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function AvatarPixel({ config, size = 40, ring = null, founding = false, status = null }) {
+  const svgStr = renderAvatarSVG(config, size);
+  const statusColors = { online: C.online, away: C.gold, offline: C.textDim };
+  const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
+  const showFoundingRing = founding && !ring;
+  const ringColor = ringData?.color || (showFoundingRing ? C.gold : null);
+  const ringGlow = ringData?.glow || (showFoundingRing ? C.goldBorder : null);
+  const hasRing = ringColor && ringColor !== "transparent";
+  const isDouble = ringData?.double || showFoundingRing;
+  return (
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
+      {hasRing && <div style={{ position: "absolute", inset: -3, borderRadius: "16%", border: `3px solid ${ringColor}`, boxShadow: `0 0 ${size*0.3}px ${ringGlow||ringColor+"44"}`, zIndex: 1, pointerEvents: "none" }} />}
+      {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: `2px solid ${ringColor}88`, zIndex: 1, pointerEvents: "none" }} />}
+      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0 }}
+        dangerouslySetInnerHTML={{ __html: svgStr }} />
+      {status && <div style={{ position: "absolute", bottom: 1, right: 1, width: size*0.22, height: size*0.22, borderRadius: "50%", background: statusColors[status]||C.textDim, border: "2px solid "+C.surface, zIndex: 2 }} />}
+    </div>
+  );
+}
+
+function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
+  const DEFAULT_CONFIG = { skin: "s1", hairStyle: "short", hairColor: "darkbrown", eyes: "normal", bg: "navy", classType: "warrior", accessory: "none", torso: "hoodie", weather: "none" };
+  const [cfg, setCfg] = React.useState(() => ({ ...DEFAULT_CONFIG, ...(currentUser?.avatarConfig || {}) }));
+  const [saving, setSaving] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("face");
+  const set = (k, v) => setCfg(p => ({ ...p, [k]: v }));
+
+  const unlockedAccessories = new Set(["none","glasses","sunglasses","cap","headband","beanie","eyepatch",...(userRewards||[]).map(r => r.reward_id)]);
+  const unlockedWeather = new Set(["none","snow","rain",...(userRewards||[]).map(r => r.reward_id)]);
+
+  const save = async () => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("profiles").update({ avatar_config: cfg }).eq("id", user.id);
+    onSave?.(cfg);
+    setSaving(false);
+    onClose();
+  };
+
+  const tabs = [
+    { id: "face", label: "Face" },
+    { id: "hair", label: "Hair" },
+    { id: "outfit", label: "Outfit" },
+    { id: "class", label: "Class" },
+    { id: "extras", label: "Extras" },
+  ];
+
+  const Swatch = ({ value, current, onClick, color, label, locked }) => (
+    <button onClick={locked ? undefined : onClick}
+      title={label}
+      style={{ width: 36, height: 36, borderRadius: 8, background: color || C.surfaceRaised, border: "2px solid " + (value === current ? C.accent : C.border), cursor: locked ? "not-allowed" : "pointer", position: "relative", opacity: locked ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.text, fontWeight: 600, overflow: "hidden" }}>
+      {label && !color && <span style={{ fontSize: 9, textAlign: "center", lineHeight: 1.2 }}>{label}</span>}
+      {locked && <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🔒</span>}
+    </button>
+  );
+
+  const OptionGrid = ({ children }) => <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{children}</div>;
+  const Label = ({ children }) => <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, marginBottom: 6, marginTop: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{children}</div>;
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 20, width: "100%", maxWidth: 560, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Avatar Builder</div>
+            <div style={{ color: C.textDim, fontSize: 12 }}>Design your pixel art character</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+
+        {/* Preview */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "20px 0 16px", background: C.surface, borderBottom: "1px solid " + C.border, gap: 24 }}>
+          <AvatarPixel config={cfg} size={96} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
+          <AvatarPixel config={cfg} size={48} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
+          <AvatarPixel config={cfg} size={32} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
+          <AvatarPixel config={cfg} size={24} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "1px solid " + C.border, background: C.surface }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{ flex: 1, padding: "10px 0", background: "none", border: "none", borderBottom: "2px solid " + (activeTab === t.id ? C.accent : "transparent"), color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Options panel */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 20px" }}>
+
+          {activeTab === "face" && <>
+            <Label>Skin Tone</Label>
+            <OptionGrid>
+              {Object.entries(AVATAR_SKIN_TONES).map(([k, v]) => (
+                <Swatch key={k} value={k} current={cfg.skin} onClick={() => set("skin", k)} color={v.skin} label={k} />
+              ))}
+            </OptionGrid>
+            <Label>Eyes</Label>
+            <OptionGrid>
+              {["normal","determined","sleepy","wide","stern","sharp","friendly","soft"].map(e => (
+                <button key={e} onClick={() => set("eyes", e)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.eyes === e ? C.accent : C.border), background: cfg.eyes === e ? C.accentGlow : C.surfaceRaised, color: cfg.eyes === e ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {e}
+                </button>
+              ))}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "hair" && <>
+            <Label>Hair Style</Label>
+            <OptionGrid>
+              {["short","spiky","long","curly","bun","braids","mohawk","buzz","wavy","bald"].map(h => (
+                <button key={h} onClick={() => set("hairStyle", h)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.hairStyle === h ? C.accent : C.border), background: cfg.hairStyle === h ? C.accentGlow : C.surfaceRaised, color: cfg.hairStyle === h ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {h}
+                </button>
+              ))}
+            </OptionGrid>
+            <Label>Hair Color</Label>
+            <OptionGrid>
+              {Object.entries(AVATAR_HAIR_COLORS).map(([k, v]) => (
+                <Swatch key={k} value={k} current={cfg.hairColor} onClick={() => set("hairColor", k)} color={v} label={k} />
+              ))}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "outfit" && <>
+            <Label>Torso</Label>
+            <OptionGrid>
+              {Object.keys(AVATAR_TORSO_COLORS).map(t => (
+                <button key={t} onClick={() => set("torso", t)}
+                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.torso === t ? C.accent : C.border), background: cfg.torso === t ? C.accentGlow : C.surfaceRaised, color: cfg.torso === t ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  {t}
+                </button>
+              ))}
+            </OptionGrid>
+            <Label>Accessory</Label>
+            <OptionGrid>
+              {["none","glasses","sunglasses","cap","headband","beanie","eyepatch","monocle","crown","wizardhat","laurel"].map(a => {
+                const locked = !unlockedAccessories.has(a);
+                return (
+                  <button key={a} onClick={() => !locked && set("accessory", a)}
+                    style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.accessory === a ? C.accent : C.border), background: cfg.accessory === a ? C.accentGlow : C.surfaceRaised, color: cfg.accessory === a ? C.accentSoft : locked ? C.textDim : C.textMuted, fontSize: 11, fontWeight: 600, cursor: locked ? "default" : "pointer", opacity: locked ? 0.5 : 1, position: "relative" }}>
+                    {locked ? "🔒 " : ""}{a}
+                  </button>
+                );
+              })}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "class" && <>
+            <Label>Class Archetype</Label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+              {Object.entries(AVATAR_CLASS_COLORS).map(([k, color]) => (
+                <button key={k} onClick={() => set("classType", k)}
+                  style={{ padding: "10px 8px", borderRadius: 10, border: "2px solid " + (cfg.classType === k ? color : C.border), background: cfg.classType === k ? color + "22" : C.surfaceRaised, color: cfg.classType === k ? color : C.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 20 }}>{AVATAR_CLASS_ICONS[k]}</span>
+                  <span style={{ textTransform: "capitalize" }}>{k}</span>
+                </button>
+              ))}
+            </div>
+            <Label>Background</Label>
+            <OptionGrid>
+              {Object.keys(AVATAR_BG_COLORS).map(k => {
+                const v = AVATAR_BG_COLORS[k];
+                const bg = Array.isArray(v) ? `linear-gradient(to bottom, ${v[0]}, ${v[1]})` : v;
+                return <Swatch key={k} value={k} current={cfg.bg} onClick={() => set("bg", k)} color={bg} label={k} />;
+              })}
+            </OptionGrid>
+          </>}
+
+          {activeTab === "extras" && <>
+            <Label>Weather Effect</Label>
+            <OptionGrid>
+              {["none","snow","rain","sparkles","stars","confetti","lightning","leaves"].map(w => {
+                const locked = !unlockedWeather.has(w);
+                const icons = { none:"☀️",snow:"❄️",rain:"🌧️",sparkles:"✨",stars:"⭐",confetti:"🎊",lightning:"⚡",leaves:"🍃" };
+                return (
+                  <button key={w} onClick={() => !locked && set("weather", w)}
+                    style={{ padding: "8px 12px", borderRadius: 10, border: "2px solid " + (cfg.weather === w ? C.accent : C.border), background: cfg.weather === w ? C.accentGlow : C.surfaceRaised, color: cfg.weather === w ? C.accentSoft : locked ? C.textDim : C.textMuted, fontSize: 11, fontWeight: 600, cursor: locked ? "default" : "pointer", opacity: locked ? 0.5 : 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                    <span style={{ fontSize: 18 }}>{icons[w]}</span>
+                    <span>{locked ? "🔒" : w}</span>
+                  </button>
+                );
+              })}
+            </OptionGrid>
+            <div style={{ marginTop: 16, padding: 12, background: C.surfaceRaised, borderRadius: 10, border: "1px solid " + C.border }}>
+              <div style={{ color: C.textDim, fontSize: 12 }}>🔒 Locked items are unlocked through quests and events. Keep playing to earn more!</div>
+            </div>
+          </>}
+
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "14px 20px", borderTop: "1px solid " + C.border, display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={save} disabled={saving}
+            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            {saving ? "Saving…" : "Save Avatar"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -391,7 +858,7 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -400,6 +867,10 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [liveComments, setLiveComments] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const commentInputRef = useRef(null);
+  const [commentLinkPreview, setCommentLinkPreview] = useState(null);
+  const [commentLinkWarning, setCommentLinkWarning] = useState(null);
+  const [commentLinkLoading, setCommentLinkLoading] = useState(false);
+  let commentLinkDebounce = null;
 
   // Sync count from parent
   useEffect(() => {
@@ -659,12 +1130,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     if (!commentText.trim() || submittingComment) return;
     setSubmittingComment(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const commentUrls = commentText.match(/https?:\/\/[^\s<>"]+/gi);
     const { data, error } = await supabase.from("comments").insert({
       post_id: post.id,
       user_id: authUser.id,
       content: commentText.trim(),
       reply_to_comment_id: replyTo?.id || null,
       tagged_users: commentTaggedUsers.length > 0 ? commentTaggedUsers : [],
+      link_url: commentLinkPreview?.url || commentUrls?.[0] || null,
     }).select("*, profiles(username, handle, avatar_initials)").single();
     if (!error && data) {
       if (post.id && post.id.includes('-')) {
@@ -673,7 +1146,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       const gameId = post.game_tag || post.gameId;
       if (gameId && gameId.includes('-') && authUser) logChartEvent(gameId, 'comment', authUser.id);
-      // Quest triggers
       if (localPost.user.isNPC) {
         await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "npc_replied" });
         onQuestTrigger?.();
@@ -686,6 +1158,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       setCommentText("");
       setCommentTaggedUsers([]);
       setReplyTo(null);
+      setCommentLinkPreview(null);
+      setCommentLinkWarning(null);
       setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
     }
     setSubmittingComment(false);
@@ -754,6 +1228,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           </div>
         ) : (
           <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+        )}
+
+        {/* Link preview */}
+        {localPost.link_url && onExit && (
+          <LinkPreviewFetcher url={localPost.link_url} onExit={onExit} />
         )}
 
         {/* Actions */}
@@ -875,6 +1354,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                       </div>
                     )}
                     <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+                    {comment.link_url && onExit && <LinkPreviewFetcher url={comment.link_url} onExit={onExit} />}
                   </div>
                   {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
                     <div style={{ display: "flex", gap: 4, alignItems: "center", marginTop: 2 }}>
@@ -936,12 +1416,31 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                   </div>
                 )}
                 <div style={{ display: "flex", gap: 10, position: "relative" }}>
-                  <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
+                  <Avatar initials={currentUser?.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} avatarConfig={currentUser?.avatarConfig} />
                   <div style={{ flex: 1, position: "relative" }}>
-                    <input
+                    <textarea
                       ref={commentInputRef}
                       value={commentText}
-                      onChange={handleCommentTextChange}
+                      onChange={e => {
+                        handleCommentTextChange(e);
+                        e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px";
+                        // URL detection
+                        const urls = e.target.value.match(/https?:\/\/[^\s<>"]+/gi);
+                        const firstUrl = urls?.[0];
+                        if (firstUrl) {
+                          if (commentLinkDebounce) clearTimeout(commentLinkDebounce);
+                          commentLinkDebounce = setTimeout(async () => {
+                            setCommentLinkLoading(true);
+                            try {
+                              const res = await fetch("/api/link-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: firstUrl }) });
+                              const data = await res.json();
+                              if (!data.allowed) { setCommentLinkPreview(null); setCommentLinkWarning(data.domain || "this domain"); }
+                              else { setCommentLinkPreview(data); setCommentLinkWarning(null); }
+                            } catch { setCommentLinkPreview(null); }
+                            setCommentLinkLoading(false);
+                          }, 600);
+                        } else { setCommentLinkPreview(null); setCommentLinkWarning(null); }
+                      }}
                       onKeyDown={e => {
                         if (commentMentionResults.length > 0) {
                           if (e.key === "ArrowDown") { e.preventDefault(); setCommentMentionIndex(i => Math.min(i+1, commentMentionResults.length-1)); return; }
@@ -949,10 +1448,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                           if (e.key === "Enter") { e.preventDefault(); selectCommentMention(commentMentionResults[commentMentionIndex]); return; }
                           if (e.key === "Escape") { setCommentMentionResults([]); return; }
                         }
-                        if (e.key === "Enter") submitComment();
+                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
                       }}
                       placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment… (@ to mention)"}
-                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                      rows={1}
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
                     />
                     {commentMentionResults.length > 0 && (
                       <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
@@ -973,10 +1473,20 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                       </div>
                     )}
                   </div>
-                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>
                     {submittingComment ? "…" : "Reply"}
                   </button>
                 </div>
+                {commentLinkWarning && (
+                  <div style={{ marginTop: 6, background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, padding: "6px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12 }}>🚫</span>
+                    <span style={{ color: "#ef4444", fontSize: 11 }}><strong>{commentLinkWarning}</strong> isn't on our allowed list.</span>
+                  </div>
+                )}
+                {commentLinkLoading && <div style={{ marginTop: 6, color: C.textDim, fontSize: 11 }}>Fetching preview…</div>}
+                {commentLinkPreview && !commentLinkLoading && onExit && (
+                  <LinkPreviewCard preview={commentLinkPreview} onExit={onExit} />
+                )}
               </div>
             ) : (
               <div style={{ color: C.textDim, fontSize: 13 }}>Sign in to comment</div>
@@ -1507,7 +2017,7 @@ function SignInPrompt({ onClose, onSignIn, message }) {
 
 // ─── POST MODAL ───────────────────────────────────────────────────────────────
 
-function PostModal({ postId, onClose, currentUser }) {
+function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1576,11 +2086,30 @@ function PostModal({ postId, onClose, currentUser }) {
               {/* The post */}
               <div style={{ padding: 20, borderBottom: "1px solid " + C.border }}>
                 <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                  <Avatar initials={(post.profiles?.avatar_initials || post.profiles?.username || "?").slice(0,2).toUpperCase()} size={38} />
-                  <div>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{post.profiles?.username || "Unknown"}</div>
-                    <div style={{ color: C.textDim, fontSize: 12 }}>{post.profiles?.handle} · {timeAgo(post.created_at)}</div>
-                  </div>
+                  {(() => {
+                    const npcData = post.npc_id ? NPCS[post.npc_id] : null;
+                    const isNPC = !!npcData;
+                    const name = npcData?.name || post.profiles?.username || "Unknown";
+                    const avatar = npcData?.avatar || post.profiles?.avatar_initials || "?";
+                    const handle = npcData ? ("@" + npcData.handle?.replace("@","")) : post.profiles?.handle;
+                    return (
+                      <>
+                        <Avatar initials={avatar.slice(0,2).toUpperCase()} size={38} isNPC={isNPC} />
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div onClick={() => !isNPC && post.user_id && onNavigateToPlayer?.(post.user_id)}
+                              style={{ fontWeight: 700, color: isNPC ? C.gold : C.text, fontSize: 14, cursor: !isNPC && post.user_id ? "pointer" : "default" }}
+                              onMouseEnter={e => { if (!isNPC && post.user_id) e.currentTarget.style.color = C.accentSoft; }}
+                              onMouseLeave={e => e.currentTarget.style.color = isNPC ? C.gold : C.text}>
+                              {name}
+                            </div>
+                            {isNPC && <NPCBadge />}
+                          </div>
+                          <div style={{ color: C.textDim, fontSize: 12 }}>{handle} · {timeAgo(post.created_at)}</div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <p style={{ color: C.text, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{post.content}</p>
                 <div style={{ color: C.textDim, fontSize: 12, marginTop: 12 }}>♥ {post.likes || 0} · 💬 {comments.length}</div>
@@ -1603,7 +2132,10 @@ function PostModal({ postId, onClose, currentUser }) {
                       <div style={{ flex: 1 }}>
                         <div style={{ background: C.surface, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "9px 13px" }}>
                           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name}</span>
+                            <span onClick={() => !isNPC && c.user_id && onNavigateToPlayer?.(c.user_id)}
+                              style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text, cursor: !isNPC && c.user_id ? "pointer" : "default" }}
+                              onMouseEnter={e => { if (!isNPC && c.user_id) e.currentTarget.style.color = C.accentSoft; }}
+                              onMouseLeave={e => e.currentTarget.style.color = isNPC ? C.gold : C.text}>{name}</span>
                             {isNPC && <NPCBadge />}
                             <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(c.created_at)}</span>
                           </div>
@@ -1635,11 +2167,12 @@ function PostModal({ postId, onClose, currentUser }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 10 }}>
-              <Avatar initials={currentUser.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} />
-              <input ref={modalInputRef} value={commentText} onChange={e => setCommentText(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && submitComment()}
+              <Avatar initials={currentUser.avatar || "GL"} size={32} founding={currentUser?.isFounding} ring={currentUser?.activeRing} avatarConfig={currentUser?.avatarConfig} />
+              <textarea ref={modalInputRef} value={commentText} onChange={e => { setCommentText(e.target.value); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
                 placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment…"}
-                style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none" }}
+                rows={1}
+                style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
               />
               <button onClick={submitComment} disabled={submitting || !commentText.trim()}
                 style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 16px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
@@ -1686,7 +2219,7 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
 
   const selectGame = async (game) => {
     if (game._fromIGDB) {
-      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0 }).select().single();
+      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0, platforms: game.platforms || null }).select().single();
       if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
     } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }
     close();
@@ -1816,7 +2349,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
               </>
             ) : (
               <>
-                <button onClick={onMarkAllRead} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "4px 2px" }}>
+                <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && notifications.filter(n => !n.read).length > 0) onMarkAllRead?.(); }}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "8px 6px", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
                   🔔
                   {notifications.filter(n => !n.read).length > 0 && (
                     <span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1824,8 +2358,47 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                     </span>
                   )}
                 </button>
+                {showNotifs && (
+                  <div style={{ position: "fixed", top: 52, left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: "0 0 14px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden", maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
+                    <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+                      <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
+                      <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer" }}>×</button>
+                    </div>
+                    <div style={{ overflowY: "auto", flex: 1 }}>
+                      {(!notifications || notifications.length === 0) ? (
+                        <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
+                      ) : notifications.map((n, i) => {
+                        const actor = n.actor;
+                        const npcData = n.npc || null;
+                        const isNPC = !!npcData;
+                        const hasPost = !!n.post_id;
+                        const avatarInitials = isNPC
+                          ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
+                          : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
+                        const notifText = n.type === "comment" ? "commented on your post" : n.type === "reply" ? "replied to your comment" : n.type === "follow" ? "started following you" : "mentioned you";
+                        return (
+                          <div key={n.id} onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
+                            style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: !n.read ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default" }}>
+                            <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+                                {isNPC ? (
+                                  <><strong style={{ color: C.gold }}>{npcData.name}</strong> <span style={{ color: C.gold }}>{notifText}</span></>
+                                ) : (
+                                  <span style={{ color: C.text }}><strong>{actor?.username || "Someone"}</strong> {notifText}</span>
+                                )}
+                              </div>
+                              <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{timeAgo(n.created_at)}</div>
+                            </div>
+                            {hasPost && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-                  <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} />
+                  <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
                 </div>
                 <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Out</button>
               </>
@@ -1898,8 +2471,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
         ) : (
           <>
             <div style={{ position: "relative" }}>
-              <button onClick={() => { setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
-                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "1px solid " + showNotifs ? C.accentDim : "transparent", borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "4px 8px", display: "flex", alignItems: "center" }}>
+              <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
+                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "8px 12px", display: "flex", alignItems: "center", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
                 🔔
                 {unreadCount > 0 && (
                   <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: C.accentText, borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
@@ -1908,7 +2481,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 )}
               </button>
               {showNotifs && (
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 340, background: C.surface, border: "1px solid " + C.border, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden" }}>
+                <div style={{ position: "fixed", top: isMobile ? 56 : "auto", right: isMobile ? 0 : 0, left: isMobile ? 0 : "auto", marginTop: isMobile ? 0 : 8, width: isMobile ? "100%" : 340, background: C.surface, border: "1px solid " + C.border, borderRadius: isMobile ? "0 0 14px 14px" : 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden", maxHeight: isMobile ? "70vh" : "auto" }}>
                   <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1921,17 +2494,17 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 0 }}>×</button>
                     </div>
                   </div>
-                  <div style={{ maxHeight: 420, overflowY: "auto" }}>
+                  <div style={{ maxHeight: isMobile ? "calc(70vh - 60px)" : 420, overflowY: "auto" }}>
                     {(!notifications || notifications.length === 0) ? (
                       <div style={{ padding: 32, textAlign: "center", color: C.textDim, fontSize: 13 }}>Nothing yet.</div>
                     ) : notifications.map((n, i) => {
                       const actor = n.actor;
-                      const npcData = n.npc_id ? NPCS[n.npc_id] : null;
+                      const npcData = n.npc || null;
                       const isNPC = !!npcData;
                       const isUnread = !n.read;
                       const hasPost = !!n.post_id;
                       const avatarInitials = isNPC
-                        ? (npcData.avatar || npcData.name || "NPC").slice(0,2).toUpperCase()
+                        ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                       return (
                         <div key={n.id}
@@ -1954,7 +2527,10 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                                 </>
                               ) : (
                                 <span style={{ color: C.text }}>
-                                  <strong>{actor?.username || "Someone"}</strong> {notifLabel(n)}
+                                  <strong
+                                    onClick={e => { e.stopPropagation(); if (actor?.handle) { setCurrentPlayer?.(actor.id); setActivePage("player"); setShowNotifs(false); } }}
+                                    style={{ cursor: actor?.handle ? "pointer" : "default", color: actor?.handle ? C.accentSoft : C.text }}
+                                  >{actor?.username || "Someone"}</strong> {notifLabel(n)}
                                 </span>
                               )}
                             </div>
@@ -1972,13 +2548,13 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
               )}
             </div>
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
-              <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} />
+              <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
             </div>
             {signOut && <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0321-305</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-341</span>
         </div>
       </div>
     </nav>
@@ -2090,13 +2666,8 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
       setLoading(true);
 
       // Get yesterday's date in Pacific time
-      const now = new Date();
-      const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-        .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-      const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-      const yesterday = new Date(pacificNow);
-      yesterday.setDate(pacificNow.getDate() - 1);
-      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+      const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
+      const yesterdayStr = getPacificDate(1);
 
       // Query daily_chart_scores for yesterday
       const { data: scores } = await supabase
@@ -2120,9 +2691,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
         setCharts(sorted);
 
         // Get day before yesterday for movement arrows
-        const d2 = new Date(yesterday);
-        d2.setDate(yesterday.getDate() - 1);
-        const d2Str = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}-${String(d2.getDate()).padStart(2, "0")}`;
+        const d2Str = getPacificDate(2);
         const { data: prevScores } = await supabase
           .from("daily_chart_scores")
           .select("game_id, score")
@@ -2188,7 +2757,6 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.name}</div>
-                  {entry.dominantSignal && <div style={{ color: C.textDim, fontSize: 10 }}>{entry.dominantSignal}</div>}
                 </div>
                 <div style={{ color: mv.color, fontSize: 11, fontWeight: 700, flexShrink: 0, minWidth: 28, textAlign: "right" }}>{mv.label}</div>
               </div>
@@ -2287,7 +2855,7 @@ function FeedbackPage({ currentUser, isMobile, setActivePage }) {
   );
 }
 
-function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger }) {
+function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit }) {
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(false);
   const [postText, setPostText] = useState("");
@@ -2296,6 +2864,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [livePosts, setLivePosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
+  const [linkPreview, setLinkPreview] = useState(null); // { allowed, url, title, description, image, domain } | null
+  const [linkPreviewLoading, setLinkPreviewLoading] = useState(false);
+  const [linkWarning, setLinkWarning] = useState(null); // domain string if not allowed
+  const [exitUrl, setExitUrl] = useState(null); // url for interstitial modal
   const [following, setFollowing] = useState([]); // combined users + NPCs
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
@@ -2313,9 +2885,46 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [sidebarNPCs, setSidebarNPCs] = useState([]);
   const textareaRef = useRef(null); // array of game ids, max 3
 
+  const URL_REGEX = /https?:\/\/[^\s<>"]+/gi;
+  let linkPreviewDebounce = null;
+
+  const fetchLinkPreview = async (url) => {
+    setLinkPreviewLoading(true);
+    setLinkWarning(null);
+    try {
+      const res = await fetch("/api/link-preview", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!data.allowed) {
+        setLinkPreview(null);
+        setLinkWarning(data.domain || "this domain");
+      } else {
+        setLinkPreview(data);
+        setLinkWarning(null);
+      }
+    } catch {
+      setLinkPreview(null);
+    }
+    setLinkPreviewLoading(false);
+  };
+
   const handlePostTextChange = async (e) => {
     const val = e.target.value;
     setPostText(val);
+
+    // URL detection
+    const urls = val.match(URL_REGEX);
+    const firstUrl = urls?.[0];
+    if (firstUrl) {
+      if (linkPreviewDebounce) clearTimeout(linkPreviewDebounce);
+      linkPreviewDebounce = setTimeout(() => fetchLinkPreview(firstUrl), 600);
+    } else {
+      setLinkPreview(null);
+      setLinkWarning(null);
+    }
+
     const atMatch = val.match(/@([^@]*)$/);
     if (atMatch) {
       const query = atMatch[1].trim();
@@ -2622,7 +3231,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
-          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
           .is("npc_id", null)
           .order("likes", { ascending: false })
           .limit(30),
@@ -2684,6 +3293,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!postText.trim() || posting) return;
     setPosting(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const urls = postText.match(URL_REGEX);
     const { data, error } = await supabase.from("posts").insert({
       user_id: authUser?.id || null,
       content: postText.trim(),
@@ -2691,6 +3301,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       tagged_users: taggedUsers.length > 0 ? taggedUsers : [],
       likes: 0,
       comment_count: 0,
+      link_url: linkPreview?.url || urls?.[0] || null,
     }).select().single();
     if (!error && data) {
       if (data.game_tag) logChartEvent(data.game_tag, 'post', authUser?.id);
@@ -2707,6 +3318,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setPostText("");
       setTaggedGames([]);
       setTaggedUsers([]);
+      setLinkPreview(null);
+      setLinkWarning(null);
       if (data.game_tag) setChartRefresh(r => r + 1);
     }
     setPosting(false);
@@ -2762,7 +3375,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)` }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
-              <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} />
+              <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
@@ -2906,12 +3519,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                         ) : (
                           <>
                             {item.cover_url
-                              ? <img src={item.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
-                              : <div style={{ width: 28, height: 37, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                              ? <img src={item.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                              : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                             }
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
-                              {item.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{item.genre}</div>}
+                              {(item.platforms || item.genre) && <div style={{ color: C.textDim, fontSize: 10 }}>{item.platforms || item.genre}</div>}
                             </div>
                             {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>}
                           </>
@@ -2938,6 +3551,28 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 </div>
                 <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
               </div>
+              {/* Link warning */}
+              {linkWarning && (
+                <div style={{ marginTop: 8, background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>🚫</span>
+                  <span style={{ color: "#ef4444", fontSize: 12 }}><strong>{linkWarning}</strong> isn't on our allowed list. Links from this domain won't be active.</span>
+                </div>
+              )}
+              {/* Link preview card */}
+              {linkPreviewLoading && (
+                <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 12 }}>Fetching preview…</div>
+              )}
+              {linkPreview && !linkPreviewLoading && (
+                <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, overflow: "hidden", display: "flex", gap: 0 }}>
+                  {linkPreview.image && <img src={linkPreview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} />}
+                  <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
+                    <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{linkPreview.domain}</div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{decodeHtml(linkPreview.title) || linkPreview.url}</div>
+                    {linkPreview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(linkPreview.description)}</div>}
+                  </div>
+                  <button onClick={() => { setLinkPreview(null); setLinkWarning(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "8px", alignSelf: "flex-start", flexShrink: 0 }}>×</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2979,7 +3614,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               tip_count: post.tip_count || 0,
               comment_count: post.comment_count || 0,
               commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+              link_url: post.link_url || null,
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
           );
         })}
         {/* Loading skeleton */}
@@ -3219,14 +3855,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setChartsLoading(true);
       setSparklines({});
 
-      // Get yesterday in Pacific time
-      const now = new Date();
-      const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-        .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-      const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-      const yesterday = new Date(pacificNow);
-      yesterday.setDate(pacificNow.getDate() - 1);
-      const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+      // Get dates in Pacific time
+      const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
+      const yesterdayStr = getPacificDate(1);
 
       // Query yesterday's scores from daily_chart_scores
       const { data: scores } = await supabase
@@ -3255,9 +3886,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
       // Previous day for movement indicators
-      const d2 = new Date(yesterday);
-      d2.setDate(yesterday.getDate() - 1);
-      const d2Str = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}-${String(d2.getDate()).padStart(2, "0")}`;
+      const d2Str = getPacificDate(2);
       const { data: prevScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score")
@@ -3278,11 +3907,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       // Get last 8 days of scores for sparklines
       const sparkDates = [];
-      for (let i = 0; i < 8; i++) {
-        const d = new Date(yesterday);
-        d.setDate(yesterday.getDate() - i);
-        sparkDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-      }
+      for (let i = 1; i <= 8; i++) { sparkDates.push(getPacificDate(i)); }
       const { data: sparkScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, date")
@@ -3347,18 +3972,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const loadSparkline = async (gameId) => {
     if (sparklines[gameId]) return;
     setLoadingSparkline(prev => ({ ...prev, [gameId]: true }));
-    const now = new Date();
-    const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-      .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-    const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-    const yesterday = new Date(pacificNow);
-    yesterday.setDate(pacificNow.getDate() - 1);
+    const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
     const sparkDates = [];
-    for (let i = 0; i < 8; i++) {
-      const d = new Date(yesterday);
-      d.setDate(yesterday.getDate() - i);
-      sparkDates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-    }
+    for (let i = 1; i <= 8; i++) { sparkDates.push(getPacificDate(i)); }
     const { data: sparkScores } = await supabase
       .from("daily_chart_scores")
       .select("game_id, score, date")
@@ -3407,7 +4023,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "everyone_playing",
       label: "Everyone's Playing",
-      desc: "Most added to playing shelves recently",
+      desc: "Top games on currently playing shelves",
       run: async () => {
         const { data } = await supabase.from("user_games")
           .select("game_id, games(id, name, genre, cover_url)")
@@ -3420,27 +4036,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         });
         return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
           .map(r => ({ ...r.game, _stat: `${r.count} playing now` }));
-      }
-    },
-    {
-      id: "hidden_gems",
-      label: "Hidden Gems",
-      desc: "Highly reviewed but not widely followed",
-      run: async () => {
-        const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url, followers)");
-        const agg = {};
-        (data || []).forEach(r => {
-          if (!r.games) return;
-          if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 };
-          agg[r.game_id].total += r.rating;
-          agg[r.game_id].count++;
-        });
-        return Object.values(agg)
-          .map(g => ({ ...g, avg: g.total / g.count }))
-          .filter(g => g.avg >= 7 && g.count >= 2 && (g.followers || 0) < 500)
-          .sort((a, b) => b.avg - a.avg)
-          .slice(0, 12)
-          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} review${g.count !== 1 ? "s" : ""}` }));
       }
     },
     {
@@ -3499,7 +4094,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     {
       id: "critics_choice",
       label: "Critic's Choice",
-      desc: "Highest rated with meaningful review volume",
+      desc: "Highest rated games by community reviews",
       run: async () => {
         const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
         const agg = {};
@@ -3510,76 +4105,129 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           agg[r.game_id].count++;
         });
         return Object.values(agg)
-          .filter(g => g.count >= 2)
+          .filter(g => g.count >= 1)
           .map(g => ({ ...g, avg: g.total / g.count }))
           .sort((a, b) => b.avg - a.avg)
           .slice(0, 12)
-          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} reviews` }));
+          .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${g.count} review${g.count !== 1 ? "s" : ""}` }));
       }
     },
-    ...(currentUser ? [{
-      id: "your_people",
-      label: "Your People Are Playing",
-      desc: "On the shelves of people you follow",
-      run: async () => {
-        const { data: follows } = await supabase.from("follows")
-          .select("followed_user_id").eq("follower_id", currentUser.id);
-        if (!follows?.length) return [];
-        const followIds = follows.map(f => f.followed_user_id);
-        const { data } = await supabase.from("user_games")
-          .select("game_id, status, games(id, name, genre, cover_url)")
-          .in("user_id", followIds)
-          .in("status", ["playing", "have_played"]);
-        const counts = {};
-        (data || []).forEach(r => {
-          if (!r.games || userShelf.has(r.game_id)) return;
-          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
-          counts[r.game_id].count++;
-        });
-        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `${r.count} of your people played it` }));
-      }
-    },
-    {
-      id: "not_on_shelf",
-      label: "Not on Your Shelf Yet",
-      desc: "Community favorites you haven't picked up",
-      run: async () => {
-        const { data } = await supabase.from("user_games")
-          .select("game_id, games(id, name, genre, cover_url)")
-          .in("status", ["playing", "have_played"]);
-        const counts = {};
-        (data || []).forEach(r => {
-          if (!r.games || userShelf.has(r.game_id)) return;
-          if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
-          counts[r.game_id].count++;
-        });
-        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `${r.count} players` }));
-      }
-    },
-    {
-      id: "most_wanted",
-      label: "Most Wanted",
-      desc: "Games players are actively elevating on their lists",
-      run: async () => {
-        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-        const { data } = await supabase.from("shelf_elevations")
-          .select("game_id, to_position, games(id, name, genre, cover_url)")
-          .gte("created_at", since);
-        const scores = {};
-        (data || []).forEach(r => {
-          if (!r.games) return;
-          if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0, count: 0 };
-          // Weight by position: #1 = 1.0, #2 = 0.8, #3 = 0.6, deeper = 0.4
-          const posWeight = r.to_position === 0 ? 1.0 : r.to_position === 1 ? 0.8 : r.to_position === 2 ? 0.6 : 0.4;
-          scores[r.game_id].score += posWeight;
-          scores[r.game_id].count++;
-        });
-        return Object.values(scores).sort((a, b) => b.score - a.score).slice(0, 12)
-          .map(r => ({ ...r.game, _stat: `${r.count} elevation${r.count !== 1 ? "s" : ""} this fortnight` }));
-      }
-    }] : []),
+    ...(currentUser ? [
+      {
+        id: "your_people",
+        label: "Your People Are Playing",
+        desc: "On the currently playing shelf of people you follow",
+        run: async () => {
+          const { data: follows } = await supabase.from("follows")
+            .select("followed_user_id").eq("follower_id", currentUser.id);
+          if (!follows?.length) return [];
+          const followIds = follows.map(f => f.followed_user_id).filter(Boolean);
+          if (!followIds.length) return [];
+          const { data } = await supabase.from("user_games")
+            .select("game_id, games(id, name, genre, cover_url)")
+            .in("user_id", followIds)
+            .eq("status", "playing");
+          const counts = {};
+          (data || []).forEach(r => {
+            if (!r.games) return;
+            if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+            counts[r.game_id].count++;
+          });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: `${r.count} of your people playing` }));
+        }
+      },
+      {
+        id: "not_on_shelf",
+        label: "Not on Your Shelf Yet",
+        desc: "Community favorites you haven't added",
+        run: async () => {
+          const { data } = await supabase.from("user_games")
+            .select("game_id, games(id, name, genre, cover_url)")
+            .in("status", ["playing", "have_played"]);
+          const counts = {};
+          (data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 };
+            counts[r.game_id].count++;
+          });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: `${r.count} player${r.count !== 1 ? "s" : ""}` }));
+        }
+      },
+      {
+        id: "something_new",
+        label: "Something New",
+        desc: "Top picks from your network not on your shelf",
+        run: async () => {
+          const { data: follows } = await supabase.from("follows")
+            .select("followed_user_id").eq("follower_id", currentUser.id);
+          if (!follows?.length) return [];
+          const followIds = follows.map(f => f.followed_user_id).filter(Boolean);
+          if (!followIds.length) return [];
+          // Get all games from followed users' shelves
+          const [shelfRes, reviewRes, likedRes] = await Promise.all([
+            supabase.from("user_games").select("game_id, status, games(id, name, genre, cover_url)").in("user_id", followIds).eq("status", "want_to_play"),
+            supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)").in("user_id", followIds),
+            supabase.from("user_games").select("game_id, liked, games(id, name, genre, cover_url)").in("user_id", followIds).eq("status", "have_played").eq("liked", true),
+          ]);
+          const scores = {};
+          (shelfRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0 };
+            scores[r.game_id].score += 1.5; // want to play signal
+          });
+          (reviewRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0 };
+            scores[r.game_id].score += r.rating / 10 * 2; // normalized review score
+          });
+          (likedRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!scores[r.game_id]) scores[r.game_id] = { game: r.games, score: 0 };
+            scores[r.game_id].score += 2; // liked = strong signal
+          });
+          return Object.values(scores).sort((a, b) => b.score - a.score).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: `recommended by your network` }));
+        }
+      },
+      {
+        id: "hidden_gems",
+        label: "Hidden Gems",
+        desc: "Highly reviewed, on less than 10% of shelves — doubled for people you follow",
+        run: async () => {
+          const [reviewRes, shelfCountRes, followRes] = await Promise.all([
+            supabase.from("reviews").select("game_id, rating, user_id, games(id, name, genre, cover_url)"),
+            supabase.from("user_games").select("game_id"),
+            supabase.from("follows").select("followed_user_id").eq("follower_id", currentUser.id),
+          ]);
+          const followIds = new Set((followRes.data || []).map(f => f.followed_user_id).filter(Boolean));
+          // Total shelf entries per game
+          const shelfCounts = {};
+          (shelfCountRes.data || []).forEach(r => {
+            shelfCounts[r.game_id] = (shelfCounts[r.game_id] || 0) + 1;
+          });
+          const totalUsers = await supabase.from("profiles").select("id", { count: "exact", head: true });
+          const userCount = Math.max(totalUsers.count || 1, 1);
+          const threshold = userCount * 0.1; // 10% of users
+          // Aggregate review scores, doubling scores from followed users
+          const agg = {};
+          (reviewRes.data || []).forEach(r => {
+            if (!r.games) return;
+            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, count: 0 };
+            const multiplier = followIds.has(r.user_id) ? 2 : 1;
+            agg[r.game_id].score += r.rating * multiplier;
+            agg[r.game_id].count++;
+          });
+          return Object.values(agg)
+            .filter(g => (shelfCounts[g.id] || 0) < threshold && g.count >= 1)
+            .map(g => ({ ...g, avg: g.score / g.count }))
+            .sort((a, b) => b.avg - a.avg)
+            .slice(0, 12)
+            .map(g => ({ ...g, _stat: `${g.avg.toFixed(1)} avg · ${shelfCounts[g.id] || 0} shelves` }));
+        }
+      },
+    ] : []),
   ];
 
   const runInsight = async (insight) => {
@@ -3637,12 +4285,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     // Reference line (genre or overall leader)
     let refLastIdx = 0;
     let refFirstIdx = 0;
-    if (refPoints) {
-      for (let i = 7; i >= 0; i--) { if (refPoints[i] > 0) { refLastIdx = i; break; } }
-      for (let i = 0; i <= 7; i++) { if (refPoints[i] > 0) { refFirstIdx = i; break; } }
-    }
-    const refData = refPoints ? refPoints.slice(refFirstIdx, refLastIdx + 1) : null;
-    const refLinePts = refData ? refData.map((v, i) => `${xPos(i + refFirstIdx)},${yPos(v)}`).join(" ") : null;
+    const refLinePts = refPoints ? refPoints.slice(0, 8).map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
@@ -3701,7 +4344,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <div style={{ width: 24, textAlign: "center", fontWeight: 800, fontSize: rank <= 3 ? 16 : 13, color: rank === 1 ? C.gold : rank === 2 ? "#c0c0c0" : rank === 3 ? "#cd7f32" : C.textDim, flexShrink: 0 }}>{rank}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{entry.name}</div>
-            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{getDominantSignal(entry)} · {entry.uniqueUsers} player{entry.uniqueUsers !== 1 ? "s" : ""}</div>
           </div>
           {movement && <div style={{ color: movement.color, fontSize: 13, fontWeight: 700, flexShrink: 0, minWidth: 24, textAlign: "center" }}>{movement.label}</div>}
           <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
@@ -3923,7 +4565,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     )}
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                      <div style={{ color: C.textDim, fontSize: 11, marginBottom: 6 }}>{g._stat}</div>
+                      {g._stat && g._stat.includes("avg") && (
+                        <div style={{ display: "inline-block", background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 7px", color: C.gold, fontWeight: 800, fontSize: 11, marginBottom: 4 }}>
+                          {g._stat.split(" avg")[0]}/10
+                        </div>
+                      )}
                       {currentUser && !g._fromIGDB && (
                         onShelf
                           ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
@@ -4022,6 +4668,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [topVoices, setTopVoices] = useState([]);
   const [latestReviews, setLatestReviews] = useState([]);
   const [chartsData, setChartsData] = useState(null);
+  const [shelfCounts, setShelfCounts] = useState({ want_to_play: 0, playing: 0, have_played: 0 });
+  const [shelfPlayers, setShelfPlayers] = useState({ want_to_play: [], playing: [], have_played: [] });
+  const [shelfDrawer, setShelfDrawer] = useState(null); // "want_to_play" | "playing" | "have_played" | null
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -4090,6 +4739,24 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         .order("created_at", { ascending: false })
         .limit(20);
       if (reviews) setLatestReviews(reviews);
+
+      // Shelf counts — how many users have this game in each status
+      const { data: shelfData } = await supabase
+        .from("user_games")
+        .select("status, user_id, profiles(id, username, handle, avatar_initials, active_ring, is_founding)")
+        .eq("game_id", dbId);
+      if (shelfData) {
+        const counts = { want_to_play: 0, playing: 0, have_played: 0 };
+        const players = { want_to_play: [], playing: [], have_played: [] };
+        shelfData.forEach(e => {
+          if (counts[e.status] !== undefined) {
+            counts[e.status]++;
+            if (e.profiles) players[e.status].push(e.profiles);
+          }
+        });
+        setShelfCounts(counts);
+        setShelfPlayers(players);
+      }
 
       // Check if current user already reviewed this game
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -4332,6 +4999,41 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   </div>
                 )}
               </div>
+
+              {/* Community Shelf */}
+              {(shelfCounts.want_to_play + shelfCounts.playing + shelfCounts.have_played) > 0 && (
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 14 }}>🎮 Community Shelf</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {[
+                      { key: "playing", label: "Playing", color: C.green },
+                      { key: "want_to_play", label: "Want to Play", color: C.accent },
+                      { key: "have_played", label: "Have Played", color: C.gold },
+                    ].map(({ key, label, color }) => shelfCounts[key] > 0 && (
+                      <button key={key} onClick={() => setShelfDrawer(shelfDrawer === key ? null : key)}
+                        style={{ background: shelfDrawer === key ? color + "22" : C.surfaceRaised, border: "1px solid " + (shelfDrawer === key ? color + "66" : C.border), borderRadius: 10, padding: "10px 16px", cursor: "pointer", textAlign: "center", flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: 20, color }}>{shelfCounts[key]}</div>
+                        <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{label}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {shelfDrawer && shelfPlayers[shelfDrawer]?.length > 0 && (
+                    <div style={{ marginTop: 14, borderTop: "1px solid " + C.border, paddingTop: 14 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {shelfPlayers[shelfDrawer].map(p => (
+                          <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+                            style={{ display: "flex", alignItems: "center", gap: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px 5px 6px", cursor: "pointer" }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} />
+                            <span style={{ color: C.text, fontSize: 12, fontWeight: 600 }}>{p.username}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Latest Reviews */}
               <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
@@ -4641,6 +5343,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (defaultTab) setActiveTab(defaultTab);
   }, [defaultTab]);
   const [editing, setEditing] = useState(false);
+  const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
+  const [localAvatarConfig, setLocalAvatarConfig] = useState(null);
   const [previewThemeId, setPreviewThemeId] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
   const [saving, setSaving] = useState(false);
@@ -4907,6 +5611,16 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     setUserShelf(prev => ({ ...prev, [status]: prev[status].filter(e => e.game_id !== gameId) }));
   };
 
+  const saveLiked = async (gameId, liked) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("user_games").update({ liked }).eq("user_id", authUser.id).eq("game_id", gameId);
+    setUserShelf(prev => ({
+      ...prev,
+      have_played: prev.have_played.map(e => e.game_id === gameId ? { ...e, liked } : e),
+    }));
+  };
+
   const submitNewReview = async () => {
     if (!newReviewGame || !newReviewForm.rating) return;
     setSubmittingNewReview(true);
@@ -5002,8 +5716,40 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const searchGames = async (q) => {
     setGameSearch(q);
     if (q.length < 2) { setGameSearchResults([]); return; }
-    const { data } = await supabase.from("games").select("id, name, developer, genre").ilike("name", `%${q}%`).limit(6);
-    setGameSearchResults(data || []);
+    // Search local DB first
+    const { data: localGames } = await supabase
+      .from("games")
+      .select("id, name, developer, genre, cover_url, platforms, igdb_id")
+      .ilike("name", `%${q}%`)
+      .limit(6);
+
+    const results = localGames || [];
+    setGameSearchResults(results);
+
+    // Also search IGDB for games not in DB yet
+    try {
+      const igdbRes = await fetch("/api/igdb", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      const { games: igdbGames } = await igdbRes.json();
+      if (igdbGames?.length) {
+        const localIgdbIds = new Set(results.map(g => g.igdb_id).filter(Boolean));
+        const newGames = igdbGames.filter(g => !localIgdbIds.has(g.igdb_id)).map(g => ({ ...g, _fromIGDB: true }));
+        setGameSearchResults([...results, ...newGames].slice(0, 10));
+
+        // Background enrich: update any local games missing platforms
+        results.forEach(async (g) => {
+          if (!g.platforms && g.igdb_id) {
+            const match = igdbGames.find(ig => ig.igdb_id === g.igdb_id);
+            if (match?.platforms) {
+              await supabase.from("games").update({ platforms: match.platforms, cover_url: match.cover_url || g.cover_url }).eq("id", g.id);
+              setGameSearchResults(prev => prev.map(r => r.id === g.id ? { ...r, platforms: match.platforms, cover_url: match.cover_url || r.cover_url } : r));
+            }
+          }
+        });
+      }
+    } catch (e) { /* IGDB unavailable, local results are fine */ }
   };
 
   const handleDragStart = (gameId, fromStatus) => setDragging({ gameId, fromStatus });
@@ -5116,7 +5862,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
-            <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} />
+            <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={localAvatarConfig || user.avatarConfig} />
           </div>
           {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
@@ -5141,7 +5887,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
-              <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+                <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🎨 Build Avatar</button>
+              </div>
             )}
           </div>
 
@@ -5395,14 +6144,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               {gameSearchResults.length > 0 && (
                 <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: "1px solid " + C.border }}>
                   {gameSearchResults.map(game => (
-                    <div key={game.id || game.igdb_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
+                    <div key={game.id || game.igdb_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
                       {game.cover_url
-                        ? <img src={game.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                        : <div style={{ width: 28, height: 37, borderRadius: 4, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                        ? <img src={game.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                        : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                       }
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.developer}{game.genre ? " · " + game.genre : ""}</div>
+                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.platforms || game.genre || game.developer || ""}</div>
                       </div>
                       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                         {game._fromIGDB ? (
@@ -5413,6 +6162,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                 name: game.name, genre: game.genre, summary: game.summary,
                                 cover_url: game.cover_url, igdb_id: game.igdb_id,
                                 first_release_date: game.first_release_date, followers: 0,
+                                platforms: game.platforms || null,
                               }).select().single();
                               if (inserted) { addToShelf(inserted, col.id); setGameSearchResults([]); setGameSearch(""); }
                             }}
@@ -5437,17 +6187,23 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           )}
 
                   {/* Kanban board */}
-          <div data-tour="shelf-columns" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
+          <div data-tour="shelf-columns" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14, alignItems: "start" }}>
             {SHELF_COLUMNS.map(col => (
               <div key={col.id}
                 onDragOver={e => handleDragOver(e, col.id)}
                 onDrop={e => handleDrop(e, col.id)}
                 style={{ background: dragOver === col.id ? col.color + "11" : C.surface, border: "1px solid " + dragOver === col.id ? col.color + "66" : col.color + "33", borderRadius: 14, padding: 14, minHeight: isMobile ? 80 : 200, transition: "all 0.15s" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
+                  <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
                   <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
                 </div>
-                {userShelf[col.id].length > 0 ? userShelf[col.id].map(entry => {
+                {userShelf[col.id].length > 0 ? (col.id === "have_played"
+                  ? [...userShelf[col.id]].sort((a, b) => {
+                      const rank = v => v === true ? 0 : v === null || v === undefined ? 1 : 2;
+                      return rank(a.liked) - rank(b.liked);
+                    })
+                  : userShelf[col.id]
+                ).map(entry => {
                   const game = entry.games;
                   if (!game) return null;
                   const review = userReviews.find(r => r.game_id === game.id);
@@ -5471,22 +6227,35 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             setCurrentGame(game.id); setActivePage("game");
                           }
                         }}
-                        style={{ background: isMoving ? col.color + "22" : C.surfaceRaised, border: "1px solid " + isMoving ? col.color + "66" : C.border, borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s", position: "relative" }}
+                        style={{ background: isMoving ? col.color + "22" : col.id === "have_played" && entry.liked === true ? "#10b98118" : col.id === "have_played" && entry.liked === false ? "#ef444418" : C.surfaceRaised, border: "1px solid " + (isMoving ? col.color + "66" : col.id === "have_played" && entry.liked === true ? "#10b98144" : col.id === "have_played" && entry.liked === false ? "#ef444444" : C.border), borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s", position: "relative" }}
                         onMouseEnter={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "1"; }}
                         onMouseLeave={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "0"; }}>
+                        {/* X button — top right corner */}
+                        {!isMobile && (
+                          <button className="remove-btn" onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); }}
+                            style={{ opacity: 0, transition: "opacity 0.15s", position: "absolute", top: 4, right: 6, background: "transparent", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: "0 2px", lineHeight: 1, zIndex: 2 }}>
+                            ×
+                          </button>
+                        )}
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                            <div style={{ fontWeight: 700, color: col.id === "have_played" && entry.liked === true ? "#10b981" : col.id === "have_played" && entry.liked === false ? "#ef4444" : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                             <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
                           </div>
                           {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating + "/10"}</span>}
-                          {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
-                          {!isMobile && (
-                            <button className="remove-btn" onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); }}
-                              style={{ opacity: 0, transition: "opacity 0.15s", background: "transparent", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: "0 2px", lineHeight: 1, flexShrink: 0 }}>
-                              ×
-                            </button>
+                          {col.id === "have_played" && (
+                            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                              <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
+                                style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>
+                                👍
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === false ? null : false); }}
+                                style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>
+                                👎
+                              </button>
+                            </div>
                           )}
+                          {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
                         </div>
                       </div>
                       {/* Mobile move picker */}
@@ -5745,6 +6514,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             </div>
           )}
         </div>
+      )}
+
+      {showAvatarBuilder && (
+        <AvatarBuilderModal
+          currentUser={user}
+          userRewards={userRewards}
+          onSave={(cfg) => { setLocalAvatarConfig(cfg); onProfileSaved?.(); }}
+          onClose={() => setShowAvatarBuilder(false)}
+        />
       )}
 
     </div>
@@ -6438,8 +7216,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
             {allGames.map((game, i) => (
               <div key={game.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < allGames.length - 1 ? "1px solid " + C.border : "none" }}>
                 {game.cover_url
-                  ? <img src={game.cover_url} alt="" style={{ width: 28, height: 37, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                  : <div style={{ width: 28, height: 37, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                  ? <img src={game.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                  : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                 }
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -8444,7 +9222,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: isMobile ? 100 : 150, background: `linear-gradient(135deg, #1a1040 0%, ${C.accent}66 50%, #0a2040 100%)`, position: "relative" }}>
           <div style={{ position: "absolute", bottom: isMobile ? -28 : -36, left: isMobile ? 16 : 28 }}>
-            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} />
+            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} avatarConfig={profile.avatar_config} />
           </div>
         </div>
         <div style={{ padding: isMobile ? "40px 16px 20px" : "48px 28px 24px" }}>
@@ -8452,7 +9230,12 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: isMobile ? 18 : 22 }}>{profile.username}</h1>
-                {profile.level && <Badge color={C.gold}>Lv.{profile.level}</Badge>}
+                {profile.xp !== undefined && (() => {
+                  const XP_LEVELS = [0, 100, 250, 450, 750, 1150, 1650, 2250, 3000, 3900];
+                  let level = 1;
+                  for (let i = 1; i < XP_LEVELS.length; i++) { if ((profile.xp || 0) >= XP_LEVELS[i]) level = i + 1; else break; }
+                  return <Badge color={C.gold}>Lv.{Math.min(level, 10)}</Badge>;
+                })()}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
               {profile.bio && <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{profile.bio}</p>}
@@ -8539,11 +9322,11 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
 
       {/* Games — read-only kanban */}
       {activeTab === "games" && (
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14, minWidth: 0, overflow: "hidden" }}>
           {SHELF_COLUMNS.map(col => (
-            <div key={col.id} style={{ background: C.surface, border: "1px solid " + col.color + "33", borderRadius: 14, padding: 14, minHeight: 160 }}>
+            <div key={col.id} style={{ background: C.surface, border: "1px solid " + col.color + "33", borderRadius: 14, padding: 14, minHeight: 160, minWidth: 0, overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ fontWeight: 800, color: col.color, fontSize: 13 }}>{col.label}</div>
+                <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
                 <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{shelf[col.id].length}</div>
               </div>
               {shelf[col.id].length > 0 ? shelf[col.id].map(entry => {
@@ -8734,6 +9517,7 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
       const { data: inserted } = await supabase.from("games").insert({
         name: game.name, genre: game.genre, summary: game.summary,
         cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0,
+        platforms: game.platforms || null,
       }).select().single();
       if (inserted) await addGame(inserted);
     } else {
@@ -9003,6 +9787,8 @@ export default function GuildLink() {
       });
       // Mark as notified
       await supabase.rpc("mark_quest_notified", { p_user_id: userId, p_quest_id: uq.quest_id });
+      // Re-fetch profile to update XP and level display
+      fetchProfile(userId);
     }
   };
 
@@ -9041,13 +9827,30 @@ export default function GuildLink() {
   };
 
   const fetchNotifications = async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notifications")
-      .select("*, npc_id, actor:profiles!notifications_actor_id_fkey(username, handle, avatar_initials)")
+      .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(30);
-    if (data) setNotifications(data);
+    if (error || !data) return;
+    // Enrich with actor profiles
+    const actorIds = [...new Set(data.filter(n => n.actor_id).map(n => n.actor_id))];
+    const npcIds = [...new Set(data.filter(n => n.npc_id).map(n => n.npc_id))];
+    let actorMap = {}, npcMap = {};
+    if (actorIds.length > 0) {
+      const { data: actors } = await supabase.from("profiles").select("id, username, handle, avatar_initials").in("id", actorIds);
+      if (actors) actors.forEach(a => { actorMap[a.id] = a; });
+    }
+    if (npcIds.length > 0) {
+      const { data: npcs } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcIds);
+      if (npcs) npcs.forEach(n => { npcMap[n.id] = n; });
+    }
+    setNotifications(data.map(n => ({
+      ...n,
+      actor: n.actor_id ? actorMap[n.actor_id] || null : null,
+      npc: n.npc_id ? npcMap[n.npc_id] || null : null,
+    })));
   };
 
   const markAllRead = async (userId) => {
@@ -9061,6 +9864,7 @@ export default function GuildLink() {
   };
 
   const [postModal, setPostModal] = useState(null); // post_id to show in modal
+  const [exitModalUrl, setExitModalUrl] = useState(null);
   const [questBanner, setQuestBanner] = useState(null); // { quest_id, title, xp_reward, reward_label }
 
   const signOut = async () => {
@@ -9151,6 +9955,7 @@ export default function GuildLink() {
     date_of_birth: profile.date_of_birth || null,
     dob_changes: profile.dob_changes || 0,
     theme: profile.theme || "deep-space",
+    avatarConfig: profile.avatar_config || null,
   } : null;
 
 
@@ -9226,11 +10031,12 @@ export default function GuildLink() {
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
       <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} />
-      {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} />}
+      {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} onNavigateToPlayer={(userId) => { setPostModal(null); navToPlayer(userId); setActivePage("player"); }} />}
+      {exitModalUrl && <ExitModal url={exitModalUrl} onClose={() => setExitModalUrl(null)} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "charts" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
-      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
+      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} onExit={url => setExitModalUrl(url)} />}
       {activePage === "reviews" && <ReviewsPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "games" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
