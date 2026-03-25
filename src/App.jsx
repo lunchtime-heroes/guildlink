@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-357</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-358</span>
         </div>
       </div>
     </nav>
@@ -3769,7 +3769,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     return starts;
   };
   const scoreEvents = (events, recencyWeights) => {
-    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
     const scoreMap = {}, countMap = {}, userMap = {};
     events.forEach(e => {
       if (!e.games) return;
@@ -3804,7 +3804,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   // Build fixed 9-slot sparkline data: 8 weeks oldest→newest + 1 future zero
   const buildSparkline = (gameId, events, allWeekStarts, globalMax, referencePoints) => {
-    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
     const weekScores = {};
     allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -3821,7 +3821,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   // Helper: compute raw weekly scores for a game given events + week starts
   const computePoints = (gameId, events, allWeekStarts) => {
-    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
     const weekScores = {};
     allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -4060,12 +4060,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", thisWeek),
           supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", lastWeek),
         ]);
-        const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+        const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
         const score = (events) => {
           const s = {};
           (events || []).forEach(e => {
             if (!s[e.game_id]) s[e.game_id] = 0;
-            s[e.game_id] += e.event_type === "post" ? (e.post_sequence === 1 ? 1 : 0.3) : (WEIGHTS[e.event_type] || 0);
+            s[e.game_id] += e.event_type === "post" ? (e.post_sequence === 1 ? 1.5 : 0.75) : (WEIGHTS[e.event_type] || 0);
           });
           return s;
         };
