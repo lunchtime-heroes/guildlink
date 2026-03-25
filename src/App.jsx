@@ -997,7 +997,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     if (!post.id || !post.id.includes('-')) return;
     const { data, error } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     if (error) console.error("[loadComments] error:", error);
@@ -1139,7 +1139,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       reply_to_comment_id: replyTo?.id || null,
       tagged_users: commentTaggedUsers.length > 0 ? commentTaggedUsers : [],
       link_url: commentLinkPreview?.url || commentUrls?.[0] || null,
-    }).select("*, profiles(username, handle, avatar_initials)").single();
+    }).select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
     if (!error && data) {
       if (post.id && post.id.includes('-')) {
         await supabase.from("posts").update({ comment_count: (localPost.comment_count || 0) + (liveComments?.length || 0) + 1 }).eq("id", post.id);
@@ -1328,6 +1328,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             const avatar = isNPC
               ? (npcData?.avatar_initials || npcData?.avatar || "NPC")
               : (comment.profiles?.avatar_initials || comment.user?.avatar || "GL");
+            const avatarConfig = !isNPC ? (comment.profiles?.avatar_config || comment.user?.avatarConfig || null) : null;
             const allComments = liveComments || localPost.commentList;
             // Find the comment being replied to
             const parentComment = comment.reply_to_comment_id
@@ -1339,7 +1340,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
             const isMyComment = !isNPC && currentUser && comment.user_id === currentUser.id;
             return (
               <div key={comment.id} style={{ display: "flex", gap: 10, marginBottom: i < allComments.length - 1 ? 14 : 0 }}>
-                <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} />
+                <Avatar initials={avatar || "GL"} size={32} isNPC={isNPC} avatarConfig={avatarConfig} />
                 <div style={{ flex: 1 }}>
                   <div style={{ background: C.surfaceRaised, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
@@ -2040,7 +2041,7 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
         .single();
       const { data: c } = await supabase
         .from("comments")
-        .select("*, profiles(username, handle, avatar_initials)")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
       if (p) setPost(p);
@@ -2059,7 +2060,7 @@ function PostModal({ postId, onClose, currentUser, onNavigateToPlayer }) {
       user_id: au.id,
       content: commentText.trim(),
       reply_to_comment_id: replyTo?.id || null,
-    }).select("*, profiles(username, handle, avatar_initials)").single();
+    }).select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
     if (!error && data) {
       setComments(prev => [...prev, data]);
       setCommentText("");
@@ -2376,11 +2377,12 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                         const avatarInitials = isNPC
                           ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                           : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
+                        const notifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
                         const notifText = n.type === "comment" ? "commented on your post" : n.type === "reply" ? "replied to your comment" : n.type === "follow" ? "started following you" : "mentioned you";
                         return (
                           <div key={n.id} onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
                             style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: !n.read ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default" }}>
-                            <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
+                            <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={notifAvatarConfig} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
                                 {isNPC ? (
@@ -2507,6 +2509,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       const avatarInitials = isNPC
                         ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
+                      const mobileNotifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
                       return (
                         <div key={n.id}
                           onClick={() => {
@@ -2517,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
                           onMouseLeave={e => { e.currentTarget.style.background = isUnread ? C.accent + "0a" : "transparent"; }}
                         >
-                          <Avatar initials={avatarInitials} size={30} isNPC={isNPC} />
+                          <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={mobileNotifAvatarConfig} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, lineHeight: 1.5 }}>
                               {isNPC ? (
@@ -2555,7 +2558,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-343</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-344</span>
         </div>
       </div>
     </nav>
@@ -3430,7 +3433,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} />
+                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                   {p.sharedGame && <div style={{ color: C.textDim, fontSize: 11 }}>Also plays {p.sharedGame}</div>}
@@ -4737,7 +4740,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Latest reviews — filtered to this game
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_id", dbId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -4865,7 +4868,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       }
       // Refresh reviews
       const { data: reviews } = await supabase.from("reviews")
-        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring)")
+        .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(20);
       if (reviews) setLatestReviews(reviews);
       const { data: avgData } = await supabase.from("reviews").select("rating").eq("game_id", dbGame.id);
@@ -5028,7 +5031,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                             style={{ display: "flex", alignItems: "center", gap: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px 5px 6px", cursor: "pointer" }}
                             onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                             onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} />
+                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} avatarConfig={p.avatar_config} />
                             <span style={{ color: C.text, fontSize: 12, fontWeight: 600 }}>{p.username}</span>
                           </div>
                         ))}
@@ -5077,7 +5080,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 {latestReviews.length > 0 ? latestReviews.map((review, i) => (
                   <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? "1px solid " + C.border : "none" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
+                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} avatarConfig={review.profiles?.avatar_config} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · ✓ Completed" : ""}</div>
@@ -5138,7 +5141,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                  <Avatar initials={voice.avatar_initials || "GL"} size={34} founding={voice.is_founding} ring={voice.active_ring} />
+                  <Avatar initials={voice.avatar_initials || "GL"} size={34} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
@@ -5284,7 +5287,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               ) : latestReviews.map((review, idx) => (
                 <div key={idx} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <Avatar initials={review.profiles?.avatar_initials || "GL"} size={32} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} />
+                    <Avatar initials={review.profiles?.avatar_initials || "GL"} size={32} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} avatarConfig={review.profiles?.avatar_config} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
                       <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}</div>
@@ -6435,7 +6438,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} />
+                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} avatarConfig={p.type !== "npc" ? p.avatar_config : null} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, color: p.type === "npc" ? C.gold : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{p.handle}{p.type === "npc" ? " · NPC" : ""}</div>
@@ -6547,7 +6550,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     setReviews([]);
     if (mode === "feed") {
       const { data, error } = await supabase.from("reviews")
-        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
         .order("created_at", { ascending: false })
         .limit(40);
       if (error) console.error("Reviews feed error:", error);
@@ -6560,7 +6563,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
       const ids = (follows || []).map(f => f.followed_user_id).filter(Boolean);
       if (!ids.length) { setLoading(false); return; }
       const { data, error } = await supabase.from("reviews")
-        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
+        .select("id, rating, headline, loved, didnt_love, content, time_played, completed, created_at, user_id, game_id, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
         .in("user_id", ids)
         .order("created_at", { ascending: false })
         .limit(40);
@@ -6602,7 +6605,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <div onClick={() => profile?.id && setCurrentPlayer(profile.id) && setActivePage("player")} style={{ cursor: profile?.id ? "pointer" : "default" }}>
-            <Avatar initials={initials} size={36} founding={profile?.is_founding} ring={profile?.active_ring} />
+            <Avatar initials={initials} size={36} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -6811,7 +6814,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
-      supabase.from("reviews").select("*, profiles(username, active_ring, is_founding), games(name)").order("created_at", { ascending: false }).limit(20),
+      supabase.from("reviews").select("*, profiles(username, avatar_initials, active_ring, is_founding, avatar_config), games(name)").order("created_at", { ascending: false }).limit(20),
       supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
@@ -7698,7 +7701,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     setLoadingComments(prev => ({ ...prev, [postId]: true }));
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
     setExpandedComments(prev => ({ ...prev, [postId]: data || [] }));
@@ -7829,7 +7832,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     // Fetch all comments for those posts
     const { data: allComments, error: commentsError } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .in("post_id", postIds)
       .order("created_at", { ascending: true });
     if (commentsError) console.error("[loadThreads] comments error:", commentsError);
@@ -8737,7 +8740,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
     setLoading(true);
     let query = supabase
       .from("lfg_posts")
-      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring), games(id, name, genre, cover_url)")
+      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
     if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
@@ -8943,7 +8946,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
         const isOwn = currentUser?.id === profile?.id;
         return (
           <div key={post.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
-            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={44} founding={profile?.is_founding} ring={profile?.active_ring} />
+            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={44} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
                 <span style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: "pointer" }}
@@ -9842,7 +9845,7 @@ export default function GuildLink() {
     const npcIds = [...new Set(data.filter(n => n.npc_id).map(n => n.npc_id))];
     let actorMap = {}, npcMap = {};
     if (actorIds.length > 0) {
-      const { data: actors } = await supabase.from("profiles").select("id, username, handle, avatar_initials").in("id", actorIds);
+      const { data: actors } = await supabase.from("profiles").select("id, username, handle, avatar_initials, avatar_config").in("id", actorIds);
       if (actors) actors.forEach(a => { actorMap[a.id] = a; });
     }
     if (npcIds.length > 0) {
