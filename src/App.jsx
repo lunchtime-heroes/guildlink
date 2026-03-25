@@ -454,8 +454,9 @@ function renderAvatarSVG(config = {}, size = 40) {
     accessory = "none", torso = "hoodie", weather = "none",
   } = config;
 
-  const s = Math.max(1, Math.floor(size / 16));
-  const W = 16 * s; const H = 16 * s;
+  // Always render on a 16x16 grid, scale via viewBox
+  const s = 1;
+  const W = 16; const H = 16;
   const skin = AVATAR_SKIN_TONES[skinKey] || AVATAR_SKIN_TONES.s1;
   const hairColor = AVATAR_HAIR_COLORS[hairColorKey] || AVATAR_HAIR_COLORS.darkbrown;
   const classColor = AVATAR_CLASS_COLORS[classType] || AVATAR_CLASS_COLORS.warrior;
@@ -467,7 +468,7 @@ function renderAvatarSVG(config = {}, size = 40) {
   const px = (x, y, color) => `<rect x="${x*s}" y="${y*s}" width="${s}" height="${s}" fill="${color}"/>`;
   const row = (xs, y, color) => xs.map(x => px(x, y, color)).join("");
 
-  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
+  let svg = `<svg width="${size}" height="${size}" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
 
   // Background
   if (bgIsGrad) {
@@ -586,7 +587,7 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
       {hasRing && <div style={{ position: "absolute", inset: -3, borderRadius: "16%", border: `3px solid ${ringColor}`, boxShadow: `0 0 ${size*0.3}px ${ringGlow||ringColor+"44"}`, zIndex: 1, pointerEvents: "none" }} />}
       {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: `2px solid ${ringColor}88`, zIndex: 1, pointerEvents: "none" }} />}
-      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0 }}
+      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
         dangerouslySetInnerHTML={{ __html: svgStr }} />
       {status && <div style={{ position: "absolute", bottom: 1, right: 1, width: size*0.22, height: size*0.22, borderRadius: "50%", background: statusColors[status]||C.textDim, border: "2px solid "+C.surface, zIndex: 2 }} />}
     </div>
@@ -2554,7 +2555,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-342</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-343</span>
         </div>
       </div>
     </nav>
