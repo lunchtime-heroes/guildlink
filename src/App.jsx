@@ -2558,7 +2558,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-344</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-346</span>
         </div>
       </div>
     </nav>
@@ -5196,6 +5196,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     isNPC,
                     isFounding: !isNPC && (author?.is_founding || false),
                     activeRing: !isNPC ? (author?.active_ring || "none") : "none",
+                    avatarConfig: !isNPC ? (author?.avatar_config || null) : null,
                   },
                   content: post.content,
                   time: timeAgo(post.created_at),
@@ -5231,6 +5232,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     isNPC,
                     isFounding: author.is_founding || false,
                     activeRing: !isNPC ? (author.active_ring || "none") : "none",
+                    avatarConfig: !isNPC ? (author.avatar_config || null) : null,
                   },
                   content: post.content,
                   time: timeAgo(post.created_at),
@@ -5408,7 +5410,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Real posts + liked state
       const [postsResult, likesResult] = await Promise.all([
         supabase.from("posts")
-          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials)")
+          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .eq("user_id", authUser.id)
           .is("npc_id", null)
           .order("created_at", { ascending: false })
@@ -5436,7 +5438,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Reviews with game info
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("*, games(id, name, developer, genre)")
+        .select("*, games(id, name, developer, genre, cover_url)")
         .eq("user_id", authUser.id)
         .order("created_at", { ascending: false });
       if (reviews) setUserReviews(reviews);
@@ -6391,8 +6393,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                     <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
-                      style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default" }}>
-                      <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                      style={{ width: 36, height: 48, borderRadius: 6, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default", overflow: "hidden" }}>
+                      {review.games?.cover_url
+                        ? <img src={review.games.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
+                      }
                     </div>
                     <div style={{ flex: 1 }}>
                       <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
