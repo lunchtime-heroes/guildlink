@@ -2566,7 +2566,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-348</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-349</span>
         </div>
       </div>
     </nav>
@@ -6613,38 +6613,64 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     const game = review.games;
     if (!game) return null;
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
+    const coverW = isMobile ? 72 : 96;
     return (
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 14 : 20, marginBottom: 10 }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div onClick={() => profile?.id && setCurrentPlayer(profile.id) && setActivePage("player")} style={{ cursor: profile?.id ? "pointer" : "default" }}>
-            <Avatar initials={initials} size={56} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+        <div style={{ display: "flex" }}>
+          {/* Game cover — left column, full height */}
+          <div onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+            style={{ width: coverW, flexShrink: 0, cursor: "pointer", alignSelf: "stretch", overflow: "hidden", position: "relative" }}>
+            {game.cover_url
+              ? <img src={game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: coverW * 1.4 }} />
+              : <div style={{ width: "100%", minHeight: coverW * 1.4, background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+            }
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); } }} style={{ fontWeight: 700, color: C.text, fontSize: 13, cursor: profile?.id ? "pointer" : "default" }}>{profile?.username || "Guildies Member"}</span>
-              <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
-              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }} style={{ fontWeight: 700, color: C.accentSoft, fontSize: 13, cursor: "pointer" }}>{game.name}</span>
+
+          {/* Content — right column */}
+          <div style={{ flex: 1, minWidth: 0, padding: isMobile ? "12px 14px" : "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {/* Game name + rating */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, cursor: "pointer", lineHeight: 1.3 }}>
+                {game.name}
+              </span>
+              <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "3px 10px", color: C.gold, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                {review.rating}/10
+              </div>
             </div>
-            <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}</div>
-          </div>
-          {currentUser && review.user_id === currentUser.id && (
-            <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
-              style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
-          )}
-          <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
-            {review.rating + "/10"}
+
+            {/* Reviewer + timestamp */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div onClick={() => profile?.id && (setCurrentPlayer(profile.id), setActivePage("player"))} style={{ cursor: profile?.id ? "pointer" : "default", flexShrink: 0 }}>
+                <Avatar initials={initials} size={20} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
+              </div>
+              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); } }}
+                style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: profile?.id ? "pointer" : "default" }}>
+                {profile?.username || "Guildies Member"}
+              </span>
+              <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(review.created_at)}</span>
+              {review.time_played && <span style={{ color: C.textDim, fontSize: 11 }}>· {review.time_played}h</span>}
+              {currentUser && review.user_id === currentUser.id && (
+                <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
+                  style={{ marginLeft: "auto", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", color: C.textMuted, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+              )}
+            </div>
+
+            {/* Headline */}
+            {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.headline}</div>}
+
+            {/* Loved / didn't love */}
+            {review.loved && <div style={{ color: C.textMuted, fontSize: 12 }}>✓ {review.loved}</div>}
+            {review.didnt_love && <div style={{ color: C.textDim, fontSize: 12 }}>✗ {review.didnt_love}</div>}
           </div>
         </div>
-        {/* Content */}
-        {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
-        {/* Game tag */}
-        <div style={{ marginTop: 10 }}>
-          <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-            style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-            {game.name}
-          </span>
-        </div>
+
+        {/* Full review text — below the two-column section */}
+        {review.content && (
+          <div style={{ padding: isMobile ? "10px 14px 12px" : "10px 16px 14px", borderTop: "1px solid " + C.border }}>
+            <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>
+          </div>
+        )}
       </div>
     );
   };
