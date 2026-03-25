@@ -409,8 +409,6 @@ const AVATAR_SKIN_TONES = {
   s4: { skin: "#C68642", shadow: "#9B6320", lip: "#7B4010" },
   s5: { skin: "#8D5524", shadow: "#6B3A10", lip: "#4A2008" },
   s6: { skin: "#4A2511", shadow: "#2D1508", lip: "#1A0A04" },
-  s7: { skin: "#FFE0BD", shadow: "#FFCD94", lip: "#D4956A" },
-  s8: { skin: "#F1C27D", shadow: "#C68642", lip: "#9B5E2A" },
 };
 const AVATAR_HAIR_COLORS = {
   black: "#1a1a1a", darkbrown: "#3b1f0e", brown: "#6b3a2a",
@@ -589,7 +587,7 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
 
 function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
   const DEFAULT_CONFIG = { skin: "s1", hairStyle: "short", hairColor: "darkbrown", eyes: "normal", bg: "navy", classType: "warrior", accessory: "none", torso: "hoodie", weather: "none" };
-  const [cfg, setCfg] = React.useState(() => ({ ...DEFAULT_CONFIG, ...(currentUser?.avatarConfig || {}) }));
+  const [cfg, setCfg] = React.useState(() => ({ ...DEFAULT_CONFIG, ...(currentUser?.avatarConfig || {}), weather: "none" }));
   const [saving, setSaving] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("face");
   const set = (k, v) => setCfg(p => ({ ...p, [k]: v }));
@@ -610,7 +608,7 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
     { id: "face", label: "Face" },
     { id: "hair", label: "Hair" },
     { id: "outfit", label: "Outfit" },
-    { id: "class", label: "Class" },
+    { id: "background", label: "Background" },
   ];
 
   const Swatch = ({ value, current, onClick, color, label, locked }) => (
@@ -639,11 +637,8 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
         </div>
 
         {/* Preview */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "20px 0 16px", background: C.surface, borderBottom: "1px solid " + C.border, gap: 24 }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "20px 0 16px", background: C.surface, borderBottom: "1px solid " + C.border }}>
           <AvatarPixel config={cfg} size={96} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
-          <AvatarPixel config={cfg} size={48} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
-          <AvatarPixel config={cfg} size={32} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
-          <AvatarPixel config={cfg} size={24} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
         </div>
 
         {/* Tabs */}
@@ -707,7 +702,7 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
             </OptionGrid>
             <Label>Accessory</Label>
             <OptionGrid>
-              {["none","glasses","sunglasses","cap","headband","beanie","eyepatch"].map(a => (
+              {["none","glasses","sunglasses","cap","headband","beanie"].map(a => (
                 <button key={a} onClick={() => set("accessory", a)}
                   style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.accessory === a ? C.accent : C.border), background: cfg.accessory === a ? C.accentGlow : C.surfaceRaised, color: cfg.accessory === a ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
                   {a}
@@ -716,17 +711,7 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
             </OptionGrid>
           </>}
 
-          {activeTab === "class" && <>
-            <Label>Class</Label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {Object.entries(AVATAR_CLASS_COLORS).map(([k, color]) => (
-                <button key={k} onClick={() => set("classType", k)}
-                  style={{ padding: "10px 8px", borderRadius: 10, border: "2px solid " + (cfg.classType === k ? color : C.border), background: cfg.classType === k ? color + "22" : C.surfaceRaised, color: cfg.classType === k ? color : C.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 20 }}>{AVATAR_CLASS_ICONS[k]}</span>
-                  <span style={{ textTransform: "capitalize" }}>{k}</span>
-                </button>
-              ))}
-            </div>
+          {activeTab === "background" && <>
             <Label>Background</Label>
             <OptionGrid>
               {Object.keys(AVATAR_BG_COLORS).map(k => {
@@ -2535,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-350</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-351</span>
         </div>
       </div>
     </nav>
