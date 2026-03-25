@@ -1185,7 +1185,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
               } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
             }}>
-            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} avatarConfig={localPost.user.avatarConfig} />
+            <Avatar initials={localPost.user.avatar} size={64} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} avatarConfig={localPost.user.avatarConfig} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2558,7 +2558,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-346</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-347</span>
         </div>
       </div>
     </nav>
@@ -3379,7 +3379,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)`, borderRadius: "14px 14px 0 0" }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22, overflow: "visible" }}>
-              <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
+              <Avatar initials={user.avatar} size={64} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
@@ -3492,7 +3492,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         {!isGuest && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
-            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
+            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 48 : 56} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game... (@ to tag a game, player, or NPC)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
@@ -5141,7 +5141,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                  <Avatar initials={voice.avatar_initials || "GL"} size={34} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
+                  <Avatar initials={voice.avatar_initials || "GL"} size={56} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
@@ -6443,7 +6443,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={36} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} avatarConfig={p.type !== "npc" ? p.avatar_config : null} />
+                  <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={56} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} avatarConfig={p.type !== "npc" ? p.avatar_config : null} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, color: p.type === "npc" ? C.gold : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{p.handle}{p.type === "npc" ? " · NPC" : ""}</div>
@@ -6610,7 +6610,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <div onClick={() => profile?.id && setCurrentPlayer(profile.id) && setActivePage("player")} style={{ cursor: profile?.id ? "pointer" : "default" }}>
-            <Avatar initials={initials} size={36} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
+            <Avatar initials={initials} size={56} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -8951,7 +8951,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
         const isOwn = currentUser?.id === profile?.id;
         return (
           <div key={post.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
-            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={44} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
+            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={64} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
                 <span style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: "pointer" }}
