@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-354</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-355</span>
         </div>
       </div>
     </nav>
@@ -3905,9 +3905,31 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         scoresByGame[s.game_id][s.date] = s.score;
       });
 
-      // Build points arrays (oldest to newest, no future slot)
+      // Build points arrays (oldest to newest) with interpolation for missing days
       const buildPoints = (gameId) => {
-        return sparkDates.map(d => scoresByGame[gameId]?.[d] || 0);
+        const raw = sparkDates.map(d => scoresByGame[gameId]?.[d] ?? null);
+        // Fill nulls by interpolating between known values, or decaying from last known
+        const filled = [...raw];
+        for (let i = 0; i < filled.length; i++) {
+          if (filled[i] !== null) continue;
+          // Find previous and next known values
+          let prev = null, prevIdx = -1, next = null, nextIdx = -1;
+          for (let j = i - 1; j >= 0; j--) { if (filled[j] !== null) { prev = filled[j]; prevIdx = j; break; } }
+          for (let j = i + 1; j < filled.length; j++) { if (filled[j] !== null) { next = filled[j]; nextIdx = j; break; } }
+          if (prev !== null && next !== null) {
+            // Interpolate between prev and next
+            const t = (i - prevIdx) / (nextIdx - prevIdx);
+            filled[i] = prev + (next - prev) * t;
+          } else if (prev !== null) {
+            // Decay from last known value
+            filled[i] = prev * 0.7;
+          } else if (next !== null) {
+            filled[i] = next * 0.7;
+          } else {
+            filled[i] = 0;
+          }
+        }
+        return filled;
       };
       const buildLabels = () => {
         return sparkDates.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); });
