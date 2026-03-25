@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-355</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-356</span>
         </div>
       </div>
     </nav>
@@ -4329,8 +4329,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = (() => {
       const prevRank = prevRanks[entry.id];
-      if (!prevRank) return { label: "NEW", color: C.teal };
-      const diff = prevRank - rank; // positive = moved up, negative = moved down
+      // Check sparkline history — if any score exists in last 8 days, not truly new
+      const historyPoints = spData?.points || [];
+      const hasHistory = historyPoints.slice(0, 7).some(p => p > 0.5); // exclude today (last point)
+      if (!prevRank && !hasHistory) return { label: "NEW", color: C.teal };
+      if (!prevRank) return { label: "—", color: C.textDim }; // returning but no yesterday rank
+      const diff = prevRank - rank;
       if (diff === 0) return { label: "—", color: C.textDim };
       if (diff > 0) return { label: `+${diff}`, color: "#22c55e" };
       return { label: `${diff}`, color: "#ef4444" };
