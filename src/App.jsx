@@ -340,6 +340,61 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
   );
 }
 
+function LinkPreviewFetcher({ url, onExit }) {
+  const [preview, setPreview] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/link-preview", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).then(r => r.json()).then(data => {
+      if (!cancelled && data.allowed) setPreview(data);
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [url]);
+  if (loading || !preview) return null;
+  return <LinkPreviewCard preview={preview} onExit={onExit} />;
+}
+
+function LinkPreviewCard({ preview, onExit }) {
+  if (!preview?.url) return null;
+  return (
+    <div onClick={e => { e.stopPropagation(); onExit(preview.url); }}
+      style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none" }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
+      onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+      {preview.image && <img src={preview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />}
+      <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
+        <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{preview.domain} ↗</div>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{preview.title || preview.url}</div>
+        {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview.description}</div>}
+      </div>
+    </div>
+  );
+}
+
+function ExitModal({ url, onClose }) {
+  if (!url) return null;
+  let domain;
+  try { domain = new URL(url).hostname; } catch { domain = url; }
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 28, maxWidth: 400, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🔗</div>
+        <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 8 }}>Leaving GuildLink</div>
+        <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 6 }}>You're about to visit:</div>
+        <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, marginBottom: 20, wordBreak: "break-all" }}>{domain}</div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button onClick={onClose} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => { window.open(url, "_blank", "noopener,noreferrer"); onClose(); }}
+            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Continue →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FoundingBadge() {
   return (
     <span style={{
@@ -416,7 +471,7 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit }) {
   const [showComments, setShowComments] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
@@ -425,6 +480,10 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [liveComments, setLiveComments] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const commentInputRef = useRef(null);
+  const [commentLinkPreview, setCommentLinkPreview] = useState(null);
+  const [commentLinkWarning, setCommentLinkWarning] = useState(null);
+  const [commentLinkLoading, setCommentLinkLoading] = useState(false);
+  let commentLinkDebounce = null;
 
   // Sync count from parent
   useEffect(() => {
@@ -684,12 +743,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     if (!commentText.trim() || submittingComment) return;
     setSubmittingComment(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const commentUrls = commentText.match(/https?:\/\/[^\s<>"]+/gi);
     const { data, error } = await supabase.from("comments").insert({
       post_id: post.id,
       user_id: authUser.id,
       content: commentText.trim(),
       reply_to_comment_id: replyTo?.id || null,
       tagged_users: commentTaggedUsers.length > 0 ? commentTaggedUsers : [],
+      link_url: commentLinkPreview?.url || commentUrls?.[0] || null,
     }).select("*, profiles(username, handle, avatar_initials)").single();
     if (!error && data) {
       if (post.id && post.id.includes('-')) {
@@ -698,7 +759,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       const gameId = post.game_tag || post.gameId;
       if (gameId && gameId.includes('-') && authUser) logChartEvent(gameId, 'comment', authUser.id);
-      // Quest triggers
       if (localPost.user.isNPC) {
         await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "npc_replied" });
         onQuestTrigger?.();
@@ -711,6 +771,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       setCommentText("");
       setCommentTaggedUsers([]);
       setReplyTo(null);
+      setCommentLinkPreview(null);
+      setCommentLinkWarning(null);
       setLocalPost(p => ({ ...p, commentList: [...p.commentList, data] }));
     }
     setSubmittingComment(false);
@@ -779,6 +841,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           </div>
         ) : (
           <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 14px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+        )}
+
+        {/* Link preview */}
+        {localPost.link_url && onExit && (
+          <LinkPreviewFetcher url={localPost.link_url} onExit={onExit} />
         )}
 
         {/* Actions */}
@@ -900,6 +967,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                       </div>
                     )}
                     <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+                    {comment.link_url && onExit && <LinkPreviewFetcher url={comment.link_url} onExit={onExit} />}
                   </div>
                   {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
                     <div style={{ display: "flex", gap: 4, alignItems: "center", marginTop: 2 }}>
@@ -966,7 +1034,26 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                     <textarea
                       ref={commentInputRef}
                       value={commentText}
-                      onChange={e => { handleCommentTextChange(e); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
+                      onChange={e => {
+                        handleCommentTextChange(e);
+                        e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px";
+                        // URL detection
+                        const urls = e.target.value.match(/https?:\/\/[^\s<>"]+/gi);
+                        const firstUrl = urls?.[0];
+                        if (firstUrl) {
+                          if (commentLinkDebounce) clearTimeout(commentLinkDebounce);
+                          commentLinkDebounce = setTimeout(async () => {
+                            setCommentLinkLoading(true);
+                            try {
+                              const res = await fetch("/api/link-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: firstUrl }) });
+                              const data = await res.json();
+                              if (!data.allowed) { setCommentLinkPreview(null); setCommentLinkWarning(data.domain || "this domain"); }
+                              else { setCommentLinkPreview(data); setCommentLinkWarning(null); }
+                            } catch { setCommentLinkPreview(null); }
+                            setCommentLinkLoading(false);
+                          }, 600);
+                        } else { setCommentLinkPreview(null); setCommentLinkWarning(null); }
+                      }}
                       onKeyDown={e => {
                         if (commentMentionResults.length > 0) {
                           if (e.key === "ArrowDown") { e.preventDefault(); setCommentMentionIndex(i => Math.min(i+1, commentMentionResults.length-1)); return; }
@@ -999,10 +1086,20 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                       </div>
                     )}
                   </div>
-                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>
                     {submittingComment ? "…" : "Reply"}
                   </button>
                 </div>
+                {commentLinkWarning && (
+                  <div style={{ marginTop: 6, background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, padding: "6px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12 }}>🚫</span>
+                    <span style={{ color: "#ef4444", fontSize: 11 }}><strong>{commentLinkWarning}</strong> isn't on our allowed list.</span>
+                  </div>
+                )}
+                {commentLinkLoading && <div style={{ marginTop: 6, color: C.textDim, fontSize: 11 }}>Fetching preview…</div>}
+                {commentLinkPreview && !commentLinkLoading && onExit && (
+                  <LinkPreviewCard preview={commentLinkPreview} onExit={onExit} />
+                )}
               </div>
             ) : (
               <div style={{ color: C.textDim, fontSize: 13 }}>Sign in to comment</div>
@@ -2070,7 +2167,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-336</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-338</span>
         </div>
       </div>
     </nav>
@@ -2371,7 +2468,7 @@ function FeedbackPage({ currentUser, isMobile, setActivePage }) {
   );
 }
 
-function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger }) {
+function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit }) {
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(false);
   const [postText, setPostText] = useState("");
@@ -2380,6 +2477,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [livePosts, setLivePosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
+  const [linkPreview, setLinkPreview] = useState(null); // { allowed, url, title, description, image, domain } | null
+  const [linkPreviewLoading, setLinkPreviewLoading] = useState(false);
+  const [linkWarning, setLinkWarning] = useState(null); // domain string if not allowed
+  const [exitUrl, setExitUrl] = useState(null); // url for interstitial modal
   const [following, setFollowing] = useState([]); // combined users + NPCs
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
@@ -2397,9 +2498,46 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [sidebarNPCs, setSidebarNPCs] = useState([]);
   const textareaRef = useRef(null); // array of game ids, max 3
 
+  const URL_REGEX = /https?:\/\/[^\s<>"]+/gi;
+  let linkPreviewDebounce = null;
+
+  const fetchLinkPreview = async (url) => {
+    setLinkPreviewLoading(true);
+    setLinkWarning(null);
+    try {
+      const res = await fetch("/api/link-preview", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!data.allowed) {
+        setLinkPreview(null);
+        setLinkWarning(data.domain || "this domain");
+      } else {
+        setLinkPreview(data);
+        setLinkWarning(null);
+      }
+    } catch {
+      setLinkPreview(null);
+    }
+    setLinkPreviewLoading(false);
+  };
+
   const handlePostTextChange = async (e) => {
     const val = e.target.value;
     setPostText(val);
+
+    // URL detection
+    const urls = val.match(URL_REGEX);
+    const firstUrl = urls?.[0];
+    if (firstUrl) {
+      if (linkPreviewDebounce) clearTimeout(linkPreviewDebounce);
+      linkPreviewDebounce = setTimeout(() => fetchLinkPreview(firstUrl), 600);
+    } else {
+      setLinkPreview(null);
+      setLinkWarning(null);
+    }
+
     const atMatch = val.match(/@([^@]*)$/);
     if (atMatch) {
       const query = atMatch[1].trim();
@@ -2706,7 +2844,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
-          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
           .is("npc_id", null)
           .order("likes", { ascending: false })
           .limit(30),
@@ -2768,6 +2906,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!postText.trim() || posting) return;
     setPosting(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const urls = postText.match(URL_REGEX);
     const { data, error } = await supabase.from("posts").insert({
       user_id: authUser?.id || null,
       content: postText.trim(),
@@ -2775,6 +2914,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       tagged_users: taggedUsers.length > 0 ? taggedUsers : [],
       likes: 0,
       comment_count: 0,
+      link_url: linkPreview?.url || urls?.[0] || null,
     }).select().single();
     if (!error && data) {
       if (data.game_tag) logChartEvent(data.game_tag, 'post', authUser?.id);
@@ -2791,6 +2931,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setPostText("");
       setTaggedGames([]);
       setTaggedUsers([]);
+      setLinkPreview(null);
+      setLinkWarning(null);
       if (data.game_tag) setChartRefresh(r => r + 1);
     }
     setPosting(false);
@@ -3022,6 +3164,28 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 </div>
                 <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
               </div>
+              {/* Link warning */}
+              {linkWarning && (
+                <div style={{ marginTop: 8, background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>🚫</span>
+                  <span style={{ color: "#ef4444", fontSize: 12 }}><strong>{linkWarning}</strong> isn't on our allowed list. Links from this domain won't be active.</span>
+                </div>
+              )}
+              {/* Link preview card */}
+              {linkPreviewLoading && (
+                <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 12 }}>Fetching preview…</div>
+              )}
+              {linkPreview && !linkPreviewLoading && (
+                <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, overflow: "hidden", display: "flex", gap: 0 }}>
+                  {linkPreview.image && <img src={linkPreview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} />}
+                  <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
+                    <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{linkPreview.domain}</div>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{linkPreview.title || linkPreview.url}</div>
+                    {linkPreview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{linkPreview.description}</div>}
+                  </div>
+                  <button onClick={() => { setLinkPreview(null); setLinkWarning(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "8px", alignSelf: "flex-start", flexShrink: 0 }}>×</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -3063,7 +3227,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               tip_count: post.tip_count || 0,
               comment_count: post.comment_count || 0,
               commentList: [],
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+              link_url: post.link_url || null,
+            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
           );
         })}
         {/* Loading skeleton */}
@@ -9298,6 +9463,7 @@ export default function GuildLink() {
   };
 
   const [postModal, setPostModal] = useState(null); // post_id to show in modal
+  const [exitModalUrl, setExitModalUrl] = useState(null);
   const [questBanner, setQuestBanner] = useState(null); // { quest_id, title, xp_reward, reward_label }
 
   const signOut = async () => {
@@ -9464,10 +9630,11 @@ export default function GuildLink() {
       `}</style>
       <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} />
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} onNavigateToPlayer={(userId) => { setPostModal(null); navToPlayer(userId); setActivePage("player"); }} />}
+      {exitModalUrl && <ExitModal url={exitModalUrl} onClose={() => setExitModalUrl(null)} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "charts" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
-      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
+      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} onExit={url => setExitModalUrl(url)} />}
       {activePage === "reviews" && <ReviewsPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "games" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
