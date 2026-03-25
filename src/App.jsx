@@ -2520,7 +2520,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-356</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-357</span>
         </div>
       </div>
     </nav>
@@ -2693,7 +2693,15 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
 
   const getMovement = (gameId, currentRank) => {
     const prev = prevCharts[gameId];
-    if (!prev) return { label: "NEW", color: C.teal };
+    // Check if game has any previous score in daily_chart_scores (not truly new)
+    const hasPrevScore = Object.keys(prevCharts).length > 0 && prevCharts[gameId] === undefined
+      ? false : true;
+    if (!prev) {
+      // If prevCharts loaded but this game isn't in it, it may still have older history
+      // Show — instead of NEW unless prevCharts is completely empty (first ever load)
+      if (Object.keys(prevCharts).length > 0) return { label: "—", color: C.textDim };
+      return { label: "NEW", color: C.teal };
+    }
     const diff = prev - currentRank;
     if (diff > 0) return { label: `+${diff}`, color: C.green };
     if (diff < 0) return { label: `${diff}`, color: C.red };
