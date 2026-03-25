@@ -1184,7 +1184,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
               } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
             }}>
-            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} />
+            <Avatar initials={localPost.user.avatar} size={44} status={localPost.user.status} isNPC={localPost.user.isNPC} founding={!localPost.user.isNPC && localPost.user.isFounding} ring={!localPost.user.isNPC ? localPost.user.activeRing : null} avatarConfig={localPost.user.avatarConfig} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2554,7 +2554,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-341</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0324-342</span>
         </div>
       </div>
     </nav>
@@ -3181,7 +3181,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const [{ data }, likesResult] = await Promise.all([
       supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), comments(id)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), comments(id)")
         .in("user_id", followedIds)
         .is("npc_id", null)
         .order("created_at", { ascending: false })
@@ -3231,7 +3231,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
-          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+          .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .is("npc_id", null)
           .order("likes", { ascending: false })
           .limit(30),
@@ -3263,7 +3263,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const [postsResult, likesResult, tipsResult] = await Promise.all([
         supabase.from("posts")
-          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .order("created_at", { ascending: false })
           .limit(20),
         authUser
@@ -3373,8 +3373,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           </div>
         ) : user ? (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)` }} />
-            <div style={{ padding: "0 16px 16px", marginTop: -22 }}>
+            <div style={{ height: 56, background: `linear-gradient(135deg, ${C.accent}44, ${C.teal}44)`, borderRadius: "14px 14px 0 0" }} />
+            <div style={{ padding: "0 16px 16px", marginTop: -22, overflow: "visible" }}>
               <Avatar initials={user.avatar} size={44} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{user.name}</div>
@@ -3488,7 +3488,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         {!isGuest && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
-            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} />
+            <Avatar initials={user?.avatar || "GL"} size={isMobile ? 32 : 38} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
             <div style={{ flex: 1 }}>
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game... (@ to tag a game, player, or NPC)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
@@ -3604,6 +3604,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 isNPC: isNPC,
                 isFounding: !isNPC && (displayAuthor.is_founding || false),
                 activeRing: !isNPC ? (displayAuthor.active_ring || "none") : "none",
+                avatarConfig: !isNPC ? (displayAuthor.avatar_config || null) : null,
               },
               content: post.content,
               tagged_users: post.tagged_users || [],
@@ -3677,6 +3678,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   isNPC: false,
                   isFounding: displayAuthor.is_founding || false,
                   activeRing: displayAuthor.active_ring || "none",
+                  avatarConfig: displayAuthor.avatar_config || null,
                 },
                 content: post.content,
                 time: timeAgo(post.created_at),
@@ -4688,7 +4690,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Posts
       const { data: posts } = await supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -4697,7 +4699,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Tips — posts with tip votes, sorted by tip count
       const { data: tips } = await supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring), npcs(name, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
         .gte("tip_count", 1)
         .order("tip_count", { ascending: false })
@@ -4716,7 +4718,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       // Top Voices — users with most likes on posts for this game
       const { data: voicePosts } = await supabase
         .from("posts")
-        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring)")
+        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_tag", dbId)
         .not("user_id", "is", null);
       if (voicePosts) {
