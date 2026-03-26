@@ -340,12 +340,20 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
 function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAddToShelf }) {
   const accentColor = card.ctaStatus === "playing" ? C.accent : card.ctaStatus === "want_to_play" ? C.gold : card.ctaStatus === "have_played" ? C.teal : C.accentSoft;
 
-  const handleCta = () => {
-    if (card.ctaStatus === "review") {
-      setCurrentGame(card.game.id); setActivePage("game");
-    } else {
-      setCurrentGame(card.game.id); setActivePage("game");
+  const handleCta = async () => {
+    // Track pulse CTA click
+    if (currentUser?.id) {
+      try {
+        await supabase.from("chart_events").insert({
+          game_id: card.game.id,
+          user_id: null,
+          event_type: "pulse_cta",
+          date: new Date().toISOString().slice(0, 10),
+          week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
+        });
+      } catch { /* non-fatal */ }
     }
+    setCurrentGame(card.game.id); setActivePage("game");
   };
 
   return (
@@ -1531,7 +1539,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               </div>
             </div>
           ) : (
-            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left", whiteSpace: "pre-wrap" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
           )}
 
           {/* Link preview */}
@@ -1661,7 +1669,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                         <span style={{ color: C.accentSoft }}>@{parentName}</span>
                       </div>
                     )}
-                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left", whiteSpace: "pre-wrap" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
                     {comment.link_url && onExit && <LinkPreviewFetcher url={comment.link_url} onExit={onExit} />}
                   </div>
                   {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
@@ -2864,7 +2872,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-364</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-365</span>
         </div>
       </div>
     </nav>
