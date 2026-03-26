@@ -2872,7 +2872,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-365</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-366</span>
         </div>
       </div>
     </nav>
@@ -5060,8 +5060,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                             e.stopPropagation();
                             const { data: { user: authUser } } = await supabase.auth.getUser();
                             if (!authUser) return;
-                            await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() });
-                            await supabase.from("user_game_history").insert({ user_id: authUser.id, game_id: g.id, from_status: null, to_status: opt.id });
+                            await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+                            await supabase.from("user_games_history").insert({ user_id: authUser.id, game_id: g.id, from_status: null, to_status: opt.id });
                             const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
                             if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
                             setUserShelf(prev => new Set([...prev, g.id]));
@@ -5332,8 +5332,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const setShelf = async (status) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !dbGame) return;
-    await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() });
-    await supabase.from("user_game_history").insert({ user_id: user.id, game_id: dbGame.id, from_status: shelfStatus, to_status: status });
+    await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+    await supabase.from("user_games_history").insert({ user_id: user.id, game_id: dbGame.id, from_status: shelfStatus, to_status: status });
     const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
     if (eventMap[status]) logChartEvent(dbGame.id, eventMap[status], user.id);
     setShelfStatus(status);
@@ -6057,9 +6057,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       status: toStatus,
       sort_order: destLength,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: "user_id,game_id" });
     // Log shelf transition for developer analytics
-    await supabase.from("user_game_history").insert({
+    await supabase.from("user_games_history").insert({
       user_id: authUser.id,
       game_id: gameId,
       from_status: fromStatus,
@@ -6091,10 +6091,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       game_id: game.id,
       status,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: "user_id,game_id" });
     if (!error) {
       // Log shelf addition for developer analytics (from_status null = new addition)
-      await supabase.from("user_game_history").insert({
+      await supabase.from("user_games_history").insert({
         user_id: authUser.id,
         game_id: game.id,
         from_status: null,
@@ -10013,8 +10013,8 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     if (addedGames.find(g => g.id === game.id)) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString() });
-    await supabase.from("user_game_history").insert({ user_id: authUser.id, game_id: game.id, from_status: null, to_status: "playing" });
+    await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+    await supabase.from("user_games_history").insert({ user_id: authUser.id, game_id: game.id, from_status: null, to_status: "playing" });
     logChartEvent(game.id, 'shelf_playing', authUser.id);
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
