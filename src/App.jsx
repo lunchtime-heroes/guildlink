@@ -2864,7 +2864,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-363</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-364</span>
         </div>
       </div>
     </nav>
@@ -4096,41 +4096,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           });
           return items;
         })()}
-          const author = isNPC ? post.npcs : post.profiles;
-          // For NPC posts with missing join, fall back to NPCS lookup
-          const npcFallback = isNPC && !author
-            ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
-            : null;
-          // For real user posts where profiles join is null (RLS blocked for guests), show anonymous fallback
-          const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
-          const displayAuthor = author || npcFallback || realFallback;
-          return (
-            <FeedPostCard key={post.id} post={{
-              id: post.id,
-              npc_id: post.npc_id,
-              game_tag: post.game_tag,
-              user_id: post.user_id,
-              tagged_users: post.tagged_users || [],
-              user: {
-                name: displayAuthor.name || displayAuthor.username || "Gamer",
-                handle: displayAuthor.handle || "@gamer",
-                avatar: displayAuthor.avatar_initials || displayAuthor.avatar || "GL",
-                status: "online",
-                isNPC: isNPC,
-                isFounding: !isNPC && (displayAuthor.is_founding || false),
-                activeRing: !isNPC ? (displayAuthor.active_ring || "none") : "none",
-                avatarConfig: !isNPC ? (displayAuthor.avatar_config || null) : null,
-              },
-              content: post.content,
-              tagged_users: post.tagged_users || [],
-              time: timeAgo(post.created_at),
-              likes: post.likes || 0,
-              liked: post.liked || false,
-              tipped: post.tipped || false,
-              tip_count: post.tip_count || 0,
-              comment_count: post.comment_count || 0,
-          return items;
-        })()}
         {/* Loading skeleton */}
         {(isGuest || feedTab === "forYou") && feedLoading && [1,2,3].map(i => (
           <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 10 }}>
@@ -4145,6 +4110,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <div style={{ height: 12, width: "70%", background: C.surfaceRaised, borderRadius: 6, marginBottom: 6 }} />
             <div style={{ height: 12, width: "50%", background: C.surfaceHover, borderRadius: 6 }} />
           </div>
+        ))}
         ))}
 
         {/* Empty state once loaded */}
