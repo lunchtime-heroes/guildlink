@@ -337,6 +337,99 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
   );
 }
 
+function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAddToShelf }) {
+  const accentColor = card.ctaStatus === "playing" ? C.accent : card.ctaStatus === "want_to_play" ? C.gold : card.ctaStatus === "have_played" ? C.teal : C.accentSoft;
+
+  const handleCta = () => {
+    if (card.ctaStatus === "review") {
+      setCurrentGame(card.game.id); setActivePage("game");
+    } else {
+      setCurrentGame(card.game.id); setActivePage("game");
+    }
+  };
+
+  return (
+    <div style={{ background: C.surface, border: "1px solid " + (card.hasFollow ? C.accentDim : C.border), borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
+      {card.game.cover_url && (
+        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+          <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 64 }} />
+        </div>
+      )}
+      <div style={{ flex: 1, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {card.hasFollow && <span style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>● From your network</span>}
+          <div style={{ color: C.text, fontSize: 13, lineHeight: 1.4 }}>{card.text}</div>
+        </div>
+        <button onClick={handleCta}
+          style={{ background: accentColor + "18", border: "1px solid " + accentColor + "44", borderRadius: 8, padding: "6px 10px", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+          {card.cta}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActivePage, onExit }) {
+  const preview = card.review.content
+    ? card.review.content.slice(0, 140) + (card.review.content.length > 140 ? "…" : "")
+    : card.review.headline || null;
+  const initials = (card.profile?.avatar_initials || card.profile?.username || "?").slice(0,2).toUpperCase();
+
+  return (
+    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "stretch" }}>
+        {/* Game cover */}
+        {card.game.cover_url && (
+          <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+            style={{ width: 56, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+            <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }} />
+          </div>
+        )}
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0, padding: "12px 14px" }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div onClick={() => { if (card.profile?.id) { setCurrentPlayer(card.review.user_id); setActivePage("player"); } }} style={{ cursor: "pointer", flexShrink: 0 }}>
+              <Avatar initials={initials} size={20} founding={card.profile?.is_founding} ring={card.profile?.active_ring} avatarConfig={card.profile?.avatar_config} />
+            </div>
+            <span onClick={() => { setCurrentPlayer(card.review.user_id); setActivePage("player"); }}
+              style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              {card.profile?.username || "Guildies Member"}
+            </span>
+            <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
+            <span onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+              style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {card.game.name}
+            </span>
+            <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+              {card.review.rating}/10
+            </div>
+          </div>
+          {/* Headline */}
+          {card.review.headline && (
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{card.review.headline}</div>
+          )}
+          {/* Preview text */}
+          {preview && !card.review.headline && (
+            <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{preview}</div>
+          )}
+          {preview && card.review.headline && (
+            <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5 }}>{preview}</div>
+          )}
+        </div>
+      </div>
+      {/* Read more */}
+      <div style={{ borderTop: "1px solid " + C.border, padding: "8px 14px" }}>
+        <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+          Read full review →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LinkPreviewFetcher({ url, onExit }) {
   const [preview, setPreview] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
@@ -2771,7 +2864,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-360</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-363</span>
         </div>
       </div>
     </nav>
@@ -3096,6 +3189,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [pulseCards, setPulseCards] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [linkPreview, setLinkPreview] = useState(null); // { allowed, url, title, description, image, domain } | null
   const [linkPreviewLoading, setLinkPreviewLoading] = useState(false);
@@ -3264,6 +3358,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
   useEffect(() => {
     loadPosts();
+    loadPulseCards();
     loadDailyPrompt();
     loadSidebarNPCs();
     if (!isGuest) {
@@ -3451,6 +3546,119 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const extra = matches.map(m => resolved[m.slice(1).toLowerCase()]).filter(u => u && !existingHandles.has(u.handle.replace("@","").toLowerCase()));
       return extra.length ? { ...p, tagged_users: [...existing, ...extra] } : p;
     });
+  };
+
+  const PULSE_FREQUENCY = 3;
+
+  const loadPulseCards = async () => {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const cards = [];
+    let followIds = [];
+    let followNames = {};
+    if (currentUser?.id) {
+      const { data: follows } = await supabase.from("follows")
+        .select("followed_user_id, profiles!follows_followed_user_id_fkey(username)")
+        .eq("follower_id", currentUser.id);
+      (follows || []).forEach(f => {
+        if (!f.followed_user_id) return;
+        followIds.push(f.followed_user_id);
+        if (f.profiles?.username) followNames[f.followed_user_id] = f.profiles.username;
+      });
+    }
+
+    // 1. want_to_play → playing transitions from history
+    const { data: transitions } = await supabase
+      .from("user_games_history")
+      .select("user_id, game_id, changed_at, games(id, name, cover_url), profiles(id, username)")
+      .eq("from_status", "want_to_play").eq("to_status", "playing")
+      .gte("changed_at", since).order("changed_at", { ascending: false }).limit(30);
+    if (transitions?.length) {
+      const byGame = {};
+      transitions.forEach(t => {
+        if (!t.games) return;
+        if (!byGame[t.game_id]) byGame[t.game_id] = { game: t.games, users: [], followUsers: [] };
+        byGame[t.game_id].users.push(t.user_id);
+        if (followIds.includes(t.user_id)) byGame[t.game_id].followUsers.push(t.profiles?.username || "Someone you follow");
+      });
+      Object.values(byGame).slice(0, 3).forEach(({ game, users, followUsers }) => {
+        const actor = followUsers[0] || null;
+        const count = users.length;
+        cards.push({ type: "shelf_pulse", id: "transition_" + game.id, game,
+          text: actor ? `${actor} started playing ${game.name}` : count === 1 ? `A player started playing ${game.name}` : `${count} players started playing ${game.name}`,
+          cta: "Are you playing it too?", ctaStatus: "playing", hasFollow: followUsers.length > 0, priority: followUsers.length > 0 ? 3 : 1 });
+      });
+    }
+
+    // 2. Shelf activity by game + status
+    const { data: shelfActivity } = await supabase
+      .from("user_games")
+      .select("game_id, status, user_id, created_at, games(id, name, cover_url), profiles(id, username)")
+      .gte("created_at", since).in("status", ["playing", "have_played", "want_to_play"])
+      .order("created_at", { ascending: false }).limit(150);
+    if (shelfActivity?.length) {
+      const byGameStatus = {};
+      shelfActivity.forEach(s => {
+        if (!s.games) return;
+        const key = s.game_id + "_" + s.status;
+        if (!byGameStatus[key]) byGameStatus[key] = { game: s.games, status: s.status, count: 0, followUsers: [] };
+        byGameStatus[key].count++;
+        if (followIds.includes(s.user_id)) byGameStatus[key].followUsers.push(s.profiles?.username || followNames[s.user_id] || "Someone you follow");
+      });
+      Object.values(byGameStatus)
+        .sort((a, b) => (b.followUsers.length > 0 ? 1 : 0) - (a.followUsers.length > 0 ? 1 : 0) || b.count - a.count)
+        .slice(0, 8).forEach(({ game, status, count, followUsers }) => {
+          const actor = followUsers.length === 1 ? followUsers[0] : null;
+          let text, cta, ctaStatus;
+          if (status === "playing") {
+            text = actor ? `${actor} is currently playing ${game.name}` : count === 1 ? `A player is currently playing ${game.name}` : `${count} players are currently playing ${game.name}`;
+            cta = actor ? "Update your shelf" : "What are you playing?"; ctaStatus = "playing";
+          } else if (status === "want_to_play") {
+            text = actor ? `${actor} wants to play ${game.name}` : count === 1 ? `A player wants to play ${game.name}` : `${count} players want to play ${game.name}`;
+            cta = "Want to play?"; ctaStatus = "want_to_play";
+          } else {
+            text = actor ? `${actor} has ${game.name} on their shelf` : count === 1 ? `A player has played ${game.name}` : `${count} players have played ${game.name}`;
+            cta = "Have you?"; ctaStatus = "have_played";
+          }
+          cards.push({ type: "shelf_pulse", id: "shelf_" + game.id + "_" + status, game, text, cta, ctaStatus, hasFollow: followUsers.length > 0, priority: followUsers.length > 0 ? 2 : 1 });
+        });
+    }
+
+    // 3. Games with shelves but no reviews (min 3 shelf entries)
+    const { data: shelfCounts } = await supabase.from("user_games").select("game_id, games(id, name, cover_url)").in("status", ["have_played", "playing"]).limit(200);
+    if (shelfCounts?.length) {
+      const counts = {};
+      shelfCounts.forEach(s => { if (!s.games) return; if (!counts[s.game_id]) counts[s.game_id] = { game: s.games, count: 0 }; counts[s.game_id].count++; });
+      const { data: reviewed } = await supabase.from("reviews").select("game_id");
+      const reviewedIds = new Set((reviewed || []).map(r => r.game_id));
+      Object.values(counts).filter(({ game, count }) => count >= 3 && !reviewedIds.has(game.id)).sort((a, b) => b.count - a.count).slice(0, 2).forEach(({ game }) => {
+        cards.push({ type: "shelf_pulse", id: "no_review_" + game.id, game, text: `${game.name} is on several players' shelves, but no reviews yet`, cta: "Write a review", ctaStatus: "review", hasFollow: false, priority: 1 });
+      });
+    }
+
+    // 4. Recent reviews
+    const { data: recentReviews } = await supabase.from("reviews")
+      .select("id, rating, headline, content, game_id, user_id, created_at, games(id, name, cover_url), profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
+      .gte("created_at", since).order("created_at", { ascending: false }).limit(8);
+    if (recentReviews?.length) {
+      const byGame = {};
+      recentReviews.forEach(r => {
+        if (!r.games || !r.profiles) return;
+        if (!byGame[r.game_id]) byGame[r.game_id] = { game: r.games, reviews: [] };
+        byGame[r.game_id].reviews.push(r);
+      });
+      Object.values(byGame).forEach(({ game, reviews }) => {
+        const hasFollow = reviews.some(r => followIds.includes(r.user_id));
+        if (reviews.length > 1) {
+          cards.push({ type: "shelf_pulse", id: "multi_review_" + game.id, game, text: `${reviews.length} players reviewed ${game.name} this week`, cta: "Write a review", ctaStatus: "review", hasFollow, priority: hasFollow ? 2 : 1 });
+        } else {
+          const r = reviews[0];
+          cards.push({ type: "review_spotlight", id: "review_" + r.id, review: r, game, profile: r.profiles, hasFollow: followIds.includes(r.user_id), priority: followIds.includes(r.user_id) ? 2 : 1 });
+        }
+      });
+    }
+
+    cards.sort((a, b) => b.priority - a.priority);
+    setPulseCards(cards);
   };
 
   const loadPosts = async () => {
@@ -3813,9 +4021,81 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </div>
         )}
 
-        {/* For You feed */}
-        {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.map(post => {
-          const isNPC = !!post.npc_id;
+        {/* For You feed — interspersed with pulse cards every 3 posts */}
+        {(isGuest || feedTab === "forYou") && !feedLoading && (() => {
+          const items = [];
+          let pulseIdx = 0;
+
+          const renderPulseCard = (card) => {
+            if (card.type === "shelf_pulse") {
+              return <ShelfPulseCard key={card.id} card={card}
+                setCurrentGame={setCurrentGame} setActivePage={setActivePage}
+                currentUser={user}
+                onAddToShelf={async (game, status) => {
+                  const { data: { user: authUser } } = await supabase.auth.getUser();
+                  if (!authUser) return;
+                  await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status }, { onConflict: "user_id,game_id" });
+                  await supabase.from("chart_events").insert({ game_id: game.id, user_id: authUser.id, event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want", date: new Date().toISOString().slice(0,10), week_start: new Date(Date.now() - new Date().getDay()*86400000).toISOString().slice(0,10) });
+                }}
+              />;
+            }
+            if (card.type === "review_spotlight") {
+              return <ReviewSpotlightCard key={card.id} card={card}
+                setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                setActivePage={setActivePage} onExit={onExit}
+              />;
+            }
+            return null;
+          };
+
+          livePosts.forEach((post, i) => {
+            // Insert pulse card every 3 posts
+            if (i > 0 && i % PULSE_FREQUENCY === 0 && pulseIdx < pulseCards.length) {
+              const el = renderPulseCard(pulseCards[pulseIdx++]);
+              if (el) items.push(el);
+            }
+
+            const isNPC = !!post.npc_id;
+            const author = isNPC ? post.npcs : post.profiles;
+            const npcFallback = isNPC && !author
+              ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
+              : null;
+            const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
+            const displayAuthor = author || npcFallback || realFallback;
+            items.push(
+              <FeedPostCard key={post.id} post={{
+                id: post.id,
+                npc_id: post.npc_id,
+                game_tag: post.game_tag,
+                user_id: post.user_id,
+                tip_count: post.tip_count || 0,
+                tagged_users: post.tagged_users || [],
+                user: {
+                  name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
+                  handle: displayAuthor?.handle || "",
+                  avatar: displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL",
+                  status: "online",
+                  isNPC,
+                  isFounding: !isNPC && (displayAuthor?.is_founding || false),
+                  activeRing: !isNPC ? (displayAuthor?.active_ring || "none") : "none",
+                  avatarConfig: !isNPC ? (displayAuthor?.avatar_config || null) : null,
+                },
+                content: post.content,
+                gameId: post.game_tag,
+                tagged_users: post.tagged_users || [],
+                time: timeAgo(post.created_at),
+                likes: post.likes || 0,
+                liked: post.liked || false,
+                tipped: post.tipped || false,
+                tip_count: post.tip_count || 0,
+                comment_count: post.comment_count || 0,
+                commentList: [],
+                link_url: post.link_url || null,
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
+            );
+          });
+          return items;
+        })()}
           const author = isNPC ? post.npcs : post.profiles;
           // For NPC posts with missing join, fall back to NPCS lookup
           const npcFallback = isNPC && !author
@@ -3849,11 +4129,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               tipped: post.tipped || false,
               tip_count: post.tip_count || 0,
               comment_count: post.comment_count || 0,
-              commentList: [],
-              link_url: post.link_url || null,
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
-          );
-        })}
+          return items;
+        })()}
         {/* Loading skeleton */}
         {(isGuest || feedTab === "forYou") && feedLoading && [1,2,3].map(i => (
           <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 10 }}>
@@ -6158,7 +6435,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
                 <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
-                <button onClick={() => setShowSteamImport(true)} style={{ background: "#1b2838", border: "1px solid #4a9eda44", borderRadius: 8, padding: "8px 16px", color: "#4a9eda", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Import Steam</button>
               </div>
             )}
           </div>
