@@ -1658,7 +1658,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 <div style={{ flex: 1 }}>
                   <div style={{ background: C.surfaceRaised, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name || "Gamer"}</span>
+                      <span onClick={() => { if (!isNPC && comment.user_id) { setCurrentPlayer(comment.user_id); setActivePage("player"); } }} style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text, cursor: !isNPC && comment.user_id ? "pointer" : "default" }}>{name || "Gamer"}</span>
                       {isNPC && <NPCBadge />}
                       <span style={{ color: C.textDim, fontSize: 11 }}>{handle}</span>
                       <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(comment.created_at) || comment.time}</span>
@@ -2872,7 +2872,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-366</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-367</span>
         </div>
       </div>
     </nav>
