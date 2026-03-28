@@ -193,14 +193,14 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Find Your People</h2>
-        <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Connect with players, join guilds, and find your crew.</p>
+        <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Find Gamers & Guilds</h2>
+        <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Guilds are the people you play games with. Join a guild to coordinate play schedules and find new games.</p>
       </div>
 
-      <div style={{ display: "flex", borderBottom: "1px solid " + C.border, marginBottom: 24 }}>
+      <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4, marginBottom: 24, gap: 2 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding: "10px 20px", background: "none", border: "none", borderBottom: "2px solid " + (activeTab === t.id ? C.accent : "transparent"), color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ flex: 1, padding: "8px 16px", background: activeTab === t.id ? C.accentGlow : "transparent", border: activeTab === t.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 9, color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             {t.label}
           </button>
         ))}
