@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
-import { timeAgo, getAge } from "../utils.js";
-import { Avatar } from "../components/Avatar.jsx";
-import { Badge } from "../components/FoundingBadge.jsx";
 import GuildCard from "../components/GuildCard.jsx";
 
 function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCurrentGuild }) {
@@ -21,60 +18,6 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
 
   const [myGuilds, setMyGuilds] = useState([]);
   const [myGuildsLoading, setMyGuildsLoading] = useState(false);
-
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [gameFilter, setGameFilter] = useState("all");
-  const [platformFilter, setPlatformFilter] = useState("all");
-  const [filterGames, setFilterGames] = useState([]);
-  const [myGamertags, setMyGamertags] = useState([]);
-  const [exclusions, setExclusions] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
-  const [gameSearch, setGameSearch] = useState("");
-  const [gameResults, setGameResults] = useState([]);
-  const [selectedGame, setSelectedGame] = useState(null);
-
-  const PLATFORMS = [
-    { id: "xbox", label: "Xbox", color: "#107C10" },
-    { id: "psn", label: "PlayStation", color: "#003087" },
-    { id: "steam", label: "Steam", color: "#1b2838" },
-    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
-    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
-  ];
-
-  const isAdult = getAge(currentUser?.date_of_birth) >= 18;
-
-  const loadViewerContext = async () => {
-    if (!currentUser?.id) return;
-    const [{ data: tags }, { data: excl }] = await Promise.all([
-      supabase.from("gamertags").select("platform").eq("user_id", currentUser.id),
-      supabase.from("my_lfg_exclusions").select("excluded_user_id"),
-    ]);
-    if (tags) setMyGamertags(tags.map(t => t.platform));
-    if (excl) setExclusions(excl.map(e => e.excluded_user_id));
-  };
-
-  const loadPosts = async () => {
-    setLoading(true);
-    let query = supabase
-      .from("lfg_posts")
-      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
-    if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
-    const { data } = await query;
-    if (data) {
-      const filtered = data.filter(p => !exclusions.includes(p.profiles?.id));
-      const platFiltered = platformFilter === "all" ? filtered : filtered.filter(p => p.platforms?.includes(platformFilter));
-      setPosts(platFiltered);
-      const seen = {};
-      filtered.forEach(p => { if (p.games && !seen[p.games.id]) seen[p.games.id] = p.games; });
-      setFilterGames(Object.values(seen));
-    }
-    setLoading(false);
-  };
 
   const loadGuilds = async () => {
     setGuildsLoading(true);
@@ -97,51 +40,14 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     const { data } = await supabase
       .from("guild_members")
       .select("guild_id, guilds(id, name, description, is_public, looking_for_members)")
-      .eq("user_id", currentUser.id);
+      .eq("user_id", currentUser.id)
+      .eq("status", "active");
     setMyGuilds((data || []).map(m => m.guilds).filter(Boolean));
     setMyGuildsLoading(false);
   };
 
-  useEffect(() => { loadViewerContext(); }, [currentUser?.id]);
-  useEffect(() => { loadPosts(); }, [gameFilter, platformFilter, exclusions]);
   useEffect(() => { if (activeTab === "find-guilds") loadGuilds(); }, [activeTab, currentUser?.id]);
   useEffect(() => { if (activeTab === "your-guilds") loadMyGuilds(); }, [activeTab, currentUser?.id]);
-
-  const searchGames = async (q) => {
-    setGameSearch(q);
-    if (!q.trim()) { setGameResults([]); return; }
-    const { data } = await supabase.from("games").select("id, name, genre").ilike("name", "%" + q + "%").limit(6);
-    setGameResults(data || []);
-  };
-
-  const submitPost = async () => {
-    if (!selectedGame || !form.looking_for.trim() || submitting) return;
-    setSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSubmitting(false); return; }
-    const tags = form.tags.split(",").map(t => t.trim()).filter(Boolean);
-    await supabase.from("lfg_posts").insert({
-      user_id: user.id,
-      game_id: selectedGame.id,
-      looking_for: form.looking_for.trim(),
-      play_style: form.play_style.trim() || null,
-      rank: form.rank.trim() || null,
-      note: form.note.trim() || null,
-      tags,
-    });
-    setForm({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
-    setSelectedGame(null);
-    setGameSearch("");
-    setGameResults([]);
-    setShowForm(false);
-    setSubmitting(false);
-    loadPosts();
-  };
-
-  const deletePost = async (id) => {
-    await supabase.from("lfg_posts").delete().eq("id", id);
-    setPosts(prev => prev.filter(p => p.id !== id));
-  };
 
   const joinGuild = async (guildId) => {
     if (!currentUser?.id) return;
@@ -172,7 +78,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
       created_by: user.id,
     }).select().single();
     if (guild) {
-      await supabase.from("guild_members").insert({ guild_id: guild.id, user_id: user.id, role: "leader" });
+      await supabase.from("guild_members").insert({ guild_id: guild.id, user_id: user.id, role: "leader", status: "active" });
       setCreating(false);
       setShowCreateForm(false);
       setCurrentGuild(guild.id);
@@ -260,13 +166,13 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
                 <button onClick={() => setShowCreateForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                 <button onClick={createGuild} disabled={!createForm.name.trim() || creating}
                   style={{ background: createForm.name.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: createForm.name.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  {creating ? "Creating\u2026" : "Create Guild"}
+                  {creating ? "Creating..." : "Create Guild"}
                 </button>
               </div>
             </div>
           ) : (
             <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-              <input value={guildSearch} onChange={e => setGuildSearch(e.target.value)} placeholder="Search guilds\u2026" style={{ flex: 1, minWidth: 160, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+              <input value={guildSearch} onChange={e => setGuildSearch(e.target.value)} placeholder="Search for guilds by name" style={{ flex: 1, minWidth: 160, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
               <button onClick={() => setLfmFilter(f => !f)}
                 style={{ background: lfmFilter ? "#22c55e22" : C.surface, border: "1px solid " + (lfmFilter ? "#22c55e44" : C.border), borderRadius: 8, padding: "8px 16px", color: lfmFilter ? "#22c55e" : C.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Looking for Members
@@ -280,7 +186,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
           )}
 
           {guildsLoading ? (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: C.textDim }}>Loading guilds\u2026</div>
+            <div style={{ textAlign: "center", padding: "40px 20px", color: C.textDim }}>Loading guilds...</div>
           ) : filteredGuilds.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>🏰</div>
@@ -301,7 +207,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 6 }}>Sign in to see your guilds</div>
             </div>
           ) : myGuildsLoading ? (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: C.textDim }}>Loading\u2026</div>
+            <div style={{ textAlign: "center", padding: "40px 20px", color: C.textDim }}>Loading...</div>
           ) : myGuilds.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px" }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>🏰</div>
@@ -320,7 +226,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
                     <span style={{ color: C.textDim, fontSize: 12 }}>{g.is_public ? "Public" : "Private"}</span>
                   </div>
                 </div>
-                <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600 }}>View \u2192</span>
+                <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600 }}>View →</span>
               </div>
             </div>
           ))}
