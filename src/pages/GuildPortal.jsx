@@ -19,7 +19,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const [sessions, setSessions] = useState([]);
   const [sessionRsvps, setSessionRsvps] = useState({});
   const [activeDay, setActiveDay] = useState(null);
-  const [sessionForm, setSessionForm] = useState({ game: "", scheduled_at: "", duration_minutes: "" });
+  const [sessionTime, setSessionTime] = useState("20:00");
+  const [sessionDuration, setSessionDuration] = useState("");
   const [gameSearch, setGameSearch] = useState("");
   const [gameResults, setGameResults] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
@@ -31,6 +32,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const [expandedPost, setExpandedPost] = useState(null);
   const [replies, setReplies] = useState({});
   const [newReply, setNewReply] = useState({});
+
+  const DURATIONS = ["0.5", "1", "1.5", "2", "2.5", "3"];
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -133,24 +136,34 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const scheduleSession = async (dayDate) => {
-    if ((!selectedGame && !sessionForm.game.trim()) || !sessionForm.scheduled_at || schedulingSession) return;
+    if (!sessionTime || schedulingSession) return;
+    if (!selectedGame && !gameSearch.trim()) return;
     setSchedulingSession(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSchedulingSession(false); return; }
-    const gameName = selectedGame ? selectedGame.name : sessionForm.game.trim();
+
+    const [h, m] = sessionTime.split(":").map(Number);
+    const scheduled = new Date(dayDate);
+    scheduled.setHours(h, m, 0, 0);
+
+    const gameName = selectedGame ? selectedGame.name : gameSearch.trim();
     const gameId = selectedGame ? selectedGame.id : null;
+
     await supabase.from("guild_sessions").insert({
       guild_id: guildId,
       game: gameName,
       game_id: gameId,
-      scheduled_at: sessionForm.scheduled_at,
-      duration_minutes: sessionForm.duration_minutes ? parseInt(sessionForm.duration_minutes) : null,
+      scheduled_at: scheduled.toISOString(),
+      duration_minutes: sessionDuration ? Math.round(parseFloat(sessionDuration) * 60) : null,
       created_by: user.id,
     });
+
     if (gameId) {
-      await supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
+      supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
     }
-    setSessionForm({ game: "", scheduled_at: "", duration_minutes: "" });
+
+    setSessionTime("20:00");
+    setSessionDuration("");
     setGameSearch("");
     setGameResults([]);
     setSelectedGame(null);
@@ -173,9 +186,9 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
   const handleEditSession = async (sessionId, form) => {
     await supabase.from("guild_sessions").update({
-      game: form.game.trim(),
+      game: form.game,
       scheduled_at: form.scheduled_at,
-      duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : null,
+      duration_minutes: form.duration_minutes,
     }).eq("id", sessionId);
     loadSessions();
   };
@@ -235,13 +248,6 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       const sd = new Date(s.scheduled_at);
       return sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth() && sd.getDate() === d.getDate();
     });
-  };
-
-  const defaultTimeForDay = (d) => {
-    const dt = new Date(d);
-    dt.setHours(20, 0, 0, 0);
-    const pad = n => String(n).padStart(2, "0");
-    return dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate()) + "T" + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
   };
 
   return (
@@ -328,7 +334,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
       <div style={sectionStyle}>
         <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 4 }}>This Week</div>
-        <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Schedule a session — tap a day to add one.</div>
+        <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Tap a day to schedule a session.</div>
 
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(4, 1fr)" : "repeat(7, 1fr)", gap: 8 }}>
           {weekDays.map((d, i) => {
@@ -360,7 +366,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                   <button
                     onClick={() => {
                       setActiveDay(isActive ? null : i);
-                      setSessionForm({ game: "", scheduled_at: defaultTimeForDay(d), duration_minutes: "" });
+                      setSessionTime("20:00");
+                      setSessionDuration("");
                       setGameSearch("");
                       setGameResults([]);
                       setSelectedGame(null);
@@ -391,11 +398,12 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
         {activeDay !== null && isMember && (
           <div style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16, marginTop: 16 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>
               Schedule for {dayLabel(weekDays[activeDay])}
             </div>
-            <div style={{ marginBottom: 10, position: "relative" }}>
-              <div style={labelStyle}>Game *</div>
+
+            <div style={{ marginBottom: 14, position: "relative" }}>
+              <div style={labelStyle}>Game</div>
               <input
                 value={gameSearch}
                 onChange={e => searchGames(e.target.value)}
@@ -406,7 +414,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
               {gameResults.length > 0 && (
                 <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 10, overflow: "hidden" }}>
                   {gameResults.map(g => (
-                    <div key={g.id} onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
+                    <div key={g.id}
+                      onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
                       style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: C.text, borderBottom: "1px solid " + C.border }}
                       onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -416,36 +425,38 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 </div>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-              <div>
-                <div style={labelStyle}>Start Time *</div>
-                <input
-                  type="datetime-local"
-                  value={sessionForm.scheduled_at}
-                  onChange={e => setSessionForm(f => ({ ...f, scheduled_at: e.target.value }))}
-                  style={inputStyle}
-                />
-              </div>
-              <div>
-                <div style={labelStyle}>Est. Duration (min)</div>
-                <input
-                  type="number"
-                  value={sessionForm.duration_minutes}
-                  onChange={e => setSessionForm(f => ({ ...f, duration_minutes: e.target.value }))}
-                  placeholder="e.g. 90"
-                  style={inputStyle}
-                />
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={labelStyle}>Start Time</div>
+              <input
+                type="time"
+                value={sessionTime}
+                onChange={e => setSessionTime(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <div style={labelStyle}>Est. Duration</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {DURATIONS.map(d => (
+                  <button key={d} onClick={() => setSessionDuration(sessionDuration === d ? "" : d)}
+                    style={{ background: sessionDuration === d ? C.accentGlow : C.surface, border: "1px solid " + (sessionDuration === d ? C.accentDim : C.border), borderRadius: 8, padding: "6px 14px", color: sessionDuration === d ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    {d}h
+                  </button>
+                ))}
               </div>
             </div>
+
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => scheduleSession(weekDays[activeDay])}
-                disabled={(!selectedGame && !gameSearch.trim()) || !sessionForm.scheduled_at || schedulingSession}
-                style={{ background: (selectedGame || gameSearch.trim()) && sessionForm.scheduled_at ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: (selectedGame || gameSearch.trim()) && sessionForm.scheduled_at ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                disabled={(!selectedGame && !gameSearch.trim()) || !sessionTime || schedulingSession}
+                style={{ background: (selectedGame || gameSearch.trim()) && sessionTime ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "9px 24px", color: (selectedGame || gameSearch.trim()) && sessionTime ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 {schedulingSession ? "Sharing..." : "Share"}
               </button>
               <button onClick={() => setActiveDay(null)}
-                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "9px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                 Cancel
               </button>
             </div>
