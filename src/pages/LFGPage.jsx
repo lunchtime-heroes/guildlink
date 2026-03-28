@@ -101,6 +101,10 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     if (lfmFilter && !g.looking_for_members) return false;
     if (guildSearch.trim() && !g.name.toLowerCase().includes(guildSearch.toLowerCase())) return false;
     return true;
+  }).sort((a, b) => {
+    const aRequested = requestedGuildIds.has(a.id) ? 1 : 0;
+    const bRequested = requestedGuildIds.has(b.id) ? 1 : 0;
+    return aRequested - bRequested;
   });
 
   return (
