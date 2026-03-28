@@ -2631,12 +2631,14 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
     { id: "reviews-nav", icon: "⭐", label: "Reviews" },
+    { id: "squad", icon: "🛡️", label: "Guild" },
     { id: "feedback", icon: "💬", label: "Feedback" },
   ];
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
     { id: "games", icon: "🎮", label: "Games" },
     { id: "reviews-nav", icon: "⭐", label: "Reviews" },
+    { id: "squad", icon: "🛡️", label: "Guild" },
     { id: "founding", icon: "⚔️", label: "About", gold: true },
     { id: "feedback", icon: "💬", label: "Feedback" },
     ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
@@ -2874,7 +2876,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-368</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-369</span>
         </div>
       </div>
     </nav>
