@@ -4090,12 +4090,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 },
                 content: post.content,
                 gameId: post.game_tag,
-                tagged_users: post.tagged_users || [],
                 time: timeAgo(post.created_at),
                 likes: post.likes || 0,
                 liked: post.liked || false,
                 tipped: post.tipped || false,
-                tip_count: post.tip_count || 0,
                 comment_count: post.comment_count || 0,
                 commentList: [],
                 link_url: post.link_url || null,
@@ -4118,7 +4116,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <div style={{ height: 12, width: "70%", background: C.surfaceRaised, borderRadius: 6, marginBottom: 6 }} />
             <div style={{ height: 12, width: "50%", background: C.surfaceHover, borderRadius: 6 }} />
           </div>
-        ))}
         ))}
 
         {/* Empty state once loaded */}
@@ -5713,7 +5710,6 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   likes: post.likes || 0,
                   liked: post.liked || false,
                   tipped: post.tipped || false,
-                  tip_count: post.tip_count || 0,
                   comment_count: post.comment_count || 0,
                   commentList: [],
                 }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
