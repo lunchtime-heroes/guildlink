@@ -20,7 +20,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const [sessionRsvps, setSessionRsvps] = useState({});
   const [activeDay, setActiveDay] = useState(null);
   const [sessionTime, setSessionTime] = useState("20:00");
-  const [sessionDuration, setSessionDuration] = useState("");
+  const [sessionDurH, setSessionDurH] = useState("");
+  const [sessionDurM, setSessionDurM] = useState("");
   const [gameSearch, setGameSearch] = useState("");
   const [gameResults, setGameResults] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
@@ -32,8 +33,6 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const [expandedPost, setExpandedPost] = useState(null);
   const [replies, setReplies] = useState({});
   const [newReply, setNewReply] = useState({});
-
-  const DURATIONS = ["0.5", "1", "1.5", "2", "2.5", "3"];
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -154,7 +153,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       game: gameName,
       game_id: gameId,
       scheduled_at: scheduled.toISOString(),
-      duration_minutes: sessionDuration ? Math.round(parseFloat(sessionDuration) * 60) : null,
+      duration_minutes: (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0) || null,
       created_by: user.id,
     });
 
@@ -163,7 +162,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     }
 
     setSessionTime("20:00");
-    setSessionDuration("");
+    setSessionDurH("");
+    setSessionDurM("");
     setGameSearch("");
     setGameResults([]);
     setSelectedGame(null);
@@ -190,7 +190,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       scheduled_at: form.scheduled_at,
       duration_minutes: form.duration_minutes,
     }).eq("id", sessionId);
-    loadSessions();
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, game: form.game, scheduled_at: form.scheduled_at, duration_minutes: form.duration_minutes } : s));
   };
 
   const handleDeleteSession = async (sessionId) => {
@@ -438,13 +438,16 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
             <div style={{ marginBottom: 18 }}>
               <div style={labelStyle}>Est. Duration</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {DURATIONS.map(d => (
-                  <button key={d} onClick={() => setSessionDuration(sessionDuration === d ? "" : d)}
-                    style={{ background: sessionDuration === d ? C.accentGlow : C.surface, border: "1px solid " + (sessionDuration === d ? C.accentDim : C.border), borderRadius: 8, padding: "6px 14px", color: sessionDuration === d ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                    {d}h
-                  </button>
-                ))}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <input type="number" min="0" max="12" placeholder="0" value={sessionDurH} onChange={e => setSessionDurH(e.target.value)} style={inputStyle} />
+                  <div style={{ color: C.textDim, fontSize: 10, textAlign: "center", marginTop: 3 }}>hrs</div>
+                </div>
+                <div style={{ color: C.textDim, fontSize: 16, paddingBottom: 18 }}>:</div>
+                <div style={{ flex: 1 }}>
+                  <input type="number" min="0" max="59" placeholder="0" value={sessionDurM} onChange={e => setSessionDurM(e.target.value)} style={inputStyle} />
+                  <div style={{ color: C.textDim, fontSize: 10, textAlign: "center", marginTop: 3 }}>min</div>
+                </div>
               </div>
             </div>
 
