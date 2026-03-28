@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import LFGPage from "./pages/LFGPage.jsx";
+import GuildPortal from "./pages/GuildPortal.jsx";
 
 const supabase = createClient(
   "https://zpalkpcqihxamedymnwe.supabase.co",
@@ -2872,7 +2874,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-367</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-368</span>
         </div>
       </div>
     </nav>
@@ -9246,293 +9248,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
 
 
-function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [gameFilter, setGameFilter] = useState("all");
-  const [platformFilter, setPlatformFilter] = useState("all");
-  const [filterGames, setFilterGames] = useState([]);
-  const [myGamertags, setMyGamertags] = useState([]); // platforms this user has entered
-  const [exclusions, setExclusions] = useState([]); // user_ids who have denied/revoked viewer
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
-  const [gameSearch, setGameSearch] = useState("");
-  const [gameResults, setGameResults] = useState([]);
-  const [selectedGame, setSelectedGame] = useState(null);
-
-  const PLATFORMS = [
-    { id: "xbox", label: "Xbox", color: "#107C10" },
-    { id: "psn", label: "PlayStation", color: "#003087" },
-    { id: "steam", label: "Steam", color: "#1b2838" },
-    { id: "nintendo", label: "Nintendo", color: "#E4000F" },
-    { id: "battlenet", label: "Battle.net", color: "#148EFF" },
-  ];
-
-  const isAdult = getAge(currentUser?.date_of_birth) >= 18;
-
-  // Load viewer's own gamertags and exclusion list
-  const loadViewerContext = async () => {
-    if (!currentUser?.id) return;
-    const [{ data: tags }, { data: excl }] = await Promise.all([
-      supabase.from("gamertags").select("platform").eq("user_id", currentUser.id),
-      supabase.from("my_lfg_exclusions").select("excluded_user_id"),
-    ]);
-    if (tags) setMyGamertags(tags.map(t => t.platform));
-    if (excl) setExclusions(excl.map(e => e.excluded_user_id));
-  };
-
-  const loadPosts = async () => {
-    setLoading(true);
-    let query = supabase
-      .from("lfg_posts")
-      .select("*, profiles(id, username, handle, avatar_initials, is_founding, active_ring, avatar_config), games(id, name, genre, cover_url)")
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
-    if (gameFilter !== "all") query = query.eq("game_id", gameFilter);
-    const { data } = await query;
-    if (data) {
-      // Filter out excluded users client-side (exclusions list is personal, can't do in RLS easily)
-      const filtered = data.filter(p => !exclusions.includes(p.profiles?.id));
-      // Apply platform filter if set
-      const platFiltered = platformFilter === "all" ? filtered : filtered.filter(p => p.platforms?.includes(platformFilter));
-      setPosts(platFiltered);
-      // Build game filter list from unfiltered results (so game tabs don't disappear when platform filtered)
-      const seen = {};
-      filtered.forEach(p => { if (p.games && !seen[p.games.id]) seen[p.games.id] = p.games; });
-      setFilterGames(Object.values(seen));
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    loadViewerContext();
-  }, [currentUser?.id]);
-
-  useEffect(() => {
-    loadPosts();
-  }, [gameFilter, platformFilter, exclusions]);
-
-  const searchGames = async (q) => {
-    setGameSearch(q);
-    if (!q.trim()) { setGameResults([]); return; }
-    const { data } = await supabase.from("games").select("id, name, genre").ilike("name", `%${q}%`).limit(6);
-    setGameResults(data || []);
-  };
-
-  const submitPost = async () => {
-    if (!selectedGame || !form.looking_for.trim() || submitting) return;
-    setSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSubmitting(false); return; }
-    const tags = form.tags.split(",").map(t => t.trim()).filter(Boolean);
-    await supabase.from("lfg_posts").insert({
-      user_id: user.id,
-      game_id: selectedGame.id,
-      looking_for: form.looking_for.trim(),
-      play_style: form.play_style.trim() || null,
-      rank: form.rank.trim() || null,
-      note: form.note.trim() || null,
-      tags,
-    });
-    setForm({ game_id: "", looking_for: "", play_style: "", rank: "", note: "", tags: "" });
-    setSelectedGame(null);
-    setGameSearch("");
-    setGameResults([]);
-    setShowForm(false);
-    setSubmitting(false);
-    loadPosts();
-  };
-
-  const deletePost = async (id) => {
-    await supabase.from("lfg_posts").delete().eq("id", id);
-    setPosts(prev => prev.filter(p => p.id !== id));
-  };
-
-  const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
-
-  return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Looking for Group</h2>
-          <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Find players who match your style, game, and schedule.</p>
-        </div>
-        {currentUser && myGamertags.length > 0 && (
-          <button onClick={() => setShowForm(f => !f)} style={{ background: showForm ? C.surfaceRaised : C.accent, border: "1px solid " + showForm ? C.border : "transparent", borderRadius: 10, padding: "9px 20px", color: showForm ? C.textMuted : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            {showForm ? "Cancel" : "+ Post LFG"}
-          </button>
-        )}
-      </div>
-
-      {/* Post LFG form */}
-      {showForm && (
-        <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 14, padding: 20, marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Post a Looking for Group</div>
-
-          {/* Game search */}
-          <div style={{ marginBottom: 12, position: "relative" }}>
-            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Game *</div>
-            {selectedGame ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 12px" }}>
-                <span style={{ color: C.accentSoft, fontWeight: 600, fontSize: 13 }}>{selectedGame.name}</span>
-                <button onClick={() => { setSelectedGame(null); setGameSearch(""); }} style={{ marginLeft: "auto", background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
-              </div>
-            ) : (
-              <>
-                <input value={gameSearch} onChange={e => searchGames(e.target.value)} placeholder="Search for a game..." style={inputStyle} autoFocus />
-                {gameResults.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 50, overflow: "hidden", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {gameResults.map(g => (
-                      <div key={g.id} onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
-                        style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
-                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                      >
-                        <span style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{g.name}</span>
-                        {g.genre && <span style={{ color: C.textDim, fontSize: 11, marginLeft: 8 }}>{g.genre}</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Looking for *</div>
-              <input value={form.looking_for} onChange={e => setForm(f => ({ ...f, looking_for: e.target.value }))} placeholder="e.g. 2 players, Full team" style={inputStyle} />
-            </div>
-            <div>
-              <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Play style</div>
-              <input value={form.play_style} onChange={e => setForm(f => ({ ...f, play_style: e.target.value }))} placeholder="e.g. Competitive, Casual" style={inputStyle} />
-            </div>
-            <div>
-              <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Rank / Skill</div>
-              <input value={form.rank} onChange={e => setForm(f => ({ ...f, rank: e.target.value }))} placeholder="e.g. Diamond II, NG+3" style={inputStyle} />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Tags <span style={{ color: C.textDim, fontWeight: 400 }}>(comma separated)</span></div>
-            <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="e.g. Evenings PST, 18+, Voice chat" style={inputStyle} />
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Note</div>
-            <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder="Anything else players should know..." style={{ ...inputStyle, resize: "none", minHeight: 60 }} />
-          </div>
-
-          <button onClick={submitPost} disabled={!selectedGame || !form.looking_for.trim() || submitting}
-            style={{ background: selectedGame && form.looking_for.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 10, padding: "10px 24px", color: selectedGame && form.looking_for.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            {submitting ? "Posting…" : "Post LFG"}
-          </button>
-        </div>
-      )}
-
-      {/* Locked state — no gamertags entered */}
-      {currentUser && !loading && myGamertags.length === 0 && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 32, textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>Add a gamertag to unlock LFG</div>
-          <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, maxWidth: 400, margin: "0 auto 16px" }}>
-            LFG is built around mutual platform sharing. Add at least one gamertag to your profile to browse and post.
-            {!isAdult && <span style={{ display: "block", marginTop: 6, color: C.textDim, fontSize: 12 }}>You'll need to add your birth year first — gamertag sharing is available at 18.</span>}
-          </div>
-          <button onClick={() => setActivePage("profile")}
-            style={{ background: C.accent, border: "none", borderRadius: 10, padding: "9px 24px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            Go to Profile →
-          </button>
-        </div>
-      )}
-
-      {/* Platform filters — only platforms the viewer has */}
-      {currentUser && myGamertags.length > 0 && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          <button onClick={() => setPlatformFilter("all")} style={{ background: platformFilter === "all" ? C.accentGlow : C.surface, border: "1px solid " + platformFilter === "all" ? C.accentDim : C.border, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600 }}>All Platforms</button>
-          {PLATFORMS.filter(p => myGamertags.includes(p.id)).map(p => (
-            <button key={p.id} onClick={() => setPlatformFilter(p.id)}
-              style={{ background: platformFilter === p.id ? p.color + "22" : C.surface, border: "1px solid " + platformFilter === p.id ? p.color : C.border, borderRadius: 8, padding: "6px 14px", cursor: "pointer", color: platformFilter === p.id ? p.color : C.textMuted, fontSize: 12, fontWeight: 600 }}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Game filters */}
-      {filterGames.length > 0 && myGamertags.length > 0 && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-          <button onClick={() => setGameFilter("all")} style={{ background: gameFilter === "all" ? C.accentGlow : C.surface, border: "1px solid " + gameFilter === "all" ? C.accentDim : C.border, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === "all" ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>All Games</button>
-          {filterGames.map(g => (
-            <button key={g.id} onClick={() => setGameFilter(g.id)} style={{ background: gameFilter === g.id ? C.accentGlow : C.surface, border: "1px solid " + gameFilter === g.id ? C.accentDim : C.border, borderRadius: 8, padding: "7px 16px", cursor: "pointer", color: gameFilter === g.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600 }}>{g.name}</button>
-          ))}
-        </div>
-      )}
-
-      {/* Posts */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>Loading…</div>
-      ) : !currentUser ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sign in to see LFG posts</div>
-          <div style={{ fontSize: 14 }}>LFG is available to members with gamertags on file.</div>
-        </div>
-      ) : myGamertags.length > 0 && posts.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>No LFG posts yet</div>
-          <div style={{ fontSize: 14 }}>Be the first to post.</div>
-        </div>
-      ) : myGamertags.length > 0 ? posts.map(post => {
-        const profile = post.profiles;
-        const game = post.games;
-        const isOwn = currentUser?.id === profile?.id;
-        return (
-          <div key={post.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, display: "flex", gap: 16, marginBottom: 12, alignItems: "flex-start" }}>
-            <Avatar initials={(profile?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={64} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
-                <span style={{ fontWeight: 700, color: C.text, fontSize: 15, cursor: "pointer" }}
-                  onClick={() => { setCurrentPlayer(profile?.id); setActivePage("player"); }}
-                >{profile?.username || "Gamer"}</span>
-                {game && <Badge color={C.accent}>{game.name}</Badge>}
-                {post.rank && <Badge color={C.textMuted} small>{post.rank}</Badge>}
-                <span style={{ color: C.textDim, fontSize: 12, marginLeft: "auto" }}>{timeAgo(post.created_at)}</span>
-              </div>
-              <div style={{ display: "flex", gap: 16, marginBottom: post.tags?.length || post.note ? 10 : 0, flexWrap: "wrap" }}>
-                <span style={{ color: C.textDim, fontSize: 13 }}>Looking for <strong style={{ color: C.text }}>{post.looking_for}</strong></span>
-                {post.play_style && <span style={{ color: C.textDim, fontSize: 13 }}>Style: <strong style={{ color: C.text }}>{post.play_style}</strong></span>}
-              </div>
-              {post.note && <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 10px", lineHeight: 1.5 }}>{post.note}</p>}
-              {post.tags?.length > 0 && (
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {post.tags.map(tag => <Badge key={tag} small color={C.textMuted}>{tag}</Badge>)}
-                </div>
-              )}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-              {!isOwn && (
-                <button onClick={() => { setCurrentPlayer(profile?.id); setActivePage("player"); }}
-                  style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  Profile
-                </button>
-              )}
-              {isOwn && (
-                <button onClick={() => deletePost(post.id)}
-                  style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 18px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      }) : null}
-    </div>
-  );
-}
+// LFGPage is now imported from ./pages/LFGPage.jsx
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 
@@ -10227,6 +9943,7 @@ export default function GuildLink() {
   const [gameDefaultTab, setGameDefaultTab] = useState(null);
 
   const [currentPlayer, setCurrentPlayer] = useState(null);
+  const [currentGuild, setCurrentGuild] = useState(null);
   const [profileDefaultTab, setProfileDefaultTab] = useState("posts");
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -10261,6 +9978,7 @@ export default function GuildLink() {
     if (p.startsWith("game/")) return { page: "game", gameId: p.slice(5) };
     if (p.startsWith("player/")) return { page: "player", playerHandle: p.slice(7) };
     if (p.startsWith("npc/")) return { page: "npc", npcId: p.slice(4) };
+    if (p.startsWith("guild/")) return { page: "guild", guildId: p.slice(6) };
     return { page: "feed" };
   };
 
@@ -10273,6 +9991,11 @@ export default function GuildLink() {
         setCurrentGame(state.gameId);
       } else {
         setCurrentGame(null);
+      }
+      if (state.guildId) {
+        setCurrentGuild(state.guildId);
+      } else {
+        setCurrentGuild(null);
       }
       if (state.playerId) {
         setCurrentPlayer(state.playerId);
@@ -10477,6 +10200,13 @@ export default function GuildLink() {
     supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", "player"); });
   };
 
+  const navToGuild = (guildId) => {
+    setCurrentGuild(guildId);
+    setActivePage("guild");
+    window.history.pushState({ page: "guild", guildId }, "", "/guild/" + guildId);
+    supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", "guild", { guildId }); });
+  };
+
   const navToPage = (page) => {
     setActivePage(page);
     const path = page === "founding" ? "/about" : `/${page}`;
@@ -10596,7 +10326,8 @@ export default function GuildLink() {
       {activePage === "npcs" && <NPCBrowsePage setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setGameDefaultTab={setGameDefaultTab} />}
-      {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={navToPlayer} setActivePage={navToPage} />}
+      {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={navToPlayer} setActivePage={navToPage} setCurrentGuild={navToGuild} />}
+      {activePage === "guild" && <GuildPortal guildId={currentGuild} isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={navToPage} isMobile={isMobile} onSignUp={openSignUp} />}
       {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
     </div>
