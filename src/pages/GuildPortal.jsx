@@ -18,8 +18,11 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
   const [sessions, setSessions] = useState([]);
   const [sessionRsvps, setSessionRsvps] = useState({});
-  const [showSessionForm, setShowSessionForm] = useState(false);
-  const [sessionForm, setSessionForm] = useState({ game: "", title: "", scheduled_at: "", notes: "" });
+  const [activeDay, setActiveDay] = useState(null);
+  const [sessionForm, setSessionForm] = useState({ game: "", scheduled_at: "", duration_minutes: "" });
+  const [gameSearch, setGameSearch] = useState("");
+  const [gameResults, setGameResults] = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
   const [schedulingSession, setSchedulingSession] = useState(false);
 
   const [posts, setPosts] = useState([]);
@@ -29,11 +32,18 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const [replies, setReplies] = useState({});
   const [newReply, setNewReply] = useState({});
 
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
   const load = async () => {
     if (!guildId) return;
     const [guildRes, membersRes] = await Promise.all([
       supabase.from("guilds").select("*").eq("id", guildId).single(),
-      supabase.from("guild_members").select("user_id, role, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)").eq("guild_id", guildId),
+      supabase.from("guild_members").select("user_id, role, status, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)").eq("guild_id", guildId).eq("status", "active"),
     ]);
     if (guildRes.data) {
       setGuild(guildRes.data);
@@ -59,11 +69,16 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const loadSessions = async () => {
+    const weekStart = new Date();
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
     const { data } = await supabase
       .from("guild_sessions")
       .select("*")
       .eq("guild_id", guildId)
-      .gt("scheduled_at", new Date().toISOString())
+      .gte("scheduled_at", weekStart.toISOString())
+      .lt("scheduled_at", weekEnd.toISOString())
       .order("scheduled_at", { ascending: true });
     setSessions(data || []);
     if (data && data.length > 0 && currentUser?.id) {
@@ -94,6 +109,14 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     loadThread();
   }, [guildId]);
 
+  const searchGames = async (q) => {
+    setGameSearch(q);
+    setSelectedGame(null);
+    if (!q.trim()) { setGameResults([]); return; }
+    const { data } = await supabase.from("games").select("id, name").ilike("name", "%" + q + "%").limit(6);
+    setGameResults(data || []);
+  };
+
   const saveEdit = async () => {
     setSaving(true);
     await supabase.from("guilds").update({
@@ -109,21 +132,29 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     setSaving(false);
   };
 
-  const scheduleSession = async () => {
-    if (!sessionForm.game.trim() || !sessionForm.scheduled_at || schedulingSession) return;
+  const scheduleSession = async (dayDate) => {
+    if ((!selectedGame && !sessionForm.game.trim()) || !sessionForm.scheduled_at || schedulingSession) return;
     setSchedulingSession(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSchedulingSession(false); return; }
+    const gameName = selectedGame ? selectedGame.name : sessionForm.game.trim();
+    const gameId = selectedGame ? selectedGame.id : null;
     await supabase.from("guild_sessions").insert({
       guild_id: guildId,
-      game: sessionForm.game.trim(),
-      title: sessionForm.title.trim() || null,
+      game: gameName,
+      game_id: gameId,
       scheduled_at: sessionForm.scheduled_at,
-      notes: sessionForm.notes.trim() || null,
+      duration_minutes: sessionForm.duration_minutes ? parseInt(sessionForm.duration_minutes) : null,
       created_by: user.id,
     });
-    setSessionForm({ game: "", title: "", scheduled_at: "", notes: "" });
-    setShowSessionForm(false);
+    if (gameId) {
+      await supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
+    }
+    setSessionForm({ game: "", scheduled_at: "", duration_minutes: "" });
+    setGameSearch("");
+    setGameResults([]);
+    setSelectedGame(null);
+    setActiveDay(null);
     setSchedulingSession(false);
     loadSessions();
   };
@@ -138,6 +169,20 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       const existing = (prev[sessionId] || []).filter(r => r.user_id !== currentUser.id);
       return { ...prev, [sessionId]: [...existing, { session_id: sessionId, user_id: currentUser.id, response }] };
     });
+  };
+
+  const handleEditSession = async (sessionId, form) => {
+    await supabase.from("guild_sessions").update({
+      game: form.game.trim(),
+      scheduled_at: form.scheduled_at,
+      duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : null,
+    }).eq("id", sessionId);
+    loadSessions();
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    await supabase.from("guild_sessions").delete().eq("id", sessionId);
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
   };
 
   const submitPost = async () => {
@@ -175,14 +220,33 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const sectionStyle = { background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 20, marginBottom: 20 };
   const labelStyle = { color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 };
 
-  if (loading) return <div style={{ textAlign: "center", padding: "120px 20px", color: C.textDim }}>Loading guild\u2026</div>;
+  if (loading) return <div style={{ textAlign: "center", padding: "120px 20px", color: C.textDim }}>Loading guild...</div>;
   if (!guild) return <div style={{ textAlign: "center", padding: "120px 20px", color: C.textDim }}>Guild not found.</div>;
 
   const isMember = currentUser && memberIds.includes(currentUser.id);
 
+  const dayLabel = (d) => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return days[d.getDay()] + " | " + (d.getMonth() + 1) + "/" + d.getDate();
+  };
+
+  const sessionsForDay = (d) => {
+    return sessions.filter(s => {
+      const sd = new Date(s.scheduled_at);
+      return sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth() && sd.getDate() === d.getDate();
+    });
+  };
+
+  const defaultTimeForDay = (d) => {
+    const dt = new Date(d);
+    dt.setHours(20, 0, 0, 0);
+    const pad = n => String(n).padStart(2, "0");
+    return dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate()) + "T" + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
+  };
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
-      <button onClick={() => setActivePage("squad")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginBottom: 16, padding: 0 }}>\u2190 Back to Guilds</button>
+      <button onClick={() => setActivePage("squad")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginBottom: 16, padding: 0 }}>← Back to Guilds</button>
 
       <div style={sectionStyle}>
         {showEdit ? (
@@ -219,7 +283,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               <button onClick={saveEdit} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {saving ? "Saving\u2026" : "Save"}
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
@@ -263,48 +327,130 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       </div>
 
       <div style={sectionStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Session Board</div>
-          {isMember && (
-            <button onClick={() => setShowSessionForm(f => !f)}
-              style={{ background: showSessionForm ? C.surfaceRaised : C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: showSessionForm ? C.textMuted : "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              {showSessionForm ? "Cancel" : "+ Schedule a Session"}
-            </button>
-          )}
+        <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 4 }}>This Week</div>
+        <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Schedule a session — tap a day to add one.</div>
+
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(4, 1fr)" : "repeat(7, 1fr)", gap: 8 }}>
+          {weekDays.map((d, i) => {
+            const daySessions = sessionsForDay(d);
+            const isFull = daySessions.length >= 3;
+            const isActive = activeDay === i;
+            const isToday = i === 0;
+
+            return (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: isToday ? C.accentSoft : C.textDim, textAlign: "center", marginBottom: 4 }}>
+                  {dayLabel(d)}
+                </div>
+
+                {daySessions.map(s => (
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    currentUserId={currentUser?.id}
+                    rsvps={sessionRsvps[s.id] || []}
+                    onRsvp={handleRsvp}
+                    onEdit={handleEditSession}
+                    onDelete={handleDeleteSession}
+                    isMobile={isMobile}
+                  />
+                ))}
+
+                {isMember && !isFull && (
+                  <button
+                    onClick={() => {
+                      setActiveDay(isActive ? null : i);
+                      setSessionForm({ game: "", scheduled_at: defaultTimeForDay(d), duration_minutes: "" });
+                      setGameSearch("");
+                      setGameResults([]);
+                      setSelectedGame(null);
+                    }}
+                    style={{
+                      background: isActive ? C.accentGlow : C.surfaceRaised,
+                      border: "1px solid " + (isActive ? C.accentDim : C.border),
+                      borderRadius: 10,
+                      padding: "10px 0",
+                      color: isActive ? C.accentSoft : C.textDim,
+                      fontSize: 18,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      textAlign: "center",
+                      width: "100%",
+                    }}>
+                    +
+                  </button>
+                )}
+
+                {isFull && (
+                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 0", color: C.textDim, fontSize: 10, fontWeight: 600, textAlign: "center" }}>Full</div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {showSessionForm && (
-          <div style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        {activeDay !== null && isMember && (
+          <div style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16, marginTop: 16 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 12 }}>
+              Schedule for {dayLabel(weekDays[activeDay])}
+            </div>
+            <div style={{ marginBottom: 10, position: "relative" }}>
+              <div style={labelStyle}>Game *</div>
+              <input
+                value={gameSearch}
+                onChange={e => searchGames(e.target.value)}
+                placeholder="Search for a game..."
+                style={inputStyle}
+                autoFocus
+              />
+              {gameResults.length > 0 && (
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 10, overflow: "hidden" }}>
+                  {gameResults.map(g => (
+                    <div key={g.id} onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
+                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: C.text, borderBottom: "1px solid " + C.border }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      {g.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div>
-                <div style={labelStyle}>Game *</div>
-                <input value={sessionForm.game} onChange={e => setSessionForm(f => ({ ...f, game: e.target.value }))} placeholder="e.g. Elden Ring" style={inputStyle} />
+                <div style={labelStyle}>Start Time *</div>
+                <input
+                  type="datetime-local"
+                  value={sessionForm.scheduled_at}
+                  onChange={e => setSessionForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                  style={inputStyle}
+                />
               </div>
               <div>
-                <div style={labelStyle}>Title (optional)</div>
-                <input value={sessionForm.title} onChange={e => setSessionForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Weekly run" style={inputStyle} />
+                <div style={labelStyle}>Est. Duration (min)</div>
+                <input
+                  type="number"
+                  value={sessionForm.duration_minutes}
+                  onChange={e => setSessionForm(f => ({ ...f, duration_minutes: e.target.value }))}
+                  placeholder="e.g. 90"
+                  style={inputStyle}
+                />
               </div>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <div style={labelStyle}>Date & Time *</div>
-              <input type="datetime-local" value={sessionForm.scheduled_at} onChange={e => setSessionForm(f => ({ ...f, scheduled_at: e.target.value }))} style={inputStyle} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => scheduleSession(weekDays[activeDay])}
+                disabled={(!selectedGame && !gameSearch.trim()) || !sessionForm.scheduled_at || schedulingSession}
+                style={{ background: (selectedGame || gameSearch.trim()) && sessionForm.scheduled_at ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: (selectedGame || gameSearch.trim()) && sessionForm.scheduled_at ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                {schedulingSession ? "Sharing..." : "Share"}
+              </button>
+              <button onClick={() => setActiveDay(null)}
+                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                Cancel
+              </button>
             </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={labelStyle}>Notes</div>
-              <textarea value={sessionForm.notes} onChange={e => setSessionForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any notes for the session\u2026" style={{ ...inputStyle, resize: "none", minHeight: 60 }} />
-            </div>
-            <button onClick={scheduleSession} disabled={!sessionForm.game.trim() || !sessionForm.scheduled_at || schedulingSession}
-              style={{ background: sessionForm.game.trim() && sessionForm.scheduled_at ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: sessionForm.game.trim() && sessionForm.scheduled_at ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              {schedulingSession ? "Scheduling\u2026" : "Schedule Session"}
-            </button>
           </div>
         )}
-
-        {sessions.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "32px 20px", color: C.textDim, fontSize: 13 }}>No sessions scheduled. Be the first to schedule one.</div>
-        ) : sessions.map(s => (
-          <SessionCard key={s.id} session={s} currentUserId={currentUser?.id} rsvps={sessionRsvps[s.id] || []} onRsvp={handleRsvp} />
-        ))}
       </div>
 
       <div style={sectionStyle}>
@@ -321,7 +467,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
               value={newPost}
               onChange={e => setNewPost(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitPost(); } }}
-              placeholder="Post to guild thread\u2026"
+              placeholder="Post to guild thread..."
               style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "9px 14px", color: C.text, fontSize: 13, outline: "none" }}
             />
             <button onClick={submitPost} disabled={!newPost.trim() || postingToThread}
@@ -380,7 +526,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                         value={newReply[post.id] || ""}
                         onChange={e => setNewReply(prev => ({ ...prev, [post.id]: e.target.value }))}
                         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitReply(post.id); } }}
-                        placeholder="Write a reply\u2026"
+                        placeholder="Write a reply..."
                         style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px", color: C.text, fontSize: 13, outline: "none" }}
                       />
                       <button onClick={() => submitReply(post.id)} disabled={!(newReply[post.id] || "").trim()}
