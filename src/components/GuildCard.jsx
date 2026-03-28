@@ -31,7 +31,7 @@ function GuildCard({ guild, onJoin, isMember }) {
           onClick={isMember ? undefined : onJoin}
           disabled={isMember}
           style={{ background: isMember ? C.surfaceRaised : C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: isMember ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember ? "default" : "pointer", flexShrink: 0 }}>
-          {isMember ? "Joined" : "Join"}
+          {isMember ? "Joined" : guild.is_public ? "Join" : "Request to Join"}
         </button>
       </div>
     </div>

@@ -80,7 +80,6 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     const { data } = await supabase
       .from("guilds")
       .select("id, name, description, is_public, looking_for_members, discord_url, website_url, created_by")
-      .eq("is_public", true)
       .order("created_at", { ascending: false });
     setGuilds(data || []);
     if (currentUser?.id) {
