@@ -337,6 +337,107 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
   );
 }
 
+function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAddToShelf }) {
+  const accentColor = card.ctaStatus === "playing" ? C.accent : card.ctaStatus === "want_to_play" ? C.gold : card.ctaStatus === "have_played" ? C.teal : C.accentSoft;
+
+  const handleCta = async () => {
+    // Track pulse CTA click
+    if (currentUser?.id) {
+      try {
+        await supabase.from("chart_events").insert({
+          game_id: card.game.id,
+          user_id: null,
+          event_type: "pulse_cta",
+          date: new Date().toISOString().slice(0, 10),
+          week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
+        });
+      } catch { /* non-fatal */ }
+    }
+    setCurrentGame(card.game.id); setActivePage("game");
+  };
+
+  return (
+    <div style={{ background: C.surface, border: "1px solid " + (card.hasFollow ? C.accentDim : C.border), borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
+      {card.game.cover_url && (
+        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+          <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 64 }} />
+        </div>
+      )}
+      <div style={{ flex: 1, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {card.hasFollow && <span style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 2 }}>● From your network</span>}
+          <div style={{ color: C.text, fontSize: 13, lineHeight: 1.4 }}>{card.text}</div>
+        </div>
+        <button onClick={handleCta}
+          style={{ background: accentColor + "18", border: "1px solid " + accentColor + "44", borderRadius: 8, padding: "6px 10px", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+          {card.cta}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActivePage, onExit }) {
+  const preview = card.review.content
+    ? card.review.content.slice(0, 140) + (card.review.content.length > 140 ? "…" : "")
+    : card.review.headline || null;
+  const initials = (card.profile?.avatar_initials || card.profile?.username || "?").slice(0,2).toUpperCase();
+
+  return (
+    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "stretch" }}>
+        {/* Game cover */}
+        {card.game.cover_url && (
+          <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+            style={{ width: 56, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+            <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }} />
+          </div>
+        )}
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0, padding: "12px 14px" }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div onClick={() => { if (card.profile?.id) { setCurrentPlayer(card.review.user_id); setActivePage("player"); } }} style={{ cursor: "pointer", flexShrink: 0 }}>
+              <Avatar initials={initials} size={20} founding={card.profile?.is_founding} ring={card.profile?.active_ring} avatarConfig={card.profile?.avatar_config} />
+            </div>
+            <span onClick={() => { setCurrentPlayer(card.review.user_id); setActivePage("player"); }}
+              style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              {card.profile?.username || "Guildies Member"}
+            </span>
+            <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
+            <span onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+              style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {card.game.name}
+            </span>
+            <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+              {card.review.rating}/10
+            </div>
+          </div>
+          {/* Headline */}
+          {card.review.headline && (
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{card.review.headline}</div>
+          )}
+          {/* Preview text */}
+          {preview && !card.review.headline && (
+            <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{preview}</div>
+          )}
+          {preview && card.review.headline && (
+            <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5 }}>{preview}</div>
+          )}
+        </div>
+      </div>
+      {/* Read more */}
+      <div style={{ borderTop: "1px solid " + C.border, padding: "8px 14px" }}>
+        <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+          Read full review →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LinkPreviewFetcher({ url, onExit }) {
   const [preview, setPreview] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
@@ -732,6 +833,257 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
             {saving ? "Saving…" : "Save Character"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SteamImportModal({ currentUser, onClose, onImportComplete }) {
+  const [input, setInput] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [steamData, setSteamData] = React.useState(null);
+  const [selectedGames, setSelectedGames] = React.useState(new Set());
+  const [importing, setImporting] = React.useState(false);
+  const [importDone, setImportDone] = React.useState(false);
+  const [statusOverrides, setStatusOverrides] = React.useState({});
+  const [importProgress, setImportProgress] = React.useState(0);
+
+  const fetchSteam = async () => {
+    if (!input.trim()) return;
+    setLoading(true); setError(null); setSteamData(null);
+    try {
+      const res = await fetch("/api/steam", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: input.trim() }),
+      });
+      const data = await res.json();
+      if (data.error) { setError(data.error); setLoading(false); return; }
+      setSteamData(data);
+      // Pre-select all games
+      setSelectedGames(new Set(data.games.map(g => g.appid)));
+      // Init status overrides from suggestions
+      const overrides = {};
+      data.games.forEach(g => { overrides[g.appid] = g.suggested_status; });
+      setStatusOverrides(overrides);
+    } catch (e) {
+      setError("Failed to connect to Steam. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  const toggleGame = (appid) => {
+    setSelectedGames(prev => {
+      const next = new Set(prev);
+      next.has(appid) ? next.delete(appid) : next.add(appid);
+      return next;
+    });
+  };
+
+  const doImport = async () => {
+    if (!steamData || selectedGames.size === 0) return;
+    setImporting(true); setImportProgress(0);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setImporting(false); return; }
+
+    const toImport = steamData.games.filter(g => selectedGames.has(g.appid));
+    let done = 0;
+
+    for (const game of toImport) {
+      // Search for matching game in DB or IGDB
+      const { data: existing } = await supabase
+        .from("games").select("id, name").ilike("name", game.name).limit(1).single();
+
+      let gameId = existing?.id;
+
+      if (!gameId) {
+        // Try IGDB match
+        try {
+          const igdbRes = await fetch("/api/igdb", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: game.name }),
+          });
+          const { games: igdbGames } = await igdbRes.json();
+          const match = igdbGames?.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || igdbGames?.[0];
+          if (match) {
+            const { data: inserted } = await supabase.from("games").insert({
+              name: match.name, genre: match.genre, summary: match.summary,
+              cover_url: match.cover_url, igdb_id: match.igdb_id,
+              first_release_date: match.first_release_date, followers: 0,
+              platforms: match.platforms || null,
+            }).select().single();
+            gameId = inserted?.id;
+          }
+        } catch { /* IGDB unavailable */ }
+      }
+
+      if (!gameId) {
+        // Insert as basic game entry
+        const { data: inserted } = await supabase.from("games").insert({
+          name: game.name, followers: 0,
+        }).select().single();
+        gameId = inserted?.id;
+      }
+
+      if (gameId) {
+        const status = statusOverrides[game.appid] || "have_played";
+        await supabase.from("user_games").upsert({
+          user_id: authUser.id, game_id: gameId, status,
+          time_played: game.playtime_hours || null,
+        }, { onConflict: "user_id,game_id" });
+
+        // Log chart event
+        await supabase.from("chart_events").insert({
+          game_id: gameId, user_id: authUser.id,
+          event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
+          date: new Date().toISOString().slice(0, 10),
+          week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
+        }).select();
+      }
+
+      done++;
+      setImportProgress(Math.round((done / toImport.length) * 100));
+    }
+
+    setImporting(false);
+    setImportDone(true);
+  };
+
+  const statusColors = { playing: C.accent, have_played: C.teal, want_to_play: C.gold };
+  const statusLabels = { playing: "Playing", have_played: "Played", want_to_play: "Want" };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: "1px solid #4a9eda44", borderRadius: 20, width: "100%", maxWidth: 600, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1b2838" }}>
+          <div>
+            <div style={{ fontWeight: 800, color: "#4a9eda", fontSize: 18 }}>Import from Steam</div>
+            <div style={{ color: "#7aa6c2", fontSize: 12 }}>Add your Steam library to your shelf</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#7aa6c2", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+
+        {importDone ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 16 }}>
+            <div style={{ fontSize: 48 }}>✅</div>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Import complete!</div>
+            <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center" }}>
+              {selectedGames.size} games added to your shelf.
+            </div>
+            <button onClick={onImportComplete} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 28px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
+              View My Shelf
+            </button>
+          </div>
+        ) : importing ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 16 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>Importing {selectedGames.size} games…</div>
+            <div style={{ width: "100%", maxWidth: 300, height: 8, background: C.surfaceRaised, borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: importProgress + "%", background: "#4a9eda", borderRadius: 4, transition: "width 0.3s" }} />
+            </div>
+            <div style={{ color: C.textDim, fontSize: 13 }}>{importProgress}%</div>
+          </div>
+        ) : !steamData ? (
+          <div style={{ padding: 24 }}>
+            <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 16 }}>
+              Enter your Steam profile URL, Steam ID, or username. Your profile must be set to public.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && fetchSteam()}
+                placeholder="steamcommunity.com/id/username or Steam64 ID"
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, outline: "none" }}
+              />
+              <button onClick={fetchSteam} disabled={loading || !input.trim()}
+                style={{ background: "#4a9eda", border: "none", borderRadius: 8, padding: "10px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                {loading ? "Loading…" : "Connect"}
+              </button>
+            </div>
+            {error && (
+              <div style={{ marginTop: 12, padding: "10px 14px", background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, color: "#ef4444", fontSize: 13 }}>
+                {error}
+              </div>
+            )}
+            <div style={{ marginTop: 16, color: C.textDim, fontSize: 12 }}>
+              To make your profile public: Steam → Settings → Privacy → Profile Status → Public
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Steam profile summary */}
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 12, background: "#1b283880" }}>
+              {steamData.avatar && <img src={steamData.avatar} alt="" style={{ width: 40, height: 40, borderRadius: 6 }} />}
+              <div>
+                <div style={{ fontWeight: 700, color: "#4a9eda", fontSize: 14 }}>{steamData.playerName}</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>{steamData.playedGames} played games · {steamData.games.filter(g => g.recently_played).length} played recently</div>
+              </div>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                <button onClick={() => setSelectedGames(new Set(steamData.games.map(g => g.appid)))}
+                  style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 6, padding: "4px 10px", color: C.textMuted, fontSize: 11, cursor: "pointer" }}>All</button>
+                <button onClick={() => setSelectedGames(new Set())}
+                  style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 6, padding: "4px 10px", color: C.textMuted, fontSize: 11, cursor: "pointer" }}>None</button>
+              </div>
+            </div>
+
+            {/* Game list */}
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {steamData.games.map(game => {
+                const selected = selectedGames.has(game.appid);
+                const status = statusOverrides[game.appid] || "have_played";
+                return (
+                  <div key={game.appid} onClick={() => toggleGame(game.appid)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid " + C.border, cursor: "pointer", background: selected ? C.accentGlow : "transparent", opacity: selected ? 1 : 0.4 }}
+                    onMouseEnter={e => { if (!selected) e.currentTarget.style.opacity = "0.7"; }}
+                    onMouseLeave={e => { if (!selected) e.currentTarget.style.opacity = "0.4"; }}>
+                    {/* Checkbox */}
+                    <div style={{ width: 18, height: 18, borderRadius: 4, border: "2px solid " + (selected ? C.accent : C.border), background: selected ? C.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {selected && <span style={{ color: "#fff", fontSize: 11, lineHeight: 1 }}>✓</span>}
+                    </div>
+                    {/* Game icon */}
+                    {game.img_icon
+                      ? <img src={game.img_icon} alt="" style={{ width: 32, height: 32, borderRadius: 4, flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
+                      : <div style={{ width: 32, height: 32, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0 }} />
+                    }
+                    {/* Name + playtime */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>
+                        {game.playtime_hours}h played
+                        {game.recently_played && <span style={{ color: "#4a9eda", marginLeft: 6 }}>● Recent</span>}
+                      </div>
+                    </div>
+                    {/* Status selector */}
+                    {selected && (
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        {["playing","have_played","want_to_play"].map(s => (
+                          <button key={s} onClick={() => setStatusOverrides(prev => ({ ...prev, [game.appid]: s }))}
+                            style={{ padding: "2px 7px", borderRadius: 5, border: "1px solid " + (status === s ? statusColors[s] : C.border), background: status === s ? statusColors[s] + "22" : "transparent", color: status === s ? statusColors[s] : C.textDim, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+                            {statusLabels[s]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "14px 20px", borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ color: C.textDim, fontSize: 12 }}>{selectedGames.size} games selected</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={onClose} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={doImport} disabled={selectedGames.size === 0}
+                  style={{ background: "#4a9eda", border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: selectedGames.size > 0 ? "pointer" : "default", opacity: selectedGames.size > 0 ? 1 : 0.5 }}>
+                  Import {selectedGames.size} Games
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1187,7 +1539,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               </div>
             </div>
           ) : (
-            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left", whiteSpace: "pre-wrap" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
           )}
 
           {/* Link preview */}
@@ -1306,7 +1658,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                 <div style={{ flex: 1 }}>
                   <div style={{ background: C.surfaceRaised, border: "1px solid " + isNPC ? C.goldBorder : C.border, borderRadius: 10, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text }}>{name || "Gamer"}</span>
+                      <span onClick={() => { if (!isNPC && comment.user_id) { setCurrentPlayer(comment.user_id); setActivePage("player"); } }} style={{ fontWeight: 700, fontSize: 13, color: isNPC ? C.gold : C.text, cursor: !isNPC && comment.user_id ? "pointer" : "default" }}>{name || "Gamer"}</span>
                       {isNPC && <NPCBadge />}
                       <span style={{ color: C.textDim, fontSize: 11 }}>{handle}</span>
                       <span style={{ color: C.textDim, fontSize: 11, marginLeft: "auto" }}>{timeAgo(comment.created_at) || comment.time}</span>
@@ -1317,7 +1669,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
                         <span style={{ color: C.accentSoft }}>@{parentName}</span>
                       </div>
                     )}
-                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+                    <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, textAlign: "left", whiteSpace: "pre-wrap" }}>{renderPostContent(comment.content, comment.tagged_users?.length ? comment.tagged_users : localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
                     {comment.link_url && onExit && <LinkPreviewFetcher url={comment.link_url} onExit={onExit} />}
                   </div>
                   {((!isGuest && currentUser) || (commentReactions[comment.id]?.count > 0)) && (
@@ -2520,7 +2872,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0325-351</span>
+          <span style={{ color: C.gold, fontSize: 10, opacity: 0.7, userSelect: "none", fontWeight: 600 }}>b0326-367</span>
         </div>
       </div>
     </nav>
@@ -2631,15 +2983,21 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
     const load = async () => {
       setLoading(true);
 
-      // Get yesterday's date in Pacific time
+      // Get most recent date with chart scores (handles cron gaps)
       const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-      const yesterdayStr = getPacificDate(1);
+      const { data: latestDate, error: dateErr2 } = await supabase
+        .from("daily_chart_scores")
+        .select("date")
+        .order("date", { ascending: false })
+        .limit(1)
+        .single();
+      const chartDate = latestDate?.date || getPacificDate(0);
 
-      // Query daily_chart_scores for yesterday
+      // Query daily_chart_scores for most recent date
       const { data: scores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, games(id, name, genre)")
-        .eq("date", yesterdayStr)
+        .eq("date", chartDate)
         .order("score", { ascending: false })
         .limit(limit || 10);
 
@@ -2656,12 +3014,14 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           }));
         setCharts(sorted);
 
-        // Get day before yesterday for movement arrows
-        const d2Str = getPacificDate(2);
+        // Get previous date for movement arrows
+        const prevDate = new Date(chartDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+        const prevDateStr = prevDate.toISOString().slice(0, 10);
         const { data: prevScores } = await supabase
           .from("daily_chart_scores")
           .select("game_id, score")
-          .eq("date", d2Str)
+          .eq("date", prevDateStr)
           .order("score", { ascending: false });
         if (prevScores) {
           const prev = {};
@@ -2685,7 +3045,15 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
 
   const getMovement = (gameId, currentRank) => {
     const prev = prevCharts[gameId];
-    if (!prev) return { label: "NEW", color: C.teal };
+    // Check if game has any previous score in daily_chart_scores (not truly new)
+    const hasPrevScore = Object.keys(prevCharts).length > 0 && prevCharts[gameId] === undefined
+      ? false : true;
+    if (!prev) {
+      // If prevCharts loaded but this game isn't in it, it may still have older history
+      // Show — instead of NEW unless prevCharts is completely empty (first ever load)
+      if (Object.keys(prevCharts).length > 0) return { label: "—", color: C.textDim };
+      return { label: "NEW", color: C.teal };
+    }
     const diff = prev - currentRank;
     if (diff > 0) return { label: `+${diff}`, color: C.green };
     if (diff < 0) return { label: `${diff}`, color: C.red };
@@ -2829,6 +3197,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [pulseCards, setPulseCards] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [linkPreview, setLinkPreview] = useState(null); // { allowed, url, title, description, image, domain } | null
   const [linkPreviewLoading, setLinkPreviewLoading] = useState(false);
@@ -2997,6 +3366,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
   useEffect(() => {
     loadPosts();
+    loadPulseCards();
     loadDailyPrompt();
     loadSidebarNPCs();
     if (!isGuest) {
@@ -3186,6 +3556,119 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     });
   };
 
+  const PULSE_FREQUENCY = 3;
+
+  const loadPulseCards = async () => {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const cards = [];
+    let followIds = [];
+    let followNames = {};
+    if (currentUser?.id) {
+      const { data: follows } = await supabase.from("follows")
+        .select("followed_user_id, profiles!follows_followed_user_id_fkey(username)")
+        .eq("follower_id", currentUser.id);
+      (follows || []).forEach(f => {
+        if (!f.followed_user_id) return;
+        followIds.push(f.followed_user_id);
+        if (f.profiles?.username) followNames[f.followed_user_id] = f.profiles.username;
+      });
+    }
+
+    // 1. want_to_play → playing transitions from history
+    const { data: transitions } = await supabase
+      .from("user_games_history")
+      .select("user_id, game_id, changed_at, games(id, name, cover_url), profiles(id, username)")
+      .eq("from_status", "want_to_play").eq("to_status", "playing")
+      .gte("changed_at", since).order("changed_at", { ascending: false }).limit(30);
+    if (transitions?.length) {
+      const byGame = {};
+      transitions.forEach(t => {
+        if (!t.games) return;
+        if (!byGame[t.game_id]) byGame[t.game_id] = { game: t.games, users: [], followUsers: [] };
+        byGame[t.game_id].users.push(t.user_id);
+        if (followIds.includes(t.user_id)) byGame[t.game_id].followUsers.push(t.profiles?.username || "Someone you follow");
+      });
+      Object.values(byGame).slice(0, 3).forEach(({ game, users, followUsers }) => {
+        const actor = followUsers[0] || null;
+        const count = users.length;
+        cards.push({ type: "shelf_pulse", id: "transition_" + game.id, game,
+          text: actor ? `${actor} started playing ${game.name}` : count === 1 ? `A player started playing ${game.name}` : `${count} players started playing ${game.name}`,
+          cta: "Are you playing it too?", ctaStatus: "playing", hasFollow: followUsers.length > 0, priority: followUsers.length > 0 ? 3 : 1 });
+      });
+    }
+
+    // 2. Shelf activity by game + status
+    const { data: shelfActivity } = await supabase
+      .from("user_games")
+      .select("game_id, status, user_id, created_at, games(id, name, cover_url), profiles(id, username)")
+      .gte("created_at", since).in("status", ["playing", "have_played", "want_to_play"])
+      .order("created_at", { ascending: false }).limit(150);
+    if (shelfActivity?.length) {
+      const byGameStatus = {};
+      shelfActivity.forEach(s => {
+        if (!s.games) return;
+        const key = s.game_id + "_" + s.status;
+        if (!byGameStatus[key]) byGameStatus[key] = { game: s.games, status: s.status, count: 0, followUsers: [] };
+        byGameStatus[key].count++;
+        if (followIds.includes(s.user_id)) byGameStatus[key].followUsers.push(s.profiles?.username || followNames[s.user_id] || "Someone you follow");
+      });
+      Object.values(byGameStatus)
+        .sort((a, b) => (b.followUsers.length > 0 ? 1 : 0) - (a.followUsers.length > 0 ? 1 : 0) || b.count - a.count)
+        .slice(0, 8).forEach(({ game, status, count, followUsers }) => {
+          const actor = followUsers.length === 1 ? followUsers[0] : null;
+          let text, cta, ctaStatus;
+          if (status === "playing") {
+            text = actor ? `${actor} is currently playing ${game.name}` : count === 1 ? `A player is currently playing ${game.name}` : `${count} players are currently playing ${game.name}`;
+            cta = actor ? "Update your shelf" : "What are you playing?"; ctaStatus = "playing";
+          } else if (status === "want_to_play") {
+            text = actor ? `${actor} wants to play ${game.name}` : count === 1 ? `A player wants to play ${game.name}` : `${count} players want to play ${game.name}`;
+            cta = "Want to play?"; ctaStatus = "want_to_play";
+          } else {
+            text = actor ? `${actor} has ${game.name} on their shelf` : count === 1 ? `A player has played ${game.name}` : `${count} players have played ${game.name}`;
+            cta = "Have you?"; ctaStatus = "have_played";
+          }
+          cards.push({ type: "shelf_pulse", id: "shelf_" + game.id + "_" + status, game, text, cta, ctaStatus, hasFollow: followUsers.length > 0, priority: followUsers.length > 0 ? 2 : 1 });
+        });
+    }
+
+    // 3. Games with shelves but no reviews (min 3 shelf entries)
+    const { data: shelfCounts } = await supabase.from("user_games").select("game_id, games(id, name, cover_url)").in("status", ["have_played", "playing"]).limit(200);
+    if (shelfCounts?.length) {
+      const counts = {};
+      shelfCounts.forEach(s => { if (!s.games) return; if (!counts[s.game_id]) counts[s.game_id] = { game: s.games, count: 0 }; counts[s.game_id].count++; });
+      const { data: reviewed } = await supabase.from("reviews").select("game_id");
+      const reviewedIds = new Set((reviewed || []).map(r => r.game_id));
+      Object.values(counts).filter(({ game, count }) => count >= 3 && !reviewedIds.has(game.id)).sort((a, b) => b.count - a.count).slice(0, 2).forEach(({ game }) => {
+        cards.push({ type: "shelf_pulse", id: "no_review_" + game.id, game, text: `${game.name} is on several players' shelves, but no reviews yet`, cta: "Write a review", ctaStatus: "review", hasFollow: false, priority: 1 });
+      });
+    }
+
+    // 4. Recent reviews
+    const { data: recentReviews } = await supabase.from("reviews")
+      .select("id, rating, headline, content, game_id, user_id, created_at, games(id, name, cover_url), profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
+      .gte("created_at", since).order("created_at", { ascending: false }).limit(8);
+    if (recentReviews?.length) {
+      const byGame = {};
+      recentReviews.forEach(r => {
+        if (!r.games || !r.profiles) return;
+        if (!byGame[r.game_id]) byGame[r.game_id] = { game: r.games, reviews: [] };
+        byGame[r.game_id].reviews.push(r);
+      });
+      Object.values(byGame).forEach(({ game, reviews }) => {
+        const hasFollow = reviews.some(r => followIds.includes(r.user_id));
+        if (reviews.length > 1) {
+          cards.push({ type: "shelf_pulse", id: "multi_review_" + game.id, game, text: `${reviews.length} players reviewed ${game.name} this week`, cta: "Write a review", ctaStatus: "review", hasFollow, priority: hasFollow ? 2 : 1 });
+        } else {
+          const r = reviews[0];
+          cards.push({ type: "review_spotlight", id: "review_" + r.id, review: r, game, profile: r.profiles, hasFollow: followIds.includes(r.user_id), priority: followIds.includes(r.user_id) ? 2 : 1 });
+        }
+      });
+    }
+
+    cards.sort((a, b) => b.priority - a.priority);
+    setPulseCards(cards);
+  };
+
   const loadPosts = async () => {
     setFeedLoading(true);
     if (isGuest) {
@@ -3278,6 +3761,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           handle: user?.handle,
           avatar_initials: user?.avatar,
           is_founding: user?.isFounding,
+          active_ring: user?.activeRing,
+          avatar_config: user?.avatarConfig || null,
         }
       };
       setLivePosts(prev => [newPost, ...prev]);
@@ -3544,47 +4029,79 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </div>
         )}
 
-        {/* For You feed */}
-        {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.map(post => {
-          const isNPC = !!post.npc_id;
-          const author = isNPC ? post.npcs : post.profiles;
-          // For NPC posts with missing join, fall back to NPCS lookup
-          const npcFallback = isNPC && !author
-            ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
-            : null;
-          // For real user posts where profiles join is null (RLS blocked for guests), show anonymous fallback
-          const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
-          const displayAuthor = author || npcFallback || realFallback;
-          return (
-            <FeedPostCard key={post.id} post={{
-              id: post.id,
-              npc_id: post.npc_id,
-              game_tag: post.game_tag,
-              user_id: post.user_id,
-              tagged_users: post.tagged_users || [],
-              user: {
-                name: displayAuthor.name || displayAuthor.username || "Gamer",
-                handle: displayAuthor.handle || "@gamer",
-                avatar: displayAuthor.avatar_initials || displayAuthor.avatar || "GL",
-                status: "online",
-                isNPC: isNPC,
-                isFounding: !isNPC && (displayAuthor.is_founding || false),
-                activeRing: !isNPC ? (displayAuthor.active_ring || "none") : "none",
-                avatarConfig: !isNPC ? (displayAuthor.avatar_config || null) : null,
-              },
-              content: post.content,
-              tagged_users: post.tagged_users || [],
-              time: timeAgo(post.created_at),
-              likes: post.likes || 0,
-              liked: post.liked || false,
-              tipped: post.tipped || false,
-              tip_count: post.tip_count || 0,
-              comment_count: post.comment_count || 0,
-              commentList: [],
-              link_url: post.link_url || null,
-            }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
-          );
-        })}
+        {/* For You feed — interspersed with pulse cards every 3 posts */}
+        {(isGuest || feedTab === "forYou") && !feedLoading && (() => {
+          const items = [];
+          let pulseIdx = 0;
+
+          const renderPulseCard = (card) => {
+            if (card.type === "shelf_pulse") {
+              return <ShelfPulseCard key={card.id} card={card}
+                setCurrentGame={setCurrentGame} setActivePage={setActivePage}
+                currentUser={user}
+                onAddToShelf={async (game, status) => {
+                  const { data: { user: authUser } } = await supabase.auth.getUser();
+                  if (!authUser) return;
+                  await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status }, { onConflict: "user_id,game_id" });
+                  await supabase.from("chart_events").insert({ game_id: game.id, user_id: authUser.id, event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want", date: new Date().toISOString().slice(0,10), week_start: new Date(Date.now() - new Date().getDay()*86400000).toISOString().slice(0,10) });
+                }}
+              />;
+            }
+            if (card.type === "review_spotlight") {
+              return <ReviewSpotlightCard key={card.id} card={card}
+                setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                setActivePage={setActivePage} onExit={onExit}
+              />;
+            }
+            return null;
+          };
+
+          livePosts.forEach((post, i) => {
+            // Insert pulse card every 3 posts
+            if (i > 0 && i % PULSE_FREQUENCY === 0 && pulseIdx < pulseCards.length) {
+              const el = renderPulseCard(pulseCards[pulseIdx++]);
+              if (el) items.push(el);
+            }
+
+            const isNPC = !!post.npc_id;
+            const author = isNPC ? post.npcs : post.profiles;
+            const npcFallback = isNPC && !author
+              ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
+              : null;
+            const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
+            const displayAuthor = author || npcFallback || realFallback;
+            items.push(
+              <FeedPostCard key={post.id} post={{
+                id: post.id,
+                npc_id: post.npc_id,
+                game_tag: post.game_tag,
+                user_id: post.user_id,
+                tip_count: post.tip_count || 0,
+                tagged_users: post.tagged_users || [],
+                user: {
+                  name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
+                  handle: displayAuthor?.handle || "",
+                  avatar: displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL",
+                  status: "online",
+                  isNPC,
+                  isFounding: !isNPC && (displayAuthor?.is_founding || false),
+                  activeRing: !isNPC ? (displayAuthor?.active_ring || "none") : "none",
+                  avatarConfig: !isNPC ? (displayAuthor?.avatar_config || null) : null,
+                },
+                content: post.content,
+                gameId: post.game_tag,
+                time: timeAgo(post.created_at),
+                likes: post.likes || 0,
+                liked: post.liked || false,
+                tipped: post.tipped || false,
+                comment_count: post.comment_count || 0,
+                commentList: [],
+                link_url: post.link_url || null,
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
+            );
+          });
+          return items;
+        })()}
         {/* Loading skeleton */}
         {(isGuest || feedTab === "forYou") && feedLoading && [1,2,3].map(i => (
           <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 10 }}>
@@ -3753,7 +4270,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     return starts;
   };
   const scoreEvents = (events, recencyWeights) => {
-    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
     const scoreMap = {}, countMap = {}, userMap = {};
     events.forEach(e => {
       if (!e.games) return;
@@ -3788,7 +4305,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   // Build fixed 9-slot sparkline data: 8 weeks oldest→newest + 1 future zero
   const buildSparkline = (gameId, events, allWeekStarts, globalMax, referencePoints) => {
-    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
     const weekScores = {};
     allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -3805,7 +4322,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
   // Helper: compute raw weekly scores for a game given events + week starts
   const computePoints = (gameId, events, allWeekStarts) => {
-    const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+    const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
     const weekScores = {};
     allWeekStarts.forEach(w => { weekScores[w] = { score: 0, users: new Set() }; });
     events.filter(e => e.game_id === gameId).forEach(e => {
@@ -3823,15 +4340,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setChartsLoading(true);
       setSparklines({});
 
-      // Get dates in Pacific time
+      // Get most recent date with chart scores (handles cron gaps)
       const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-      const yesterdayStr = getPacificDate(1);
+      const { data: latestDateRow, error: dateErr } = await supabase
+        .from("daily_chart_scores")
+        .select("date")
+        .order("date", { ascending: false })
+        .limit(1)
+        .single();
+      const chartDate = latestDateRow?.date || getPacificDate(0); // fallback to today not yesterday
 
-      // Query yesterday's scores from daily_chart_scores
+      // Query most recent scores from daily_chart_scores
       const { data: scores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, games(id, name, genre, cover_url)")
-        .eq("date", yesterdayStr)
+        .eq("date", chartDate)
         .order("score", { ascending: false });
 
       if (!scores) { setChartsLoading(false); return; }
@@ -3854,7 +4377,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setExpandedGenreAll(new Set()); setChartsLoading(false);
 
       // Previous day for movement indicators
-      const d2Str = getPacificDate(2);
+      const prevDate = new Date(chartDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const d2Str = prevDate.toISOString().slice(0, 10);
       const { data: prevScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score")
@@ -3873,9 +4398,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         ...Object.values(genresFull).flat().map(g => g.id),
       ])];
 
-      // Get last 8 days of scores for sparklines
+      // Get last 8 days of scores for sparklines (including today)
       const sparkDates = [];
-      for (let i = 1; i <= 8; i++) { sparkDates.push(getPacificDate(i)); }
+      for (let i = 7; i >= 0; i--) { sparkDates.push(getPacificDate(i)); }
       const { data: sparkScores } = await supabase
         .from("daily_chart_scores")
         .select("game_id, score, date")
@@ -3889,14 +4414,34 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         scoresByGame[s.game_id][s.date] = s.score;
       });
 
-      // Build points arrays (oldest to newest, + 1 future zero slot)
+      // Build points arrays (oldest to newest) with interpolation for missing days
       const buildPoints = (gameId) => {
-        const ordered = sparkDates.slice().reverse(); // oldest first
-        return [...ordered.map(d => scoresByGame[gameId]?.[d] || 0), 0];
+        const raw = sparkDates.map(d => scoresByGame[gameId]?.[d] ?? null);
+        // Fill nulls by interpolating between known values, or decaying from last known
+        const filled = [...raw];
+        for (let i = 0; i < filled.length; i++) {
+          if (filled[i] !== null) continue;
+          // Find previous and next known values
+          let prev = null, prevIdx = -1, next = null, nextIdx = -1;
+          for (let j = i - 1; j >= 0; j--) { if (filled[j] !== null) { prev = filled[j]; prevIdx = j; break; } }
+          for (let j = i + 1; j < filled.length; j++) { if (filled[j] !== null) { next = filled[j]; nextIdx = j; break; } }
+          if (prev !== null && next !== null) {
+            // Interpolate between prev and next
+            const t = (i - prevIdx) / (nextIdx - prevIdx);
+            filled[i] = prev + (next - prev) * t;
+          } else if (prev !== null) {
+            // Decay from last known value
+            filled[i] = prev * 0.7;
+          } else if (next !== null) {
+            filled[i] = next * 0.7;
+          } else {
+            filled[i] = 0;
+          }
+        }
+        return filled;
       };
       const buildLabels = () => {
-        const ordered = sparkDates.slice().reverse();
-        return [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
+        return sparkDates.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); });
       };
 
       const globalMax = Math.max(...top10.map(g => Math.max(...buildPoints(g.id))), 0.1);
@@ -4016,12 +4561,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id, games(id, name, genre, cover_url)").eq("week_start", thisWeek),
           supabase.from("chart_events").select("game_id, event_type, post_sequence, user_id").eq("week_start", lastWeek),
         ]);
-        const WEIGHTS = { review: 2, shelf_playing: 3, shelf_want: 1.5, shelf_played: 1, comment: 0.5 };
+        const WEIGHTS = { review: 3, shelf_playing: 1.5, shelf_want: 1.0, shelf_played: 0.75, comment: 0.75 };
         const score = (events) => {
           const s = {};
           (events || []).forEach(e => {
             if (!s[e.game_id]) s[e.game_id] = 0;
-            s[e.game_id] += e.event_type === "post" ? (e.post_sequence === 1 ? 1 : 0.3) : (WEIGHTS[e.event_type] || 0);
+            s[e.game_id] += e.event_type === "post" ? (e.post_sequence === 1 ? 1.5 : 0.75) : (WEIGHTS[e.event_type] || 0);
           });
           return s;
         };
@@ -4235,30 +4780,26 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
-  // Sparkline: 9 slots fixed (8 weeks data + 1 future empty)
+  // Sparkline: 8 slots (8 days of data, no future projection)
   const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
-    const slots = 9;
-    const dataMax = Math.max(...points.slice(0, 8));
+    const slots = 8;
+    const dataMax = Math.max(...points);
     const max = globalMax ? globalMax : (dataMax > 0 ? dataMax : 0.1);
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
     let lastDataIdx = 0;
-    for (let i = 7; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
+    for (let i = slots - 1; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
     const dataPoints = points.slice(0, lastDataIdx + 1);
     const linePts = dataPoints.map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ");
     const areaPath = `M ${xPos(0)},${baseline} ` + dataPoints.map((v, i) => `L ${xPos(i)},${yPos(v)}`).join(" ") + ` L ${xPos(lastDataIdx)},${baseline} Z`;
-    // Reference line (genre or overall leader)
-    let refLastIdx = 0;
-    let refFirstIdx = 0;
-    const refLinePts = refPoints ? refPoints.slice(0, 8).map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
+    const refLinePts = refPoints ? refPoints.slice(0, slots).map((v, i) => `${xPos(i)},${yPos(v)}`).join(" ") : null;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={`0 0 ${W} ${h}`} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={`grad-${color.replace("#","")}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-          {/* Reference line — #1 in this context */}
           {refLinePts && (
             <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.2" strokeDasharray="8 6" />
           )}
@@ -4269,7 +4810,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           ))}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2 }}>
-          {labels && labels.map((l, i) => i < slots - 1 ? (
+          {labels && labels.map((l, i) => i < slots ? (
             <span key={i} style={{ position: "absolute", left: `${(xPos(i) / W) * 100}%`, transform: "translateX(-50%)", color: C.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{l}</span>
           ) : null)}
         </div>
@@ -4297,8 +4838,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const isLoadingSp = loadingSparkline[entry.id];
     const movement = (() => {
       const prevRank = prevRanks[entry.id];
-      if (!prevRank) return { label: "NEW", color: C.teal };
-      const diff = prevRank - rank; // positive = moved up, negative = moved down
+      // Check sparkline history — if any score exists in last 8 days, not truly new
+      const historyPoints = spData?.points || [];
+      const hasHistory = historyPoints.slice(0, 7).some(p => p > 0.5); // exclude today (last point)
+      if (!prevRank && !hasHistory) return { label: "NEW", color: C.teal };
+      if (!prevRank) return { label: "—", color: C.textDim }; // returning but no yesterday rank
+      const diff = prevRank - rank;
       if (diff === 0) return { label: "—", color: C.textDim };
       if (diff > 0) return { label: `+${diff}`, color: "#22c55e" };
       return { label: `${diff}`, color: "#ef4444" };
@@ -4512,8 +5057,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                             e.stopPropagation();
                             const { data: { user: authUser } } = await supabase.auth.getUser();
                             if (!authUser) return;
-                            await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() });
-                            await supabase.from("user_game_history").insert({ user_id: authUser.id, game_id: g.id, from_status: null, to_status: opt.id });
+                            await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+                            await supabase.from("user_games_history").insert({ user_id: authUser.id, game_id: g.id, from_status: null, to_status: opt.id });
                             const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
                             if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
                             setUserShelf(prev => new Set([...prev, g.id]));
@@ -4784,8 +5329,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const setShelf = async (status) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !dbGame) return;
-    await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() });
-    await supabase.from("user_game_history").insert({ user_id: user.id, game_id: dbGame.id, from_status: shelfStatus, to_status: status });
+    await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+    await supabase.from("user_games_history").insert({ user_id: user.id, game_id: dbGame.id, from_status: shelfStatus, to_status: status });
     const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
     if (eventMap[status]) logChartEvent(dbGame.id, eventMap[status], user.id);
     setShelfStatus(status);
@@ -5165,7 +5710,6 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   likes: post.likes || 0,
                   liked: post.liked || false,
                   tipped: post.tipped || false,
-                  tip_count: post.tip_count || 0,
                   comment_count: post.comment_count || 0,
                   commentList: [],
                 }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
@@ -5314,6 +5858,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   }, [defaultTab]);
   const [editing, setEditing] = useState(false);
   const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
+  const [showSteamImport, setShowSteamImport] = useState(false);
   const [localAvatarConfig, setLocalAvatarConfig] = useState(null);
   const [previewThemeId, setPreviewThemeId] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
@@ -5508,9 +6053,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       status: toStatus,
       sort_order: destLength,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: "user_id,game_id" });
     // Log shelf transition for developer analytics
-    await supabase.from("user_game_history").insert({
+    await supabase.from("user_games_history").insert({
       user_id: authUser.id,
       game_id: gameId,
       from_status: fromStatus,
@@ -5542,10 +6087,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       game_id: game.id,
       status,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: "user_id,game_id" });
     if (!error) {
       // Log shelf addition for developer analytics (from_status null = new addition)
-      await supabase.from("user_game_history").insert({
+      await supabase.from("user_games_history").insert({
         user_id: authUser.id,
         game_id: game.id,
         from_status: null,
@@ -6495,6 +7040,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           userRewards={userRewards}
           onSave={(cfg) => { setLocalAvatarConfig(cfg); onProfileSaved?.(); }}
           onClose={() => setShowAvatarBuilder(false)}
+        />
+      )}
+
+      {showSteamImport && (
+        <SteamImportModal
+          currentUser={user}
+          onClose={() => setShowSteamImport(false)}
+          onImportComplete={() => { setShowSteamImport(false); onProfileSaved?.(); }}
         />
       )}
 
@@ -9456,8 +10009,8 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     if (addedGames.find(g => g.id === game.id)) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString() });
-    await supabase.from("user_game_history").insert({ user_id: authUser.id, game_id: game.id, from_status: null, to_status: "playing" });
+    await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: game.id, status: "playing", updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+    await supabase.from("user_games_history").insert({ user_id: authUser.id, game_id: game.id, from_status: null, to_status: "playing" });
     logChartEvent(game.id, 'shelf_playing', authUser.id);
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
     await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
