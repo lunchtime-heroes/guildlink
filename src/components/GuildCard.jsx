@@ -1,7 +1,7 @@
 import React from "react";
 import { C } from "../constants.js";
 
-function GuildCard({ guild, onJoin, isMember }) {
+function GuildCard({ guild, onJoin, isMember, isRequested }) {
   return (
     <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -28,10 +28,10 @@ function GuildCard({ guild, onJoin, isMember }) {
           </div>
         </div>
         <button
-          onClick={isMember ? undefined : onJoin}
-          disabled={isMember}
-          style={{ background: isMember ? C.surfaceRaised : C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: isMember ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember ? "default" : "pointer", flexShrink: 0 }}>
-          {isMember ? "Joined" : guild.is_public ? "Join" : "Request to Join"}
+          onClick={isMember || isRequested ? undefined : onJoin}
+          disabled={isMember || isRequested}
+          style={{ background: isMember || isRequested ? C.surfaceRaised : C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: isMember || isRequested ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember || isRequested ? "default" : "pointer", flexShrink: 0 }}>
+          {isMember ? "Joined" : isRequested ? "Requested" : guild.is_public ? "Join" : "Request to Join"}
         </button>
       </div>
     </div>

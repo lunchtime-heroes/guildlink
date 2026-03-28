@@ -14,6 +14,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
   const [guildSearch, setGuildSearch] = useState("");
   const [lfmFilter, setLfmFilter] = useState(false);
   const [memberGuildIds, setMemberGuildIds] = useState(new Set());
+  const [requestedGuildIds, setRequestedGuildIds] = useState(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", description: "", is_public: true, looking_for_members: false, discord_url: "", website_url: "" });
   const [creating, setCreating] = useState(false);
@@ -83,8 +84,9 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
       .order("created_at", { ascending: false });
     setGuilds(data || []);
     if (currentUser?.id) {
-      const { data: mem } = await supabase.from("guild_members").select("guild_id").eq("user_id", currentUser.id);
-      setMemberGuildIds(new Set((mem || []).map(m => m.guild_id)));
+      const { data: mem } = await supabase.from("guild_members").select("guild_id, status").eq("user_id", currentUser.id);
+      setMemberGuildIds(new Set((mem || []).filter(m => m.status === "active").map(m => m.guild_id)));
+      setRequestedGuildIds(new Set((mem || []).filter(m => m.status === "pending").map(m => m.guild_id)));
     }
     setGuildsLoading(false);
   };
@@ -143,10 +145,16 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
 
   const joinGuild = async (guildId) => {
     if (!currentUser?.id) return;
+    const guild = guilds.find(g => g.id === guildId);
+    const status = guild?.is_public ? "active" : "pending";
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("guild_members").insert({ guild_id: guildId, user_id: user.id, role: "member" });
-    setMemberGuildIds(prev => new Set([...prev, guildId]));
+    await supabase.from("guild_members").insert({ guild_id: guildId, user_id: currentUser.id, role: "member", status });
+    if (status === "active") {
+      setMemberGuildIds(prev => new Set([...prev, guildId]));
+    } else {
+      setRequestedGuildIds(prev => new Set([...prev, guildId]));
+    }
   };
 
   const createGuild = async () => {
@@ -280,7 +288,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontSize: 13, color: C.textDim }}>Be the first to create one.</div>
             </div>
           ) : filteredGuilds.map(g => (
-            <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} />
+            <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} />
           ))}
         </div>
       )}
