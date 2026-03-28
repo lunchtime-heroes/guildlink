@@ -134,6 +134,12 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     setSaving(false);
   };
 
+  const deleteGuild = async () => {
+    if (!window.confirm("Delete this guild? This cannot be undone.")) return;
+    await supabase.from("guilds").delete().eq("id", guildId);
+    setActivePage("squad");
+  };
+
   const scheduleSession = async (dayDate) => {
     if (!sessionTime || schedulingSession) return;
     if (!selectedGame && !gameSearch.trim()) return;
@@ -286,11 +292,14 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 Looking for members
               </label>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-              <button onClick={saveEdit} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {saving ? "Saving..." : "Save"}
-              </button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveEdit} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+              <button onClick={deleteGuild} style={{ background: "#ef444418", border: "1px solid #ef444440", borderRadius: 8, padding: "8px 16px", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Delete Guild</button>
             </div>
           </div>
         ) : (
