@@ -568,12 +568,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ marginTop: 12, marginBottom: 4 }}>
                 {TAG_CATEGORIES.map(cat => {
                   const activeTags = cat.tags.filter(tag => playerTags[tag] !== undefined && playerTags[tag] !== null);
-                  if (activeTags.length === 0 && !editing) return null;
                   return (
                     <div key={cat.label} style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
                       {cat.tags.map(tag => {
                         const val = playerTags[tag];
-                        if (val === undefined && !editing) return null;
+                        
                         const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
                         const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.border;
                         const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textDim;
