@@ -55,11 +55,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   console.log("PLAYER TAGS DEBUG:", user.player_tags, typeof user.player_tags);
 
   const TAG_CATEGORIES = [
-    { label: "Play Style", tags: ["Casual", "Competitive"] },
-    { label: "Mode", tags: ["PvP", "PvE", "Both"] },
-    { label: "Session", tags: ["Short sessions", "Medium sessions", "Long sessions", "Daily player", "Weekly player", "Occasional"] },
-    { label: "Tone", tags: ["Chill", "Intense", "Voice chat", "No mic needed", "Clean", "Mature"] },
-    { label: "Platform", tags: ["PC", "PlayStation", "Xbox", "Nintendo", "Mobile"] },
+    { label: "How I play", tags: ["Casual", "Competitive"] },
+    { label: "Modes", tags: ["PvP", "PvE", "Co-op", "Solo"] },
+    { label: "Voice chat", tags: ["Yes", "No"] },
+    { label: "What matters more", tags: ["Winning", "Good game"], binary: true },
+    { label: "Platform", tags: ["PC", "PlayStation", "Xbox", "Switch", "Mobile", "Retro"] },
   ];
 
   // Guard must be after all hooks
@@ -579,6 +579,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textDim;
                         const cycle = () => {
                           setPlayerTags(prev => {
+                            if (cat.binary) {
+                              const cur = prev[tag];
+                              if (cur === 1) { const next = { ...prev }; delete next[tag]; return next; }
+                              const next = { ...prev };
+                              cat.tags.forEach(t => delete next[t]);
+                              next[tag] = 1;
+                              return next;
+                            }
                             const cur = prev[tag];
                             if (cur === undefined || cur === null) return { ...prev, [tag]: 1 };
                             if (cur === 1) return { ...prev, [tag]: 0 };
