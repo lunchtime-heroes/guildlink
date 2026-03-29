@@ -64,4 +64,4 @@ function ExitModal({ url, onClose }) {
   );
 }
 
-export { LinkPreviewFetcher, ExitModal };
+export { LinkPreviewFetcher, ExitModal, LinkPreviewCard };

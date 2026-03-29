@@ -1093,7 +1093,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <div style={{ height: 12, width: "50%", background: C.surfaceHover, borderRadius: 6 }} />
           </div>
         ))}
-        ))}
 
         {/* Empty state once loaded */}
         {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.length === 0 && (
