@@ -52,6 +52,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [questsLoaded, setQuestsLoaded] = useState(false);
   const [profileFollowing, setProfileFollowing] = useState([]);
   const [playerTags, setPlayerTags] = useState(typeof user.player_tags === 'object' && !Array.isArray(user.player_tags) && user.player_tags !== null ? user.player_tags : {});
+  console.log("PLAYER TAGS DEBUG:", user.player_tags, typeof user.player_tags);
 
   const TAG_CATEGORIES = [
     { label: "Play Style", tags: ["Casual", "Competitive"] },
