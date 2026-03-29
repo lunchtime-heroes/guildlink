@@ -24,6 +24,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   // ── Charts data (absorbed from ChartsPage) ──
   const [chartsLoading, setChartsLoading] = useState(true);
   const [overall, setOverall] = useState([]);
+  const [emerging, setEmerging] = useState([]);
   const [byGenre, setByGenre] = useState({});
   const [byGenreFull, setByGenreFull] = useState({});
   const [expandedGenreAll, setExpandedGenreAll] = useState(new Set());
@@ -276,6 +277,46 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       });
       setSparklines(newSparklines);
       setGenreContext(newGenreContext);
+
+      // Load emerging games
+      const last7Dates = Array.from({ length: 7 }, (_, i) => getPacificDate(i));
+      const prev7Dates = Array.from({ length: 7 }, (_, i) => getPacificDate(i + 7));
+
+      const [recentEventsRes, prevEventsRes] = await Promise.all([
+        supabase.from("chart_events").select("game_id, user_id").in("date", last7Dates),
+        supabase.from("chart_events").select("game_id").in("date", prev7Dates),
+      ]);
+
+      const prevGameIds = new Set((prevEventsRes.data || []).map(e => e.game_id));
+      const recentByGame = {};
+      (recentEventsRes.data || []).forEach(e => {
+        if (!recentByGame[e.game_id]) recentByGame[e.game_id] = new Set();
+        recentByGame[e.game_id].add(e.user_id);
+      });
+
+      const emergingGameIds = new Set(
+        Object.entries(recentByGame)
+          .filter(([gameId, users]) => !prevGameIds.has(gameId) && users.size >= 2)
+          .map(([gameId]) => gameId)
+      );
+
+      const emergingList = (scores || [])
+        .filter(s => s.games && emergingGameIds.has(s.game_id))
+        .slice(0, 10)
+        .map(s => ({ id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url, uniqueUsers: 1, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }));
+
+      setEmerging(emergingList);
+
+      // Add emerging game sparklines
+      const emergingNewSparklines = {};
+      emergingList.forEach(g => {
+        if (newSparklines[g.id]) return;
+        const points = buildPoints(g.id);
+        emergingNewSparklines[g.id] = { points, labels, globalMax, referencePoints: null, genreGlobalMax: globalMax, genreRefPoints: null };
+      });
+      if (Object.keys(emergingNewSparklines).length > 0) {
+        setSparklines(prev => ({ ...prev, ...emergingNewSparklines }));
+      }
     };
     load();
   }, []);
@@ -922,6 +963,16 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             </div>
             {overall.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="overall" />)}
           </div>
+
+          {emerging.length > 0 && (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
+              <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Emerging</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>Back on the radar after going quiet</div>
+              </div>
+              {emerging.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="emerging" />)}
+            </div>
+          )}
 
           {(() => {
             const genreEntries = Object.entries(byGenre).filter(([, games]) => games.length >= 1);
