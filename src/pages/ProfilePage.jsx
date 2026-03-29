@@ -56,10 +56,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
-    { label: "Modes", tags: ["PvP", "PvE", "Co-op", "Solo"] },
+    { label: "Modes I like", tags: ["PvP", "PvE", "Solo", "Co-op"] },
     { label: "Voice chat", tags: ["Yes", "No"] },
     { label: "What matters more", tags: ["Winning", "Good game"], binary: true },
-    { label: "Platform", tags: ["PC", "PlayStation", "Xbox", "Switch", "Mobile", "Retro"] },
+    { label: "I play on", tags: ["PC", "PlayStation", "Xbox", "Switch", "Mobile", "Retro"] },
   ];
 
   // Guard must be after all hooks
