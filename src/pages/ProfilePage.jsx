@@ -52,7 +52,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [questsLoaded, setQuestsLoaded] = useState(false);
   const [profileFollowing, setProfileFollowing] = useState([]);
   const [playerTags, setPlayerTags] = useState(typeof user.player_tags === 'object' && !Array.isArray(user.player_tags) && user.player_tags !== null ? user.player_tags : {});
-  console.log("PLAYER TAGS DEBUG:", user.player_tags, typeof user.player_tags);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
@@ -212,6 +211,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       onProfileSaved?.();
     }
     setSaving(false);
+  };
+
+  const saveTag = async (newTags) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("profiles").update({ player_tags: newTags }).eq("id", authUser.id);
   };
 
   const moveGame = async (gameId, fromStatus, toStatus) => {
@@ -567,47 +572,44 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle}</div>
               <div style={{ marginTop: 12, marginBottom: 4 }}>
-                {TAG_CATEGORIES.map(cat => {
-                  const activeTags = cat.tags.filter(tag => playerTags[tag] !== undefined && playerTags[tag] !== null);
-                  return (
-                    <div key={cat.label} style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
+                {TAG_CATEGORIES.map(cat => (
+                  <div key={cat.label} style={{ marginBottom: 8 }}>
+                    <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 }}>{cat.label}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                       {cat.tags.map(tag => {
                         const val = playerTags[tag];
-                        
-                        const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
-                        const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.border;
-                        const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textDim;
+                        const isUnset = val === undefined || val === null;
+                        const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.gold + "11";
+                        const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.gold + "33";
+                        const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.gold + "88";
                         const cycle = () => {
                           setPlayerTags(prev => {
+                            let newTags;
                             if (cat.binary) {
                               const cur = prev[tag];
-                              if (cur === 1) { const next = { ...prev }; delete next[tag]; return next; }
-                              const next = { ...prev };
-                              cat.tags.forEach(t => delete next[t]);
-                              next[tag] = 1;
-                              return next;
+                              if (cur === 1) { newTags = { ...prev }; delete newTags[tag]; }
+                              else { newTags = { ...prev }; cat.tags.forEach(t => delete newTags[t]); newTags[tag] = 1; }
+                            } else {
+                              const cur = prev[tag];
+                              if (cur === undefined || cur === null) newTags = { ...prev, [tag]: 1 };
+                              else if (cur === 1) newTags = { ...prev, [tag]: 0 };
+                              else if (cur === 0) newTags = { ...prev, [tag]: -1 };
+                              else { newTags = { ...prev }; delete newTags[tag]; }
                             }
-                            const cur = prev[tag];
-                            if (cur === undefined || cur === null) return { ...prev, [tag]: 1 };
-                            if (cur === 1) return { ...prev, [tag]: 0 };
-                            if (cur === 0) return { ...prev, [tag]: -1 };
-                            const next = { ...prev };
-                            delete next[tag];
-                            return next;
+                            saveTag(newTags);
+                            return newTags;
                           });
                         };
-                        return editing ? (
+                        return (
                           <button key={tag} onClick={cycle}
                             style={{ background: bg, border: "1px solid " + border, color, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                            {val === 1 ? "✓ " : val === 0 ? "~ " : val === -1 ? "✕ " : ""}{tag}
+                            {tag}
                           </button>
-                        ) : (
-                          <span key={tag} style={{ background: bg, border: "1px solid " + border, color, fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>{tag}</span>
                         );
                       })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
               <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
             </div>
