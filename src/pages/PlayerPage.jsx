@@ -174,6 +174,36 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 })()}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
+              {profile.player_tags && Object.keys(profile.player_tags).length > 0 && (
+                <div style={{ marginTop: 10, marginBottom: 4 }}>
+                  {[
+                    { label: "How I play", tags: ["Casual", "Competitive"] },
+                    { label: "Modes I like", tags: ["PvP", "PvE", "Solo", "Co-op"] },
+                    { label: "Voice chat", tags: ["Yes", "No"] },
+                    { label: "What matters more", tags: ["Winning", "Good game"] },
+                    { label: "I play on", tags: ["PC", "PlayStation", "Xbox", "Switch", "Mobile", "Retro"] },
+                  ].map(cat => {
+                    const activeTags = cat.tags.filter(tag => profile.player_tags[tag] !== undefined && profile.player_tags[tag] !== null);
+                    if (activeTags.length === 0) return null;
+                    return (
+                      <div key={cat.label} style={{ marginBottom: 6 }}>
+                        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{cat.label}</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                          {activeTags.map(tag => {
+                            const val = profile.player_tags[tag];
+                            const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : "#ef444422";
+                            const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : "#ef444455";
+                            const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : "#ef4444";
+                            return (
+                              <span key={tag} style={{ background: bg, border: "1px solid " + border, color, fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>{tag}</span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {profile.bio && <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{profile.bio}</p>}
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", alignItems: isMobile ? "center" : "flex-end", gap: 8, width: isMobile ? "100%" : "auto" }}>
