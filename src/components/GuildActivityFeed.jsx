@@ -17,14 +17,15 @@ function GuildActivityFeed({ guildId, memberIds }) {
           .select("id, content, created_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
           .in("user_id", memberIds)
           .order("created_at", { ascending: false })
-          .limit(20),
+          .limit(memberIds.length * 2),
         supabase
-          .from("user_games")
-          .select("id, status, updated_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
+          .from("user_games_history")
+          .select("id, to_status, changed_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
           .in("user_id", memberIds)
-          .order("updated_at", { ascending: false })
-          .limit(20),
+          .order("changed_at", { ascending: false })
+          .limit(memberIds.length * 2),
       ]);
+
       const postItems = (postsRes.data || []).map(p => ({
         id: "post-" + p.id,
         type: "post",
@@ -33,24 +34,44 @@ function GuildActivityFeed({ guildId, memberIds }) {
         game: p.games?.name,
         ts: p.created_at,
       }));
+
       const shelfItems = (shelfRes.data || []).map(u => ({
         id: "shelf-" + u.id,
         type: "shelf",
         user: u.profiles,
         game: u.games?.name,
-        status: u.status,
-        ts: u.updated_at,
+        status: u.to_status,
+        ts: u.changed_at,
       }));
-      const merged = [...postItems, ...shelfItems]
+
+      // Keep last 2 per member across both streams
+      const byMember = {};
+      [...postItems, ...shelfItems]
         .sort((a, b) => new Date(b.ts) - new Date(a.ts))
-        .slice(0, 20);
+        .forEach(item => {
+          const uid = item.user?.username || "unknown";
+          if (!byMember[uid]) byMember[uid] = [];
+          if (byMember[uid].length < 2) byMember[uid].push(item);
+        });
+
+      const merged = Object.values(byMember)
+        .flat()
+        .sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
       setItems(merged);
       setLoading(false);
     };
     load();
   }, [guildId, (memberIds || []).join(",")]);
 
-  if (loading) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>Loading activity\u2026</div>;
+  const statusLabel = (status) => {
+    if (status === "playing") return "is now playing";
+    if (status === "want_to_play") return "wants to play";
+    if (status === "have_played") return "finished playing";
+    return "added";
+  };
+
+  if (loading) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>Loading activity...</div>;
   if (items.length === 0) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>No recent activity from guild members.</div>;
 
   return (
@@ -70,12 +91,12 @@ function GuildActivityFeed({ guildId, memberIds }) {
               <span style={{ color: C.textDim, fontSize: 13 }}>
                 {item.type === "post"
                   ? (item.game ? " posted about " + item.game + ": " : " posted: ")
-                  : (" added " + (item.game || "a game") + " to their shelf")
+                  : (" " + statusLabel(item.status) + " " + (item.game || "a game"))
                 }
               </span>
               {item.type === "post" && item.content && (
                 <span style={{ color: C.textMuted, fontSize: 13 }}>
-                  {item.content.length > 80 ? item.content.slice(0, 80) + "\u2026" : item.content}
+                  {item.content.length > 80 ? item.content.slice(0, 80) + "..." : item.content}
                 </span>
               )}
             </div>

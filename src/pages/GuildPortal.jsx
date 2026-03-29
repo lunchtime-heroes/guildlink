@@ -477,11 +477,6 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       </div>
 
       <div style={sectionStyle}>
-        <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Activity</div>
-        <GuildActivityFeed guildId={guildId} memberIds={memberIds} />
-      </div>
-
-      <div style={sectionStyle}>
         <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Guild Thread</div>
 
         {isMember && (
@@ -563,6 +558,11 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             </div>
           );
         })}
+      </div>
+
+      <div style={sectionStyle}>
+        <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Activity</div>
+        <GuildActivityFeed guildId={guildId} memberIds={memberIds} />
       </div>
     </div>
   );
