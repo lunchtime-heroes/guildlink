@@ -584,7 +584,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const W = 1000, h = 240, pad = 20;
     const slots = 8;
     const dataMax = Math.max(...points);
-    const max = globalMax ? globalMax : (dataMax > 0 ? dataMax : 0.1);
+    const max = dataMax > 0 ? dataMax * 1.1 : 0.1;
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
