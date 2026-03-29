@@ -565,19 +565,42 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 {user.isFounding && <FoundingBadge />}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle}</div>
-              {Object.keys(playerTags).length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "10px 0 4px" }}>
-                  {Object.entries(playerTags).map(([tag, val]) => {
-                    if (val === undefined || val === null) return null;
-                    const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : "#ef444422";
-                    const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : "#ef444455";
-                    const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : "#ef4444";
-                    return (
-                      <span key={tag} style={{ background: bg, border: "1px solid " + border, color, fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>{tag}</span>
-                    );
-                  })}
-                </div>
-              )}
+              <div style={{ marginTop: 12, marginBottom: 4 }}>
+                {TAG_CATEGORIES.map(cat => {
+                  const activeTags = cat.tags.filter(tag => playerTags[tag] !== undefined && playerTags[tag] !== null);
+                  if (activeTags.length === 0 && !editing) return null;
+                  return (
+                    <div key={cat.label} style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
+                      {cat.tags.map(tag => {
+                        const val = playerTags[tag];
+                        if (val === undefined && !editing) return null;
+                        const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
+                        const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.border;
+                        const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textDim;
+                        const cycle = () => {
+                          setPlayerTags(prev => {
+                            const cur = prev[tag];
+                            if (cur === undefined || cur === null) return { ...prev, [tag]: 1 };
+                            if (cur === 1) return { ...prev, [tag]: 0 };
+                            if (cur === 0) return { ...prev, [tag]: -1 };
+                            const next = { ...prev };
+                            delete next[tag];
+                            return next;
+                          });
+                        };
+                        return editing ? (
+                          <button key={tag} onClick={cycle}
+                            style={{ background: bg, border: "1px solid " + border, color, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                            {val === 1 ? "✓ " : val === 0 ? "~ " : val === -1 ? "✕ " : ""}{tag}
+                          </button>
+                        ) : (
+                          <span key={tag} style={{ background: bg, border: "1px solid " + border, color, fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>{tag}</span>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
               <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
             </div>
             {editing ? (
@@ -603,40 +626,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
                 <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 10 }}>Player Tags</div>
-                {TAG_CATEGORIES.map(cat => (
-                  <div key={cat.label} style={{ marginBottom: 12 }}>
-                    <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{cat.label}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {cat.tags.map(tag => {
-                        const val = playerTags[tag];
-                        const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surface;
-                        const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.border;
-                        const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textDim;
-                        const cycle = () => {
-                          setPlayerTags(prev => {
-                            const cur = prev[tag];
-                            if (cur === undefined || cur === null) return { ...prev, [tag]: 1 };
-                            if (cur === 1) return { ...prev, [tag]: 0 };
-                            if (cur === 0) return { ...prev, [tag]: -1 };
-                            const next = { ...prev };
-                            delete next[tag];
-                            return next;
-                          });
-                        };
-                        return (
-                          <button key={tag} onClick={cycle}
-                            style={{ background: bg, border: "1px solid " + border, color, borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                            {val === 1 ? "✓ " : val === 0 ? "~ " : val === -1 ? "✕ " : ""}{tag}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
               </div>
 
               {/* Theme picker — base themes + quest-unlocked catalog */}
