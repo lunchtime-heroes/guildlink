@@ -10240,6 +10240,7 @@ export default function GuildLink() {
     dob_changes: profile.dob_changes || 0,
     theme: profile.theme || "deep-space",
     avatarConfig: profile.avatar_config || null,
+    player_tags: profile.player_tags || {},
   } : null;
 
 
