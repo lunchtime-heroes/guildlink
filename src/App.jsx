@@ -1024,7 +1024,114 @@ function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, set
     </>
   );
 }
+function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
 
+  const search = async (q) => {
+    if (q.length < 2) { setResults(null); return; }
+    setLoading(true);
+    const [gamesRes, usersRes, igdbRes] = await Promise.allSettled([
+      supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(4),
+      supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(4),
+      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
+    ]);
+    const games = gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : [];
+    const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
+    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+    const localNames = new Set(games.map(g => g.name.toLowerCase()));
+    const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
+    setResults({ games: [...games, ...igdbNew], users });
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => search(query), 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const close = () => { setQuery(""); setResults(null); };
+
+  const selectGame = async (game) => {
+    if (game._fromIGDB) {
+      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0, platforms: game.platforms || null }).select().single();
+      if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
+    } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }
+    close();
+  };
+
+  const selectUser = async (user) => {
+    setCurrentPlayer(user.id); setActivePage("player");
+    const handle = user.handle?.replace("@", "") || user.id;
+    window.history.pushState({ page: "player", playerId: user.id, playerHandle: handle }, "", `/player/${handle}`);
+    close();
+  };
+
+  const hasResults = results && (results.games.length > 0 || results.users.length > 0);
+
+  return (
+    <div style={{ flex: 1, maxWidth: 320, position: "relative" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <span style={{ position: "absolute", left: 10, color: C.textDim, fontSize: 13, pointerEvents: "none" }}>🔍</span>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onBlur={() => setTimeout(close, 200)}
+          placeholder="Search games and players..."
+          style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+        />
+        {query && <span onClick={close} style={{ position: "absolute", right: 10, color: C.textDim, cursor: "pointer", fontSize: 14 }}>×</span>}
+      </div>
+      {(hasResults || loading) && (
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", maxHeight: 400, overflowY: "auto" }}>
+          {loading && <div style={{ padding: "12px 14px", color: C.textDim, fontSize: 12 }}>Searching...</div>}
+          {results?.users.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Players</div>
+              {results.users.map(u => (
+                <div key={u.id} onMouseDown={() => selectUser(u)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{u.avatar_initials || u.username?.slice(0,2).toUpperCase()}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
+                    <div style={{ color: C.textDim, fontSize: 10 }}>{u.handle}</div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {results?.games.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Games</div>
+              {results.games.map(g => (
+                <div key={g.id || g.igdb_id} onMouseDown={() => selectGame(g)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  {g.cover_url
+                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
+                    : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                    {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
+                  </div>
+                  {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
+                </div>
+              ))}
+            </>
+          )}
+          {results && !results.games.length && !results.users.length && !loading && (
+            <div style={{ padding: "14px", color: C.textDim, fontSize: 13, textAlign: "center" }}>No results for "{query}"</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab, setCurrentGame, setCurrentPlayer }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
