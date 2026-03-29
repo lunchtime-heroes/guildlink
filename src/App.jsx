@@ -18,6 +18,7 @@ import { ShelfPulseCard, ReviewSpotlightCard } from "./components/PulseCards.jsx
 import ReviewsPage from "./pages/ReviewsPage.jsx";
 import FeedbackPage from "./pages/FeedbackPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
+import AuthPage from "./pages/AuthPage.jsx";
 
 const supabase = createClient(
   "https://zpalkpcqihxamedymnwe.supabase.co",
