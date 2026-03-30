@@ -1146,7 +1146,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 comment_count: post.comment_count || 0,
                 commentList: [],
                 link_url: post.link_url || null,
-              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} />
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
             );
           })
         )}

@@ -35,7 +35,7 @@ function LinkPreviewCard({ preview, onExit }) {
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
       {preview.image && <img src={preview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />}
       <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
-        <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{preview.domain} ↗</div>
+        <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>from {preview.domain?.replace(/^www\./, "")} ↗</div>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{decodeHtml(preview.title) || preview.url}</div>
         {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(preview.description)}</div>}
       </div>
