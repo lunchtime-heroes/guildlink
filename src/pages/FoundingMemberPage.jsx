@@ -112,8 +112,8 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
 
         {/* Algorithm section */}
         <div style={{ marginBottom: 0 }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 28, marginBottom: 12, letterSpacing: "-0.5px" }}>The Algorithm Belongs to You</div>
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 28, marginBottom: 12, letterSpacing: "-0.5px", textAlign: "center" }}>The Algorithm Belongs to You</div>
             <p style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.8, maxWidth: 640, margin: "0 auto 12px" }}>
               Most platforms have an algorithm. You don't get to see it, understand it, or change it. It works for them by keeping you engaged, driving clicks, and getting that doom scroll going. More engagement means more time to show you ads. Your time on-platform trains it so they can keep you engaged longer.
             </p>
