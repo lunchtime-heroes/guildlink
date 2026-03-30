@@ -13,7 +13,6 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
       num: "Ring 1",
       title: "You vs. GuildLink",
       color: C.accent,
-      glow: C.accentDim,
       desc: "Your shelf matched against the whole platform. This ring looks for the different amongst the same. When another gamer's library has a lot in common with yours, the differences are often hidden gems.",
       today: "The Game Discovery section on the Games page runs Ring 1 — similar shelf players, games trending in your genres, hidden gems the community is playing that you haven't found yet.",
     },
@@ -21,7 +20,6 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
       num: "Ring 2",
       title: "You vs. Your Network",
       color: C.teal,
-      glow: C.teal + "44",
       desc: "Your shelf filtered through the people you follow. When you follow gamers who post great content or play games you like, you benefit from their good taste too.",
       today: "The Following tab in Reviews and your activity feed surface what people you follow are saying and playing. The more intentional you are about who you follow, the better this signal becomes.",
     },
@@ -29,7 +27,6 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
       num: "Ring 3",
       title: "You vs. Your Guild",
       color: C.gold,
-      glow: C.gold + "44",
       desc: "Your shelf weighted by the people you actually game with. Their gaming choices are a great signal for your next favorite game — even if it's not something you'll play together.",
       today: "Your guild's activity feed shows what members are playing and talking about. The gaming schedule shows what they're coordinating around. These are the highest-trust signals on the platform.",
     },
@@ -37,6 +34,8 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
 
   return (
     <div style={{ minHeight: "100vh", paddingTop: 60, background: C.bg }}>
+
+      {/* Hero */}
       <div style={{
         background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
         borderBottom: "1px solid " + C.goldBorder,
@@ -44,26 +43,17 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
       }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 1px 1px, " + C.gold + "06 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, background: "radial-gradient(circle, " + C.gold + "08 0%, transparent 70%)", pointerEvents: "none" }} />
-
         <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "40px 16px 48px" : "64px 24px 72px", textAlign: "center", position: "relative" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 20, padding: "6px 16px", marginBottom: 24 }}>
             <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>About GuildLink</span>
           </div>
-
           <h1 style={{ margin: "0 0 20px", fontWeight: 900, fontSize: isMobile ? 30 : 42, color: "#fff", letterSpacing: "-1px", lineHeight: 1.15 }}>
             Game discovery based on what<br /><span style={{ color: C.gold }}>gamers are actually playing.</span>
           </h1>
-
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 15 : 17, maxWidth: 540, margin: "0 auto 36px", lineHeight: 1.75 }}>
             Not what's being advertised. Not what's trending on social media. What real players are putting time into — tracked, charted, and surfaced for everyone.
           </p>
-
-          <button onClick={() => onSignUp?.()} style={{
-            background: "linear-gradient(135deg, " + C.gold + ", #d97706)",
-            border: "none", borderRadius: 12, padding: "14px 40px",
-            color: "#000", fontSize: 15, fontWeight: 900, cursor: "pointer",
-            boxShadow: "0 8px 32px " + C.gold + "44",
-          }}>Join Free</button>
+          <button onClick={() => onSignUp?.()} style={{ background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 12, padding: "14px 40px", color: "#000", fontSize: 15, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 32px " + C.gold + "44" }}>Join Free</button>
         </div>
       </div>
 
@@ -87,7 +77,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </div>
 
         {/* NPC section */}
-        <div style={{ background: "linear-gradient(135deg, #080e1a, #0d1829)", border: "1px solid " + C.accentDim, borderRadius: 20, padding: isMobile ? 24 : 40, marginBottom: 48, textAlign: "center" }}>
+        <div style={{ background: "linear-gradient(135deg, #080e1a, #0d1829)", border: "1px solid " + C.accentDim, borderRadius: 20, padding: isMobile ? 24 : 40, marginBottom: 64, textAlign: "center" }}>
           <div style={{ fontWeight: 900, color: C.text, fontSize: isMobile ? 20 : 26, marginBottom: 14, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
             For years you've jumped into<br /><span style={{ color: C.accentSoft }}>NPC worlds.</span> Now they're joining yours.
           </div>
@@ -97,7 +87,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </div>
 
         {/* Profile rings */}
-        <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 48 }}>
+        <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 64 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 6 }}>Earn your mark</div>
             <div style={{ color: C.textMuted, fontSize: 14 }}>Complete quests to unlock profile rings. Every ring tells a story.</div>
@@ -120,50 +110,50 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           </div>
         </div>
 
-        {/* Transparency section */}
-        <div style={{ marginBottom: 48 }}>
-          <div style={{ textAlign: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 28, marginBottom: 8, letterSpacing: "-0.5px" }}>The Algorithm Belongs to You</div>
+        {/* Algorithm section */}
+        <div style={{ marginBottom: 0 }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 22 : 28, marginBottom: 12, letterSpacing: "-0.5px" }}>The Algorithm Belongs to You</div>
+            <p style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.8, maxWidth: 640, margin: "0 auto 12px" }}>
+              Most platforms have an algorithm. You don't get to see it, understand it, or change it. It works for them by keeping you engaged, driving clicks, and getting that doom scroll going. More engagement means more time to show you ads. Your time on-platform trains it so they can keep you engaged longer.
+            </p>
+            <p style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.8, maxWidth: 640, margin: "0 auto" }}>
+              The GuildLink algorithm works differently. We believe the recommendation engine here belongs to you. It's built from what you do, it works in your interest, and you can see exactly how it operates.
+            </p>
           </div>
-          <p style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.8, marginBottom: 8, maxWidth: 680, margin: "0 auto 12px" }}>
-            Most platforms have an algorithm. You don't get to see it, understand it, or change it. It works for them by keeping you engaged, driving clicks, and getting that doom scroll going. More engagement means more time to show you ads. Your time on-platform trains it so they can keep you engaged longer.
-          </p>
-          <p style={{ color: C.textMuted, fontSize: 15, lineHeight: 1.8, marginBottom: 40, maxWidth: 680, margin: "0 auto 40px" }}>
-            The GuildLink algorithm works differently. We believe the recommendation engine here belongs to you. It's built from what you do, it works in your interest, and you can see exactly how it operates.
-          </p>
 
-          {/* Three discovery rings */}
+          {/* Discovery rings — horizontal card grid matching steps */}
           <div style={{ textAlign: "center", marginBottom: 32 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 18 : 22, marginBottom: 8 }}>Three Rings of Discovery</div>
             <div style={{ color: C.textMuted, fontSize: 14, maxWidth: 560, margin: "0 auto" }}>Every recommendation flows through one of three rings, each more trusted and personal than the last. Right now each ring has a home on the platform. Over time, they'll filter everything you see.</div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 48 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 20, marginBottom: 48 }}>
             {rings.map((ring, i) => (
-              <div key={i} style={{ background: C.surface, border: "1px solid " + ring.glow, borderRadius: 16, padding: isMobile ? 20 : 28, boxShadow: "0 0 20px " + ring.color + "11" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
-                  <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
-                    <div style={{ position: "absolute", inset: -2, borderRadius: "50%", border: "2px solid " + ring.color, boxShadow: "0 0 12px " + ring.color + "66" }} />
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, " + ring.color + "22, " + ring.color + "11)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ color: ring.color, fontWeight: 900, fontSize: 11 }}>{i + 1}</span>
+              <div key={i} style={{ background: C.surface, border: "1px solid " + ring.color + "44", borderRadius: 16, padding: 28, boxShadow: "0 0 24px " + ring.color + "0d" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
+                    <div style={{ position: "absolute", inset: -2, borderRadius: "50%", border: "2px solid " + ring.color, boxShadow: "0 0 10px " + ring.color + "66" }} />
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, " + ring.color + "22, " + ring.color + "11)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: ring.color, fontWeight: 900, fontSize: 12 }}>{i + 1}</span>
                     </div>
                   </div>
                   <div>
-                    <div style={{ color: ring.color, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 2 }}>{ring.num}</div>
-                    <div style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 15 : 17 }}>{ring.title}</div>
+                    <div style={{ color: ring.color, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 1 }}>{ring.num}</div>
+                    <div style={{ fontWeight: 800, color: C.text, fontSize: 15, lineHeight: 1.2 }}>{ring.title}</div>
                   </div>
                 </div>
-                <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, margin: "0 0 12px" }}>{ring.desc}</p>
+                <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>{ring.desc}</div>
                 <div style={{ background: ring.color + "0d", border: "1px solid " + ring.color + "33", borderRadius: 10, padding: "10px 14px" }}>
                   <div style={{ color: ring.color, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>On GuildLink today</div>
-                  <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6 }}>{ring.today}</div>
+                  <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.6 }}>{ring.today}</div>
                 </div>
               </div>
             ))}
           </div>
 
           {/* What drives discovery */}
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 24 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 48 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 6 }}>What Drives Game Discovery?</div>
             <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>
               Everything on GuildLink is driven by community behavior. There are no sponsored recommendations or editorial picks. The central hub of discovery is called The Charts. Here's what influences them:
@@ -186,33 +176,48 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
             </p>
           </div>
 
-          {/* Ads */}
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 24 }}>
-            <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 12 }}>What We Don't Do</div>
-            <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 14 }}>
-              Ads aren't a part of GuildLink yet, but they are part of our roadmap. Because of that, we want to be clear about what we will and won't do.
-            </p>
-            <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 14 }}>
-              Ads aren't sold based on demographic information because we don't capture it. Ads target meaningful gaming behaviors you've told us about. Our goal is to create a platform where ads are a meaningful piece of the game discovery process. If an indie developer is making a game like Elden Ring, they'll be able to reach players who have actually played Elden Ring.
-            </p>
-            <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 14 }}>
-              That's the role ads will play. Game recommendations won't be influenced to favor specific games and we won't tweak the algorithm to show you ads that aren't relevant. We'll even show you what led to you seeing a specific ad.
-            </p>
-            <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 0 }}>
-              We believe there can be a mutually beneficial balance struck with advertising.
-            </p>
-          </div>
-
           {/* Your profile */}
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 48 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 12 }}>Your Profile Is Yours</div>
             <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 0 }}>
               Every time you add a game to your shelf, write a review, post or comment, or join a guild, you're building a clear picture of who you are as a gamer. The more you share, the more tailored your discovery recommendations become. The goal is to help you find your next favorite game.
             </p>
           </div>
         </div>
+      </div>
 
-        {/* CTA */}
+      {/* What We Don't Do — full width gold hero */}
+      <div style={{
+        background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
+        borderTop: "1px solid " + C.goldBorder,
+        borderBottom: "1px solid " + C.goldBorder,
+        position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 1px 1px, " + C.gold + "06 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: isMobile ? "48px 16px" : "72px 24px", position: "relative" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 20, padding: "6px 16px", marginBottom: 24 }}>
+            <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>Transparency</span>
+          </div>
+          <div style={{ fontWeight: 900, color: "#fff", fontSize: isMobile ? 24 : 32, marginBottom: 20, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
+            What We Don't Do — <span style={{ color: C.gold }}>and what we will.</span>
+          </div>
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
+            Ads aren't a part of GuildLink yet, but they are part of our roadmap. Because of that, we want to be clear about what we will and won't do.
+          </p>
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
+            Ads aren't sold based on demographic information because we don't capture it. Ads target meaningful gaming behaviors you've told us about. Our goal is to create a platform where ads are a meaningful piece of the game discovery process. If an indie developer is making a game like Elden Ring, they'll be able to reach players who have actually played Elden Ring.
+          </p>
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
+            That's the role ads will play. Game recommendations won't be influenced to favor specific games and we won't tweak the algorithm to show you ads that aren't relevant. We'll even show you what led to you seeing a specific ad.
+          </p>
+          <p style={{ color: C.gold, fontSize: isMobile ? 14 : 16, lineHeight: 1.8, fontWeight: 600, marginBottom: 0 }}>
+            We believe there can be a mutually beneficial balance struck with advertising.
+          </p>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "40px 16px 80px" : "64px 24px 80px" }}>
         <div style={{ background: "linear-gradient(135deg, #0f0a00, #1f1500)", border: "1px solid " + C.goldBorder, borderRadius: 16, padding: isMobile ? 24 : 36, textAlign: "center" }}>
           <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 18 : 22, marginBottom: 10 }}>Ready to find your next game?</div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, lineHeight: 1.7, maxWidth: 480, margin: "0 auto 24px" }}>
@@ -223,6 +228,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           </button>
         </div>
       </div>
+
       <style>{`@keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }`}</style>
     </div>
   );
