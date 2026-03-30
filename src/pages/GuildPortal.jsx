@@ -342,11 +342,11 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       </div>
 
       <div style={sectionStyle}>
-        <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 4 }}>This Week</div>
+        <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 4 }}>Gaming Schedule</div>
         <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Tap a day to schedule a session.</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(4, 1fr)" : "repeat(7, 1fr)", gap: 8 }}>
-          {weekDays.map((d, i) => {
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(7, 1fr)", gap: 8 }}>
+          {weekDays.slice(0, isMobile ? 3 : 7).map((d, i) => {
             const daySessions = sessionsForDay(d);
             const isFull = daySessions.length >= 3;
             const isActive = activeDay === i;
