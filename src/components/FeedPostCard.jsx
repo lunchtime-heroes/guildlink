@@ -420,7 +420,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
               </div>
             </div>
           ) : (
-            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left", whiteSpace: "pre-wrap" }}>{renderPostContent(localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
+            <p style={{ color: C.text, fontSize: 14, lineHeight: 1.65, margin: "0 0 12px", textAlign: "left", whiteSpace: "pre-wrap" }}>{renderPostContent(localPost.link_url ? localPost.content.replace(localPost.link_url, "").trim() : localPost.content, localPost.tagged_users, setCurrentPlayer, setCurrentNPC, setActivePage)}</p>
           )}
 
           {/* Link preview */}
