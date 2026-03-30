@@ -199,7 +199,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
             <span style={{ color: C.gold, fontSize: 12, fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>Transparency</span>
           </div>
           <div style={{ fontWeight: 900, color: "#fff", fontSize: isMobile ? 24 : 32, marginBottom: 20, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
-            What We Don't Do — <span style={{ color: C.gold }}>and what we will.</span>
+            What We Do — <span style={{ color: C.gold }}>and what we don't.</span>
           </div>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
             Ads aren't a part of GuildLink yet, but they are part of our roadmap. Because of that, we want to be clear about what we will and won't do.
