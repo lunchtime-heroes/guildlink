@@ -4,7 +4,7 @@ import supabase from "../supabase.js";
 import GuildCard from "../components/GuildCard.jsx";
 
 function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCurrentGuild }) {
-  const [activeTab, setActiveTab] = useState("find-gamers");
+  const [activeTab, setActiveTab] = useState("find-guilds");
 
   const [guilds, setGuilds] = useState([]);
   const [guildsLoading, setGuildsLoading] = useState(false);
