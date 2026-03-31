@@ -6,6 +6,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
   const [mode, setMode] = useState(defaultMode);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -37,6 +38,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
           username: username.trim(),
           handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
           avatar_initials: username.trim().slice(0, 2).toUpperCase(),
+          contact_email: contactEmail.trim() || null,
         };
         await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
       }
@@ -63,10 +65,24 @@ function AuthPage({ onBack, defaultMode = "login" }) {
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>{mode === "login" ? "Username or Email" : "Username"}</div>
             <input value={username} onChange={e => setUsername(e.target.value)} placeholder={mode === "login" ? "YourGamerName or email" : "YourGamerName"} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
           </div>
-          <div style={{ marginBottom: mode === "signup" ? 16 : 24 }}>
+          <div style={{ marginBottom: 16 }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} onKeyDown={e => e.key === "Enter" && handle()} />
           </div>
+          {mode === "signup" && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>
+                Email <span style={{ color: C.textDim, fontWeight: 400 }}>(optional — for updates)</span>
+              </div>
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={e => setContactEmail(e.target.value)}
+                placeholder="you@email.com"
+                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }}
+              />
+            </div>
+          )}
           {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {message && <div style={{ color: C.green, fontSize: 13, marginBottom: 16 }}>{message}</div>}
           <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
