@@ -17,34 +17,41 @@ function AuthPage({ onBack, defaultMode = "login" }) {
     setLoading(true);
     setError("");
     setMessage("");
-    if (!username.trim()) { setError("Username is required."); setLoading(false); return; }
-    if (!password) { setError("Password is required."); setLoading(false); return; }
-    if (mode === "signup" && !contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
-    if (mode === "signup" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
-    const email = fakeEmail(username);
+
     if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (username.includes("@") && username.includes(".")) {
-          const { error: error2 } = await supabase.auth.signInWithPassword({ email: username.trim(), password });
-          if (error2) { setError("Username or password incorrect."); }
-        } else {
-          setError("Username or password incorrect.");
-        }
-      }
+      if (!username.trim()) { setError("Email is required."); setLoading(false); return; }
+      if (!password) { setError("Password is required."); setLoading(false); return; }
+
+      // Try login with what they entered as email first
+      const { error: err1 } = await supabase.auth.signInWithPassword({ email: username.trim(), password });
+      if (!err1) { setLoading(false); return; }
+
+      // Fallback: try as username with fake email (existing accounts)
+      const { error: err2 } = await supabase.auth.signInWithPassword({ email: fakeEmail(username), password });
+      if (!err2) { setLoading(false); return; }
+
+      setError("Email or password incorrect.");
+
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (!username.trim()) { setError("Username is required."); setLoading(false); return; }
+      if (!password) { setError("Password is required."); setLoading(false); return; }
+      if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
+
+      // New accounts use real email for Supabase auth
+      const { data, error } = await supabase.auth.signUp({ email: contactEmail.trim(), password });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
         const profileUpdates = {
           username: username.trim(),
           handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
           avatar_initials: username.trim().slice(0, 2).toUpperCase(),
-          contact_email: contactEmail.trim() || null,
+          contact_email: contactEmail.trim(),
         };
         await supabase.from("profiles").update(profileUpdates).eq("id", data.user.id);
       }
     }
+
     setLoading(false);
   };
 
@@ -60,33 +67,50 @@ function AuthPage({ onBack, defaultMode = "login" }) {
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 32 }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
             {["login", "signup"].map(m => (
-              <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: mode === m ? C.accent : C.surfaceRaised, color: mode === m ? "#fff" : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{m === "login" ? "Log In" : "Sign Up"}</button>
+              <button key={m} onClick={() => { setMode(m); setError(""); setMessage(""); }}
+                style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: mode === m ? C.accent : C.surfaceRaised, color: mode === m ? "#fff" : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                {m === "login" ? "Log In" : "Sign Up"}
+              </button>
             ))}
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>{mode === "login" ? "Username or Email" : "Username"}</div>
-            <input value={username} onChange={e => setUsername(e.target.value)} placeholder={mode === "login" ? "YourGamerName or email" : "YourGamerName"} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} onKeyDown={e => e.key === "Enter" && handle()} />
-          </div>
-          {mode === "signup" && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>
-                Email
+
+          {mode === "login" ? (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
+                <input value={username} onChange={e => setUsername(e.target.value)} placeholder="you@email.com"
+                  style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>Existing member? You can still log in with your username.</div>
               </div>
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={e => setContactEmail(e.target.value)}
-                placeholder="you@email.com"
-                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }}
-              />
-            </div>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" onKeyDown={e => e.key === "Enter" && handle()}
+                  style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username</div>
+                <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName"
+                  style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
+                <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@email.com"
+                  style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" onKeyDown={e => e.key === "Enter" && handle()}
+                  style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+              </div>
+            </>
           )}
+
           {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
           {message && <div style={{ color: C.green, fontSize: 13, marginBottom: 16 }}>{message}</div>}
+
           <button onClick={handle} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
             {loading ? "..." : mode === "login" ? "Log In" : "Create Account"}
           </button>
