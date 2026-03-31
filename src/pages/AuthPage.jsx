@@ -19,6 +19,8 @@ function AuthPage({ onBack, defaultMode = "login" }) {
     setMessage("");
     if (!username.trim()) { setError("Username is required."); setLoading(false); return; }
     if (!password) { setError("Password is required."); setLoading(false); return; }
+    if (mode === "signup" && !contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
+    if (mode === "signup" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
     const email = fakeEmail(username);
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -72,7 +74,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
           {mode === "signup" && (
             <div style={{ marginBottom: 24 }}>
               <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>
-                Email <span style={{ color: C.textDim, fontWeight: 400 }}>(optional — for updates)</span>
+                Email
               </div>
               <input
                 type="email"
