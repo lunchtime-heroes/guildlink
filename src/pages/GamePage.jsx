@@ -19,17 +19,21 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [showShelfMenu, setShowShelfMenu] = useState(false);
   const [dbGame, setDbGame] = useState(null);
   const [gamePosts, setGamePosts] = useState([]);
-  const [gameTips, setGameTips] = useState([]);
+  const [gameQA, setGameQA] = useState([]);
+  const [qaShelfStatus, setQaShelfStatus] = useState({}); // userId -> status
+  const [showAskForm, setShowAskForm] = useState(false);
+  const [askText, setAskText] = useState("");
+  const [submittingAsk, setSubmittingAsk] = useState(false);
   const [topVoices, setTopVoices] = useState([]);
   const [latestReviews, setLatestReviews] = useState([]);
   const [chartsData, setChartsData] = useState(null);
   const [shelfCounts, setShelfCounts] = useState({ want_to_play: 0, playing: 0, have_played: 0 });
   const [shelfPlayers, setShelfPlayers] = useState({ want_to_play: [], playing: [], have_played: [] });
-  const [shelfDrawer, setShelfDrawer] = useState(null); // "want_to_play" | "playing" | "have_played" | null
+  const [shelfDrawer, setShelfDrawer] = useState(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 0, headline: "", time_played: "", completed: false, loved: "", didnt_love: "", content: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [myReview, setMyReview] = useState(null); // current user's existing review for this game
+  const [myReview, setMyReview] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -40,35 +44,38 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       setDbGame(data);
       const dbId = data.id;
 
-      // Posts
+      // Posts (non-question)
       const { data: posts } = await supabase
         .from("posts")
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
         .eq("game_tag", dbId)
+        .or("post_type.eq.post,post_type.is.null")
         .order("created_at", { ascending: false })
         .limit(20);
       if (posts) setGamePosts(posts);
 
-      // Tips — posts with tip votes, sorted by tip count
-      const { data: tips } = await supabase
+      // Q&A — questions for this game
+      const { data: questions } = await supabase
         .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), comments(id, content, created_at, user_id, profiles(username, avatar_initials, is_founding, active_ring, avatar_config))")
         .eq("game_tag", dbId)
-        .gte("tip_count", 1)
-        .order("tip_count", { ascending: false })
+        .eq("post_type", "question")
+        .order("created_at", { ascending: false })
         .limit(30);
-      if (tips) {
-        // Also fetch which tips the current user has voted on
-        const tipIds = (tips || []).map(p => p.id);
-        let tippedIds = new Set();
-        if (currentUser && tipIds.length > 0) {
-          const { data: myTips } = await supabase.from("tip_votes").select("post_id").eq("user_id", currentUser.id).in("post_id", tipIds);
-          tippedIds = new Set((myTips || []).map(t => t.post_id));
+      if (questions) {
+        setGameQA(questions);
+        // Collect all commenter user IDs to check shelf status
+        const commenterIds = [...new Set(questions.flatMap(q => (q.comments || []).map(c => c.user_id).filter(Boolean)))];
+        if (commenterIds.length > 0) {
+          const { data: shelfData } = await supabase.from("user_games")
+            .select("user_id, status").eq("game_id", dbId).in("user_id", commenterIds);
+          const statusMap = {};
+          (shelfData || []).forEach(s => { statusMap[s.user_id] = s.status; });
+          setQaShelfStatus(statusMap);
         }
-        setGameTips(tips.map(p => ({ ...p, tipped: tippedIds.has(p.id) })));
       }
 
-      // Top Voices — users with most likes on posts for this game
+      // Top Voices
       const { data: voicePosts } = await supabase
         .from("posts")
         .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
@@ -82,11 +89,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
           byUser[p.user_id].totalLikes += (p.likes || 0);
           byUser[p.user_id].postCount += 1;
         });
-        const sorted = Object.values(byUser).sort((a, b) => b.totalLikes - a.totalLikes).slice(0, 5);
-        setTopVoices(sorted);
+        setTopVoices(Object.values(byUser).sort((a, b) => b.totalLikes - a.totalLikes).slice(0, 5));
       }
 
-      // Latest reviews — filtered to this game
+      // Latest reviews
       const { data: reviews } = await supabase
         .from("reviews")
         .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
@@ -95,7 +101,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         .limit(20);
       if (reviews) setLatestReviews(reviews);
 
-      // Shelf counts — how many users have this game in each status
+      // Shelf counts
       const { data: shelfData } = await supabase
         .from("user_games")
         .select("status, user_id, profiles(id, username, handle, avatar_initials, active_ring, is_founding)")
@@ -113,7 +119,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         setShelfPlayers(players);
       }
 
-      // Check if current user already reviewed this game
+      // Current user review
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
         const { data: existing } = await supabase.from("reviews")
@@ -132,25 +138,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         }
       }
 
-      // Charts data — rank by weekly posts + reviews
+      // Charts data
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { count: weeklyPosts } = await supabase
-        .from("posts")
-        .select("id", { count: "exact", head: true })
-        .eq("game_tag", dbId)
-        .gte("created_at", oneWeekAgo);
-      const { count: weeklyReviews } = await supabase
-        .from("reviews")
-        .select("id", { count: "exact", head: true })
-        .eq("game_id", dbId)
-        .gte("created_at", oneWeekAgo);
-      const { data: avgData } = await supabase
-        .from("reviews")
-        .select("rating")
-        .eq("game_id", dbId);
-      const avgRating = avgData && avgData.length > 0
-        ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1)
-        : null;
+      const { count: weeklyPosts } = await supabase.from("posts").select("id", { count: "exact", head: true }).eq("game_tag", dbId).gte("created_at", oneWeekAgo);
+      const { count: weeklyReviews } = await supabase.from("reviews").select("id", { count: "exact", head: true }).eq("game_id", dbId).gte("created_at", oneWeekAgo);
+      const { data: avgData } = await supabase.from("reviews").select("rating").eq("game_id", dbId);
+      const avgRating = avgData && avgData.length > 0 ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1) : null;
       setChartsData({ weeklyPosts: weeklyPosts || 0, weeklyReviews: weeklyReviews || 0, avgRating, totalReviews: avgData?.length || 0 });
     };
     load();
@@ -215,7 +208,6 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         logChartEvent(dbGame.id, 'review', authUser.id);
         supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "review_written" }).then(() => onQuestComplete?.());
       }
-      // Refresh reviews
       const { data: reviews } = await supabase.from("reviews")
         .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
         .eq("game_id", dbGame.id).order("created_at", { ascending: false }).limit(20);
@@ -223,18 +215,37 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       const { data: avgData } = await supabase.from("reviews").select("rating").eq("game_id", dbGame.id);
       const avgRating = avgData && avgData.length > 0 ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1) : null;
       setChartsData(prev => ({ ...prev, avgRating, totalReviews: avgData?.length || 0 }));
-      // Update myReview so button reflects the saved state
       setMyReview({ ...reviewForm, game_id: dbGame.id, user_id: authUser.id });
       setShowReviewForm(false);
     }
     setSubmittingReview(false);
   };
 
+  const submitQuestion = async () => {
+    if (!askText.trim() || submittingAsk || !dbGame) return;
+    setSubmittingAsk(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setSubmittingAsk(false); return; }
+    const { data, error } = await supabase.from("posts").insert({
+      user_id: authUser.id,
+      content: askText.trim(),
+      game_tag: dbGame.id,
+      post_type: "question",
+      likes: 0,
+      comment_count: 0,
+    }).select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
+    if (!error && data) {
+      setGameQA(prev => [{ ...data, comments: [] }, ...prev]);
+      setAskText("");
+      setShowAskForm(false);
+    }
+    setSubmittingAsk(false);
+  };
+
   const game = dbGame ? {
     trendingTopics: [],
     topVoices: [],
     alsoLiked: [],
-    tips: [],
     posts: [],
     activePlayers: 0,
     completions: 0,
@@ -264,7 +275,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     </div>
   );
 
-  const tabs = [{ id: "pulse", label: "Pulse" }, { id: "reviews", label: "Reviews" }, { id: "tips", label: "Tips" }, { id: "posts", label: "Posts" }];
+  const tabs = [
+    { id: "pulse", label: "Pulse" },
+    { id: "reviews", label: "Reviews" },
+    { id: "qa", label: "Q&A" },
+    { id: "posts", label: "Posts" },
+  ];
 
   return (
     <div style={{ paddingTop: isMobile ? 52 : 60 }}>
@@ -273,215 +289,106 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
           <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 20, flexWrap: isMobile ? "wrap" : "nowrap" }}>
             {game.cover_url
               ? <img src={game.cover_url} alt={game.name} style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: 10, objectFit: "cover", flexShrink: 0, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)" }} />
-              : <div style={{ width: isMobile ? 56 : 80, height: isMobile ? 56 : 80, borderRadius: 16, fontSize: isMobile ? 30 : 44, background: game.color + "22", border: "2px solid " + game.color + "44", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{game.icon}</div>
+              : <div style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: 10, background: game.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isMobile ? 28 : 48, flexShrink: 0 }}>{game.icon}</div>
             }
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 28, color: "#fff" }}>{game.name}</h1>
-                {game.claimed && false && <Badge color={C.teal}>✓ Dev Claimed</Badge>}
+              <div style={{ fontWeight: 900, fontSize: isMobile ? 22 : 32, color: "#fff", marginBottom: 6, letterSpacing: "-0.5px", lineHeight: 1.15 }}>{game.name}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                {(game.genre || []).map(g => <span key={g} style={{ background: game.color + "22", border: "1px solid " + game.color + "44", color: game.color, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6 }}>{g}</span>)}
+                {game.year && <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{game.year}</span>}
               </div>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: isMobile ? 8 : 10 }}>{game.developer} · {game.year}</div>
-              {!isMobile && <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: "0 0 16px", maxWidth: 540, lineHeight: 1.6 }}>{game.description}</p>}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: isMobile ? 12 : 0, position: "relative" }}>
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? game.color + "33" : game.color, border: "1px solid " + game.color, borderRadius: 8, padding: "7px 18px", color: followed ? game.color : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}</button>
-                {currentUser && (
-                  <div style={{ position: "relative" }}>
-                    <button onClick={() => setShowShelfMenu(m => !m)}
-                      style={{ background: shelfStatus ? C.goldGlow : "transparent", border: "1px solid " + C.gold, borderRadius: 8, padding: "7px 18px", color: C.gold, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      {shelfStatus === "playing" ? "Playing" : shelfStatus === "want_to_play" ? "Want to Play" : shelfStatus === "have_played" ? "Played" : "+ Add to Shelf"}
-                    </button>
-                    {showShelfMenu && (
-                      <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 100, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.5)", minWidth: 160 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ position: "relative" }}>
+                  <button onClick={() => setShowShelfMenu(s => !s)}
+                    style={{ background: shelfStatus ? game.color + "22" : game.color, border: "1px solid " + game.color + (shelfStatus ? "44" : ""), borderRadius: 8, padding: "8px 16px", color: shelfStatus ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    {shelfStatus === "playing" ? "✓ Playing" : shelfStatus === "have_played" ? "✓ Played" : shelfStatus === "want_to_play" ? "✓ Want to Play" : "+ Add to Shelf"}
+                  </button>
+                  {showShelfMenu && (
+                    <>
+                      <div onClick={() => setShowShelfMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
+                      <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 160, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                         {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
-                          <div key={opt.id} onClick={() => setShelf(opt.id)}
-                            style={{ padding: "10px 16px", cursor: "pointer", color: shelfStatus === opt.id ? C.gold : C.text, fontWeight: shelfStatus === opt.id ? 700 : 500, fontSize: 13, background: shelfStatus === opt.id ? C.goldGlow : "transparent" }}
-                            onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                            onMouseLeave={e => e.currentTarget.style.background = shelfStatus === opt.id ? C.goldGlow : "transparent"}>
+                          <button key={opt.id} onClick={() => setShelf(opt.id)}
+                            style={{ display: "block", width: "100%", background: shelfStatus === opt.id ? game.color + "22" : "none", border: "none", padding: "10px 16px", color: shelfStatus === opt.id ? game.color : C.text, fontSize: 13, cursor: "pointer", textAlign: "left", fontWeight: shelfStatus === opt.id ? 700 : 400 }}>
                             {opt.label}
-                          </div>
+                          </button>
                         ))}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
+                <button onClick={isGuest ? () => onSignIn?.("Sign in to follow games.") : toggleFollow} disabled={followLoading}
+                  style={{ background: followed ? "rgba(255,255,255,0.1)" : "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, padding: "8px 16px", color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  {followLoading ? "..." : followed ? "✓ Following" : "Follow"}
+                </button>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0, width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "space-between" : "flex-start" }}>
-              {[{ label: "Followers", value: (game.followers / 1000).toFixed(1) + "k", color: game.color }, { label: "Active", value: (game.activePlayers || 0).toLocaleString(), color: C.online }, { label: "Score", value: game.reviewScore ? "★ " + game.reviewScore : "—", color: C.gold }].map(s => (
-                <div key={s.label} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 80 }}>
-                  <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 17, color: s.color }}>{s.value}</div>
-                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 3 }}>{s.label}</div>
+            <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
+              {[
+                { label: "Playing", count: shelfCounts.playing, id: "playing" },
+                { label: "Played", count: shelfCounts.have_played, id: "have_played" },
+                { label: "Want", count: shelfCounts.want_to_play, id: "want_to_play" },
+              ].map(s => (
+                <div key={s.id} onClick={() => setShelfDrawer(shelfDrawer === s.id ? null : s.id)} style={{ textAlign: "center", cursor: "pointer" }}>
+                  <div style={{ fontWeight: 800, fontSize: isMobile ? 18 : 22, color: "#fff" }}>{s.count}</div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>{s.label}</div>
                 </div>
               ))}
             </div>
           </div>
+          {shelfDrawer && shelfPlayers[shelfDrawer]?.length > 0 && (
+            <div style={{ marginTop: 16, background: "rgba(0,0,0,0.3)", borderRadius: 10, padding: "12px 16px" }}>
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {shelfDrawer === "playing" ? "Currently Playing" : shelfDrawer === "have_played" ? "Have Played" : "Want to Play"}
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {shelfPlayers[shelfDrawer].slice(0, 12).map(p => (
+                  <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
+                    <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={20} founding={p.is_founding} ring={p.active_ring} />
+                    <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600 }}>{p.username}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, position: "sticky", top: isMobile ? 52 : 60, zIndex: 50 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px", display: "flex", overflowX: "auto" }}>
+      {/* Tabs */}
+      <div style={{ borderBottom: "1px solid " + C.border, background: C.bg + "f0", backdropFilter: "blur(10px)", position: "sticky", top: isMobile ? 52 : 60, zIndex: 10 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 " + (isMobile ? "16px" : "24px"), display: "flex", gap: 0 }}>
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: "transparent", border: "none", borderBottom: activeTab === tab.id ? "2px solid " + game.color : "2px solid transparent", padding: isMobile ? "12px 14px" : "14px 18px", cursor: "pointer", color: activeTab === tab.id ? "#fff" : C.textMuted, fontSize: isMobile ? 12 : 13, fontWeight: activeTab === tab.id ? 700 : 500, whiteSpace: "nowrap" }}>{tab.label}</button>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              style={{ padding: "14px 20px", background: "none", border: "none", borderBottom: "2px solid " + (activeTab === tab.id ? game.color : "transparent"), color: activeTab === tab.id ? game.color : C.textMuted, fontWeight: activeTab === tab.id ? 700 : 500, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+              {tab.label}
+            </button>
           ))}
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "16px 16px 80px" : "24px" }}>
-        {activeTab === "pulse" && (
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: 20 }}>
-            <div>
-              {/* The Charts card */}
-              <div style={{ background: C.surface, border: "1px solid " + game.color + "44", borderRadius: 14, padding: 22, marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>The Charts</div>
-                  <span style={{ color: C.textDim, fontSize: 12 }}>This week</span>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                  {[
-                    { label: "Posts This Week", value: chartsData?.weeklyPosts ?? "—", color: game.color },
-                    { label: "New Reviews", value: chartsData?.weeklyReviews ?? "—", color: C.teal },
-                    { label: "Avg Rating", value: chartsData?.avgRating ? chartsData.avgRating + "/10" : "—", color: C.gold },
-                  ].map(s => (
-                    <div key={s.label} style={{ background: C.surfaceRaised, borderRadius: 10, padding: "14px 12px", textAlign: "center" }}>
-                      <div style={{ fontWeight: 800, fontSize: 20, color: s.color }}>{s.value}</div>
-                      <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-                {chartsData?.weeklyPosts === 0 && (
-                  <div style={{ textAlign: "center", color: C.textDim, fontSize: 13, marginTop: 14 }}>
-                    Be the first to post about {game.name} and get on The Charts.
-                  </div>
-                )}
-              </div>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "20px 16px 80px" : "28px 24px 40px" }}>
 
-              {/* Community Shelf */}
-              {(shelfCounts.want_to_play + shelfCounts.playing + shelfCounts.have_played) > 0 && (
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
-                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 14 }}>🎮 Community Shelf</div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {[
-                      { key: "playing", label: "Playing", color: C.green },
-                      { key: "want_to_play", label: "Want to Play", color: C.accent },
-                      { key: "have_played", label: "Have Played", color: C.gold },
-                    ].map(({ key, label, color }) => shelfCounts[key] > 0 && (
-                      <button key={key} onClick={() => setShelfDrawer(shelfDrawer === key ? null : key)}
-                        style={{ background: shelfDrawer === key ? color + "22" : C.surfaceRaised, border: "1px solid " + (shelfDrawer === key ? color + "66" : C.border), borderRadius: 10, padding: "10px 16px", cursor: "pointer", textAlign: "center", flex: 1 }}>
-                        <div style={{ fontWeight: 800, fontSize: 20, color }}>{shelfCounts[key]}</div>
-                        <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{label}</div>
-                      </button>
-                    ))}
-                  </div>
-                  {shelfDrawer && shelfPlayers[shelfDrawer]?.length > 0 && (
-                    <div style={{ marginTop: 14, borderTop: "1px solid " + C.border, paddingTop: 14 }}>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {shelfPlayers[shelfDrawer].map(p => (
-                          <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
-                            style={{ display: "flex", alignItems: "center", gap: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "5px 12px 5px 6px", cursor: "pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
-                            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                            <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={24} ring={p.active_ring} founding={p.is_founding} avatarConfig={p.avatar_config} />
-                            <span style={{ color: C.text, fontSize: 12, fontWeight: 600 }}>{p.username}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+        {activeTab === "pulse" && (
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: 24 }}>
+            <div>
+              {game.description && (
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>About</div>
+                  <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.7, margin: 0 }}>{game.description}</p>
                 </div>
               )}
-
-              {/* Latest Reviews */}
-              <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22, marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>⭐ Latest Reviews</div>
-                  <button onClick={() => setShowReviewForm(true)} style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
-                </div>
-                {showReviewForm && (
-                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 18, marginBottom: 18 }}>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Your Review of {game.name}</div>
-                    {/* Star rating */}
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Rating (required)</div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                          <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
-                            style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid " + reviewForm.rating >= n ? C.gold : C.border, background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
-                    <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                      <input value={reviewForm.time_played} onChange={e => setReviewForm(f => ({ ...f, time_played: e.target.value }))} placeholder="Hours played" type="number" style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
-                        <input type="checkbox" checked={reviewForm.completed} onChange={e => setReviewForm(f => ({ ...f, completed: e.target.checked }))} />
-                        Completed
-                      </label>
-                    </div>
-                    <input value={reviewForm.loved} onChange={e => setReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
-                    <input value={reviewForm.didnt_love} onChange={e => setReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />
-                    <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
-                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                      <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-                      <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview} style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 18px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>{submittingReview ? "Saving..." : "Submit Review"}</button>
-                    </div>
-                  </div>
-                )}
-                {latestReviews.length > 0 ? latestReviews.map((review, i) => (
-                  <div key={review.id} style={{ padding: "14px 0", borderBottom: i < latestReviews.length - 1 ? "1px solid " + C.border : "none" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <Avatar initials={review.profiles?.avatar_initials || "GL"} size={30} founding={review.profiles?.is_founding} ring={review.profiles?.active_ring} avatarConfig={review.profiles?.avatar_config} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.profiles?.username || "Gamer"}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · ✓ Completed" : ""}</div>
-                      </div>
-                      {currentUser && review.user_id === currentUser.id && (
-                        <button onClick={() => { setActiveTab("reviews"); setShowReviewForm(true); }}
-                          style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
-                      )}
-                      <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
-                    </div>
-                    {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
-                    {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
-                    {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Didn't love: {review.didnt_love}</div>}
-                    {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>}
-                  </div>
-                )) : (
-                  <div style={{ textAlign: "center", padding: "30px 0", color: C.textDim }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
-                    <div style={{ fontSize: 13 }}>No reviews yet. Be the first.</div>
-                  </div>
-                )}
-              </div>
-
-              {game.alsoLiked.length > 0 && (
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 22 }}>
-                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 4 }}>🎲 Players Who Like {game.name} Also Love...</div>
-                  <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Based on follows, reviews & completions</div>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
-                    {game.alsoLiked.map(g2 => (
-                      <div key={g2.id} onClick={() => { setCurrentGame(g2.id); setActiveTab("pulse"); }}
-                        style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 14, cursor: "pointer" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                          <span style={{ fontSize: 22 }}>{g2.icon}</span>
-                          <div>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{g2.name}</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                              <div style={{ height: 4, width: 50, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: g2.overlap + "%", background: game.color, borderRadius: 2 }} />
-                              </div>
-                              <span style={{ color: game.color, fontSize: 11, fontWeight: 700 }}>{g2.overlap}%</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic" }}>{g2.reason}</div>
-                      </div>
-                    ))}
+              {chartsData && (chartsData.weeklyPosts > 0 || chartsData.weeklyReviews > 0) && (
+                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>This Week</div>
+                  <div style={{ display: "flex", gap: 24 }}>
+                    {chartsData.weeklyPosts > 0 && <div><div style={{ fontWeight: 800, color: game.color, fontSize: 22 }}>{chartsData.weeklyPosts}</div><div style={{ color: C.textDim, fontSize: 11 }}>posts</div></div>}
+                    {chartsData.weeklyReviews > 0 && <div><div style={{ fontWeight: 800, color: C.gold, fontSize: 22 }}>{chartsData.weeklyReviews}</div><div style={{ color: C.textDim, fontSize: 11 }}>reviews</div></div>}
+                    {chartsData.avgRating && <div><div style={{ fontWeight: 800, color: C.gold, fontSize: 22 }}>{chartsData.avgRating}</div><div style={{ color: C.textDim, fontSize: 11 }}>avg rating</div></div>}
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Right sidebar — Top Voices */}
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, alignSelf: "start" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 15 }}>🏆 Top Voices</div>
@@ -490,72 +397,121 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                  <Avatar initials={voice.avatar_initials || "GL"} size={56} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
+                  <Avatar initials={voice.avatar_initials || "GL"} size={32} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
                     <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
                   </div>
                 </div>
               )) : (
-                // Fallback to hardcoded for games that have it
-                game.topVoices.length > 0 ? game.topVoices.map((voice, i) => (
-                  <div key={voice.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < game.topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
-                    <Avatar initials={voice.avatar} size={34} color={i === 0 ? C.gold : C.accent} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.name} {voice.badge}</div>
-                      <div style={{ color: C.textDim, fontSize: 11 }}>{(voice.score / 1000).toFixed(1)}k pts</div>
-                    </div>
-                  </div>
-                )) : (
-                  <div style={{ textAlign: "center", padding: "30px 0", color: C.textDim }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
-                    <div style={{ fontSize: 13 }}>Post about {game.name} to appear here.</div>
-                  </div>
-                )
+                <div style={{ textAlign: "center", padding: "30px 0", color: C.textDim }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
+                  <div style={{ fontSize: 13 }}>Post about {game.name} to appear here.</div>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {activeTab === "tips" && (
+        {activeTab === "qa" && (
           <div style={{ maxWidth: 680 }}>
-            {gameTips.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>💡</div>
-                <div style={{ fontSize: 14, marginBottom: 8 }}>No community tips yet.</div>
-                <div style={{ fontSize: 13, color: C.textDim }}>When players mark a post as Helpful, it shows up here.</div>
+            {/* Ask a question */}
+            {currentUser && !isGuest && (
+              <div style={{ marginBottom: 20 }}>
+                {!showAskForm ? (
+                  <button onClick={() => setShowAskForm(true)}
+                    style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 12, padding: "14px 20px", color: C.accentSoft, fontSize: 14, fontWeight: 700, cursor: "pointer", width: "100%", textAlign: "left" }}>
+                    Ask a question about {game.name}…
+                  </button>
+                ) : (
+                  <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16 }}>
+                    <textarea
+                      value={askText}
+                      onChange={e => setAskText(e.target.value)}
+                      placeholder={"What do you want to know about " + game.name + "?"}
+                      autoFocus
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 14, resize: "none", outline: "none", minHeight: 80, boxSizing: "border-box", marginBottom: 10 }}
+                    />
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                      <button onClick={() => { setShowAskForm(false); setAskText(""); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                      <button onClick={submitQuestion} disabled={!askText.trim() || submittingAsk}
+                        style={{ background: askText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: askText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: askText.trim() ? "pointer" : "default" }}>
+                        {submittingAsk ? "Posting…" : "Ask"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : gameTips.map(post => {
-              const author = post.npc_id ? post.npcs : post.profiles;
-              const isNPC = !!post.npc_id;
+            )}
+
+            {gameQA.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>❓</div>
+                <div style={{ fontSize: 14, marginBottom: 8 }}>No questions yet.</div>
+                <div style={{ fontSize: 13 }}>Be the first to ask something about {game.name}.</div>
+              </div>
+            ) : gameQA.map(q => {
+              const author = q.profiles;
+              const answerCount = (q.comments || []).length;
               return (
-                <FeedPostCard key={post.id} post={{
-                  id: post.id,
-                  npc_id: post.npc_id,
-                  game_tag: post.game_tag,
-                  user_id: post.user_id,
-                  tip_count: post.tip_count || 0,
-                  tagged_users: post.tagged_users || [],
-                  user: {
-                    name: isNPC ? (author?.name || "NPC") : (author?.username || "Gamer"),
-                    handle: author?.handle || "",
-                    avatar: author?.avatar_initials || "GL",
-                    status: "online",
-                    isNPC,
-                    isFounding: !isNPC && (author?.is_founding || false),
-                    activeRing: !isNPC ? (author?.active_ring || "none") : "none",
-                    avatarConfig: !isNPC ? (author?.avatar_config || null) : null,
-                  },
-                  content: post.content,
-                  time: timeAgo(post.created_at),
-                  likes: post.likes || 0,
-                  liked: post.liked || false,
-                  tipped: post.tipped || false,
-                  tip_count: post.tip_count || 0,
-                  comment_count: post.comment_count || 0,
-                  commentList: [],
-                }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={currentUser} isGuest={isGuest} onSignIn={onSignIn} />
+                <div key={q.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 18, marginBottom: 12 }}>
+                  {/* Question header */}
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 12 }}>
+                    <Avatar initials={(author?.avatar_initials || "?").slice(0,2).toUpperCase()} size={32} founding={author?.is_founding} ring={author?.active_ring} avatarConfig={author?.avatar_config} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{author?.username || "Gamer"}</span>
+                        <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "1px 7px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+                        <span style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(q.created_at)}</span>
+                      </div>
+                      <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: 0, fontWeight: 500 }}>{q.content}</p>
+                    </div>
+                  </div>
+
+                  {/* Answers */}
+                  {(q.comments || []).length > 0 && (
+                    <div style={{ borderTop: "1px solid " + C.border, paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {q.comments.map(comment => {
+                        const shelf = qaShelfStatus[comment.user_id];
+                        const hasPlayed = shelf === "have_played" || shelf === "playing";
+                        return (
+                          <div key={comment.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                            <Avatar initials={(comment.profiles?.avatar_initials || "?").slice(0,2).toUpperCase()} size={28} founding={comment.profiles?.is_founding} ring={comment.profiles?.active_ring} avatarConfig={comment.profiles?.avatar_config} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                                <span style={{ fontWeight: 700, color: C.text, fontSize: 12 }}>{comment.profiles?.username || "Gamer"}</span>
+                                {hasPlayed && (
+                                  <span style={{ background: "#22c55e18", border: "1px solid #22c55e44", borderRadius: 5, padding: "1px 6px", color: "#22c55e", fontSize: 10, fontWeight: 700 }}>
+                                    {shelf === "playing" ? "Playing" : "Has Played"}
+                                  </span>
+                                )}
+                                <span style={{ color: C.textDim, fontSize: 10 }}>{timeAgo(comment.created_at)}</span>
+                              </div>
+                              <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{comment.content}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Answer count / CTA */}
+                  <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ color: C.textDim, fontSize: 12 }}>{answerCount} {answerCount === 1 ? "answer" : "answers"}</span>
+                    {currentUser && !isGuest && (
+                      <button onClick={() => { setActivePage("game"); }}
+                        style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        Answer →
+                      </button>
+                    )}
+                    {!currentUser && (
+                      <button onClick={() => onSignIn?.("Sign in to answer questions.")}
+                        style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        Sign in to answer →
+                      </button>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -608,31 +564,31 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               </div>
             )}
             {currentUser && !isGuest && showReviewForm && (
-                  <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
-                    <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Your Review</div>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                        <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (reviewForm.rating >= n ? C.gold : C.border), background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                    <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                    <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview}
-                        style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>
-                        {submittingReview ? "Submitting..." : "Submit"}
-                      </button>
-                      <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-                    </div>
-                  </div>
+              <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Your Review</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (reviewForm.rating >= n ? C.gold : C.border), background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="What did you think?" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview}
+                    style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>
+                    {submittingReview ? "Submitting..." : "Submit"}
+                  </button>
+                  <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                </div>
+              </div>
             )}
             <div>
               {latestReviews.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>&#11088;</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>⭐</div>
                   <div style={{ fontSize: 14 }}>No reviews yet. Be the first.</div>
                 </div>
               ) : latestReviews.map((review, idx) => (
@@ -648,10 +604,10 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     )}
                     <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                   </div>
-                  {review.headline ? <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div> : null}
-                  {review.loved ? <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Loved: " + review.loved}</div> : null}
-                  {review.didnt_love ? <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Didn't love: " + review.didnt_love}</div> : null}
-                  {review.content ? <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p> : null}
+                  {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
+                  {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Loved: " + review.loved}</div>}
+                  {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Didn't love: " + review.didnt_love}</div>}
+                  {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>}
                 </div>
               ))}
             </div>
@@ -669,16 +625,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     <Badge color={C.teal}>✓ Verified Developer</Badge>
                   </div>
                 </div>
-                <div style={{ background: C.surfaceRaised, borderRadius: 12, padding: 20 }}>
-                  <div style={{ fontWeight: 700, color: C.teal, fontSize: 14, marginBottom: 8 }}>📢 Official Announcement</div>
-                  <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: 0 }}>Patch 1.12 is now live. Balance changes to Colosseum fights, new shard farm locations, and several boss hitbox fixes.</p>
-                </div>
               </div>
             ) : (
               <div style={{ textAlign: "center", padding: "60px 40px" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🏢</div>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 8 }}>Are you the developer?</div>
-                <p style={{ color: C.textMuted, fontSize: 14, maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.7 }}>Claim this page to access community insights and post official announcements — without controlling the conversation.</p>
+                <p style={{ color: C.textMuted, fontSize: 14, maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.7 }}>Claim this page to access community insights and post official announcements.</p>
                 <button style={{ background: C.teal, border: "none", borderRadius: 10, padding: "12px 32px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Claim This Page</button>
               </div>
             )}

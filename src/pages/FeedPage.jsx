@@ -167,6 +167,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(false);
   const [postText, setPostText] = useState("");
+  const [isQuestion, setIsQuestion] = useState(false);
   const [posting, setPosting] = useState(false);
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
@@ -725,6 +726,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       likes: 0,
       comment_count: 0,
       link_url: linkPreview?.url || urls?.[0] || null,
+      post_type: isQuestion ? "question" : "post",
     }).select().single();
     if (!error && data) {
       if (data.game_tag) logChartEvent(data.game_tag, 'post', authUser?.id);
@@ -745,6 +747,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setTaggedUsers([]);
       setLinkPreview(null);
       setLinkWarning(null);
+      setIsQuestion(false);
       if (data.game_tag) setChartRefresh(r => r + 1);
     }
     setPosting(false);
@@ -974,7 +977,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                     <span style={{ color: C.textDim, fontSize: 12 }}>@ a game, player, or NPC to tag</span>
                   )}
                 </div>
-                <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={() => setIsQuestion(q => !q)}
+                    style={{ background: isQuestion ? C.accentGlow : "transparent", border: "1px solid " + (isQuestion ? C.accent : C.border), borderRadius: 8, padding: "7px 12px", color: isQuestion ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: isQuestion ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s" }}>
+                    {isQuestion ? "❓ Question" : "❓"}
+                  </button>
+                  <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : isQuestion ? "Ask" : "Post"}</button>
+                </div>
               </div>
               {/* Link warning */}
               {linkWarning && (
@@ -1044,13 +1053,40 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               : null;
             const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
             const displayAuthor = author || npcFallback || realFallback;
+            // Q&A posts render as game activity-style cards
+            if (post.post_type === "question") {
+              const gameName = dbGames[post.game_tag]?.name || null;
+              items.push(
+                <div key={post.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 10px" }}>
+                    <Avatar initials={(displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL").slice(0,2).toUpperCase()} size={32} founding={!isNPC && (displayAuthor?.is_founding || false)} ring={!isNPC ? (displayAuthor?.active_ring || "none") : null} avatarConfig={!isNPC ? (displayAuthor?.avatar_config || null) : null} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer")}</span>
+                        <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "1px 7px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+                        {gameName && <span onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "1px 7px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>{gameName}</span>}
+                        <span style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(post.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "0 16px 12px" }}>
+                    <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 12px", fontWeight: 500 }}>{post.content}</p>
+                    <button onClick={() => { setCurrentGame(post.game_tag); setActivePage("game"); }}
+                      style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      Answer this →
+                    </button>
+                  </div>
+                </div>
+              );
+              return;
+            }
+
             items.push(
               <FeedPostCard key={post.id} post={{
                 id: post.id,
                 npc_id: post.npc_id,
                 game_tag: post.game_tag,
                 user_id: post.user_id,
-                tip_count: post.tip_count || 0,
                 tagged_users: post.tagged_users || [],
                 user: {
                   name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
@@ -1068,8 +1104,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 time: timeAgo(post.created_at),
                 likes: post.likes || 0,
                 liked: post.liked || false,
-                tipped: post.tipped || false,
-                tip_count: post.tip_count || 0,
                 comment_count: post.comment_count || 0,
                 commentList: [],
                 link_url: post.link_url || null,

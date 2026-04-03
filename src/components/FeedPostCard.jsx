@@ -92,17 +92,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     });
   }, [post.game_tag, post.gameId]);
 
-  const [tipped, setTipped] = useState(post.tipped || false);
-
-  // Sync tipped from parent
-  useEffect(() => {
-    setTipped(post.tipped || false);
-  }, [post.tipped]);
-
-  // Sync tip_count from parent
-  useEffect(() => {
-    setLocalPost(prev => ({ ...prev, tip_count: post.tip_count || 0 }));
-  }, [post.tip_count]);
 
   const deletePost = async () => {
     if (!post.id || !post.id.includes('-')) return;
@@ -129,32 +118,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
   };
 
-  const [tipping, setTipping] = useState(false);
-
-  const toggleTip = async () => {
-    if (isGuest) { onSignIn?.("Sign in to mark helpful tips."); return; }
-    if (!post.id || !post.id.includes('-') || !post.game_tag) return;
-    if (tipping) return;
-    setTipping(true);
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) { setTipping(false); return; }
-    // Check actual DB state to prevent double-counting
-    const { data: existing } = await supabase.from("tip_votes")
-      .select("id").eq("post_id", post.id).eq("user_id", authUser.id).maybeSingle();
-    const alreadyTipped = !!existing;
-    if (alreadyTipped) {
-      setTipped(false);
-      await supabase.from("tip_votes").delete().eq("post_id", post.id).eq("user_id", authUser.id);
-      await supabase.rpc("decrement_tip", { row_id: post.id });
-    } else {
-      setTipped(true);
-      await supabase.from("tip_votes").insert({ post_id: post.id, user_id: authUser.id });
-      await supabase.rpc("increment_tip", { row_id: post.id });
-    }
-    const { data: fresh } = await supabase.from("posts").select("tip_count").eq("id", post.id).single();
-    if (fresh) setLocalPost(p => ({ ...p, tip_count: fresh.tip_count || 0 }));
-    setTipping(false);
-  };
 
   const toggleLike = async () => {
     if (isGuest) { onSignIn?.("Like posts and join the conversation."); return; }
@@ -464,15 +427,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           }}>↩ Reply</button>
         )}
 
-        {(post.game_tag || localPost.game_tag) && !isGuest && (
-          <button onClick={toggleTip} style={{
-            background: tipped ? C.gold + "18" : "transparent",
-            border: "1px solid " + (tipped ? C.gold + "44" : C.border),
-            borderRadius: 8, padding: "5px 12px", cursor: "pointer",
-            color: tipped ? C.gold : C.textMuted, fontSize: 13, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
-          }}>Helpful{localPost.tip_count > 0 ? " " + localPost.tip_count : ""}</button>
-        )}
 
         {/* Three dots — right aligned */}
         {currentUser && (post.user_id === currentUser.id || currentUser.is_admin) && (
