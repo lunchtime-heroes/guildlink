@@ -1165,7 +1165,8 @@ export default function GuildLink() {
       setAuthLoading(false);
       if (session) fetchProfile(session.user.id);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") { setShowAuth("reset"); return; }
       setSession(session);
       if (session) { fetchProfile(session.user.id); setShowAuth(false); setSignInPromptMsg(null); }
     });
@@ -1299,7 +1300,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : "login"} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} />;
 
   const isGuest = !session;
 
