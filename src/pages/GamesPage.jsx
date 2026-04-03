@@ -677,34 +677,33 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           {discoveryOpen && (
             <div style={{ borderTop: "1px solid " + C.gold + "33", padding: "20px 22px 22px" }}>
 
-              {/* Ring selector */}
+              {/* Ring sections — all always visible */}
               <div style={{ marginBottom: 20 }}>
                 {RINGS.map(r => (
-                  <div key={r.ring} style={{ marginBottom: 14 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: activeRing === r.ring && !r.locked ? 10 : 0 }}>
-                      <div style={{ position: "relative", width: 30, height: 30, flexShrink: 0 }}>
-                        <div style={{ position: "absolute", inset: -2, borderRadius: "50%", border: "2px solid " + (activeRing === r.ring && !r.locked ? r.color : r.color + "33"), boxShadow: activeRing === r.ring && !r.locked ? "0 0 8px " + r.color + "55" : "none", transition: "all 0.2s" }} />
-                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: activeRing === r.ring && !r.locked ? r.color + "22" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: activeRing === r.ring && !r.locked ? r.color : r.color + "44", fontWeight: 900, fontSize: 11 }}>{r.ring}</span>
+                  <div key={r.ring} style={{ marginBottom: 18 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+                        <div style={{ position: "absolute", inset: -2, borderRadius: "50%", border: "2px solid " + (r.locked ? r.color + "22" : r.color + "88") }} />
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: r.locked ? "transparent" : r.color + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: r.locked ? r.color + "33" : r.color, fontWeight: 900, fontSize: 10 }}>{r.ring}</span>
                         </div>
                       </div>
-                      <button onClick={() => { if (!r.locked) { setActiveRing(r.ring); setActiveInsight(null); setDiscoveryResults(null); setDiscoveryLabel(""); } }}
-                        style={{ background: "none", border: "none", cursor: r.locked ? "default" : "pointer", padding: 0, textAlign: "left" }}>
-                        <div style={{ fontWeight: 700, color: r.locked ? C.textDim : activeRing === r.ring ? r.color : C.textMuted, fontSize: 13, transition: "color 0.2s" }}>{r.label} — {r.desc}</div>
-                        {r.locked && <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{r.lockMsg}</div>}
-                      </button>
-                    </div>
-                    {activeRing === r.ring && !r.locked && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 40 }}>
-                        {(RING_INSIGHTS[r.ring] || []).map(insight => (
-                          <button key={insight.id} onClick={() => runInsight(insight)}
-                            title={insight.desc}
-                            style={{ background: activeInsight === insight.id ? r.color + "22" : C.surfaceRaised, border: "1px solid " + (activeInsight === insight.id ? r.color + "55" : C.border), borderRadius: 20, padding: "6px 14px", color: activeInsight === insight.id ? r.color : C.textMuted, fontSize: 12, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
-                            {insight.label}
-                          </button>
-                        ))}
+                      <div>
+                        <div style={{ fontWeight: 700, color: r.locked ? C.textDim : r.color, fontSize: 13 }}>{r.label} — {r.desc}</div>
+                        {r.locked && <div style={{ color: C.textDim, fontSize: 11, marginTop: 1 }}>{r.lockMsg}</div>}
                       </div>
-                    )}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 38 }}>
+                      {(RING_INSIGHTS[r.ring] || []).map(insight => (
+                        <button key={insight.id}
+                          onClick={() => { if (!r.locked) { setActiveRing(r.ring); runInsight(insight); } }}
+                          title={r.locked ? r.lockMsg : insight.desc}
+                          disabled={r.locked}
+                          style={{ background: activeInsight === insight.id ? r.color + "22" : C.surfaceRaised, border: "1px solid " + (activeInsight === insight.id ? r.color + "55" : r.locked ? C.border + "88" : C.border), borderRadius: 20, padding: "6px 14px", color: r.locked ? C.textDim : activeInsight === insight.id ? r.color : C.textMuted, fontSize: 12, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: r.locked ? "default" : "pointer", opacity: r.locked ? 0.45 : 1, transition: "all 0.15s" }}>
+                          {insight.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
