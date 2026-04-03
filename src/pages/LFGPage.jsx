@@ -92,7 +92,6 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
   const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
 
   const tabs = [
-    { id: "find-gamers", label: "Find Gamers" },
     { id: "find-guilds", label: "Find Guilds" },
     { id: "your-guilds", label: "Your Guilds" },
   ];
@@ -110,7 +109,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Find Gamers & Guilds</h2>
+        <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Guilds</h2>
         <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Guilds are the people you play games with. Join a guild to coordinate play schedules and find new games.</p>
       </div>
 
@@ -122,16 +121,6 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
           </button>
         ))}
       </div>
-
-      {activeTab === "find-gamers" && (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>🔍</div>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 16, marginBottom: 8 }}>Player discovery is coming soon</div>
-          <div style={{ fontSize: 14, color: C.textMuted, maxWidth: 400, margin: "0 auto", lineHeight: 1.6 }}>
-            This is where Ring 1 and Ring 2 recommendations will live.
-          </div>
-        </div>
-      )}
 
       {activeTab === "find-guilds" && (
         <div>
@@ -220,17 +209,14 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
             </div>
           ) : myGuilds.map(g => (
             <div key={g.id} onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }}
-              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 6 }}>{g.name}</div>
-                  {g.description && <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{g.description}</div>}
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    {g.looking_for_members && <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>LFM</span>}
-                    <span style={{ color: C.textDim, fontSize: 12 }}>{g.is_public ? "Public" : "Private"}</span>
-                  </div>
-                </div>
-                <span style={{ color: C.accentSoft, fontSize: 13, fontWeight: 600 }}>View →</span>
+              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
+              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 6 }}>{g.name}</div>
+              {g.description && <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{g.description}</div>}
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                {g.looking_for_members && <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>LFM</span>}
+                <span style={{ color: C.textDim, fontSize: 12 }}>{g.is_public ? "Public" : "Private"}</span>
               </div>
             </div>
           ))}
