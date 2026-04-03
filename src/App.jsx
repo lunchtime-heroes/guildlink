@@ -9,7 +9,7 @@ import GamesPage from "./pages/GamesPage.jsx";
 import NPCStudioPage from "./pages/NPCStudioPage.jsx";
 import PlayerProfilePage from "./pages/PlayerPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
-import { Avatar, AvatarPixel } from "./components/Avatar.jsx";
+import { Avatar, AvatarPixel, ITEM_COLORS, DEFAULT_AVATAR_CONFIG } from "./components/Avatar.jsx";
 import { ChartsWidget } from "./components/Charts.jsx";
 import { FeedPostCard } from "./components/FeedPostCard.jsx";
 import { FoundingBadge, Badge, NPCBadge } from "./components/FoundingBadge.jsx";
@@ -320,45 +320,21 @@ const AVATAR_SKIN_TONES = {
   s5: { skin: "#8D5524", shadow: "#6B3A10", lip: "#4A2008" },
   s6: { skin: "#4A2511", shadow: "#2D1508", lip: "#1A0A04" },
 };
-const AVATAR_HAIR_COLORS = {
-  black: "#1a1a1a", darkbrown: "#3b1f0e", brown: "#6b3a2a",
-  auburn: "#8b2500", red: "#cc2200", blonde: "#d4a843",
-  platinum: "#f0e6c8", white: "#f5f5f5", gray: "#888888",
-  blue: "#1a4480", purple: "#5b2d8e", green: "#1a6b3a",
-};
-const AVATAR_BG_COLORS = {
+const AVATAR_BG_COLORS_LOCAL = {
   navy: "#0f1923", forest: "#0d2818", purple: "#1a0d2e",
   crimson: "#2e0d0d", slate: "#1a1f2e", gold: "#2e2000",
   teal: "#0d2e2e", charcoal: "#1a1a1a",
   gradBlue: ["#0f1923", "#1a3a5c"], gradPurple: ["#1a0d2e", "#3d1a6b"],
   gradGreen: ["#0d2818", "#1a5c38"], gradGold: ["#2e2000", "#6b4400"],
 };
-const AVATAR_CLASS_COLORS = {
-  warrior: "#cc3300", mage: "#6633cc", rogue: "#339933",
-  ranger: "#996633", healer: "#33cccc", bard: "#cc33cc",
-};
-const AVATAR_CLASS_ICONS = {
-  warrior: "⚔", mage: "✦", rogue: "◆", ranger: "◉", healer: "✚", bard: "♪",
-};
-const AVATAR_TORSO_COLORS = {
-  hoodie: { main: "#2a4a7f", shadow: "#1a3060", accent: "#3a6aaf" },
-  tee: { main: "#4a4a4a", shadow: "#2a2a2a", accent: "#6a6a6a" },
-  armor: { main: "#8a7a5a", shadow: "#5a4a2a", accent: "#c0a060" },
-  robe: { main: "#4a2a6a", shadow: "#2a1a4a", accent: "#7a4a9a" },
-  cloak: { main: "#1a1a1a", shadow: "#0a0a0a", accent: "#3a3a3a" },
-  jersey: { main: "#8a1a1a", shadow: "#5a0a0a", accent: "#aa3a3a" },
-};
 
 
 function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
-  const DEFAULT_CONFIG = { skin: "s1", hairStyle: "short", hairColor: "darkbrown", eyes: "normal", bg: "navy", classType: "warrior", accessory: "none", torso: "hoodie", weather: "none" };
-  const [cfg, setCfg] = React.useState(() => ({ ...DEFAULT_CONFIG, ...(currentUser?.avatarConfig || {}), weather: "none" }));
+  const DEFAULT_CONFIG = DEFAULT_AVATAR_CONFIG;
+  const [cfg, setCfg] = React.useState(() => ({ ...DEFAULT_CONFIG, ...(currentUser?.avatarConfig || {}) }));
   const [saving, setSaving] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("face");
+  const [activeTab, setActiveTab] = React.useState("body");
   const set = (k, v) => setCfg(p => ({ ...p, [k]: v }));
-
-  const unlockedAccessories = new Set(["none","glasses","sunglasses","cap","headband","beanie","eyepatch",...(userRewards||[]).map(r => r.reward_id)]);
-  const unlockedWeather = new Set(["none","snow","rain",...(userRewards||[]).map(r => r.reward_id)]);
 
   const save = async () => {
     setSaving(true);
@@ -370,29 +346,32 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
   };
 
   const tabs = [
-    { id: "face", label: "Face" },
+    { id: "body", label: "Body" },
     { id: "hair", label: "Hair" },
     { id: "outfit", label: "Outfit" },
-    { id: "background", label: "Background" },
+    { id: "background", label: "BG" },
   ];
 
-  const Swatch = ({ value, current, onClick, color, label, locked }) => (
-    <button onClick={locked ? undefined : onClick}
-      title={label}
-      style={{ width: 36, height: 36, borderRadius: 8, background: color || C.surfaceRaised, border: "2px solid " + (value === current ? C.accent : C.border), cursor: locked ? "not-allowed" : "pointer", position: "relative", opacity: locked ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: C.text, fontWeight: 600, overflow: "hidden" }}>
-      {label && !color && <span style={{ fontSize: 9, textAlign: "center", lineHeight: 1.2 }}>{label}</span>}
-      {locked && <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🔒</span>}
+  const Swatch = ({ value, current, onClick, color, label }) => (
+    <button onClick={onClick} title={label}
+      style={{ width: 36, height: 36, borderRadius: 8, background: color || C.surfaceRaised, border: "2px solid " + (value === current ? C.accent : C.border), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      {!color && <span style={{ fontSize: 9, textAlign: "center", lineHeight: 1.2, color: C.text, fontWeight: 600 }}>{label}</span>}
     </button>
   );
 
   const OptionGrid = ({ children }) => <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{children}</div>;
   const Label = ({ children }) => <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, marginBottom: 6, marginTop: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{children}</div>;
+  const StyleButton = ({ value, current, onClick, label }) => (
+    <button onClick={onClick}
+      style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid " + (value === current ? C.accent : C.border), background: value === current ? C.accentGlow : C.surfaceRaised, color: value === current ? C.accentSoft : C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
+      {label}
+    </button>
+  );
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 20, width: "100%", maxWidth: 560, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-        {/* Header */}
         <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Character Builder</div>
@@ -401,12 +380,10 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
           <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
 
-        {/* Preview */}
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "20px 0 16px", background: C.surface, borderBottom: "1px solid " + C.border }}>
-          <AvatarPixel config={cfg} size={96} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
+          <AvatarPixel config={cfg} size={128} ring={currentUser?.activeRing} founding={currentUser?.isFounding} />
         </div>
 
-        {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid " + C.border, background: C.surface }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
@@ -416,23 +393,24 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
           ))}
         </div>
 
-        {/* Options panel */}
         <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 20px" }}>
 
-          {activeTab === "face" && <>
+          {activeTab === "body" && <>
+            <Label>Build</Label>
+            <OptionGrid>
+              <StyleButton value="build1" current={cfg.build} onClick={() => set("build", "build1")} label="Build 1" />
+              <StyleButton value="build2" current={cfg.build} onClick={() => set("build", "build2")} label="Build 2" />
+            </OptionGrid>
             <Label>Skin Tone</Label>
             <OptionGrid>
               {Object.entries(AVATAR_SKIN_TONES).map(([k, v]) => (
                 <Swatch key={k} value={k} current={cfg.skin} onClick={() => set("skin", k)} color={v.skin} label={k} />
               ))}
             </OptionGrid>
-            <Label>Eyes</Label>
+            <Label>Eye Color</Label>
             <OptionGrid>
-              {["normal","determined","sleepy","wide","stern","friendly"].map(e => (
-                <button key={e} onClick={() => set("eyes", e)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.eyes === e ? C.accent : C.border), background: cfg.eyes === e ? C.accentGlow : C.surfaceRaised, color: cfg.eyes === e ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
-                  {e}
-                </button>
+              {Object.entries(ITEM_COLORS).map(([k, v]) => (
+                <Swatch key={k} value={k} current={cfg.eyeColor} onClick={() => set("eyeColor", k)} color={v} label={k} />
               ))}
             </OptionGrid>
           </>}
@@ -440,48 +418,60 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
           {activeTab === "hair" && <>
             <Label>Hair Style</Label>
             <OptionGrid>
-              {["short","spiky","long","bun","bald"].map(h => (
-                <button key={h} onClick={() => set("hairStyle", h)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.hairStyle === h ? C.accent : C.border), background: cfg.hairStyle === h ? C.accentGlow : C.surfaceRaised, color: cfg.hairStyle === h ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
-                  {h}
-                </button>
+              {["short", "medium", "long", "none"].map(h => (
+                <StyleButton key={h} value={h} current={cfg.hair} onClick={() => set("hair", h)} label={h} />
               ))}
             </OptionGrid>
             <Label>Hair Color</Label>
             <OptionGrid>
-              {Object.entries(AVATAR_HAIR_COLORS).map(([k, v]) => (
+              {Object.entries(ITEM_COLORS).map(([k, v]) => (
                 <Swatch key={k} value={k} current={cfg.hairColor} onClick={() => set("hairColor", k)} color={v} label={k} />
               ))}
             </OptionGrid>
+            <Label>Hat</Label>
+            <OptionGrid>
+              {["none", "beanie", "magician"].map(h => (
+                <StyleButton key={h} value={h} current={cfg.hat} onClick={() => set("hat", h)} label={h} />
+              ))}
+            </OptionGrid>
+            {cfg.hat !== "none" && <>
+              <Label>Hat Color</Label>
+              <OptionGrid>
+                {Object.entries(ITEM_COLORS).map(([k, v]) => (
+                  <Swatch key={k} value={k} current={cfg.hatColor} onClick={() => set("hatColor", k)} color={v} label={k} />
+                ))}
+              </OptionGrid>
+            </>}
           </>}
 
           {activeTab === "outfit" && <>
-            <Label>Torso</Label>
+            <Label>Shirt Color</Label>
             <OptionGrid>
-              {["hoodie","tee","armor","robe"].map(t => (
-                <button key={t} onClick={() => set("torso", t)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.torso === t ? C.accent : C.border), background: cfg.torso === t ? C.accentGlow : C.surfaceRaised, color: cfg.torso === t ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
-                  {t}
-                </button>
+              {Object.entries(ITEM_COLORS).map(([k, v]) => (
+                <Swatch key={k} value={k} current={cfg.shirtColor} onClick={() => set("shirtColor", k)} color={v} label={k} />
               ))}
             </OptionGrid>
-            <Label>Accessory</Label>
+            <Label>Glasses</Label>
             <OptionGrid>
-              {["none","glasses","sunglasses","cap","headband","beanie"].map(a => (
-                <button key={a} onClick={() => set("accessory", a)}
-                  style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid " + (cfg.accessory === a ? C.accent : C.border), background: cfg.accessory === a ? C.accentGlow : C.surfaceRaised, color: cfg.accessory === a ? C.accentSoft : C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
-                  {a}
-                </button>
-              ))}
+              <StyleButton value="none" current={cfg.glasses} onClick={() => set("glasses", "none")} label="None" />
+              <StyleButton value="glasses" current={cfg.glasses} onClick={() => set("glasses", "glasses")} label="Glasses" />
             </OptionGrid>
+            {cfg.glasses !== "none" && <>
+              <Label>Glasses Color</Label>
+              <OptionGrid>
+                {Object.entries(ITEM_COLORS).map(([k, v]) => (
+                  <Swatch key={k} value={k} current={cfg.glassesColor} onClick={() => set("glassesColor", k)} color={v} label={k} />
+                ))}
+              </OptionGrid>
+            </>}
           </>}
 
           {activeTab === "background" && <>
             <Label>Background</Label>
             <OptionGrid>
-              {Object.keys(AVATAR_BG_COLORS).map(k => {
-                const v = AVATAR_BG_COLORS[k];
-                const bg = Array.isArray(v) ? `linear-gradient(to bottom, ${v[0]}, ${v[1]})` : v;
+              {Object.keys(AVATAR_BG_COLORS_LOCAL).map(k => {
+                const v = AVATAR_BG_COLORS_LOCAL[k];
+                const bg = Array.isArray(v) ? "linear-gradient(to bottom, " + v[0] + ", " + v[1] + ")" : v;
                 return <Swatch key={k} value={k} current={cfg.bg} onClick={() => set("bg", k)} color={bg} label={k} />;
               })}
             </OptionGrid>
@@ -489,7 +479,6 @@ function AvatarBuilderModal({ currentUser, userRewards, onSave, onClose }) {
 
         </div>
 
-        {/* Footer */}
         <div style={{ padding: "14px 20px", borderTop: "1px solid " + C.border, display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
           <button onClick={save} disabled={saving}
@@ -1893,3 +1882,4 @@ export default function GuildLink() {
     </div>
   );
 }
+
