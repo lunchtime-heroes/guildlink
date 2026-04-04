@@ -24,6 +24,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [showAskForm, setShowAskForm] = useState(false);
   const [askText, setAskText] = useState("");
   const [submittingAsk, setSubmittingAsk] = useState(false);
+  const [answeringId, setAnsweringId] = useState(null);
+  const [answerText, setAnswerText] = useState("");
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [topVoices, setTopVoices] = useState([]);
   const [latestReviews, setLatestReviews] = useState([]);
   const [chartsData, setChartsData] = useState(null);
@@ -240,6 +243,31 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       setShowAskForm(false);
     }
     setSubmittingAsk(false);
+  };
+
+  const submitAnswer = async (questionId) => {
+    if (!answerText.trim() || submittingAnswer || !dbGame) return;
+    setSubmittingAnswer(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setSubmittingAnswer(false); return; }
+    const { data, error } = await supabase.from("comments").insert({
+      post_id: questionId,
+      user_id: authUser.id,
+      content: answerText.trim(),
+    }).select("*, profiles(username, avatar_initials, is_founding, active_ring, avatar_config)").single();
+    if (!error && data) {
+      setGameQA(prev => prev.map(q => q.id === questionId
+        ? { ...q, comments: [...(q.comments || []), data] }
+        : q
+      ));
+      // Update shelf status for new commenter
+      const { data: shelfData } = await supabase.from("user_games")
+        .select("status").eq("game_id", dbGame.id).eq("user_id", authUser.id).maybeSingle();
+      if (shelfData) setQaShelfStatus(prev => ({ ...prev, [authUser.id]: shelfData.status }));
+      setAnswerText("");
+      setAnsweringId(null);
+    }
+    setSubmittingAnswer(false);
   };
 
   const game = dbGame ? {
@@ -496,19 +524,40 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   )}
 
                   {/* Answer count / CTA */}
-                  <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ color: C.textDim, fontSize: 12 }}>{answerCount} {answerCount === 1 ? "answer" : "answers"}</span>
-                    {currentUser && !isGuest && (
-                      <button onClick={() => { setActivePage("game"); }}
-                        style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                        Answer →
-                      </button>
-                    )}
-                    {!currentUser && (
-                      <button onClick={() => onSignIn?.("Sign in to answer questions.")}
-                        style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                        Sign in to answer →
-                      </button>
+                  <div style={{ marginTop: 12, borderTop: "1px solid " + C.border, paddingTop: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: answeringId === q.id ? 10 : 0 }}>
+                      <span style={{ color: C.textDim, fontSize: 12 }}>{answerCount} {answerCount === 1 ? "answer" : "answers"}</span>
+                      {currentUser && !isGuest && answeringId !== q.id && (
+                        <button onClick={() => { setAnsweringId(q.id); setAnswerText(""); }}
+                          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          Answer →
+                        </button>
+                      )}
+                      {!currentUser && (
+                        <button onClick={() => onSignIn?.("Sign in to answer questions.")}
+                          style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          Sign in to answer →
+                        </button>
+                      )}
+                    </div>
+                    {answeringId === q.id && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <textarea
+                          value={answerText}
+                          onChange={e => setAnswerText(e.target.value)}
+                          placeholder="Write your answer…"
+                          autoFocus
+                          style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: 72, boxSizing: "border-box" }}
+                        />
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <button onClick={() => { setAnsweringId(null); setAnswerText(""); }}
+                            style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                          <button onClick={() => submitAnswer(q.id)} disabled={!answerText.trim() || submittingAnswer}
+                            style={{ background: answerText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "6px 18px", color: answerText.trim() ? "#fff" : C.textDim, fontSize: 12, fontWeight: 700, cursor: answerText.trim() ? "pointer" : "default" }}>
+                            {submittingAnswer ? "Posting…" : "Post Answer"}
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

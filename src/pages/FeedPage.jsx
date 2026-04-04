@@ -601,7 +601,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             text = actor ? `${actor} has ${game.name} on their shelf` : count === 1 ? `A player has played ${game.name}` : `${count} players have played ${game.name}`;
             cta = "Have you?"; ctaStatus = "have_played";
           }
-          cards.push({ type: "shelf_pulse", id: "shelf_" + game.id + "_" + status, game, text, cta, ctaStatus, hasFollow: followUsers.length > 0, priority: followUsers.length > 0 ? 2 : 1 });
+          cards.push({ type: "shelf_pulse", id: "shelf_" + game.id + "_" + status, game, text, cta, ctaStatus, hasFollow: followUsers.length > 0, priority: followUsers.length > 0 ? 2 : 1,
+          timestamp: new Date(shelfActivity.find(s => s.game_id === game.id && s.status === status)?.created_at || 0).getTime() });
         });
     }
 
@@ -634,7 +635,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           cards.push({ type: "shelf_pulse", id: "multi_review_" + game.id, game, text: `${reviews.length} players reviewed ${game.name} this week`, cta: "Write a review", ctaStatus: "review", hasFollow, priority: hasFollow ? 2 : 1 });
         } else {
           const r = reviews[0];
-          cards.push({ type: "review_spotlight", id: "review_" + r.id, review: r, game, profile: r.profiles, hasFollow: followIds.includes(r.user_id), priority: followIds.includes(r.user_id) ? 2 : 1 });
+          cards.push({ type: "review_spotlight", id: "review_" + r.id, review: r, game, profile: r.profiles, hasFollow: followIds.includes(r.user_id), priority: followIds.includes(r.user_id) ? 2 : 1, timestamp: new Date(r.created_at).getTime() });
         }
       });
     }
@@ -652,11 +653,18 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       recentQuestions.forEach(q => {
         if (!q.games || !q.profiles) return;
         const hasFollow = followIds.includes(q.user_id);
-        cards.push({ type: "qa_card", id: "qa_" + q.id, game: q.games, question: q, profile: q.profiles, hasFollow, priority: hasFollow ? 3 : 1 });
+        cards.push({ type: "qa_card", id: "qa_" + q.id, game: q.games, question: q, profile: q.profiles, hasFollow, priority: hasFollow ? 3 : 1, timestamp: new Date(q.created_at).getTime() });
       });
     }
 
-    cards.sort((a, b) => b.priority - a.priority);
+    cards.sort((a, b) => {
+      // Follow network cards always float up
+      if (b.priority !== a.priority && (a.priority >= 2 || b.priority >= 2)) return b.priority - a.priority;
+      // Otherwise sort by recency
+      const aTime = a.timestamp || 0;
+      const bTime = b.timestamp || 0;
+      return bTime - aTime;
+    });
     setPulseCards(cards);
   };
 
