@@ -69,8 +69,8 @@ function AuthPage({ onBack, defaultMode = "login" }) {
       const hash = window.location.hash;
       const params = new URLSearchParams(hash.replace("#", ""));
       const tokenHash = params.get("token_hash");
-      if (tokenHash) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+      if (tokenHash) { console.log("token_hash found:", tokenHash);
+        const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }); console.log("verify result:", verifyData, verifyError);
         if (verifyError) { setError(verifyError.message); setLoading(false); return; }
       }
       const { error } = await supabase.auth.updateUser({ password });
