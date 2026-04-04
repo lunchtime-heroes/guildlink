@@ -195,19 +195,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const scoresByGame = {};
       (sparkScores || []).forEach(s => { if (!scoresByGame[s.game_id]) scoresByGame[s.game_id] = {}; scoresByGame[s.game_id][s.date] = s.score; });
       const buildPoints = (gameId) => {
-        const raw = sparkDates.map(d => scoresByGame[gameId]?.[d] ?? null);
-        const filled = [...raw];
-        for (let i = 0; i < filled.length; i++) {
-          if (filled[i] !== null) continue;
-          let prev = null, prevIdx = -1, next = null, nextIdx = -1;
-          for (let j = i - 1; j >= 0; j--) { if (filled[j] !== null) { prev = filled[j]; prevIdx = j; break; } }
-          for (let j = i + 1; j < filled.length; j++) { if (filled[j] !== null) { next = filled[j]; nextIdx = j; break; } }
-          if (prev !== null && next !== null) { const t = (i - prevIdx) / (nextIdx - prevIdx); filled[i] = prev + (next - prev) * t; }
-          else if (prev !== null) { filled[i] = prev * 0.7; }
-          else if (next !== null) { filled[i] = next * 0.7; }
-          else { filled[i] = 0; }
-        }
-        return filled;
+        // Use zero for missing days — no interpolation
+        return sparkDates.map(d => scoresByGame[gameId]?.[d] ?? 0);
       };
       const buildLabels = () => sparkDates.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); });
       const globalMax = Math.max(...top10.map(g => Math.max(...buildPoints(g.id))), 0.1);
@@ -534,29 +523,26 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
-  const Sparkline = ({ points, labels, globalMax, refPoints, color = C.accent }) => {
+  const Sparkline = ({ points, labels, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
-    const slots = 8;
+    const slots = points.length;
     const dataMax = Math.max(...points);
+    // Always start Y axis from zero — flat lines look flat
     const max = dataMax > 0 ? dataMax * 1.1 : 0.1;
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
-    let lastDataIdx = 0;
-    for (let i = slots - 1; i >= 0; i--) { if (points[i] > 0) { lastDataIdx = i; break; } }
-    const dataPoints = points.slice(0, lastDataIdx + 1);
-    const linePts = dataPoints.map((v, i) => xPos(i) + "," + yPos(v)).join(" ");
-    const areaPath = "M " + xPos(0) + "," + baseline + " " + dataPoints.map((v, i) => "L " + xPos(i) + "," + yPos(v)).join(" ") + " L " + xPos(lastDataIdx) + "," + baseline + " Z";
-    const refLinePts = refPoints ? refPoints.slice(0, slots).map((v, i) => xPos(i) + "," + yPos(v)).join(" ") : null;
+    const linePts = points.map((v, i) => xPos(i) + "," + yPos(v)).join(" ");
+    const areaPath = "M " + xPos(0) + "," + baseline + " " + points.map((v, i) => "L " + xPos(i) + "," + yPos(v)).join(" ") + " L " + xPos(slots - 1) + "," + baseline + " Z";
+    const lastIdx = slots - 1;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={"0 0 " + W + " " + h} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={"grad-" + color.replace("#","")} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-          {refLinePts && <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.2" strokeDasharray="8 6" />}
           <path d={areaPath} fill={"url(#grad-" + color.replace("#","") + ")"} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-          {dataPoints.map((v, i) => <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastDataIdx ? 5 : 3} fill={color} opacity={i === lastDataIdx ? 1 : 0.4} />)}
+          {points.map((v, i) => v > 0 && <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastIdx ? 5 : 3} fill={color} opacity={i === lastIdx ? 1 : 0.4} />)}
         </svg>
         <div style={{ position: "relative", height: 14, marginTop: 2 }}>
           {labels && labels.map((l, i) => i < slots ? (
@@ -612,7 +598,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         {isExpanded && (
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 days</div>
-            {sp ? <Sparkline points={sp} labels={spLabels} globalMax={spGlobalMax} refPoints={spRefPoints} color={C.accent} />
+            {sp ? <Sparkline points={sp} labels={spLabels} color={C.accent} />
               : isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
