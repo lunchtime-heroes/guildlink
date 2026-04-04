@@ -1080,7 +1080,7 @@ export default function GuildLink() {
   const [authLoading, setAuthLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [notifications, setNotifications] = useState([]);
-  const [showAuth, setShowAuth] = useState(false);
+  const [showAuth, setShowAuth] = useState(window.location.pathname === "/reset-password" ? "reset" : false);
   const [signInPromptMsg, setSignInPromptMsg] = useState(null);
   const [themeKey, setThemeKey] = useState("deep-space");
   const [showOnboarding, setShowOnboarding] = useState(false);
