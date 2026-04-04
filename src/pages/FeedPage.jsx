@@ -643,17 +643,23 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     // 5. Recent Q&A questions
     const { data: recentQuestions } = await supabase
       .from("posts")
-      .select("id, content, created_at, game_tag, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding), games!posts_game_tag_fkey(id, name, cover_url)")
+      .select("id, content, created_at, game_tag, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("post_type", "question")
       .not("game_tag", "is", null)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(6);
     if (recentQuestions?.length) {
+      // Fetch game data separately to avoid uuid/text type mismatch on join
+      const gameIds = [...new Set(recentQuestions.map(q => q.game_tag).filter(Boolean))];
+      const { data: qaGames } = await supabase.from("games").select("id, name, cover_url").in("id", gameIds);
+      const qaGameMap = {};
+      (qaGames || []).forEach(g => { qaGameMap[g.id] = g; });
       recentQuestions.forEach(q => {
-        if (!q.games || !q.profiles) return;
+        const game = qaGameMap[q.game_tag];
+        if (!game || !q.profiles) return;
         const hasFollow = followIds.includes(q.user_id);
-        cards.push({ type: "qa_card", id: "qa_" + q.id, game: q.games, question: q, profile: q.profiles, hasFollow, priority: hasFollow ? 3 : 1, timestamp: new Date(q.created_at).getTime() });
+        cards.push({ type: "qa_card", id: "qa_" + q.id, game, question: q, profile: q.profiles, hasFollow, priority: hasFollow ? 3 : 1, timestamp: new Date(q.created_at).getTime() });
       });
     }
 
