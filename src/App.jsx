@@ -1168,7 +1168,7 @@ export default function GuildLink() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") { setShowAuth("reset"); return; }
       setSession(session);
-      if (session) { fetchProfile(session.user.id); setShowAuth(false); setSignInPromptMsg(null); }
+      if (session && event !== "PASSWORD_RECOVERY") { fetchProfile(session.user.id); setShowAuth(false); setSignInPromptMsg(null); }
     });
     return () => subscription.unsubscribe();
   }, []);
