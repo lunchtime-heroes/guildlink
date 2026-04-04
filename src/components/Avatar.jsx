@@ -235,13 +235,13 @@ function Avatar({ initials, size = 40, status, isNPC = false, ring = null, found
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
       {hasRing && (
-        <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44") + ", inset 0 0 " + size * 0.15 + "px " + (ringGlow || ringColor + "22"), zIndex: 1, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: -3, borderRadius: "16%", border: "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44") + ", inset 0 0 " + size * 0.15 + "px " + (ringGlow || ringColor + "22"), zIndex: 1, pointerEvents: "none" }} />
       )}
       {hasRing && isDouble && (
-        <div style={{ position: "absolute", inset: -7, borderRadius: "50%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />
       )}
       <div style={{
-        width: size, height: size, borderRadius: "50%",
+        width: size, height: size, borderRadius: "12%",
         background: isNPC ? "linear-gradient(135deg, #3d2e00, #7a5c00)" : "linear-gradient(135deg, " + C.accent + "cc, " + C.accent + "55)",
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: size * 0.35, fontWeight: 700, color: isNPC ? "#f59e0b" : "#fff",
