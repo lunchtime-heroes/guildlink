@@ -170,7 +170,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const chartDate = latestDateRow?.date || getPacificDate(0);
       const { data: scores } = await supabase.from("daily_chart_scores").select("game_id, score, games(id, name, genre, cover_url)").eq("date", chartDate).order("score", { ascending: false });
       if (!scores) { setChartsLoading(false); return; }
-      const top10 = scores.filter(s => s.games).slice(0, 10).map(s => ({ id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url, uniqueUsers: 1, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }));
+      const top10 = scores.filter(s => s.games).sort((a, b) => b.score - a.score || a.games.name.localeCompare(b.games.name)).slice(0, 10).map(s => ({ id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url, uniqueUsers: 1, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }));
       setOverall(top10);
       const genres = {}, genresFull = {};
       scores.filter(s => s.games).forEach(s => {

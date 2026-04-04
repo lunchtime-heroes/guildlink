@@ -35,7 +35,8 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
       if (scores && scores.length > 0) {
         const sorted = scores
           .filter(s => s.games)
-          .map((s, i) => ({
+            .sort((a, b) => b.score - a.score || a.games.name.localeCompare(b.games.name))
+            .map((s, i) => ({
             rank: i + 1,
             id: s.game_id,
             finalScore: s.score,
