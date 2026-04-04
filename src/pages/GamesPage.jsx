@@ -574,7 +574,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const movement = (() => {
       const prevRank = prevRanks[entry.id];
       const historyPoints = spData?.points || [];
-      const hasHistory = historyPoints.slice(0, 7).some(p => p > 0.5);
+      const hasHistory = historyPoints.slice(0, 7).some(p => p > 0.01);
       if (!prevRank && !hasHistory) return { label: "NEW", color: C.teal };
       if (!prevRank) return { label: "—", color: C.textDim };
       const diff = prevRank - rank;
