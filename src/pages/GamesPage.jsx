@@ -231,7 +231,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const prevGameIds = new Set((prevEventsRes.data || []).map(e => e.game_id));
       const recentByGame = {};
       (recentEventsRes.data || []).forEach(e => { if (!recentByGame[e.game_id]) recentByGame[e.game_id] = new Set(); recentByGame[e.game_id].add(e.user_id); });
-      const emergingGameIds = new Set(Object.entries(recentByGame).filter(([gameId, users]) => !prevGameIds.has(gameId) && users.size >= 2).map(([gameId]) => gameId));
+      // Emerging = games with activity this week that had none in the prior week
+      const emergingGameIds = new Set(Object.entries(recentByGame).filter(([gameId, users]) => !prevGameIds.has(gameId)).map(([gameId]) => gameId));
       const emergingList = (scores || []).filter(s => s.games && emergingGameIds.has(s.game_id)).slice(0, 10)
         .map(s => ({ id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url, uniqueUsers: 1, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }));
       setEmerging(emergingList);
@@ -523,23 +524,24 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
-  const Sparkline = ({ points, labels, color = C.accent }) => {
+  const Sparkline = ({ points, labels, refPoints, color = C.accent }) => {
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
     const slots = points.length;
-    const dataMax = Math.max(...points);
-    // Always start Y axis from zero — flat lines look flat
+    const dataMax = Math.max(...points, ...(refPoints || [0]));
     const max = dataMax > 0 ? dataMax * 1.1 : 0.1;
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
     const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
     const baseline = h - pad;
     const linePts = points.map((v, i) => xPos(i) + "," + yPos(v)).join(" ");
     const areaPath = "M " + xPos(0) + "," + baseline + " " + points.map((v, i) => "L " + xPos(i) + "," + yPos(v)).join(" ") + " L " + xPos(slots - 1) + "," + baseline + " Z";
+    const refLinePts = refPoints ? refPoints.slice(0, slots).map((v, i) => xPos(i) + "," + yPos(v)).join(" ") : null;
     const lastIdx = slots - 1;
     return (
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={"0 0 " + W + " " + h} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={"grad-" + color.replace("#","")} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+          {refLinePts && <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.25" />}
           <path d={areaPath} fill={"url(#grad-" + color.replace("#","") + ")"} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
           {points.map((v, i) => v > 0 && <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastIdx ? 5 : 3} fill={color} opacity={i === lastIdx ? 1 : 0.4} />)}
@@ -598,7 +600,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         {isExpanded && (
           <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
             <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 days</div>
-            {sp ? <Sparkline points={sp} labels={spLabels} color={C.accent} />
+            {sp ? <Sparkline points={sp} labels={spLabels} refPoints={spRefPoints} color={C.accent} />
               : isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
               : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
             <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
@@ -886,7 +888,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
               <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Emerging</div>
-                <div style={{ color: C.textDim, fontSize: 12 }}>Back on the radar after going quiet</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>Games gaining new momentum this week</div>
               </div>
               {emerging.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="emerging" />)}
             </div>
