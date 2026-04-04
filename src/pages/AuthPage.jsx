@@ -23,7 +23,7 @@ function AuthPage({ onBack, defaultMode = "login" }) {
 
   const fakeEmail = (u) => u.trim().toLowerCase().replace(/\s+/g, "_") + "@guildlink.gg";
 
-  const handle = async () => {
+  const handle = async () => { console.log("handle called, mode:", mode);
     setLoading(true);
     setError("");
 
