@@ -1144,7 +1144,7 @@ export default function GuildLink() {
     // Seed initial history state so back works from first page
     const { page, gameId, playerHandle } = parsePath(window.location.pathname);
     if (page === "reset") { setShowAuth("reset"); }
-    window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname);
+    window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname + window.location.hash);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
