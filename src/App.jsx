@@ -1,7 +1,5 @@
 import { Analytics } from '@vercel/analytics/react';
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
-import LFGPage from "./pages/LFGPage.jsx";
 import GuildPortal from "./pages/GuildPortal.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import FeedPage from "./pages/FeedPage.jsx";
@@ -21,10 +19,7 @@ import FeedbackPage from "./pages/FeedbackPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
-const supabase = createClient(
-  "https://zpalkpcqihxamedymnwe.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwYWxrcGNxaWh4YW1lZHltbndlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NDc3MTQsImV4cCI6MjA4ODQyMzcxNH0.8V9MEXpcCH8dibm65PVtaPZseDbPvYCwSPJQ-9Cu-Zo"
-);
+import supabase from "./supabase.js";
 
 // Week start helper — Sunday 12:00am Pacific time
 // Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
