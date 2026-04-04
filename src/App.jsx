@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/react';
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import GuildPortal from "./pages/GuildPortal.jsx";
+import LFGPage from "./pages/LFGPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import FeedPage from "./pages/FeedPage.jsx";
 import GamePage from "./pages/GamePage.jsx";
