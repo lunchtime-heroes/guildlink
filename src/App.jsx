@@ -1104,6 +1104,7 @@ export default function GuildLink() {
     if (p === "games") return { page: "games" };
     if (p === "reviews") return { page: "reviews" };
     if (p === "about") return { page: "founding" };
+    if (p === "reset-password") return { page: "reset" };
     if (p === "profile") return { page: "profile" };
     if (p === "npcs") return { page: "npcs" };
     if (p.startsWith("game/")) return { page: "game", gameId: p.slice(5) };
@@ -1142,6 +1143,7 @@ export default function GuildLink() {
     window.addEventListener("popstate", onPop);
     // Seed initial history state so back works from first page
     const { page, gameId, playerHandle } = parsePath(window.location.pathname);
+    if (page === "reset") { setShowAuth("reset"); }
     window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
