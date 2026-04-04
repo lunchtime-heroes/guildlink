@@ -1156,11 +1156,15 @@ export default function GuildLink() {
     // Apply any locally saved theme immediately on load
     try { const saved = localStorage.getItem("gl-theme"); if (saved) applyAndSetTheme(saved); } catch(e) {}
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
-      if (session) fetchProfile(session.user.id);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+  if (session && window.location.href.includes("type=recovery")) {
+    setShowAuth("reset");
+    setAuthLoading(false);
+    return;
+  }
+  setSession(session);
+  setAuthLoading(false);
+  if (session) fetchProfile(session.user.id);
+});    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") { console.log("RECOVERY EVENT FIRED"); setShowAuth("reset"); return; }
       setSession(session);
       if (session && event !== "PASSWORD_RECOVERY") { fetchProfile(session.user.id); setShowAuth(false); setSignInPromptMsg(null); }
