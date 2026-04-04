@@ -1155,8 +1155,9 @@ export default function GuildLink() {
   useEffect(() => {
     // Apply any locally saved theme immediately on load
     try { const saved = localStorage.getItem("gl-theme"); if (saved) applyAndSetTheme(saved); } catch(e) {}
+    const isRecovery = window.location.href.includes("type=recovery");
     supabase.auth.getSession().then(({ data: { session } }) => {
-  if (session && window.location.href.includes("type=recovery")) {
+  if (session && isRecovery) {
     setShowAuth("reset");
     setAuthLoading(false);
     return;
