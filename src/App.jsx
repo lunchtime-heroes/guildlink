@@ -1104,6 +1104,7 @@ export default function GuildLink() {
     if (p === "games") return { page: "games" };
     if (p === "reviews") return { page: "reviews" };
     if (p === "about") return { page: "founding" };
+    if (p === "guilds") return { page: "squad" };
     if (p === "reset-password") return { page: "reset" };
     if (p === "profile") return { page: "profile" };
     if (p === "npcs") return { page: "npcs" };
@@ -1348,7 +1349,7 @@ export default function GuildLink() {
 
   const navToPage = (page) => {
     setActivePage(page);
-    const path = page === "founding" ? "/about" : `/${page}`;
+    const path = page === "founding" ? "/about" : page === "squad" ? "/guilds" : `/${page}`;
     window.history.pushState({ page }, "", path);
     supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", page); });
   };
