@@ -4,7 +4,7 @@ import supabase from "../supabase.js";
 import { timeAgo, logChartEvent } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard, renderPostContent } from "../components/FeedPostCard.jsx";
-import { ShelfPulseCard, ReviewSpotlightCard } from "../components/PulseCards.jsx";
+import { ShelfPulseCard, ReviewSpotlightCard, QACard } from "../components/PulseCards.jsx";
 import { ChartsWidget } from "../components/Charts.jsx";
 
 function decodeHtml(str) {
@@ -639,6 +639,23 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       });
     }
 
+    // 5. Recent Q&A questions
+    const { data: recentQuestions } = await supabase
+      .from("posts")
+      .select("id, content, created_at, game_tag, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding), games!posts_game_tag_fkey(id, name, cover_url)")
+      .eq("post_type", "question")
+      .not("game_tag", "is", null)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(6);
+    if (recentQuestions?.length) {
+      recentQuestions.forEach(q => {
+        if (!q.games || !q.profiles) return;
+        const hasFollow = followIds.includes(q.user_id);
+        cards.push({ type: "qa_card", id: "qa_" + q.id, game: q.games, question: q, profile: q.profiles, hasFollow, priority: hasFollow ? 3 : 1 });
+      });
+    }
+
     cards.sort((a, b) => b.priority - a.priority);
     setPulseCards(cards);
   };
@@ -1025,6 +1042,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               return <ReviewSpotlightCard key={card.id} card={card}
                 setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
                 setActivePage={setActivePage} onExit={onExit}
+              />;
+            }
+            if (card.type === "qa_card") {
+              return <QACard key={card.id} card={card}
+                setCurrentGame={setCurrentGame} setActivePage={setActivePage}
               />;
             }
             return null;

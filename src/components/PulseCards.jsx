@@ -104,4 +104,38 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
   );
 }
 
-export { ShelfPulseCard, ReviewSpotlightCard };
+
+function QACard({ card, setCurrentGame, setActivePage }) {
+  const initials = (card.profile?.avatar_initials || card.profile?.username || "?").slice(0,2).toUpperCase();
+
+  return (
+    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
+      {card.game.cover_url && (
+        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+          <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 64 }} />
+        </div>
+      )}
+      <div style={{ flex: 1, padding: "12px 14px", minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+          <Avatar initials={initials} size={18} founding={card.profile?.is_founding} ring={card.profile?.active_ring} avatarConfig={card.profile?.avatar_config} />
+          <span style={{ fontWeight: 600, color: C.textMuted, fontSize: 12 }}>{card.profile?.username || "A player"}</span>
+          <span style={{ color: C.textDim, fontSize: 11 }}>asked about</span>
+          <span onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+            style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer" }}>
+            {card.game.name}
+          </span>
+          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+          {card.hasFollow && <span style={{ color: C.accent, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>● Network</span>}
+        </div>
+        <p style={{ color: C.text, fontSize: 13, lineHeight: 1.5, margin: "0 0 10px", fontWeight: 500 }}>{card.question.content}</p>
+        <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          Answer Now →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export { ShelfPulseCard, ReviewSpotlightCard, QACard };
