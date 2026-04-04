@@ -63,7 +63,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
       setLoading(false);
     };
     load();
-  }, [category, refreshKey]);
+  }, [category]);
 
   const getDominantSignal = (counts) => {
     if (counts.shelf_playing > 0) return `${counts.shelf_playing} playing`;
