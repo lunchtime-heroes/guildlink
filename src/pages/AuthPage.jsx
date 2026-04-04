@@ -15,7 +15,8 @@ function AuthPage({ onBack, defaultMode = "login" }) {
 
   // Detect password reset redirect from Supabase email link
   useEffect(() => {
-    if (window.location.hash.includes("type=recovery")) {
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery") && hash.includes("token_hash=")) {
       setMode("reset");
     }
   }, []);
@@ -64,6 +65,14 @@ function AuthPage({ onBack, defaultMode = "login" }) {
     } else if (mode === "reset") {
       if (!password) { setError("Password is required."); setLoading(false); return; }
       if (password.length < 6) { setError("Password must be at least 6 characters."); setLoading(false); return; }
+      // Extract token_hash from URL and verify it to establish session
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const tokenHash = params.get("token_hash");
+      if (tokenHash) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+        if (verifyError) { setError(verifyError.message); setLoading(false); return; }
+      }
       const { error } = await supabase.auth.updateUser({ password });
       if (error) { setError(error.message); setLoading(false); return; }
       window.history.replaceState(null, "", window.location.pathname);
