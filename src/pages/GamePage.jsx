@@ -239,6 +239,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     }).select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
     if (!error && data) {
       setGameQA(prev => [{ ...data, comments: [] }, ...prev]);
+      logChartEvent(dbGame.id, 'post', authUser.id);
       setAskText("");
       setShowAskForm(false);
     }
@@ -260,6 +261,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         ? { ...q, comments: [...(q.comments || []), data] }
         : q
       ));
+      logChartEvent(dbGame.id, 'comment', authUser.id);
       // Update shelf status for new commenter
       const { data: shelfData } = await supabase.from("user_games")
         .select("status").eq("game_id", dbGame.id).eq("user_id", authUser.id).maybeSingle();
