@@ -35,7 +35,7 @@ function GuildActivityFeed({ guildId, memberIds }) {
           .in("id", memberIds),
       ]);
 
-      console.log("shelfRes:", shelfRes.data, "err:", shelfRes.error);
+      console.log("shelfRes:", JSON.stringify(shelfRes.data?.map(s => ({user_id: s.user_id, status: s.to_status}))))
       // Build profile map
       const profileMap = {};
       (profilesRes.data || []).forEach(p => { profileMap[p.id] = p; });
