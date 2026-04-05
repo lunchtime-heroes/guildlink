@@ -45,7 +45,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     if (!guildId) return;
     const [guildRes, membersRes] = await Promise.all([
       supabase.from("guilds").select("*").eq("id", guildId).single(),
-      supabase.from("guild_members").select("user_id, role, status, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)").eq("guild_id", guildId).eq("status", "active"),
+      supabase.from("guild_members").select("user_id, role, status").eq("guild_id", guildId).eq("status", "active"),
     ]);
     if (guildRes.data) {
       setGuild(guildRes.data);
@@ -59,12 +59,23 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       });
     }
     if (membersRes.data) {
-      setMembers(membersRes.data);
       const ids = membersRes.data.map(m => m.user_id);
       setMemberIds(ids);
       if (currentUser?.id) {
         const me = membersRes.data.find(m => m.user_id === currentUser.id);
         setIsLeader(me?.role === "leader");
+      }
+      // Fetch profiles separately to avoid FK join issues
+      if (ids.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_initials, avatar_config, active_ring, is_founding")
+          .in("id", ids);
+        const profileMap = {};
+        (profilesData || []).forEach(p => { profileMap[p.id] = p; });
+        setMembers(membersRes.data.map(m => ({ ...m, profiles: profileMap[m.user_id] || null })));
+      } else {
+        setMembers([]);
       }
     }
     setLoading(false);

@@ -9,7 +9,7 @@ function GuildActivityFeed({ guildId, memberIds }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!memberIds || memberIds.length === 0) { setLoading(false); return; }
+    if (!memberIds || memberIds.length === 0) { return; } // wait — don't set loading:false yet
     const load = async () => {
       const [postsRes, shelfRes] = await Promise.all([
         supabase
@@ -17,15 +17,14 @@ function GuildActivityFeed({ guildId, memberIds }) {
           .select("id, content, created_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
           .in("user_id", memberIds)
           .order("created_at", { ascending: false })
-          .limit(memberIds.length * 2),
+          .limit(20),
         supabase
-          .from("user_games_history")
-          .select("id, to_status, changed_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
+          .from("user_games")
+          .select("id, status, updated_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
           .in("user_id", memberIds)
-          .order("changed_at", { ascending: false })
-          .limit(memberIds.length * 2),
+          .order("updated_at", { ascending: false })
+          .limit(20),
       ]);
-
       const postItems = (postsRes.data || []).map(p => ({
         id: "post-" + p.id,
         type: "post",
@@ -34,44 +33,24 @@ function GuildActivityFeed({ guildId, memberIds }) {
         game: p.games?.name,
         ts: p.created_at,
       }));
-
       const shelfItems = (shelfRes.data || []).map(u => ({
         id: "shelf-" + u.id,
         type: "shelf",
         user: u.profiles,
         game: u.games?.name,
-        status: u.to_status,
-        ts: u.changed_at,
+        status: u.status,
+        ts: u.updated_at,
       }));
-
-      // Keep last 2 per member across both streams
-      const byMember = {};
-      [...postItems, ...shelfItems]
+      const merged = [...postItems, ...shelfItems]
         .sort((a, b) => new Date(b.ts) - new Date(a.ts))
-        .forEach(item => {
-          const uid = item.user?.username || "unknown";
-          if (!byMember[uid]) byMember[uid] = [];
-          if (byMember[uid].length < 2) byMember[uid].push(item);
-        });
-
-      const merged = Object.values(byMember)
-        .flat()
-        .sort((a, b) => new Date(b.ts) - new Date(a.ts));
-
+        .slice(0, 20);
       setItems(merged);
       setLoading(false);
     };
     load();
   }, [guildId, (memberIds || []).join(",")]);
 
-  const statusLabel = (status) => {
-    if (status === "playing") return "is now playing";
-    if (status === "want_to_play") return "wants to play";
-    if (status === "have_played") return "finished playing";
-    return "added";
-  };
-
-  if (loading) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>Loading activity...</div>;
+  if (loading) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>Loading activity\u2026</div>;
   if (items.length === 0) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>No recent activity from guild members.</div>;
 
   return (
@@ -91,12 +70,14 @@ function GuildActivityFeed({ guildId, memberIds }) {
               <span style={{ color: C.textDim, fontSize: 13 }}>
                 {item.type === "post"
                   ? (item.game ? " posted about " + item.game + ": " : " posted: ")
-                  : (" " + statusLabel(item.status) + " " + (item.game || "a game"))
+                  : item.status === "playing" ? (" is playing " + (item.game || "a game"))
+                  : item.status === "have_played" ? (" finished playing " + (item.game || "a game"))
+                  : (" wants to play " + (item.game || "a game"))
                 }
               </span>
               {item.type === "post" && item.content && (
                 <span style={{ color: C.textMuted, fontSize: 13 }}>
-                  {item.content.length > 80 ? item.content.slice(0, 80) + "..." : item.content}
+                  {item.content.length > 80 ? item.content.slice(0, 80) + "\u2026" : item.content}
                 </span>
               )}
             </div>
