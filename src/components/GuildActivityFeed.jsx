@@ -11,38 +11,75 @@ function GuildActivityFeed({ guildId, memberIds }) {
   useEffect(() => {
     if (!memberIds || memberIds.length === 0) { return; } // wait — don't set loading:false yet
     const load = async () => {
-      const [postsRes, shelfRes] = await Promise.all([
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [postsRes, shelfRes, profilesRes] = await Promise.all([
         supabase
           .from("posts")
-          .select("id, content, created_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
+          .select("id, content, created_at, user_id, game_tag")
           .in("user_id", memberIds)
+          .or("post_type.eq.post,post_type.is.null")
+          .gte("created_at", since)
           .order("created_at", { ascending: false })
-          .limit(20),
+          .limit(30),
         supabase
-          .from("user_games")
-          .select("id, status, updated_at, user_id, profiles(username, avatar_initials, avatar_config, active_ring, is_founding), games(name)")
+          .from("user_games_history")
+          .select("id, to_status, changed_at, user_id, game_id")
           .in("user_id", memberIds)
-          .order("updated_at", { ascending: false })
-          .limit(20),
+          .gte("changed_at", since)
+          .order("changed_at", { ascending: false })
+          .limit(30),
+        supabase
+          .from("profiles")
+          .select("id, username, avatar_initials, avatar_config, active_ring, is_founding")
+          .in("id", memberIds),
       ]);
-      const postItems = (postsRes.data || []).map(p => ({
-        id: "post-" + p.id,
-        type: "post",
-        user: p.profiles,
-        content: p.content,
-        game: p.games?.name,
-        ts: p.created_at,
-      }));
+
+      // Build profile map
+      const profileMap = {};
+      (profilesRes.data || []).forEach(p => { profileMap[p.id] = p; });
+
+      // Get game names for tagged posts and shelf items
+      const gameIds = [
+        ...(postsRes.data || []).map(p => p.game_tag).filter(Boolean),
+        ...(shelfRes.data || []).map(s => s.game_id).filter(Boolean),
+      ];
+      const uniqueGameIds = [...new Set(gameIds)];
+      let gameMap = {};
+      if (uniqueGameIds.length > 0) {
+        const { data: games } = await supabase.from("games").select("id, name").in("id", uniqueGameIds);
+        (games || []).forEach(g => { gameMap[g.id] = g.name; });
+      }
+
+      const postItems = (postsRes.data || [])
+        .filter(p => p.game_tag)
+        .map(p => ({
+          id: "post-" + p.id,
+          type: "post",
+          user: profileMap[p.user_id],
+          content: p.content,
+          game: gameMap[p.game_tag],
+          ts: p.created_at,
+        }));
+
       const shelfItems = (shelfRes.data || []).map(u => ({
         id: "shelf-" + u.id,
         type: "shelf",
-        user: u.profiles,
-        game: u.games?.name,
-        status: u.status,
-        ts: u.updated_at,
+        user: profileMap[u.user_id],
+        game: gameMap[u.game_id],
+        status: u.to_status,
+        ts: u.changed_at,
       }));
+
+      // Limit to 3 items per member
+      const countByUser = {};
       const merged = [...postItems, ...shelfItems]
         .sort((a, b) => new Date(b.ts) - new Date(a.ts))
+        .filter(item => {
+          const uid = item.user?.id;
+          if (!uid) return false;
+          countByUser[uid] = (countByUser[uid] || 0) + 1;
+          return countByUser[uid] <= 3;
+        })
         .slice(0, 20);
       setItems(merged);
       setLoading(false);

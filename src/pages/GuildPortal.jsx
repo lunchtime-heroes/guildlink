@@ -78,7 +78,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
         setMembers([]);
       }
     }
-    setLoading(false);
+    setLoading(false); // runs after await above
   };
 
   const loadSessions = async () => {
