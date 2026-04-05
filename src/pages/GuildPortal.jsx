@@ -58,6 +58,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
         website_url: guildRes.data.website_url || "",
       });
     }
+    console.log("membersRes:", membersRes.data);
     if (membersRes.data) {
       const ids = membersRes.data.map(m => m.user_id);
       setMemberIds(ids);
