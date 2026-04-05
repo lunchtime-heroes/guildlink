@@ -70,7 +70,7 @@ function GuildActivityFeed({ guildId, memberIds }) {
         ts: u.changed_at,
       }));
 
-      // Limit to 3 items per member
+      // Limit to 2 items per member, 10 total, chronological
       const countByUser = {};
       const merged = [...postItems, ...shelfItems]
         .sort((a, b) => new Date(b.ts) - new Date(a.ts))
@@ -78,9 +78,9 @@ function GuildActivityFeed({ guildId, memberIds }) {
           const uid = item.user?.id;
           if (!uid) return false;
           countByUser[uid] = (countByUser[uid] || 0) + 1;
-          return countByUser[uid] <= 3;
+          return countByUser[uid] <= 2;
         })
-        .slice(0, 20);
+        .slice(0, 10);
       setItems(merged);
       setLoading(false);
     };
