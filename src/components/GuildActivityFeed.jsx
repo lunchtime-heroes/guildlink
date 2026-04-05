@@ -9,6 +9,7 @@ function GuildActivityFeed({ guildId, memberIds }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("GuildActivityFeed memberIds:", memberIds);
     if (!memberIds || memberIds.length === 0) { return; } // wait — don't set loading:false yet
     const load = async () => {
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
