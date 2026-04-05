@@ -9,7 +9,6 @@ function GuildActivityFeed({ guildId, memberIds }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("GuildActivityFeed memberIds:", memberIds);
     if (!memberIds || memberIds.length === 0) { return; } // wait — don't set loading:false yet
     const load = async () => {
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -35,7 +34,6 @@ function GuildActivityFeed({ guildId, memberIds }) {
           .in("id", memberIds),
       ]);
 
-      console.log("shelfRes:", JSON.stringify(shelfRes.data?.map(s => ({user_id: s.user_id, status: s.to_status}))))
       // Build profile map
       const profileMap = {};
       (profilesRes.data || []).forEach(p => { profileMap[p.id] = p; });
@@ -63,14 +61,14 @@ function GuildActivityFeed({ guildId, memberIds }) {
           ts: p.created_at,
         }));
 
-      const shelfItems = (shelfRes.data || []).map(u => ({
-        id: "shelf-" + u.id,
-        type: "shelf",
-        user: profileMap[u.user_id],
-        game: gameMap[u.game_id],
-        status: u.to_status,
-        ts: u.changed_at,
-      }));
+      const seenShelf = new Set();
+      const shelfItems = (shelfRes.data || []).reduce((acc, u) => {
+        const key = u.user_id + "-" + u.game_id + "-" + u.to_status;
+        if (seenShelf.has(key)) return acc;
+        seenShelf.add(key);
+        acc.push({ id: "shelf-" + u.id, type: "shelf", user: profileMap[u.user_id], game: gameMap[u.game_id], status: u.to_status, ts: u.changed_at });
+        return acc;
+      }, []);
 
       // Limit to 2 items per member, 10 total, chronological
       const countByUser = {};
