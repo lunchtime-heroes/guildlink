@@ -55,6 +55,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletionPending, setDeletionPending] = useState(user?.deletion_requested_at ? true : false);
+  const [exportRequested, setExportRequested] = useState(false);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
@@ -244,6 +245,18 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (!authUser) return;
     await supabase.from("profiles").update({ deletion_requested_at: null }).eq("id", authUser.id);
     setDeletionPending(false);
+  };
+
+  const requestDataExport = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("data_requests").insert({
+      user_id: authUser.id,
+      username: user.name || user.username || "Unknown",
+      request_type: "export",
+      status: "pending",
+    });
+    setExportRequested(true);
   };
 
   const moveGame = async (gameId, fromStatus, toStatus) => {
@@ -1293,8 +1306,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
               This will permanently delete your profile, shelf, reviews, posts, and all activity. You have 14 days to change your mind after requesting deletion — after that, everything is gone for good.
             </div>
-            <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 16 }}>
-              Want a copy of your data first? Email <span style={{ color: C.text }}>privacy@guildlink.gg</span> before confirming.
+            <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+              <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>Want a copy of your data before you go?</div>
+              {exportRequested ? (
+                <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700 }}>✓ Export requested — we'll be in touch.</div>
+              ) : (
+                <button onClick={requestDataExport} style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  Request data export
+                </button>
+              )}
             </div>
             <div style={{ color: C.textDim, fontSize: 12, marginBottom: 8 }}>Type DELETE to confirm:</div>
             <input

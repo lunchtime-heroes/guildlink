@@ -16,6 +16,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [authorized, setAuthorized] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [feedbackData, setFeedbackData] = useState([]);
+  const [dataRequests, setDataRequests] = useState([]);
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [enrichMsg, setEnrichMsg] = useState({});
@@ -87,6 +88,10 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const { data: fbData } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
     if (fbData) setFeedbackData(fbData);
 
+    // Data requests (GDPR)
+    const { data: drData } = await supabase.from("data_requests").select("*").order("created_at", { ascending: false });
+    if (drData) setDataRequests(drData);
+
     // Most Wanted — shelf elevations last 30 days
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: elevData } = await supabase.from("shelf_elevations")
@@ -146,6 +151,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     { id: "overview", label: "📊 Overview" },
     { id: "analytics", label: "📈 Analytics" },
     { id: "feedback", label: "💬 Feedback" },
+    { id: "data_requests", label: "🔐 Data Requests" },
     { id: "users", label: "👤 Users" },
     { id: "posts", label: "📝 Posts" },
     { id: "charts", label: "🏆 Chart Activity" },
@@ -292,6 +298,58 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 </div>
               ))}
             </>
+          )}
+        </div>
+      )}
+
+      {/* Data Requests tab */}
+      {tab === "data_requests" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Data Requests</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>GDPR data export requests from users. Fulfill within 30 days of request date.</div>
+          </div>
+          {dataRequests.length === 0 ? (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No data requests yet.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {dataRequests.map(r => {
+                const isPending = r.status === "pending";
+                const daysSince = Math.floor((Date.now() - new Date(r.created_at)) / (1000 * 60 * 60 * 24));
+                const isUrgent = isPending && daysSince >= 7;
+                return (
+                  <div key={r.id} style={{ background: C.surface, border: "1px solid " + (isUrgent ? "#c0392b55" : C.border), borderRadius: 14, padding: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{r.username || "Unknown"}</span>
+                          <span style={{ background: r.request_type === "export" ? C.accentGlow : "#c0392b22", border: "1px solid " + (r.request_type === "export" ? C.accentDim : "#c0392b55"), borderRadius: 6, padding: "2px 8px", color: r.request_type === "export" ? C.accentSoft : "#c0392b", fontSize: 11, fontWeight: 700 }}>
+                            {r.request_type === "export" ? "DATA EXPORT" : r.request_type.toUpperCase()}
+                          </span>
+                          <span style={{ background: isPending ? C.gold + "22" : C.online + "22", border: "1px solid " + (isPending ? C.gold + "55" : C.online + "55"), borderRadius: 6, padding: "2px 8px", color: isPending ? C.gold : C.online, fontSize: 11, fontWeight: 700 }}>
+                            {r.status.toUpperCase()}
+                          </span>
+                          {isUrgent && <span style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 6, padding: "2px 8px", color: "#c0392b", fontSize: 11, fontWeight: 700 }}>⚠ {daysSince}d — ACT SOON</span>}
+                        </div>
+                        <div style={{ color: C.textDim, fontSize: 12 }}>
+                          Requested {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {r.resolved_at && ` · Resolved ${new Date(r.resolved_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                          {isPending && ` · ${daysSince}d ago · ${14 - daysSince}d remaining`}
+                        </div>
+                      </div>
+                      {isPending && (
+                        <button onClick={async () => {
+                          await supabase.from("data_requests").update({ status: "fulfilled", resolved_at: new Date().toISOString() }).eq("id", r.id);
+                          setDataRequests(prev => prev.map(d => d.id === r.id ? { ...d, status: "fulfilled", resolved_at: new Date().toISOString() } : d));
+                        }} style={{ background: C.online + "22", border: "1px solid " + C.online + "55", borderRadius: 8, padding: "7px 16px", color: C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          Mark fulfilled
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
