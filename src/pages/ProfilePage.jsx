@@ -646,9 +646,16 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
-                <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+                  <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
+                </div>
+                {deletionPending ? (
+                  <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 20, padding: "5px 14px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
+                ) : (
+                  <button onClick={() => setShowDeleteModal(true)} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 20, padding: "5px 14px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Delete Account</button>
+                )}
               </div>
             )}
           </div>
@@ -1277,23 +1284,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           )}
         </div>
       )}
-
-      {/* Account Deletion */}
-      <div style={{ marginTop: 60, paddingTop: 24, borderTop: "1px solid " + C.border }}>
-        {deletionPending ? (
-          <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
-            <div style={{ color: C.text, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Account deletion pending</div>
-            <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 14 }}>Your account is scheduled for deletion in 14 days. All your data will be permanently removed. Changed your mind?</div>
-            <button onClick={cancelDeletion} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Cancel deletion
-            </button>
-          </div>
-        ) : (
-          <button onClick={() => setShowDeleteModal(true)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
-            Delete account
-          </button>
-        )}
-      </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
