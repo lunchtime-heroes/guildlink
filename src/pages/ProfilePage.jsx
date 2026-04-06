@@ -52,6 +52,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [questsLoaded, setQuestsLoaded] = useState(false);
   const [profileFollowing, setProfileFollowing] = useState([]);
   const [playerTags, setPlayerTags] = useState(typeof user.player_tags === 'object' && !Array.isArray(user.player_tags) && user.player_tags !== null ? user.player_tags : {});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletionPending, setDeletionPending] = useState(user?.deletion_requested_at ? true : false);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
@@ -217,6 +220,30 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     await supabase.from("profiles").update({ player_tags: newTags }).eq("id", authUser.id);
+  };
+
+  const requestDeletion = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`https://zpalkpcqihxamedymnwe.supabase.co/functions/v1/delete-user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+    });
+    if (res.ok) {
+      setDeletionPending(true);
+      setShowDeleteModal(false);
+      setDeleteConfirmText("");
+    }
+  };
+
+  const cancelDeletion = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("profiles").update({ deletion_requested_at: null }).eq("id", authUser.id);
+    setDeletionPending(false);
   };
 
   const moveGame = async (gameId, fromStatus, toStatus) => {
@@ -1248,6 +1275,57 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Account Deletion */}
+      <div style={{ marginTop: 60, paddingTop: 24, borderTop: "1px solid " + C.border }}>
+        {deletionPending ? (
+          <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+            <div style={{ color: C.text, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Account deletion pending</div>
+            <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 14 }}>Your account is scheduled for deletion in 14 days. All your data will be permanently removed. Changed your mind?</div>
+            <button onClick={cancelDeletion} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Cancel deletion
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setShowDeleteModal(true)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+            Delete account
+          </button>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 28, maxWidth: 420, width: "100%" }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 10 }}>Delete your account?</div>
+            <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
+              This will permanently delete your profile, shelf, reviews, posts, and all activity. You have 14 days to change your mind after requesting deletion — after that, everything is gone for good.
+            </div>
+            <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 16 }}>
+              Want a copy of your data first? Email <span style={{ color: C.text }}>privacy@guildlink.gg</span> before confirming.
+            </div>
+            <div style={{ color: C.textDim, fontSize: 12, marginBottom: 8 }}>Type DELETE to confirm:</div>
+            <input
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 14, marginBottom: 16, boxSizing: "border-box", outline: "none" }}
+            />
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
+                style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Never mind
+              </button>
+              <button
+                onClick={requestDeletion}
+                disabled={deleteConfirmText !== "DELETE"}
+                style={{ background: deleteConfirmText === "DELETE" ? "#c0392b" : C.surfaceRaised, border: "1px solid " + (deleteConfirmText === "DELETE" ? "#c0392b" : C.border), borderRadius: 8, padding: "8px 16px", color: deleteConfirmText === "DELETE" ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: deleteConfirmText === "DELETE" ? "pointer" : "default", transition: "all 0.2s" }}>
+                Request deletion
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
