@@ -45,14 +45,19 @@ function AuthPage({ onBack, defaultMode = "login" }) {
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
         await supabase.from("profiles").update({
-          username: username.trim(),
-          handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
-          avatar_initials: username.trim().slice(0, 2).toUpperCase(),
-          contact_email: contactEmail.trim(),
-        }).eq("id", data.user.id);
-        setConfirmedEmail(contactEmail.trim());
-        setSignupSuccess(true);
-      }
+         username: username.trim(),
+         handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
+         avatar_initials: username.trim().slice(0, 2).toUpperCase(),
+      }).eq("id", data.user.id);
+
+        await supabase.from("user_private").insert({
+         id: data.user.id,
+         contact_email: contactEmail.trim(),
+      });
+
+  setConfirmedEmail(contactEmail.trim());
+  setSignupSuccess(true);
+}
 
     } else if (mode === "forgot") {
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
