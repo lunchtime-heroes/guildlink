@@ -652,9 +652,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
                 </div>
                 {deletionPending ? (
-                  <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 20, padding: "5px 14px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
+                  <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 8, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
                 ) : (
-                  <button onClick={() => setShowDeleteModal(true)} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 20, padding: "5px 14px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Delete Account</button>
+                  <button onClick={() => setShowDeleteModal(true)} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 8, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Delete Account</button>
                 )}
               </div>
             )}
