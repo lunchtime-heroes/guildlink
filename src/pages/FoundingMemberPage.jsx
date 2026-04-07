@@ -210,9 +210,17 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
             That's the role ads will play. Game recommendations won't be influenced to favor specific games and we won't tweak the algorithm to show you ads that aren't relevant. We'll even show you what led to you seeing a specific ad.
           </p>
-          <p style={{ color: C.gold, fontSize: isMobile ? 14 : 16, lineHeight: 1.8, fontWeight: 600, marginBottom: 0 }}>
+          <p style={{ color: C.gold, fontSize: isMobile ? 14 : 16, lineHeight: 1.8, fontWeight: 600, marginBottom: 24 }}>
             We believe there can be a mutually beneficial balance struck with advertising.
           </p>
+          <div style={{ borderTop: "1px solid " + C.goldBorder + "66", paddingTop: 24 }}>
+            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: isMobile ? 13 : 14, lineHeight: 1.8, marginBottom: 12 }}>
+              GuildLink helps you find your next favorite game without costing you your personal information. Your shelf is yours.
+            </p>
+            <button onClick={() => setActivePage?.("privacy")} style={{ background: "none", border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "8px 20px", color: C.gold, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              Read our Privacy Policy →
+            </button>
+          </div>
         </div>
       </div>
 
