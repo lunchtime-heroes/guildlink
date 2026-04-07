@@ -39,14 +39,14 @@ function PrivacyPage({ isMobile, setActivePage }) {
         <div style={{ fontWeight: 800, fontSize: 15, color: C.text, marginBottom: 16 }}>The short version</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
-            { pill: <GreenPill>We collect</GreenPill>, text: "your email, profile info, and the games you add to your shelf." },
-            { pill: <GreenPill>We use it to</GreenPill>, text: "run the platform — your shelf powers discovery, charts, and game recommendations." },
-            { pill: <RedPill>We never sell</RedPill>, text: "your data to anyone. Ever." },
+            { pill: <GreenPill>We collect</GreenPill>, text: "your email, username, and the games you add to your shelf." },
+            { pill: <GreenPill>We use it to</GreenPill>, text: "run the platform. Your shelf powers game discovery, The Charts, and game recommendations." },
+            { pill: <RedPill>We never sell</RedPill>, text: "your data to anyone." },
             { pill: <RedPill>We never profile</RedPill>, text: "you based on browsing history, demographics, or behavior outside GuildLink." },
-            { pill: <GreenPill>If we show ads</GreenPill>, text: "they're matched to your game library — not your identity. An ad for a game you already play is actually useful." },
-            { pill: <GreenPill>You can</GreenPill>, text: "delete your account and all your data at any time from your profile page." },
+            { pill: <GreenPill>If we show ads</GreenPill>, text: "they're matched to the game library information you've shared with GuildLink." },
+            { pill: <GreenPill>You can</GreenPill>, text: "delete your account and all your data at any time from your profile page. No matter where you live." },
             { pill: <GreenPill>You can</GreenPill>, text: "request a full export of your data before leaving." },
-            { pill: <GreenPill>Analytics</GreenPill>, text: "are handled by Vercel Analytics — no cookies, no fingerprinting, GDPR compliant by design." },
+            { pill: <GreenPill>Analytics</GreenPill>, text: "are handled without cookies and are GDPR compliant by design." },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: C.textMuted, lineHeight: 1.6 }}>
               <div style={{ flexShrink: 0, paddingTop: 1 }}>{item.pill}</div>
@@ -66,39 +66,39 @@ function PrivacyPage({ isMobile, setActivePage }) {
         <div style={{ marginBottom: 12 }}><Highlight>Profile information.</Highlight> Your username, handle, bio, avatar, and player tags. This is what other users see when they visit your profile. You control all of it and can update or delete it at any time.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Gaming activity.</Highlight> The games you add to your shelf, your reviews, posts, Q&A, and comments. This is the core of what GuildLink is — your game history is your profile, and it drives discovery for you and others. You choose what you add.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Guild activity.</Highlight> Guild memberships, sessions you create or join, and posts in guild threads. This is visible to your fellow guild members.</div>
-        <div><Highlight>Usage analytics.</Highlight> We use Vercel Analytics to understand how people navigate GuildLink. This system collects no cookies, performs no fingerprinting, and does not track you across other websites. It gives us aggregate data like page views and session counts — nothing tied to your identity.</div>
+        <div><Highlight>Usage analytics.</Highlight> We use Vercel Analytics to understand how people navigate GuildLink. GuildLink doesn't collect cookies, perform fingerprinting, or track you across other websites. GuildLink collects aggregate data like page views and session counts in a way that isn't connected to your identity.</div>
       </Section>
 
       <Section title="3. What we do not collect">
-        We do not collect your location. We do not track what you do outside of GuildLink. We do not build behavioral profiles. We do not use third-party advertising trackers, analytics pixels, or data brokers. We do not collect payment information — GuildLink is free.
+        We do not collect your location. We do not track what you do outside of GuildLink. We do not build behavioral profiles. We do not use third-party advertising trackers. We do not use analytics pixels, We do not use data brokers. We do not collect payment information. GuildLink is free to use.
       </Section>
 
       <Section title="4. How we use your data">
-        <div style={{ marginBottom: 12 }}>Your data is used to run GuildLink — full stop. Specifically:</div>
-        <div style={{ marginBottom: 8 }}>→ Your shelf powers the charts, discovery sections, and gamer recommendations.</div>
+        <div style={{ marginBottom: 12 }}>The data you provide is only used to run GuildLink. Specifically:</div>
+        <div style={{ marginBottom: 8 }}>→ Your shelf powers The Charts, game discovery sections, and gamer recommendations.</div>
         <div style={{ marginBottom: 8 }}>→ Your posts and reviews appear in the feed and on game pages.</div>
-        <div style={{ marginBottom: 8 }}>→ Your email is used for account management only — we will never send marketing emails without your explicit opt-in.</div>
+        <div style={{ marginBottom: 8 }}>→ Your email is used for account management and platform communication. Users can opt out of marketing emails.</div>
         <div>→ Aggregate, anonymized activity is used to improve the platform.</div>
       </Section>
 
       <Section title="5. Advertising">
-        GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads will be matched to your game library and gaming behavior on GuildLink — nothing else.</Highlight> If a game studio wants to reach players who have a similar game on their shelf, GuildLink can surface that game to them. That is the extent of it.
+        GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads will be matched to your game library and gaming behavior you share on GuildLink. Nothing else.</Highlight> If a game studio wants to reach players who have a similar game on their shelf, GuildLink can surface that game to them through advertising.
         <div style={{ marginTop: 12 }}>
-          We see this as a genuine part of game discovery. Independent studios and smaller developers deserve a way to reach the players most likely to love their game — not just the players with the biggest ad budgets chasing generic demographics. We will never use browsing history, demographics, purchase history, or any data from outside GuildLink to target ads. We will never sell your data to advertisers.
+          We see this as a genuine part of game discovery. Independent studios and smaller developers benefit when they have a way to reach the players most likely to love their game. Browsing history, demographic information, purchase history, or any other date from outside GuildLink will never be used to target ads. We will never sell your data to advertisers.
         </div>
         <div style={{ marginTop: 12 }}>
-          When ads are introduced, we will update this policy and notify users clearly.
+          When ads are introduced, this policy will be updated a users will be notified. 
         </div>
       </Section>
 
       <Section title="6. Data sharing">
         We do not sell your data. We do not share your data with third parties for marketing purposes. The only circumstances under which we would share data are:
-        <div style={{ marginTop: 12, marginBottom: 8 }}>→ With service providers who help us run the platform (Supabase for our database, Vercel for hosting and analytics, Resend for email delivery). These providers are contractually bound to handle your data securely and only for the purpose of serving GuildLink.</div>
-        <div>→ If required by law — for example, a valid legal order. We would notify you if legally permitted to do so.</div>
+        <div style={{ marginTop: 12, marginBottom: 8 }}>→ With service providers who help us run the platform. These providers are contractually bound to handle your data securely and only for the purpose of serving GuildLink.</div>
+        <div>→ If required by law. For example, a valid legal order. We would notify you if legally permitted to do so.</div>
       </Section>
 
       <Section title="7. Data retention">
-        Your data is retained for as long as your account is active. If you delete your account, all of your data — profile, shelf, reviews, posts, comments, guild activity, and analytics events — is permanently deleted within 14 days. This is not a soft delete. It cannot be recovered after that window closes.
+        Your data is retained for as long as your account is active. If you delete your account, all of your data (profile, shelf, reviews, posts, comments, guild activity, and analytics events) will be permanently deleted within 14 days. Data cannot be recovered after that window closes.
       </Section>
 
       <Section title="8. Your rights">
@@ -106,12 +106,12 @@ function PrivacyPage({ isMobile, setActivePage }) {
         <div style={{ marginBottom: 8 }}><Highlight>Right to access.</Highlight> You can view all the information on your profile at any time.</div>
         <div style={{ marginBottom: 8 }}><Highlight>Right to correction.</Highlight> You can update your profile information at any time from your profile page.</div>
         <div style={{ marginBottom: 8 }}><Highlight>Right to deletion.</Highlight> You can delete your account from your profile page. All data is permanently removed within 14 days.</div>
-        <div style={{ marginBottom: 8 }}><Highlight>Right to portability.</Highlight> You can request a full export of your data before deleting your account. Use the data export option in the account deletion flow, and we will fulfill your request within 14 days.</div>
+        <div style={{ marginBottom: 8 }}><Highlight>Right to portability.</Highlight> You can request a full export of your data before deleting your account. Use the data export option in the account deletion menu and we will fulfill your request within 14 days.</div>
         <div><Highlight>Right to object.</Highlight> If you have concerns about how we process your data, contact us at matt@lunchtimeheroes.co. We will respond within 30 days.</div>
       </Section>
 
       <Section title="9. Security">
-        Your password is hashed — we cannot see it. Your email is stored in a separate, access-controlled table not visible to other users or accessible via our public API. We use Row Level Security on our database, which means every data query is scoped to the authenticated user by policy — not just by application logic. We take these things seriously.
+        Your password is hashed — we cannot see it. Your email is stored in a separate, access-controlled table not visible to other users or accessible via our public API. We use Row Level Security on our database, which means every data query is scoped to the authenticated user by policy.
       </Section>
 
       <Section title="10. Children">
@@ -129,7 +129,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
 
       {/* Footer CTA */}
       <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink · guildlink.gg · Built to be different.</div>
+        <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink · guildlink.gg · The game discovery engine.</div>
         <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
       </div>
 
