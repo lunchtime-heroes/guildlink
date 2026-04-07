@@ -84,10 +84,10 @@ function PrivacyPage({ isMobile, setActivePage }) {
       <Section title="5. Advertising">
         GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads will be matched to your game library and gaming behavior you share on GuildLink. Nothing else.</Highlight> If a game studio wants to reach players who have a similar game on their shelf, GuildLink can surface that game to them through advertising.
         <div style={{ marginTop: 12 }}>
-          We see this as a genuine part of game discovery. Independent studios and smaller developers benefit when they have a way to reach the players most likely to love their game. Browsing history, demographic information, purchase history, or any other date from outside GuildLink will never be used to target ads. We will never sell your data to advertisers.
+          We see this as a genuine part of game discovery. Independent studios and smaller developers benefit when they have a way to reach the players most likely to love their game. Browsing history, demographic information, purchase history, or any other data from outside GuildLink will never be used to target ads. We will never sell your data to advertisers.
         </div>
         <div style={{ marginTop: 12 }}>
-          When ads are introduced, this policy will be updated a users will be notified. 
+          When ads are introduced, this policy will be updated and users will be notified. 
         </div>
       </Section>
 

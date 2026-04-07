@@ -217,7 +217,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
             <p style={{ color: "rgba(255,255,255,0.45)", fontSize: isMobile ? 13 : 14, lineHeight: 1.8, marginBottom: 12 }}>
               GuildLink helps you find your next favorite game without costing you your personal information. Your shelf is yours.
             </p>
-            <button onClick={() => setActivePage?.("privacy")} style={{ background: "none", border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "8px 20px", color: C.gold, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            <button onClick={() => { window.scrollTo(0, 0); setActivePage?.("privacy"); }} style={{ background: "none", border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "8px 20px", color: C.gold, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
               Read our Privacy Policy →
             </button>
           </div>
