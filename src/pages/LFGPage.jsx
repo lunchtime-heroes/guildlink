@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import GuildCard from "../components/GuildCard.jsx";
+import { isUsernameRestricted } from "../utils.js";
 
 function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCurrentGuild }) {
   const [activeTab, setActiveTab] = useState("find-guilds");
@@ -65,6 +66,8 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
 
   const createGuild = async () => {
     if (!createForm.name.trim() || creating) return;
+    const restricted = await isUsernameRestricted(createForm.name.trim());
+    if (restricted) { alert("Guild name unavailable."); return; }
     setCreating(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setCreating(false); return; }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { C, NPCS, QUESTS, PROFILE_RINGS, QUEST_THEMES, FOUNDING, THEMES, applyTheme } from "../constants.js";
 import supabase from "../supabase.js";
-import { timeAgo, logChartEvent, getAge } from "../utils.js";
+import { timeAgo, logChartEvent, getAge, isUsernameRestricted } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { AvatarPixel } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
@@ -199,6 +199,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const saveProfile = async () => {
     setSaving(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const restricted = await isUsernameRestricted(editForm.username.trim());
+    if (restricted) { setSaving(false); alert("Username unavailable."); return; }
     const updates = {
       username: editForm.username.trim(),
       handle: "@" + editForm.username.trim().toLowerCase().replace(/\s+/g, "_"),

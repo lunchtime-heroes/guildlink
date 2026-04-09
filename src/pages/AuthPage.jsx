@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
+import { isUsernameRestricted } from "../utils.js";
 
 function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
@@ -41,6 +42,8 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       if (!password) { setError("Password is required."); setLoading(false); return; }
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
+      const restricted = await isUsernameRestricted(username.trim());
+      if (restricted) { setError("Username unavailable."); setLoading(false); return; }
       const { data, error } = await supabase.auth.signUp({ email: contactEmail.trim(), password });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {

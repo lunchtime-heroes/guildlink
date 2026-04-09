@@ -6,6 +6,7 @@ import { Avatar } from "../components/Avatar.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
 
 function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
+  const [section, setSection] = useState("insights");
   const [tab, setTab] = useState("overview");
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -21,12 +22,14 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [enriching, setEnriching] = useState({});
   const [enrichMsg, setEnrichMsg] = useState({});
   const [mostWanted, setMostWanted] = useState([]);
+  const [restrictedUsernames, setRestrictedUsernames] = useState([]);
+  const [newPattern, setNewPattern] = useState("");
+  const [addingPattern, setAddingPattern] = useState(false);
 
   useEffect(() => {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      // Check if this user has is_admin flag in profiles
       const { data: profile } = await supabase.from("profiles").select("is_admin, is_writer, username").eq("id", user.id).single();
       if (profile?.is_admin) {
         setAuthorized(true);
@@ -57,11 +60,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     if (postsRes.data) setPosts(postsRes.data);
     if (reviewsRes.data) setReviews(reviewsRes.data);
 
-    // Load all games for the Games tab
     const { data: gamesData } = await supabase.from("games").select("id, name, genre, igdb_id, cover_url, summary").order("name");
     if (gamesData) setAllGames(gamesData);
 
-    // Analytics
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: analyticsEvents } = await supabase.from("analytics_events")
       .select("user_id, event_type, page, created_at")
@@ -84,15 +85,15 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       });
     }
 
-    // Feedback
     const { data: fbData } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
     if (fbData) setFeedbackData(fbData);
 
-    // Data requests (GDPR)
     const { data: drData } = await supabase.from("data_requests").select("*").order("created_at", { ascending: false });
     if (drData) setDataRequests(drData);
 
-    // Most Wanted — shelf elevations last 30 days
+    const { data: ruData } = await supabase.from("restricted_usernames").select("*").order("created_at", { ascending: false });
+    if (ruData) setRestrictedUsernames(ruData);
+
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: elevData } = await supabase.from("shelf_elevations")
       .select("game_id, to_position, from_position, created_at, games(id, name, cover_url)")
@@ -113,7 +114,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       setMostWanted(Object.values(byGame).sort((a, b) => b.score - a.score).slice(0, 20));
     }
 
-    // Aggregate chart events by game
     if (chartRes.data) {
       const byGame = {};
       chartRes.data.forEach(e => {
@@ -136,6 +136,22 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     setLoading(false);
   };
 
+  const addRestrictedPattern = async () => {
+    if (!newPattern.trim()) return;
+    setAddingPattern(true);
+    const { data, error } = await supabase.from("restricted_usernames").insert({ pattern: newPattern.trim().toLowerCase() }).select().single();
+    if (!error && data) {
+      setRestrictedUsernames(prev => [data, ...prev]);
+      setNewPattern("");
+    }
+    setAddingPattern(false);
+  };
+
+  const removeRestrictedPattern = async (id) => {
+    await supabase.from("restricted_usernames").delete().eq("id", id);
+    setRestrictedUsernames(prev => prev.filter(r => r.id !== id));
+  };
+
   if (loading) return <div style={{ maxWidth: 900, margin: "0 auto", padding: "100px 20px", textAlign: "center", color: C.textMuted }}>Loading admin data...</div>;
 
   if (!authorized) return (
@@ -147,27 +163,10 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     </div>
   );
 
-  const tabs = [
-    { id: "overview", label: "📊 Overview" },
-    { id: "analytics", label: "📈 Analytics" },
-    { id: "feedback", label: "💬 Feedback" },
-    { id: "data_requests", label: "🔐 Data Requests" },
-    { id: "users", label: "👤 Users" },
-    { id: "posts", label: "📝 Posts" },
-    { id: "charts", label: "🏆 Chart Activity" },
-    { id: "reviews", label: "⭐ Reviews" },
-    { id: "games", label: "🎮 Games" },
-    { id: "most_wanted", label: "🎯 Most Wanted" },
-  ];
-
   const enrichGame = async (game) => {
     setEnriching(prev => ({ ...prev, [game.id]: true }));
     try {
-      const res = await fetch("/api/igdb", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: game.name }),
-      });
+      const res = await fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: game.name }) });
       const { games } = await res.json();
       if (!games?.length) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" })); return; }
       const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
@@ -185,8 +184,40 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     finally { setEnriching(prev => ({ ...prev, [game.id]: false })); }
   };
 
+  const sections = [
+    { id: "insights", label: "📊 Insights" },
+    { id: "moderation", label: "🛡 Moderation" },
+    { id: "content", label: "📁 Content" },
+  ];
+
+  const tabsBySection = {
+    insights: [
+      { id: "overview", label: "Overview" },
+      { id: "analytics", label: "Analytics" },
+      { id: "feedback", label: "Feedback" },
+      { id: "charts", label: "Chart Activity" },
+      { id: "most_wanted", label: "Most Wanted" },
+    ],
+    moderation: [
+      { id: "restricted_usernames", label: "Restricted Names" },
+      { id: "data_requests", label: "Data Requests" },
+    ],
+    content: [
+      { id: "users", label: "Users" },
+      { id: "posts", label: "Posts" },
+      { id: "reviews", label: "Reviews" },
+      { id: "games", label: "Games" },
+    ],
+  };
+
+  const handleSectionChange = (s) => {
+    setSection(s);
+    setTab(tabsBySection[s][0].id);
+  };
+
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+
       {/* Header */}
       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
@@ -196,18 +227,70 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         <button onClick={loadAll} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 24, overflowX: "auto", paddingBottom: 4 }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ background: tab === t.id ? C.accentGlow : C.surface, border: "1px solid " + tab === t.id ? C.accentDim : C.border, borderRadius: 8, padding: "7px 14px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t.label}</button>
+      {/* Section switcher */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {sections.map(s => (
+          <button key={s.id} onClick={() => handleSectionChange(s.id)}
+            style={{ background: section === s.id ? C.accentGlow : C.surface, border: "1px solid " + (section === s.id ? C.accentDim : C.border), borderRadius: 10, padding: "8px 18px", color: section === s.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: section === s.id ? 700 : 400, cursor: "pointer" }}>
+            {s.label}
+          </button>
         ))}
       </div>
 
-      {/* Analytics */}
+      {/* Tab bar */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 24, overflowX: "auto", paddingBottom: 4, borderBottom: "1px solid " + C.border }}>
+        {tabsBySection[section].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ background: "transparent", border: "none", borderBottom: tab === t.id ? "2px solid " + C.accent : "2px solid transparent", borderRadius: 0, padding: "8px 14px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── INSIGHTS ── */}
+
+      {tab === "overview" && stats && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)", gap: 12, marginBottom: 28 }}>
+            {[
+              { label: "Total Users", value: stats.totalUsers, color: C.accent, icon: "👤" },
+              { label: "New This Week", value: stats.newUsersWeek, color: C.online, icon: "🆕" },
+              { label: "Posts This Week", value: stats.postsWeek, color: C.accentSoft, icon: "📝" },
+              { label: "Posts Today", value: stats.postsToday, color: C.gold, icon: "🔥" },
+              { label: "Reviews", value: stats.totalReviews, color: "#0d9488", icon: "⭐" },
+            ].map(s => (
+              <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+                <div style={{ fontWeight: 800, fontSize: 26, color: s.color, marginBottom: 4 }}>{s.value}</div>
+                <div style={{ color: C.textDim, fontSize: 11 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Recent Signups</div>
+            {users.slice(0, 5).map(u => (
+              <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid " + C.border, cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={32} founding={u.is_founding} ring={u.active_ring} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{u.username || "—"} <span style={{ color: C.textDim, fontWeight: 400 }}>{u.handle}</span></div>
+                  <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                </div>
+                {u.is_founding && <Badge small color={C.gold}>⚔️ Founding</Badge>}
+                {u.is_admin && <Badge small color={C.accent}>Admin</Badge>}
+              </div>
+            ))}
+            <button onClick={() => { handleSectionChange("content"); setTab("users"); }} style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, cursor: "pointer", marginTop: 10, padding: 0 }}>View all users →</button>
+          </div>
+        </div>
+      )}
+
       {tab === "analytics" && (
         <div>
           {!analyticsData ? (
-            <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: 40 }}>No analytics data yet. Data populates as users navigate the platform.</div>
+            <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: 40 }}>No analytics data yet.</div>
           ) : (
             <>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
@@ -222,7 +305,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   </div>
                 ))}
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                 <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Time Spent by Page</div>
@@ -241,7 +323,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                     );
                   })}
                 </div>
-
                 <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Daily Active Users (7d)</div>
                   {analyticsData.dailyActiveUsers.length === 0 ? (
@@ -263,7 +344,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {/* Feedback */}
       {tab === "feedback" && (
         <div>
           {feedbackData.length === 0 ? (
@@ -302,12 +382,120 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {/* Data Requests tab */}
+      {tab === "charts" && (
+        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>Chart events this week — top 15 games</div>
+          {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet this week.</div>}
+          {chartEvents.map((g, i) => (
+            <div key={g.name} style={{ padding: "12px 20px", borderBottom: i < chartEvents.length - 1 ? "1px solid " + C.border : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <span style={{ color: C.textDim, fontSize: 12, width: 20 }}>#{i + 1}</span>
+                <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1 }}>{g.name}</span>
+                <span style={{ color: C.accent, fontSize: 13, fontWeight: 700 }}>{g.total} events</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingLeft: 30 }}>
+                {Object.entries(g.types).map(([type, count]) => (
+                  <span key={type} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "most_wanted" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Most Wanted</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>Games players have elevated on their Want to Play lists — last 30 days.</div>
+          </div>
+          {mostWanted.length === 0 ? (
+            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 60 }}>No elevation data yet.</div>
+          ) : (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "8px 16px", borderBottom: "1px solid " + C.border }}>
+                {["#", "Game", "Elevations", "#1 Slots", "Score", "Last Elevated"].map(h => (
+                  <div key={h} style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>{h}</div>
+                ))}
+              </div>
+              {mostWanted.map((entry, i) => (
+                <div key={entry.game.id} style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "12px 16px", borderBottom: i < mostWanted.length - 1 ? "1px solid " + C.border : "none", alignItems: "center" }}>
+                  <div style={{ fontWeight: 800, color: i < 3 ? C.gold : C.textDim, fontSize: 13 }}>{i + 1}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    {entry.game.cover_url
+                      ? <img src={entry.game.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
+                      : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0 }} />
+                    }
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.game.name}</div>
+                  </div>
+                  <div style={{ color: C.text, fontSize: 13 }}>{entry.elevations}</div>
+                  <div style={{ color: entry.topSlotCount > 0 ? C.gold : C.textDim, fontSize: 13, fontWeight: entry.topSlotCount > 0 ? 700 : 400 }}>{entry.topSlotCount}</div>
+                  <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 700 }}>{entry.score.toFixed(1)}</div>
+                  <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(entry.latestAt).toLocaleDateString()}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MODERATION ── */}
+
+      {tab === "restricted_usernames" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Restricted Names</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>Patterns blocked from usernames and guild names. Matching is case-insensitive and includes common leetspeak substitutions.</div>
+          </div>
+
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 20, marginBottom: 24 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Add pattern</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <input
+                value={newPattern}
+                onChange={e => setNewPattern(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addRestrictedPattern()}
+                placeholder="e.g. badword"
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }}
+              />
+              <button
+                onClick={addRestrictedPattern}
+                disabled={addingPattern || !newPattern.trim()}
+                style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: newPattern.trim() ? "pointer" : "default", opacity: newPattern.trim() ? 1 : 0.5 }}>
+                {addingPattern ? "Adding…" : "Add"}
+              </button>
+            </div>
+            <div style={{ color: C.textDim, fontSize: 11, marginTop: 8 }}>Enter the base term only — leetspeak variants are caught automatically.</div>
+          </div>
+
+          {restrictedUsernames.length === 0 ? (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No restricted patterns yet.</div>
+          ) : (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ padding: "12px 20px", borderBottom: "1px solid " + C.border, color: C.textDim, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                {restrictedUsernames.length} pattern{restrictedUsernames.length !== 1 ? "s" : ""}
+              </div>
+              {restrictedUsernames.map((r, i) => (
+                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: i < restrictedUsernames.length - 1 ? "1px solid " + C.border : "none" }}>
+                  <div style={{ flex: 1, fontFamily: "monospace", color: C.text, fontSize: 13 }}>{r.pattern}</div>
+                  <div style={{ color: C.textDim, fontSize: 11, flexShrink: 0 }}>Added {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                  <button
+                    onClick={() => removeRestrictedPattern(r.id)}
+                    style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 6, padding: "4px 10px", color: "#c0392b", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {tab === "data_requests" && (
         <div>
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Data Requests</div>
-            <div style={{ color: C.textMuted, fontSize: 13 }}>GDPR data export requests from users. Fulfill within 30 days of request date.</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>GDPR data export requests from users. Fulfill within 14 days of request date.</div>
           </div>
           {dataRequests.length === 0 ? (
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No data requests yet.</div>
@@ -323,7 +511,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                           <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{r.username || "Unknown"}</span>
-                          <span style={{ background: r.request_type === "export" ? C.accentGlow : "#c0392b22", border: "1px solid " + (r.request_type === "export" ? C.accentDim : "#c0392b55"), borderRadius: 6, padding: "2px 8px", color: r.request_type === "export" ? C.accentSoft : "#c0392b", fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
                             {r.request_type === "export" ? "DATA EXPORT" : r.request_type.toUpperCase()}
                           </span>
                           <span style={{ background: isPending ? C.gold + "22" : C.online + "22", border: "1px solid " + (isPending ? C.gold + "55" : C.online + "55"), borderRadius: 6, padding: "2px 8px", color: isPending ? C.gold : C.online, fontSize: 11, fontWeight: 700 }}>
@@ -354,60 +542,16 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {/* Overview */}
-      {tab === "overview" && stats && (
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)", gap: 12, marginBottom: 28 }}>
-            {[
-              { label: "Total Users", value: stats.totalUsers, color: C.accent, icon: "👤" },
-              { label: "New This Week", value: stats.newUsersWeek, color: C.online, icon: "🆕" },
-              { label: "Posts This Week", value: stats.postsWeek, color: C.accentSoft, icon: "📝" },
-              { label: "Posts Today", value: stats.postsToday, color: C.gold, icon: "🔥" },
-              { label: "Reviews", value: stats.totalReviews, color: "#0d9488", icon: "⭐" },
-            ].map(s => (
-              <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
-                <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
-                <div style={{ fontWeight: 800, fontSize: 26, color: s.color, marginBottom: 4 }}>{s.value}</div>
-                <div style={{ color: C.textDim, fontSize: 11 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* ── CONTENT ── */}
 
-          {/* Recent signups preview */}
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 16 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Recent Signups</div>
-            {users.slice(0, 5).map(u => (
-              <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid " + C.border, cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              >
-                <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={32} founding={u.is_founding} ring={u.active_ring} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: C.text, fontSize: 13, fontWeight: 600 }}>{u.username || "—"} <span style={{ color: C.textDim, fontWeight: 400 }}>{u.handle}</span></div>
-                  <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(u.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
-                </div>
-                {u.is_founding && <Badge small color={C.gold}>⚔️ Founding</Badge>}
-                {u.is_admin && <Badge small color={C.accent}>Admin</Badge>}
-              </div>
-            ))}
-            <button onClick={() => setTab("users")} style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, cursor: "pointer", marginTop: 10, padding: 0 }}>View all users →</button>
-          </div>
-        </div>
-      )}
-
-      {/* Users tab */}
       {tab === "users" && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
-            {users.length} users (most recent first)
-          </div>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>{users.length} users (most recent first)</div>
           {users.map((u, i) => (
             <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
               style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: i < users.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
               <div style={{ color: C.textDim, fontSize: 12, width: 24, textAlign: "right", flexShrink: 0 }}>{i + 1}</div>
               <Avatar initials={(u.username || "?").slice(0,2).toUpperCase()} size={34} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -424,12 +568,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {/* Posts tab */}
       {tab === "posts" && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
-            Last 30 posts
-          </div>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>Last 30 posts</div>
           {posts.map((p, i) => {
             const author = p.profiles?.username || p.npcs?.name || "Unknown";
             const isNPC = !!p.npc_id;
@@ -448,36 +589,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {/* Chart Activity tab */}
-      {tab === "charts" && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
-            Chart events this week — top 15 games
-          </div>
-          {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet this week.</div>}
-          {chartEvents.map((g, i) => (
-            <div key={g.name} style={{ padding: "12px 20px", borderBottom: i < chartEvents.length - 1 ? "1px solid " + C.border : "none" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                <span style={{ color: C.textDim, fontSize: 12, width: 20 }}>#{i + 1}</span>
-                <span style={{ color: C.text, fontSize: 13, fontWeight: 600, flex: 1 }}>{g.name}</span>
-                <span style={{ color: C.accent, fontSize: 13, fontWeight: 700 }}>{g.total} events</span>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingLeft: 30 }}>
-                {Object.entries(g.types).map(([type, count]) => (
-                  <span key={type} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Reviews tab */}
       {tab === "reviews" && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>
-            Last 20 reviews
-          </div>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>Last 20 reviews</div>
           {reviews.map((r, i) => (
             <div key={r.id} style={{ padding: "12px 20px", borderBottom: i < reviews.length - 1 ? "1px solid " + C.border : "none" }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
@@ -493,18 +607,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {/* Games tab */}
       {tab === "games" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url).length} with cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
-            <button onClick={async () => {
-              // Enrich all games missing cover art
-              const missing = allGames.filter(g => !g.cover_url);
-              for (const game of missing) {
-                await enrichGame(game);
-              }
-            }} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+            <button onClick={async () => { for (const game of allGames.filter(g => !g.cover_url)) { await enrichGame(game); } }}
+              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               Enrich All Missing →
             </button>
           </div>
@@ -522,9 +630,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 <div style={{ fontSize: 11, color: enrichMsg[game.id] ? C.teal : C.textDim, minWidth: 80, textAlign: "right" }}>
                   {enrichMsg[game.id] || (game.cover_url ? "✓ Has art" : "No art")}
                 </div>
-                <button
-                  onClick={() => enrichGame(game)}
-                  disabled={enriching[game.id]}
+                <button onClick={() => enrichGame(game)} disabled={enriching[game.id]}
                   style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "5px 12px", color: C.accentSoft, fontSize: 11, fontWeight: 600, cursor: enriching[game.id] ? "default" : "pointer", flexShrink: 0, opacity: enriching[game.id] ? 0.6 : 1 }}>
                   {enriching[game.id] ? "…" : "Enrich"}
                 </button>
@@ -534,41 +640,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         </div>
       )}
 
-      {tab === "most_wanted" && (
-        <div>
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Most Wanted</div>
-            <div style={{ color: C.textMuted, fontSize: 13 }}>Games players have elevated on their Want to Play lists — last 30 days. Score weights landing position and jump magnitude.</div>
-          </div>
-          {mostWanted.length === 0 ? (
-            <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 60 }}>No elevation data yet. Start reordering Want to Play shelves to generate signal.</div>
-          ) : (
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "8px 16px", borderBottom: "1px solid " + C.border }}>
-                {["#", "Game", "Elevations", "#1 Slots", "Score", "Last Elevated"].map(h => (
-                  <div key={h} style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>{h}</div>
-                ))}
-              </div>
-              {mostWanted.map((entry, i) => (
-                <div key={entry.game.id} style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "12px 16px", borderBottom: i < mostWanted.length - 1 ? "1px solid " + C.border : "none", alignItems: "center" }}>
-                  <div style={{ fontWeight: 800, color: i < 3 ? C.gold : C.textDim, fontSize: 13 }}>{i + 1}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                    {entry.game.cover_url
-                      ? <img src={entry.game.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
-                      : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0 }} />
-                    }
-                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.game.name}</div>
-                  </div>
-                  <div style={{ color: C.text, fontSize: 13 }}>{entry.elevations}</div>
-                  <div style={{ color: entry.topSlotCount > 0 ? C.gold : C.textDim, fontSize: 13, fontWeight: entry.topSlotCount > 0 ? 700 : 400 }}>{entry.topSlotCount}</div>
-                  <div style={{ color: C.accentSoft, fontSize: 13, fontWeight: 700 }}>{entry.score.toFixed(1)}</div>
-                  <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(entry.latestAt).toLocaleDateString()}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
