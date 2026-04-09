@@ -1306,7 +1306,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} />;
 
   const isGuest = !session;
 
