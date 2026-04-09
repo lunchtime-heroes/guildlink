@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 
-function AuthPage({ onBack, defaultMode = "login" }) {
+function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -220,6 +220,15 @@ function AuthPage({ onBack, defaultMode = "login" }) {
                     style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                 </div>
               </>
+            )}
+
+            {mode === "signup" && (
+              <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 16, textAlign: "center" }}>
+                By creating an account you agree to our{" "}
+                <span onClick={() => { setActivePage?.("culture"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Culture Agreement</span>
+                {" "}and{" "}
+                <span onClick={() => { setActivePage?.("privacy"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Privacy Policy</span>.
+              </div>
             )}
 
             {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}

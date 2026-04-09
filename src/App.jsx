@@ -18,6 +18,8 @@ import { ShelfPulseCard, ReviewSpotlightCard } from "./components/PulseCards.jsx
 import ReviewsPage from "./pages/ReviewsPage.jsx";
 import FeedbackPage from "./pages/FeedbackPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
+import CultureAgreementPage from "./pages/CultureAgreementPage.jsx";
+import PrivacyPage from "./pages/PrivacyPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
@@ -1305,7 +1307,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={navToPage} />;
 
   const isGuest = !session;
 
@@ -1473,6 +1475,8 @@ export default function GuildLink() {
       {activePage === "guild" && <GuildPortal guildId={currentGuild} isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={navToPage} isMobile={isMobile} onSignUp={openSignUp} />}
       {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
+      {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
+      {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
 	<Analytics />
     </div>
