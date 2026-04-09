@@ -1476,7 +1476,6 @@ export default function GuildLink() {
       {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
-      {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
 	<Analytics />
     </div>
   );
