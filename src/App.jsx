@@ -19,7 +19,6 @@ import ReviewsPage from "./pages/ReviewsPage.jsx";
 import FeedbackPage from "./pages/FeedbackPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
 import CultureAgreementPage from "./pages/CultureAgreementPage.jsx";
-import PrivacyPage from "./pages/PrivacyPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
