@@ -100,7 +100,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       if (meRole === "leader") {
         const { data: requests } = await supabase
           .from("guild_members")
-          .select("user_id, created_at")
+          .select("user_id, joined_at")
           .eq("guild_id", guildId)
           .eq("status", "pending");
         if (requests && requests.length > 0) {
