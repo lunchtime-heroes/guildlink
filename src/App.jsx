@@ -23,6 +23,7 @@ import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
 import supabase from "./supabase.js";
+import { isUsernameRestricted } from "./utils.js";
 
 // Week start helper — Sunday 12:00am Pacific time
 // Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
@@ -355,7 +356,6 @@ function UsernameGateModal({ userId, isMobile, onComplete }) {
     setSaving(true);
     setError("");
 
-    const { isUsernameRestricted } = await import("./utils.js");
     const restricted = await isUsernameRestricted(trimmed);
     if (restricted) { setError("Username unavailable."); setSaving(false); return; }
 
