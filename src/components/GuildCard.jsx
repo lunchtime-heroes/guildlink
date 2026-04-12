@@ -1,7 +1,7 @@
 import React from "react";
 import { C } from "../constants.js";
 
-function GuildCard({ guild, onJoin, isMember, isRequested }) {
+function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest }) {
   return (
     <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -27,12 +27,20 @@ function GuildCard({ guild, onJoin, isMember, isRequested }) {
             )}
           </div>
         </div>
-        <button
-          onClick={isMember || isRequested ? undefined : onJoin}
-          disabled={isMember || isRequested}
-          style={{ background: isMember || isRequested ? C.surfaceRaised : C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: isMember || isRequested ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember || isRequested ? "default" : "pointer", flexShrink: 0 }}>
-          {isMember ? "Joined" : isRequested ? "Requested" : guild.is_public ? "Join" : "Request to Join"}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
+          <button
+            onClick={isMember || isRequested ? undefined : onJoin}
+            disabled={isMember || isRequested}
+            style={{ background: isMember ? C.surfaceRaised : isRequested ? C.gold + "22" : C.accent, border: isRequested ? "1px solid " + C.gold + "55" : "none", borderRadius: 8, padding: "8px 18px", color: isMember ? C.textDim : isRequested ? C.gold : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember || isRequested ? "default" : "pointer" }}>
+            {isMember ? "Joined" : isRequested ? "Pending" : guild.is_public ? "Join" : "Request to Join"}
+          </button>
+          {isRequested && onCancelRequest && (
+            <button onClick={onCancelRequest}
+              style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+              Cancel request
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

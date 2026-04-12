@@ -124,11 +124,15 @@ function timeAgo(timestamp) {
 
 function notifLabel(n) {
   switch (n.type) {
-    case "like":             return "liked your post";
-    case "comment":          return "commented on your post";
-    case "reply":            return "replied to your comment";
-    case "follow":           return "started following you";
-    default:                 return "interacted with you";
+    case "like":          return "liked your post";
+    case "comment":       return "commented on your post";
+    case "reply":         return "replied to your comment";
+    case "follow":        return "started following you";
+    case "guild_post":    return n.message || "posted in your guild";
+    case "guild_session": return n.message || "scheduled a session in your guild";
+    case "guild_rsvp":    return n.message || "responded to your session";
+    case "guild_request": return n.message || "requested to join your guild";
+    default:              return "interacted with you";
   }
 }
 
@@ -772,7 +776,7 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
     </div>
   );
 }
-function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab, setCurrentGame, setCurrentPlayer }) {
+function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab, setCurrentGame, setCurrentPlayer, setCurrentGuild }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
   const isAdmin = currentUser?.is_admin;
@@ -854,10 +858,14 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                           : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                         const notifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
-                        const notifText = n.type === "comment" ? "commented on your post" : n.type === "reply" ? "replied to your comment" : n.type === "follow" ? "started following you" : "mentioned you";
+                        const isGuildNotif = !!n.guild_id;
+                        const notifText = notifLabel(n);
                         return (
-                          <div key={n.id} onClick={() => { if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); } }}
-                            style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: !n.read ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost ? "pointer" : "default" }}>
+                          <div key={n.id} onClick={() => {
+                            if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); }
+                            else if (isGuildNotif) { setCurrentGuild?.(n.guild_id); setActivePage("guild"); setShowNotifs(false); }
+                          }}
+                            style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: !n.read ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: hasPost || isGuildNotif ? "pointer" : "default" }}>
                             <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={notifAvatarConfig} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
@@ -869,7 +877,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                               </div>
                               <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>{timeAgo(n.created_at)}</div>
                             </div>
-                            {hasPost && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
+                            {(hasPost || isGuildNotif) && <span style={{ color: C.textDim, fontSize: 11 }}>→</span>}
                           </div>
                         );
                       })}
@@ -986,14 +994,16 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                         ? (npcData.avatar_initials || npcData.name || "NPC").slice(0,2).toUpperCase()
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                       const mobileNotifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
+                      const isGuildNotif = !!n.guild_id;
                       return (
                         <div key={n.id}
                           onClick={() => {
                             if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); }
+                            else if (isGuildNotif) { setCurrentGuild?.(n.guild_id); setActivePage("guild"); setShowNotifs(false); }
                             else if (isGamertagRequest) { setActivePage("profile"); setShowNotifs(false); }
                           }}
-                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: isUnread ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost) ? "pointer" : "default", transition: "background 0.1s" }}
-                          onMouseEnter={e => { if (hasPost) e.currentTarget.style.background = C.surfaceHover; }}
+                          style={{ padding: "12px 16px", borderBottom: i < notifications.length - 1 ? "1px solid " + C.border : "none", background: isUnread ? C.accent + "0a" : "transparent", display: "flex", gap: 10, alignItems: "flex-start", cursor: (hasPost || isGuildNotif) ? "pointer" : "default", transition: "background 0.1s" }}
+                          onMouseEnter={e => { if (hasPost || isGuildNotif) e.currentTarget.style.background = C.surfaceHover; }}
                           onMouseLeave={e => { e.currentTarget.style.background = isUnread ? C.accent + "0a" : "transparent"; }}
                         >
                           <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={mobileNotifAvatarConfig} />
@@ -1531,7 +1541,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} />
+      <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} setCurrentGuild={navToGuild} />
       {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} onNavigateToPlayer={(userId) => { setPostModal(null); navToPlayer(userId); setActivePage("player"); }} />}
       {exitModalUrl && <ExitModal url={exitModalUrl} onClose={() => setExitModalUrl(null)} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}

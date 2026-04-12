@@ -59,6 +59,16 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     await supabase.from("guild_members").insert({ guild_id: guildId, user_id: currentUser.id, role: "member", status });
     if (status === "active") {
       setMemberGuildIds(prev => new Set([...prev, guildId]));
+      // Notify leader when someone joins a public guild
+      if (guild?.created_by && guild.created_by !== currentUser.id) {
+        await supabase.from("notifications").insert({
+          user_id: guild.created_by,
+          type: "guild_request",
+          message: `${currentUser.name || "Someone"} joined ${guild.name}`,
+          guild_id: guildId,
+          actor_id: currentUser.id,
+        });
+      }
     } else {
       setRequestedGuildIds(prev => new Set([...prev, guildId]));
       // Notify guild leader of join request
