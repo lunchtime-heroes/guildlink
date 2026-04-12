@@ -1089,7 +1089,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 npc_id: post.npc_id,
                 game_tag: post.game_tag,
                 user_id: post.user_id,
-                tagged_users: post.tagged_users || [],
                 user: {
                   name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
                   handle: displayAuthor?.handle || "",
