@@ -90,7 +90,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
         .select("notify_on_post, notify_on_session")
         .eq("user_id", currentUser.id)
         .eq("guild_id", guildId)
-        .single();
+        .maybeSingle();
       if (prefs) setNotifPrefs(prefs);
     }
 
@@ -100,12 +100,18 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       if (meRole === "leader") {
         const { data: requests } = await supabase
           .from("guild_members")
-          .select("user_id, created_at, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
+          .select("user_id, created_at")
           .eq("guild_id", guildId)
           .eq("status", "pending");
-        if (requests) {
-          const enriched = requests.map(r => ({ ...r, profiles: r.profiles || null }));
-          setPendingRequests(enriched);
+        if (requests && requests.length > 0) {
+          const requestUserIds = requests.map(r => r.user_id);
+          const { data: requestProfiles } = await supabase
+            .from("profiles")
+            .select("id, username, avatar_initials, avatar_config, active_ring, is_founding")
+            .in("id", requestUserIds);
+          const profileMap = {};
+          (requestProfiles || []).forEach(p => { profileMap[p.id] = p; });
+          setPendingRequests(requests.map(r => ({ ...r, profiles: profileMap[r.user_id] || null })));
         }
       }
     }
