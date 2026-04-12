@@ -342,6 +342,67 @@ class OnboardingErrorBoundary extends React.Component {
   }
 }
 
+function UsernameGateModal({ userId, isMobile, onComplete }) {
+  const [username, setUsername] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const trimmed = username.trim();
+    if (!trimmed) { setError("Please choose a username."); return; }
+    if (trimmed.length < 3) { setError("Username must be at least 3 characters."); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) { setError("Letters, numbers, and underscores only."); return; }
+    setSaving(true);
+    setError("");
+
+    const { isUsernameRestricted } = await import("./utils.js");
+    const restricted = await isUsernameRestricted(trimmed);
+    if (restricted) { setError("Username unavailable."); setSaving(false); return; }
+
+    const { data: existing } = await supabase.from("profiles").select("id").eq("username", trimmed).neq("id", userId).limit(1);
+    if (existing?.length > 0) { setError("That username is already taken."); setSaving(false); return; }
+
+    const { error: updateError } = await supabase.from("profiles").update({
+      username: trimmed,
+      handle: "@" + trimmed.toLowerCase(),
+      avatar_initials: trimmed.slice(0, 2).toUpperCase(),
+    }).eq("id", userId);
+
+    if (updateError) { setError("Something went wrong. Please try again."); setSaving(false); return; }
+    onComplete(trimmed);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+      <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 20, padding: isMobile ? 28 : 40, maxWidth: 440, width: "100%" }}>
+        <div style={{ fontSize: 36, marginBottom: 16, textAlign: "center" }}>👋</div>
+        <div style={{ fontWeight: 900, fontSize: isMobile ? 22 : 26, color: C.text, marginBottom: 8, textAlign: "center" }}>One last thing.</div>
+        <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24, textAlign: "center" }}>
+          Choose a username so other gamers can find you. This is how you'll appear across GuildLink.
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <input
+            value={username}
+            onChange={e => { setUsername(e.target.value); setError(""); }}
+            onKeyDown={e => e.key === "Enter" && save()}
+            placeholder="Choose a username"
+            autoFocus
+            style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + (error ? "#ef4444" : C.border), borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 15, outline: "none", boxSizing: "border-box" }}
+          />
+          {error && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 6 }}>{error}</div>}
+          <div style={{ color: C.textDim, fontSize: 11, marginTop: 6 }}>Letters, numbers, and underscores only.</div>
+        </div>
+        <button
+          onClick={save}
+          disabled={saving || !username.trim()}
+          style={{ width: "100%", background: username.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 10, padding: "13px", color: username.trim() ? C.accentText : C.textDim, fontSize: 15, fontWeight: 800, cursor: username.trim() ? "pointer" : "default", transition: "all 0.2s" }}>
+          {saving ? "Saving..." : "Set Username"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingModal({ currentUser, isMobile, onComplete, setActivePage, setProfileDefaultTab }) {
   const [step, setStep] = useState(0);
   const [addedGames, setAddedGames] = useState([]);
@@ -1087,6 +1148,7 @@ export default function GuildLink() {
   const [signInPromptMsg, setSignInPromptMsg] = useState(null);
   const [themeKey, setThemeKey] = useState("deep-space");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showUsernameGate, setShowUsernameGate] = useState(false);
   const width = useWindowSize();
   const isMobile = width < 768;
 
@@ -1239,6 +1301,9 @@ export default function GuildLink() {
         setActivePage("feed");
         setShowOnboarding(true);
       }
+      if (data.username && data.username.startsWith("user_") && data.username.length === 13) {
+        setShowUsernameGate(true);
+      }
     }
     fetchNotifications(userId);
     checkQuestCompletions(userId);
@@ -1306,7 +1371,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={navToPage} />;
 
   const isGuest = !session;
 
@@ -1429,6 +1494,16 @@ export default function GuildLink() {
           </div>
         </div>
       )}
+      {showUsernameGate && session?.user?.id && (
+        <UsernameGateModal
+          userId={session.user.id}
+          isMobile={isMobile}
+          onComplete={(newUsername) => {
+            setProfile(prev => ({ ...prev, username: newUsername, handle: "@" + newUsername.toLowerCase() }));
+            setShowUsernameGate(false);
+          }}
+        />
+      )}
       {showOnboarding && liveUser && (
         <OnboardingErrorBoundary>
           <OnboardingModal
@@ -1476,6 +1551,7 @@ export default function GuildLink() {
       {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
+      {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
 	<Analytics />
     </div>
   );
