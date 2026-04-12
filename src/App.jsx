@@ -1371,7 +1371,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={navToPage} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} />;
 
   const isGuest = !session;
 
@@ -1551,7 +1551,6 @@ export default function GuildLink() {
       {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
-      {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
 	<Analytics />
     </div>
   );
