@@ -100,11 +100,15 @@ function timeAgo(timestamp) {
 
 function notifLabel(n) {
   switch (n.type) {
-    case "like":             return "liked your post";
-    case "comment":          return "commented on your post";
-    case "reply":            return "replied to your comment";
-    case "follow":           return "started following you";
-    default:                 return "interacted with you";
+    case "like":          return "liked your post";
+    case "comment":       return "commented on your post";
+    case "reply":         return "replied to your comment";
+    case "follow":        return "started following you";
+    case "guild_post":    return n.message || "posted in your guild";
+    case "guild_session": return n.message || "scheduled a session in your guild";
+    case "guild_rsvp":    return n.message || "responded to your session";
+    case "guild_request": return n.message || "requested to join your guild";
+    default:              return "interacted with you";
   }
 }
 

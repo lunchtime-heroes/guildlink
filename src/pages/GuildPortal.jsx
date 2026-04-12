@@ -33,6 +33,9 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const [expandedPost, setExpandedPost] = useState(null);
   const [replies, setReplies] = useState({});
   const [newReply, setNewReply] = useState({});
+  const [notifPrefs, setNotifPrefs] = useState({ notify_on_post: true, notify_on_session: true });
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [showRequests, setShowRequests] = useState(false);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -79,6 +82,33 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       }
     }
     setLoading(false); // runs after await above
+
+    // Load notification prefs for current user
+    if (currentUser?.id) {
+      const { data: prefs } = await supabase
+        .from("guild_notification_prefs")
+        .select("notify_on_post, notify_on_session")
+        .eq("user_id", currentUser.id)
+        .eq("guild_id", guildId)
+        .single();
+      if (prefs) setNotifPrefs(prefs);
+    }
+
+    // Load pending join requests for leaders
+    if (currentUser?.id) {
+      const meRole = membersRes.data?.find(m => m.user_id === currentUser.id)?.role;
+      if (meRole === "leader") {
+        const { data: requests } = await supabase
+          .from("guild_members")
+          .select("user_id, created_at, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
+          .eq("guild_id", guildId)
+          .eq("status", "pending");
+        if (requests) {
+          const enriched = requests.map(r => ({ ...r, profiles: r.profiles || null }));
+          setPendingRequests(enriched);
+        }
+      }
+    }
   };
 
   const loadSessions = async () => {
@@ -178,6 +208,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
     }
 
+    notifyGuildMembers(user.id, "guild_session", `New gaming session scheduled in ${guild?.name || "your guild"}`, guildId);
+
     setSessionTime("20:00");
     setSessionDurH("");
     setSessionDurM("");
@@ -199,6 +231,18 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       const existing = (prev[sessionId] || []).filter(r => r.user_id !== currentUser.id);
       return { ...prev, [sessionId]: [...existing, { session_id: sessionId, user_id: currentUser.id, response }] };
     });
+    // Notify session creator
+    const session = sessions.find(s => s.id === sessionId);
+    if (session && session.created_by && session.created_by !== currentUser.id) {
+      const rsvpText = response === "yes" ? "is joining" : response === "maybe" ? "might join" : "can't make";
+      await supabase.from("notifications").insert({
+        user_id: session.created_by,
+        type: "guild_rsvp",
+        message: `${currentUser.name || "Someone"} ${rsvpText} your session in ${guild?.name || "your guild"}`,
+        guild_id: guildId,
+        actor_id: currentUser.id,
+      });
+    }
   };
 
   const handleEditSession = async (sessionId, form) => {
@@ -215,6 +259,55 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     setSessions(prev => prev.filter(s => s.id !== sessionId));
   };
 
+  const notifyGuildMembers = async (excludeUserId, type, message, linkGuildId) => {
+    // Get members who haven't muted this notification type
+    const prefField = type === "guild_post" ? "notify_on_post" : "notify_on_session";
+    const { data: mutedPrefs } = await supabase
+      .from("guild_notification_prefs")
+      .select("user_id")
+      .eq("guild_id", linkGuildId)
+      .eq(prefField, false);
+    const mutedIds = new Set((mutedPrefs || []).map(p => p.user_id));
+
+    const recipients = memberIds.filter(id => id !== excludeUserId && !mutedIds.has(id));
+    if (recipients.length === 0) return;
+
+    await supabase.from("notifications").insert(
+      recipients.map(userId => ({
+        user_id: userId,
+        type,
+        message,
+        guild_id: linkGuildId,
+        actor_id: excludeUserId,
+      }))
+    );
+  };
+
+  const toggleNotifPref = async (field) => {
+    const newVal = !notifPrefs[field];
+    setNotifPrefs(prev => ({ ...prev, [field]: newVal }));
+    await supabase.from("guild_notification_prefs").upsert(
+      { user_id: currentUser.id, guild_id: guildId, ...notifPrefs, [field]: newVal },
+      { onConflict: "user_id,guild_id" }
+    );
+  };
+
+  const approveRequest = async (userId) => {
+    await supabase.from("guild_members").update({ status: "active" }).eq("guild_id", guildId).eq("user_id", userId);
+    setPendingRequests(prev => prev.filter(r => r.user_id !== userId));
+    setMembers(prev => {
+      const req = pendingRequests.find(r => r.user_id === userId);
+      if (!req) return prev;
+      return [...prev, { user_id: userId, role: "member", status: "active", profiles: req.profiles }];
+    });
+    setMemberIds(prev => [...prev, userId]);
+  };
+
+  const denyRequest = async (userId) => {
+    await supabase.from("guild_members").delete().eq("guild_id", guildId).eq("user_id", userId);
+    setPendingRequests(prev => prev.filter(r => r.user_id !== userId));
+  };
+
   const submitPost = async () => {
     if (!newPost.trim() || postingToThread) return;
     setPostingToThread(true);
@@ -224,6 +317,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     setNewPost("");
     setPostingToThread(false);
     loadThread();
+    notifyGuildMembers(user.id, "guild_post", `New post in ${guild?.name || "your guild"}`, guildId);
   };
 
   const loadReplies = async (postId) => {
@@ -335,7 +429,52 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
               {guild.website_url && (
                 <a href={guild.website_url} target="_blank" rel="noopener noreferrer" style={{ color: C.accent, fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Website</a>
               )}
+              {isMember && (
+                <button onClick={() => toggleNotifPref("notify_on_post")}
+                  style={{ background: notifPrefs.notify_on_post ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_post ? C.accentDim : C.border), borderRadius: 6, padding: "3px 10px", color: notifPrefs.notify_on_post ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  {notifPrefs.notify_on_post ? "🔔 Posts" : "🔕 Posts"}
+                </button>
+              )}
+              {isMember && (
+                <button onClick={() => toggleNotifPref("notify_on_session")}
+                  style={{ background: notifPrefs.notify_on_session ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_session ? C.accentDim : C.border), borderRadius: 6, padding: "3px 10px", color: notifPrefs.notify_on_session ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  {notifPrefs.notify_on_session ? "🔔 Sessions" : "🔕 Sessions"}
+                </button>
+              )}
+              {isLeader && pendingRequests.length > 0 && (
+                <button onClick={() => setShowRequests(r => !r)}
+                  style={{ background: C.gold + "22", border: "1px solid " + C.gold + "55", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  {pendingRequests.length} Request{pendingRequests.length !== 1 ? "s" : ""} pending
+                </button>
+              )}
             </div>
+
+            {isLeader && showRequests && pendingRequests.length > 0 && (
+              <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Join Requests</div>
+                {pendingRequests.map(req => {
+                  const p = req.profiles;
+                  return (
+                    <div key={req.user_id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                      <div onClick={() => { setCurrentPlayer(p?.id); setActivePage("player"); }} style={{ cursor: "pointer", flexShrink: 0 }}>
+                        <Avatar initials={(p?.avatar_initials || "?").slice(0, 2).toUpperCase()} size={34} founding={p?.is_founding} ring={p?.active_ring} avatarConfig={p?.avatar_config} />
+                      </div>
+                      <div style={{ flex: 1, color: C.text, fontSize: 13, fontWeight: 600 }}>{p?.username || "Unknown"}</div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => approveRequest(req.user_id)}
+                          style={{ background: C.online + "22", border: "1px solid " + C.online + "55", borderRadius: 7, padding: "5px 12px", color: C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          Approve
+                        </button>
+                        <button onClick={() => denyRequest(req.user_id)}
+                          style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 7, padding: "5px 12px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          Deny
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div style={labelStyle}>Members</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {members.map(m => {

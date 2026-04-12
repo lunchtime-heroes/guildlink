@@ -61,7 +61,23 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
       setMemberGuildIds(prev => new Set([...prev, guildId]));
     } else {
       setRequestedGuildIds(prev => new Set([...prev, guildId]));
+      // Notify guild leader of join request
+      if (guild?.created_by && guild.created_by !== currentUser.id) {
+        await supabase.from("notifications").insert({
+          user_id: guild.created_by,
+          type: "guild_request",
+          message: `${currentUser.name || "Someone"} has requested to join ${guild.name}`,
+          guild_id: guildId,
+          actor_id: currentUser.id,
+        });
+      }
     }
+  };
+
+  const cancelRequest = async (guildId) => {
+    if (!currentUser?.id) return;
+    await supabase.from("guild_members").delete().eq("guild_id", guildId).eq("user_id", currentUser.id).eq("status", "pending");
+    setRequestedGuildIds(prev => { const next = new Set(prev); next.delete(guildId); return next; });
   };
 
   const createGuild = async () => {
@@ -190,7 +206,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontSize: 13, color: C.textDim }}>Be the first to create one.</div>
             </div>
           ) : filteredGuilds.map(g => (
-            <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} />
+            <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} onCancelRequest={() => cancelRequest(g.id)} />
           ))}
         </div>
       )}
