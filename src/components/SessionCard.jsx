@@ -129,10 +129,10 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
           {timeStr}{durationStr ? " · " + durationStr : ""}
         </div>
         {!showRsvp && (
-          <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.9 }}>
-            <div>{counts.in} in</div>
-            <div>{counts.maybe} maybe</div>
-            <div>{counts.out} out</div>
+          <div style={{ fontSize: 11, lineHeight: 2 }}>
+            <div style={{ color: "#22c55e", fontWeight: 700 }}>{counts.in} in</div>
+            <div style={{ color: "#f59e0b", fontWeight: 700 }}>{counts.maybe} maybe</div>
+            <div style={{ color: "#ef4444", fontWeight: 700 }}>{counts.out} out</div>
           </div>
         )}
         {myRsvp && !isCreator && (
@@ -152,34 +152,43 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
       {showRsvp && !isCreator && (
         <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + statusBorder() }}>
           {[
-            { response: "in", label: "I'm in", color: "#fff", bg: "#22c55e", border: "#22c55e", dimBg: "#22c55e99", count: counts.in },
-            { response: "maybe", label: "Not sure", color: "#fff", bg: "#f59e0b", border: "#f59e0b", dimBg: "#f59e0b99", count: counts.maybe },
-            { response: "out", label: "I'm out", color: "#fff", bg: "#ef4444", border: "#ef4444", dimBg: "#ef444499", count: counts.out },
-          ].map(opt => (
-            <button
-              key={opt.response}
-              onClick={() => handleRsvpSelect(opt.response)}
-              style={{
-                width: "100%",
-                background: opt.bg,
-                border: "none",
-                borderRadius: 8,
-                padding: "8px 0",
-                color: opt.color,
-                fontSize: 13,
-                fontWeight: 800,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                opacity: myRsvp?.response === opt.response ? 1 : 0.7,
-              }}>
-              <span>{opt.count}</span>
-              <span>|</span>
-              <span>{opt.label}</span>
-            </button>
-          ))}
+            { response: "in", label: "I'm in", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55", selectedBg: "#22c55e33", selectedBorder: "#22c55e88", count: counts.in },
+            { response: "maybe", label: "Not sure", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55", selectedBg: "#f59e0b33", selectedBorder: "#f59e0b88", count: counts.maybe },
+            { response: "out", label: "I'm out", color: "#ef4444", bg: "#ef444422", border: "#ef444455", selectedBg: "#ef444433", selectedBorder: "#ef444488", count: counts.out },
+          ].map(opt => {
+            const isSelected = myRsvp?.response === opt.response;
+            return (
+              <button
+                key={opt.response}
+                onClick={() => handleRsvpSelect(opt.response)}
+                style={{
+                  width: "100%",
+                  background: isSelected ? opt.selectedBg : opt.bg,
+                  border: "1px solid " + (isSelected ? opt.selectedBorder : opt.border),
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  color: opt.color,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}>
+                <span style={{
+                  background: isSelected ? opt.selectedBg : opt.bg,
+                  border: "1px solid " + opt.border,
+                  borderRadius: 6,
+                  padding: "2px 7px",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  minWidth: 22,
+                  textAlign: "center",
+                }}>{opt.count}</span>
+                <span>{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
