@@ -229,6 +229,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
   const handleRsvp = async (sessionId, response) => {
     if (!currentUser?.id) return;
+    const previousRsvp = (sessionRsvps[sessionId] || []).find(r => r.user_id === currentUser.id);
     await supabase.from("guild_session_rsvps").upsert(
       { session_id: sessionId, user_id: currentUser.id, response },
       { onConflict: "session_id,user_id" }
@@ -237,10 +238,11 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       const existing = (prev[sessionId] || []).filter(r => r.user_id !== currentUser.id);
       return { ...prev, [sessionId]: [...existing, { session_id: sessionId, user_id: currentUser.id, response }] };
     });
-    // Notify session creator
+    // Only notify session creator if this is a new RSVP or status changed
     const session = sessions.find(s => s.id === sessionId);
-    if (session && session.created_by && session.created_by !== currentUser.id) {
-      const rsvpText = response === "yes" ? "is joining" : response === "maybe" ? "might join" : "can't make";
+    if (session && session.created_by && session.created_by !== currentUser.id && previousRsvp?.response !== response) {
+      const rsvpTextMap = { "in": "is joining", "maybe": "might join", "out": "can't make" };
+      const rsvpText = rsvpTextMap[response] || "responded to";
       await supabase.from("notifications").insert({
         user_id: session.created_by,
         type: "guild_rsvp",
