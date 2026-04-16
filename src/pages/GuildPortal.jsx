@@ -532,7 +532,6 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                     onClick={() => {
                       setActiveDay(isActive ? null : i);
                       setSessionTime("20:00");
-                      setSessionDuration("");
                       setGameSearch("");
                       setGameResults([]);
                       setSelectedGame(null);
@@ -556,80 +555,80 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 {isFull && (
                   <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 0", color: C.textDim, fontSize: 10, fontWeight: 600, textAlign: "center" }}>Full</div>
                 )}
+
+                {isActive && isMember && (
+                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, padding: 10, marginTop: 4 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 11, marginBottom: 10 }}>
+                      Schedule · {dayLabel(d)}
+                    </div>
+
+                    <div style={{ marginBottom: 10, position: "relative" }}>
+                      <div style={labelStyle}>Game</div>
+                      <input
+                        value={gameSearch}
+                        onChange={e => searchGames(e.target.value)}
+                        placeholder="Search..."
+                        style={{ ...inputStyle, fontSize: 11, padding: "6px 8px" }}
+                        autoFocus
+                      />
+                      {gameResults.length > 0 && (
+                        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 10, overflow: "hidden" }}>
+                          {gameResults.map(g => (
+                            <div key={g.id}
+                              onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
+                              style={{ padding: "6px 10px", cursor: "pointer", fontSize: 11, color: C.text, borderBottom: "1px solid " + C.border }}
+                              onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              {g.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={labelStyle}>Time</div>
+                      <input
+                        type="time"
+                        value={sessionTime}
+                        onChange={e => setSessionTime(e.target.value)}
+                        style={{ ...inputStyle, fontSize: 11, padding: "6px 8px", maxWidth: "100%" }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={labelStyle}>Duration</div>
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                          <input type="number" min="0" max="12" placeholder="0" value={sessionDurH} onChange={e => setSessionDurH(e.target.value)} style={{ ...inputStyle, fontSize: 11, padding: "6px 8px" }} />
+                          <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>hrs</div>
+                        </div>
+                        <div style={{ color: C.textDim, fontSize: 12, paddingBottom: 14 }}>:</div>
+                        <div style={{ flex: 1 }}>
+                          <input type="number" min="0" max="59" placeholder="0" value={sessionDurM} onChange={e => setSessionDurM(e.target.value)} style={{ ...inputStyle, fontSize: 11, padding: "6px 8px" }} />
+                          <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>min</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        onClick={() => scheduleSession(weekDays[i])}
+                        disabled={(!selectedGame && !gameSearch.trim()) || !sessionTime || schedulingSession}
+                        style={{ flex: 1, background: (selectedGame || gameSearch.trim()) && sessionTime ? C.accent : C.surfaceRaised, border: "none", borderRadius: 7, padding: "7px 0", color: (selectedGame || gameSearch.trim()) && sessionTime ? "#fff" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        {schedulingSession ? "..." : "Share"}
+                      </button>
+                      <button onClick={() => setActiveDay(null)}
+                        style={{ flex: 1, background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "7px 0", color: C.textMuted, fontSize: 11, cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-
-        {activeDay !== null && isMember && (
-          <div style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16, marginTop: 16 }}>
-            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>
-              Schedule for {dayLabel(weekDays[activeDay])}
-            </div>
-
-            <div style={{ marginBottom: 14, position: "relative" }}>
-              <div style={labelStyle}>Game</div>
-              <input
-                value={gameSearch}
-                onChange={e => searchGames(e.target.value)}
-                placeholder="Search for a game..."
-                style={inputStyle}
-                autoFocus
-              />
-              {gameResults.length > 0 && (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 10, overflow: "hidden" }}>
-                  {gameResults.map(g => (
-                    <div key={g.id}
-                      onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
-                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: C.text, borderBottom: "1px solid " + C.border }}
-                      onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                      {g.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <div style={labelStyle}>Start Time</div>
-              <input
-                type="time"
-                value={sessionTime}
-                onChange={e => setSessionTime(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{ marginBottom: 18 }}>
-              <div style={labelStyle}>Est. Duration</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div style={{ flex: 1 }}>
-                  <input type="number" min="0" max="12" placeholder="0" value={sessionDurH} onChange={e => setSessionDurH(e.target.value)} style={inputStyle} />
-                  <div style={{ color: C.textDim, fontSize: 10, textAlign: "center", marginTop: 3 }}>hrs</div>
-                </div>
-                <div style={{ color: C.textDim, fontSize: 16, paddingBottom: 18 }}>:</div>
-                <div style={{ flex: 1 }}>
-                  <input type="number" min="0" max="59" placeholder="0" value={sessionDurM} onChange={e => setSessionDurM(e.target.value)} style={inputStyle} />
-                  <div style={{ color: C.textDim, fontSize: 10, textAlign: "center", marginTop: 3 }}>min</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => scheduleSession(weekDays[activeDay])}
-                disabled={(!selectedGame && !gameSearch.trim()) || !sessionTime || schedulingSession}
-                style={{ background: (selectedGame || gameSearch.trim()) && sessionTime ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "9px 24px", color: (selectedGame || gameSearch.trim()) && sessionTime ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {schedulingSession ? "Sharing..." : "Share"}
-              </button>
-              <button onClick={() => setActiveDay(null)}
-                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "9px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       <div style={sectionStyle}>

@@ -145,25 +145,25 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
       </div>
 
       {showRsvp && !isCreator && (
-        <div style={{ display: "flex", gap: 6, marginTop: 10, paddingTop: 8, borderTop: "1px solid " + statusBorder() }}>
+        <div style={{ display: "flex", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + statusBorder(), flexWrap: "wrap" }}>
           {[
-            { response: "in", label: "In", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55" },
-            { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55" },
-            { response: "out", label: "Out", color: "#ef4444", bg: "#ef444422", border: "#ef444455" },
+            { response: "in", label: "In", color: "#22c55e", bg: "#22c55e18", border: "#22c55e44" },
+            { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b18", border: "#f59e0b44" },
+            { response: "out", label: "Out", color: "#ef4444", bg: "#ef444418", border: "#ef444444" },
           ].map(opt => (
             <button
               key={opt.response}
               onClick={() => handleRsvpSelect(opt.response)}
               style={{
-                flex: 1,
-                background: myRsvp?.response === opt.response ? opt.bg : C.surfaceRaised,
+                background: myRsvp?.response === opt.response ? opt.bg : "transparent",
                 border: "1px solid " + (myRsvp?.response === opt.response ? opt.border : C.border),
-                borderRadius: 7,
-                padding: "5px 0",
+                borderRadius: 20,
+                padding: "3px 10px",
                 color: myRsvp?.response === opt.response ? opt.color : C.textDim,
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
                 cursor: "pointer",
+                whiteSpace: "nowrap",
               }}>
               {opt.label}
             </button>
