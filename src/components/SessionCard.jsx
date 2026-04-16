@@ -128,11 +128,13 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
         <div style={{ fontSize: 11, color: statusColor(), fontWeight: 700, marginBottom: 6 }}>
           {timeStr}{durationStr ? " · " + durationStr : ""}
         </div>
-        <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.9 }}>
-          <div>{counts.in} in</div>
-          <div>{counts.maybe} maybe</div>
-          <div>{counts.out} out</div>
-        </div>
+        {!showRsvp && (
+          <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.9 }}>
+            <div>{counts.in} in</div>
+            <div>{counts.maybe} maybe</div>
+            <div>{counts.out} out</div>
+          </div>
+        )}
         {myRsvp && !isCreator && (
           <div style={{ fontSize: 10, color: statusColor(), fontWeight: 700, marginTop: 4, lineHeight: 1.5 }}>
             <div>You're {myRsvp.response === "in" ? "in" : myRsvp.response === "maybe" ? "maybe" : "out"}</div>
@@ -150,25 +152,32 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
       {showRsvp && !isCreator && (
         <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + statusBorder() }}>
           {[
-            { response: "in", label: "In", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55" },
-            { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55" },
-            { response: "out", label: "Out", color: "#ef4444", bg: "#ef444422", border: "#ef444455" },
+            { response: "in", label: "I'm in", color: "#fff", bg: "#22c55e", border: "#22c55e", dimBg: "#22c55e99", count: counts.in },
+            { response: "maybe", label: "Not sure", color: "#fff", bg: "#f59e0b", border: "#f59e0b", dimBg: "#f59e0b99", count: counts.maybe },
+            { response: "out", label: "I'm out", color: "#fff", bg: "#ef4444", border: "#ef4444", dimBg: "#ef444499", count: counts.out },
           ].map(opt => (
             <button
               key={opt.response}
               onClick={() => handleRsvpSelect(opt.response)}
               style={{
                 width: "100%",
-                background: myRsvp?.response === opt.response ? opt.bg : "transparent",
-                border: "1px solid " + (myRsvp?.response === opt.response ? opt.border : C.border),
+                background: opt.bg,
+                border: "none",
                 borderRadius: 8,
-                padding: "6px 0",
-                color: myRsvp?.response === opt.response ? opt.color : C.textDim,
-                fontSize: 11,
-                fontWeight: 700,
+                padding: "8px 0",
+                color: opt.color,
+                fontSize: 13,
+                fontWeight: 800,
                 cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                opacity: myRsvp?.response === opt.response ? 1 : 0.7,
               }}>
-              {opt.label}
+              <span>{opt.count}</span>
+              <span>|</span>
+              <span>{opt.label}</span>
             </button>
           ))}
         </div>
