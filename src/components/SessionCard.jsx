@@ -125,19 +125,22 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
         <div style={{ fontWeight: 800, fontSize: 12, color: C.text, marginBottom: 2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
           {session.game || "Untitled"}
         </div>
-        <div style={{ fontSize: 11, color: statusColor(), fontWeight: 700, marginBottom: 4 }}>
+        <div style={{ fontSize: 11, color: statusColor(), fontWeight: 700, marginBottom: 6 }}>
           {timeStr}{durationStr ? " · " + durationStr : ""}
         </div>
-        <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.8 }}>
-          <div>{counts.in} in · {counts.maybe} maybe · {counts.out} out</div>
+        <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.9 }}>
+          <div>{counts.in} in</div>
+          <div>{counts.maybe} maybe</div>
+          <div>{counts.out} out</div>
         </div>
+        {myRsvp && !isCreator && (
+          <div style={{ fontSize: 10, color: statusColor(), fontWeight: 700, marginTop: 4, lineHeight: 1.5 }}>
+            <div>You're {myRsvp.response === "in" ? "in" : myRsvp.response === "maybe" ? "maybe" : "out"}</div>
+            <div>tap to change</div>
+          </div>
+        )}
         {!myRsvp && !isCreator && (
           <div style={{ fontSize: 10, color: C.gold, fontWeight: 700, marginTop: 4 }}>Tap to respond</div>
-        )}
-        {myRsvp && !isCreator && (
-          <div style={{ fontSize: 10, color: statusColor(), fontWeight: 700, marginTop: 4 }}>
-            You're {myRsvp.response === "in" ? "in" : myRsvp.response === "maybe" ? "maybe" : "out"} · tap to change
-          </div>
         )}
         {isCreator && (
           <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>Tap to edit</div>
@@ -145,25 +148,25 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
       </div>
 
       {showRsvp && !isCreator && (
-        <div style={{ display: "flex", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + statusBorder(), flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + statusBorder() }}>
           {[
-            { response: "in", label: "In", color: "#22c55e", bg: "#22c55e18", border: "#22c55e44" },
-            { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b18", border: "#f59e0b44" },
-            { response: "out", label: "Out", color: "#ef4444", bg: "#ef444418", border: "#ef444444" },
+            { response: "in", label: "In", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55" },
+            { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55" },
+            { response: "out", label: "Out", color: "#ef4444", bg: "#ef444422", border: "#ef444455" },
           ].map(opt => (
             <button
               key={opt.response}
               onClick={() => handleRsvpSelect(opt.response)}
               style={{
+                width: "100%",
                 background: myRsvp?.response === opt.response ? opt.bg : "transparent",
                 border: "1px solid " + (myRsvp?.response === opt.response ? opt.border : C.border),
-                borderRadius: 20,
-                padding: "3px 10px",
+                borderRadius: 8,
+                padding: "6px 0",
                 color: myRsvp?.response === opt.response ? opt.color : C.textDim,
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer",
-                whiteSpace: "nowrap",
               }}>
               {opt.label}
             </button>
