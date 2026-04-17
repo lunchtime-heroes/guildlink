@@ -193,6 +193,23 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     setSteamId(null);
   };
 
+  const loadShelf = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { data: shelfData } = await supabase
+      .from("user_games")
+      .select("*, games(id, name, developer, genre)")
+      .eq("user_id", authUser.id)
+      .order("sort_order", { ascending: true, nullsFirst: false });
+    if (shelfData) {
+      const shelf = { want_to_play: [], playing: [], have_played: [] };
+      shelfData.forEach(entry => {
+        if (shelf[entry.status]) shelf[entry.status].push(entry);
+      });
+      setUserShelf(shelf);
+    }
+  };
+
   const startEdit = () => {
     setEditForm({
       username: user.name || "",
@@ -1387,7 +1404,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         <SteamImportModal
           currentUser={user}
           onClose={() => setShowSteamImport(false)}
-          onImportComplete={() => { setShowSteamImport(false); onProfileSaved?.(); }}
+          onImportComplete={() => { setShowSteamImport(false); loadShelf(); onProfileSaved?.(); }}
           onSteamConnected={(id) => setSteamId(id)}
         />
       )}
