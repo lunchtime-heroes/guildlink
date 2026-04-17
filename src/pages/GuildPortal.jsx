@@ -118,15 +118,16 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const loadSessions = async () => {
-    const weekStart = new Date();
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
+    const now = new Date();
+    // Use local midnight as the start boundary so sessions don't disappear based on UTC rollover
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const weekEnd = new Date(localMidnight);
     weekEnd.setDate(weekEnd.getDate() + 7);
     const { data } = await supabase
       .from("guild_sessions")
       .select("*")
       .eq("guild_id", guildId)
-      .gte("scheduled_at", weekStart.toISOString())
+      .gte("scheduled_at", localMidnight.toISOString())
       .lt("scheduled_at", weekEnd.toISOString())
       .order("scheduled_at", { ascending: true });
     setSessions(data || []);
@@ -208,6 +209,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       scheduled_at: scheduled.toISOString(),
       duration_minutes: (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0) || null,
       created_by: user.id,
+      creator_tz_offset: -new Date().getTimezoneOffset(),
     });
 
     if (gameId) {
@@ -364,8 +366,19 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
   const sessionsForDay = (d) => {
     return sessions.filter(s => {
-      const sd = new Date(s.scheduled_at);
-      return sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth() && sd.getDate() === d.getDate();
+      const sessionStart = new Date(s.scheduled_at);
+      const sessionEnd = s.duration_minutes
+        ? new Date(sessionStart.getTime() + s.duration_minutes * 60000)
+        : sessionStart;
+      // Use viewer's local date for the session start
+      const sessionLocalDate = new Date(
+        sessionStart.getFullYear(),
+        sessionStart.getMonth(),
+        sessionStart.getDate()
+      );
+      const targetDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      // Show on start day — session belongs to the day it starts in viewer's local time
+      return sessionLocalDate.getTime() === targetDate.getTime();
     });
   };
 
