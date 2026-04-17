@@ -114,12 +114,12 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
           }, { onConflict: "user_id,game_id" });
 
           // Log chart event
-          await supabase.from("chart_events").upsert({
+          await supabase.from("chart_events").insert({
             game_id: gameId, user_id: authUser.id,
             event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
             date: new Date().toISOString().slice(0, 10),
             week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
-          }, { onConflict: "game_id,user_id,event_type,date" });
+          }, { ignoreDuplicates: true });
         }
       } catch (err) {
         console.error("[import] failed for game:", game.name, err);
