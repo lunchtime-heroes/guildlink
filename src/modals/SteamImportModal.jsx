@@ -31,15 +31,6 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
       const overrides = {};
       data.games.forEach(g => { overrides[g.appid] = g.suggested_status; });
       setStatusOverrides(overrides);
-      // Save Steam ID to user_private
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser && data.steamId) {
-        await supabase.from("user_private").upsert(
-          { id: authUser.id, steam_id: data.steamId },
-          { onConflict: "id" }
-        );
-        onSteamConnected?.(data.steamId);
-      }
     } catch (e) {
       setError("Failed to connect to Steam. Please try again.");
     }
@@ -132,6 +123,15 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
 
     setImporting(false);
     setImportDone(true);
+
+    // Save Steam ID only after successful import
+    if (steamData?.steamId) {
+      await supabase.from("user_private").upsert(
+        { id: authUser.id, steam_id: steamData.steamId },
+        { onConflict: "id" }
+      );
+      onSteamConnected?.(steamData.steamId);
+    }
   };
 
   const statusColors = { playing: C.green, have_played: C.gold, want_to_play: C.accent };
@@ -193,6 +193,8 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
             </div>
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, borderTop: "1px solid " + C.border, paddingTop: 16 }}>
               You can adjust any game's status after importing. We only use your Steam data to populate your shelf — we don't store your Steam ID or account information.
+              <br /><br />
+              To import your wishlist, set both <strong style={{ color: C.textMuted }}>Profile</strong> and <strong style={{ color: C.textMuted }}>Game details</strong> to Public in Steam → Settings → Privacy.
             </div>
             <button onClick={() => setExplained(true)}
               style={{ background: "#4a9eda", border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>
