@@ -56,6 +56,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletionPending, setDeletionPending] = useState(user?.deletion_requested_at ? true : false);
   const [exportRequested, setExportRequested] = useState(false);
+  const [steamId, setSteamId] = useState(null);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
@@ -172,10 +173,25 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         }).filter(Boolean);
         setProfileFollowing([...users, ...npcs]);
       }
+      // Load Steam ID from user_private
+      const { data: privateData } = await supabase
+        .from("user_private")
+        .select("steam_id")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      if (privateData?.steam_id) setSteamId(privateData.steam_id);
     };
     load();
     loadQuests();
   }, []);
+
+  const disconnectSteam = async () => {
+    if (!window.confirm("Disconnect Steam? Your imported games will stay on your shelf.")) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("user_private").update({ steam_id: null }).eq("id", authUser.id);
+    setSteamId(null);
+  };
 
   const startEdit = () => {
     setEditForm({
@@ -654,6 +670,23 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 ))}
               </div>
               <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
+              <div style={{ marginTop: 12 }}>
+                <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Connected Platforms</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {steamId ? (
+                    <button onClick={disconnectSteam}
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      ✓ Steam
+                    </button>
+                  ) : (
+                    <button onClick={() => setShowSteamImport(true)}
+                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      + Steam
+                    </button>
+                  )}
+                  {/* Future platforms slot in here */}
+                </div>
+              </div>
             </div>
             {editing ? (
               <div style={{ display: "flex", gap: 8 }}>
@@ -1355,6 +1388,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           currentUser={user}
           onClose={() => setShowSteamImport(false)}
           onImportComplete={() => { setShowSteamImport(false); onProfileSaved?.(); }}
+          onSteamConnected={(id) => setSteamId(id)}
         />
       )}
 

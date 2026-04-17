@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 
-function SteamImportModal({ currentUser, onClose, onImportComplete }) {
+function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConnected }) {
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -12,6 +12,7 @@ function SteamImportModal({ currentUser, onClose, onImportComplete }) {
   const [importDone, setImportDone] = React.useState(false);
   const [statusOverrides, setStatusOverrides] = React.useState({});
   const [importProgress, setImportProgress] = React.useState(0);
+  const [explained, setExplained] = React.useState(false);
 
   const fetchSteam = async () => {
     if (!input.trim()) return;
@@ -30,6 +31,12 @@ function SteamImportModal({ currentUser, onClose, onImportComplete }) {
       const overrides = {};
       data.games.forEach(g => { overrides[g.appid] = g.suggested_status; });
       setStatusOverrides(overrides);
+      // Save Steam ID to user_private
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser && data.steamId) {
+        await supabase.from("user_private").update({ steam_id: data.steamId }).eq("id", authUser.id);
+        onSteamConnected?.(data.steamId);
+      }
     } catch (e) {
       setError("Failed to connect to Steam. Please try again.");
     }
@@ -113,8 +120,8 @@ function SteamImportModal({ currentUser, onClose, onImportComplete }) {
     setImportDone(true);
   };
 
-  const statusColors = { playing: C.accent, have_played: C.teal, want_to_play: C.gold };
-  const statusLabels = { playing: "Playing", have_played: "Played", want_to_play: "Want" };
+  const statusColors = { playing: C.green, have_played: C.gold, want_to_play: C.accent };
+  const statusLabels = { playing: "Playing Now", have_played: "Have Played", want_to_play: "Want to Play" };
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -135,6 +142,9 @@ function SteamImportModal({ currentUser, onClose, onImportComplete }) {
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>Import complete!</div>
             <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center" }}>
               {selectedGames.size} games added to your shelf.
+              {steamData?.wishlistGames > 0 && (
+                <span style={{ display: "block", marginTop: 4 }}>{steamData.wishlistGames} wishlist games added as Want to Play.</span>
+              )}
             </div>
             <button onClick={onImportComplete} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 28px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
               View My Shelf
@@ -147,6 +157,33 @@ function SteamImportModal({ currentUser, onClose, onImportComplete }) {
               <div style={{ height: "100%", width: importProgress + "%", background: "#4a9eda", borderRadius: 4, transition: "width 0.3s" }} />
             </div>
             <div style={{ color: C.textDim, fontSize: 13 }}>{importProgress}%</div>
+          </div>
+        ) : !explained ? (
+          <div style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ color: C.text, fontSize: 14, lineHeight: 1.6 }}>
+              You're about to import your Steam library into GuildLink. Here's how your games will be organized:
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { status: "want_to_play", color: C.accent, label: "Want to Play", desc: "Games on your Steam wishlist." },
+                { status: "playing", color: C.green, label: "Playing Now", desc: "Games you've played in the last two weeks." },
+                { status: "have_played", color: C.gold, label: "Have Played", desc: "Everything else in your library." },
+              ].map(item => (
+                <div key={item.status} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span style={{ background: item.color + "22", border: "1px solid " + item.color + "55", color: item.color, borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {item.label}
+                  </span>
+                  <span style={{ color: C.textMuted, fontSize: 13 }}>{item.desc}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, borderTop: "1px solid " + C.border, paddingTop: 16 }}>
+              You can adjust any game's status after importing. We only use your Steam data to populate your shelf — we don't store your Steam ID or account information.
+            </div>
+            <button onClick={() => setExplained(true)}
+              style={{ background: "#4a9eda", border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" }}>
+              Got it — connect my Steam
+            </button>
           </div>
         ) : !steamData ? (
           <div style={{ padding: 24 }}>
@@ -182,7 +219,7 @@ function SteamImportModal({ currentUser, onClose, onImportComplete }) {
               {steamData.avatar && <img src={steamData.avatar} alt="" style={{ width: 40, height: 40, borderRadius: 6 }} />}
               <div>
                 <div style={{ fontWeight: 700, color: "#4a9eda", fontSize: 14 }}>{steamData.playerName}</div>
-                <div style={{ color: C.textDim, fontSize: 12 }}>{steamData.playedGames} played games · {steamData.games.filter(g => g.recently_played).length} played recently</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>{steamData.playedGames} library games · {steamData.recentGames} played recently · {steamData.wishlistGames} wishlist</div>
               </div>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                 <button onClick={() => setSelectedGames(new Set(steamData.games.map(g => g.appid)))}
