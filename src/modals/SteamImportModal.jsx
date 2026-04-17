@@ -34,7 +34,10 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
       // Save Steam ID to user_private
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser && data.steamId) {
-        await supabase.from("user_private").update({ steam_id: data.steamId }).eq("id", authUser.id);
+        await supabase.from("user_private").upsert(
+          { id: authUser.id, steam_id: data.steamId },
+          { onConflict: "id" }
+        );
         onSteamConnected?.(data.steamId);
       }
     } catch (e) {
@@ -61,55 +64,67 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
     let done = 0;
 
     for (const game of toImport) {
-      // Search for matching game in DB or IGDB
-      const { data: existing } = await supabase
-        .from("games").select("id, name").ilike("name", game.name).limit(1).single();
+      try {
+        // Search for matching game in DB
+        const { data: existing } = await supabase
+          .from("games").select("id, name").ilike("name", game.name).limit(1).maybeSingle();
 
-      let gameId = existing?.id;
+        let gameId = existing?.id;
 
-      if (!gameId) {
-        // Try IGDB match
-        try {
-          const igdbRes = await fetch("/api/igdb", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: game.name }),
+        if (!gameId) {
+          // Try IGDB match
+          try {
+            const igdbRes = await fetch("/api/igdb", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query: game.name }),
+            });
+            const { games: igdbGames } = await igdbRes.json();
+            const match = igdbGames?.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || igdbGames?.[0];
+            if (match) {
+              // Check if this IGDB game already exists by igdb_id first
+              const { data: existingIgdb } = await supabase
+                .from("games").select("id").eq("igdb_id", match.igdb_id).maybeSingle();
+              if (existingIgdb) {
+                gameId = existingIgdb.id;
+              } else {
+                const { data: inserted } = await supabase.from("games").insert({
+                  name: match.name, genre: match.genre, summary: match.summary,
+                  cover_url: match.cover_url, igdb_id: match.igdb_id,
+                  first_release_date: match.first_release_date, followers: 0,
+                  platforms: match.platforms || null,
+                }).select().single();
+                gameId = inserted?.id;
+              }
+            }
+          } catch { /* IGDB unavailable */ }
+        }
+
+        if (!gameId) {
+          // Insert as basic game entry
+          const { data: inserted } = await supabase.from("games").insert({
+            name: game.name, followers: 0,
+          }).select().single();
+          gameId = inserted?.id;
+        }
+
+        if (gameId) {
+          const status = statusOverrides[game.appid] || "have_played";
+          await supabase.from("user_games").upsert({
+            user_id: authUser.id, game_id: gameId, status,
+            time_played: game.playtime_hours || null,
+          }, { onConflict: "user_id,game_id" });
+
+          // Log chart event
+          await supabase.from("chart_events").insert({
+            game_id: gameId, user_id: authUser.id,
+            event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
+            date: new Date().toISOString().slice(0, 10),
+            week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
           });
-          const { games: igdbGames } = await igdbRes.json();
-          const match = igdbGames?.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || igdbGames?.[0];
-          if (match) {
-            const { data: inserted } = await supabase.from("games").insert({
-              name: match.name, genre: match.genre, summary: match.summary,
-              cover_url: match.cover_url, igdb_id: match.igdb_id,
-              first_release_date: match.first_release_date, followers: 0,
-              platforms: match.platforms || null,
-            }).select().single();
-            gameId = inserted?.id;
-          }
-        } catch { /* IGDB unavailable */ }
-      }
-
-      if (!gameId) {
-        // Insert as basic game entry
-        const { data: inserted } = await supabase.from("games").insert({
-          name: game.name, followers: 0,
-        }).select().single();
-        gameId = inserted?.id;
-      }
-
-      if (gameId) {
-        const status = statusOverrides[game.appid] || "have_played";
-        await supabase.from("user_games").upsert({
-          user_id: authUser.id, game_id: gameId, status,
-          time_played: game.playtime_hours || null,
-        }, { onConflict: "user_id,game_id" });
-
-        // Log chart event
-        await supabase.from("chart_events").insert({
-          game_id: gameId, user_id: authUser.id,
-          event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
-          date: new Date().toISOString().slice(0, 10),
-          week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
-        }).select();
+        }
+      } catch (err) {
+        console.error("[import] failed for game:", game.name, err);
+        // Continue with next game rather than killing the whole import
       }
 
       done++;
