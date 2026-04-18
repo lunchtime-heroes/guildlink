@@ -55,7 +55,27 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         .or("post_type.eq.post,post_type.is.null")
         .order("created_at", { ascending: false })
         .limit(20);
-      if (posts) setGamePosts(posts);
+      // Also fetch parent posts of any comments tagged to this game
+      const { data: taggedComments } = await supabase
+        .from("comments")
+        .select("post_id")
+        .eq("game_tag", dbId)
+        .not("post_id", "is", null);
+      const commentPostIds = [...new Set((taggedComments || []).map(c => c.post_id))];
+      let allPosts = posts || [];
+      if (commentPostIds.length > 0) {
+        const existingIds = new Set((posts || []).map(p => p.id));
+        const newIds = commentPostIds.filter(id => !existingIds.has(id));
+        if (newIds.length > 0) {
+          const { data: commentPosts } = await supabase
+            .from("posts")
+            .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
+            .in("id", newIds);
+          if (commentPosts) allPosts = [...allPosts, ...commentPosts];
+        }
+      }
+      allPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setGamePosts(allPosts);
 
       // Q&A — questions for this game
       const { data: questions } = await supabase
@@ -333,7 +353,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     { id: "pulse", label: "Pulse" },
     { id: "reviews", label: "Reviews" },
     { id: "qa", label: "Q&A" },
-    { id: "posts", label: "Posts" },
+    { id: "posts", label: "Conversations" },
   ];
 
   return (
