@@ -78,22 +78,32 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         }
       }
 
-      // Top Voices
-      const { data: voicePosts } = await supabase
-        .from("posts")
-        .select("user_id, likes, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
-        .eq("game_tag", dbId)
-        .not("user_id", "is", null);
-      if (voicePosts) {
-        const byUser = {};
-        voicePosts.forEach(p => {
-          if (!p.user_id || !p.profiles) return;
-          if (!byUser[p.user_id]) byUser[p.user_id] = { ...p.profiles, user_id: p.user_id, totalLikes: 0, postCount: 0 };
-          byUser[p.user_id].totalLikes += (p.likes || 0);
-          byUser[p.user_id].postCount += 1;
-        });
-        setTopVoices(Object.values(byUser).sort((a, b) => b.totalLikes - a.totalLikes).slice(0, 5));
-      }
+      // Top Voices — ranked by chart contribution score
+      const [voicePostsRes, voiceEventsRes] = await Promise.allSettled([
+        supabase.from("posts")
+          .select("user_id, likes, comment_count, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
+          .eq("game_tag", dbId)
+          .not("user_id", "is", null),
+        supabase.from("chart_events")
+          .select("user_id, event_type")
+          .eq("game_id", dbId)
+          .not("user_id", "is", null),
+      ]);
+      const voicePosts = voicePostsRes.status === "fulfilled" ? (voicePostsRes.value.data || []) : [];
+      const voiceEvents = voiceEventsRes.status === "fulfilled" ? (voiceEventsRes.value.data || []) : [];
+      const EVENT_WEIGHTS = { post: 3, comment: 2, review: 4, shelf_playing: 2, shelf_played: 2, shelf_want: 2 };
+      const byUser = {};
+      voicePosts.forEach(p => {
+        if (!p.user_id || !p.profiles) return;
+        if (!byUser[p.user_id]) byUser[p.user_id] = { ...p.profiles, user_id: p.user_id, score: 0, postCount: 0 };
+        byUser[p.user_id].score += (p.likes || 0) + (p.comment_count || 0);
+        byUser[p.user_id].postCount += 1;
+      });
+      voiceEvents.forEach(e => {
+        if (!e.user_id || !byUser[e.user_id]) return;
+        byUser[e.user_id].score += (EVENT_WEIGHTS[e.event_type] || 1);
+      });
+      setTopVoices(Object.values(byUser).sort((a, b) => b.score - a.score).slice(0, 5));
 
       // Latest reviews
       const { data: reviews } = await supabase
@@ -422,7 +432,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, alignSelf: "start" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 15 }}>🏆 Top Voices</div>
-                <span style={{ color: C.textDim, fontSize: 12 }}>By likes earned</span>
+                <span style={{ color: C.textDim, fontSize: 12 }}>By conversation score</span>
               </div>
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
@@ -430,7 +440,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   <Avatar initials={voice.avatar_initials || "GL"} size={32} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
-                    <div style={{ color: C.textDim, fontSize: 11 }}>{voice.totalLikes} likes · {voice.postCount} posts</div>
+                    <div style={{ color: C.textDim, fontSize: 11 }}>{voice.score} pts · {voice.postCount} posts</div>
                   </div>
                 </div>
               )) : (
