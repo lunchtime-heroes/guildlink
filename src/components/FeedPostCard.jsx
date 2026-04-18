@@ -561,4 +561,5 @@ return (
   );
 }
 
+export { FeedPostCard, renderPostContent };
 export default FeedPostCard;
