@@ -79,18 +79,26 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       }
 
       // Top Voices — ranked by chart contribution score
-      const [voicePostsRes, voiceEventsRes] = await Promise.allSettled([
+      const [voicePostsRes, voiceEventsRes, voiceCommentsRes] = await Promise.allSettled([
         supabase.from("posts")
           .select("user_id, likes, comment_count, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .eq("game_tag", dbId)
-          .not("user_id", "is", null),
+          .not("user_id", "is", null)
+          .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
         supabase.from("chart_events")
-          .select("user_id, event_type")
+          .select("user_id, event_type, profiles!chart_events_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .eq("game_id", dbId)
-          .not("user_id", "is", null),
+          .not("user_id", "is", null)
+          .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from("comments")
+          .select("user_id, profiles!comments_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
+          .eq("game_tag", dbId)
+          .not("user_id", "is", null)
+          .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
       ]);
       const voicePosts = voicePostsRes.status === "fulfilled" ? (voicePostsRes.value.data || []) : [];
       const voiceEvents = voiceEventsRes.status === "fulfilled" ? (voiceEventsRes.value.data || []) : [];
+      const voiceComments = voiceCommentsRes.status === "fulfilled" ? (voiceCommentsRes.value.data || []) : [];
       const EVENT_WEIGHTS = { post: 3, comment: 2, review: 4, shelf_playing: 2, shelf_played: 2, shelf_want: 2 };
       const byUser = {};
       voicePosts.forEach(p => {
@@ -100,8 +108,14 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         byUser[p.user_id].postCount += 1;
       });
       voiceEvents.forEach(e => {
-        if (!e.user_id || !byUser[e.user_id]) return;
+        if (!e.user_id || !e.profiles) return;
+        if (!byUser[e.user_id]) byUser[e.user_id] = { ...e.profiles, user_id: e.user_id, score: 0, postCount: 0 };
         byUser[e.user_id].score += (EVENT_WEIGHTS[e.event_type] || 1);
+      });
+      voiceComments.forEach(c => {
+        if (!c.user_id || !c.profiles) return;
+        if (!byUser[c.user_id]) byUser[c.user_id] = { ...c.profiles, user_id: c.user_id, score: 0, postCount: 0 };
+        byUser[c.user_id].score += 2;
       });
       setTopVoices(Object.values(byUser).sort((a, b) => b.score - a.score).slice(0, 5));
 
