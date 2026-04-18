@@ -356,7 +356,7 @@ return (
                 <span
                   onClick={e => { e.stopPropagation(); if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
                   style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.accentSoft, fontWeight: 600, cursor: gameId ? "pointer" : "default" }}>
-                  🎮 {displayName || "Game"}
+                  {displayName || "Game"}
                 </span>
               );
             })()}
@@ -545,7 +545,7 @@ return (
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === commentMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < commentMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
                             onMouseEnter={() => setCommentMentionIndex(i)}>
                             <div style={{ width: 26, height: 26, borderRadius: item._type === "game" ? 6 : "50%", background: item._type === "npc" ? C.goldGlow : item._type === "game" ? C.accent + "22" : C.accent + "33", border: "1px solid " + (item._type === "npc" ? C.goldBorder : C.accentDim), display: "flex", alignItems: "center", justifyContent: "center", fontSize: item._type === "game" ? 12 : 10, fontWeight: 700, color: item._type === "npc" ? C.gold : C.accent, flexShrink: 0 }}>
-                              {item._type === "game" ? "🎮" : (item.avatar_initials || (item.username || item.name || "?").slice(0,2)).toUpperCase()}
+                              {item._type === "game" ? "G" : (item.avatar_initials || (item.username || item.name || "?").slice(0,2)).toUpperCase()}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontWeight: 600, fontSize: 12, color: item._type === "npc" ? C.gold : C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name || item.username}</div>
