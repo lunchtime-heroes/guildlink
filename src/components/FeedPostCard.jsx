@@ -146,6 +146,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       .order("created_at", { ascending: true });
     if (!error && data) {
       setLiveComments(data);
+      resolveCommentGameNames(data);
       const ids = data.map(c => c.id);
       if (ids.length > 0) {
         const { data: reactions } = await supabase
@@ -187,6 +188,19 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const toggleComments = () => {
     if (!showComments && liveComments === null) loadComments();
     setShowComments(s => !s);
+  };
+
+  const [commentGameNames, setCommentGameNames] = useState({});
+
+  const resolveCommentGameNames = async (comments) => {
+    const ids = [...new Set(comments.filter(c => c.game_tag).map(c => c.game_tag))];
+    if (ids.length === 0) return;
+    const { data } = await supabase.from("games").select("id, name").in("id", ids);
+    if (data) {
+      const map = {};
+      data.forEach(g => { map[g.id] = g.name; });
+      setCommentGameNames(prev => ({ ...prev, ...map }));
+    }
   };
 
   const [commentMentionResults, setCommentMentionResults] = useState([]);
@@ -279,7 +293,10 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         await supabase.rpc("increment_quest_progress", { p_user_id: post.user_id, p_trigger: "comment_received" });
         onQuestTrigger?.();
       }
-      setLiveComments(prev => [...(prev || []), data]);
+      if (commentTaggedGame && commentTaggedGameName) {
+        setCommentGameNames(prev => ({ ...prev, [commentTaggedGame]: commentTaggedGameName }));
+      }
+      setLiveComments(prev => [...(prev || []), { ...data, game_tag: commentTaggedGame }]);
       setCommentText("");
       setCommentTaggedUsers([]);
       setCommentTaggedGame(null);
@@ -425,8 +442,10 @@ return (
                     </span>
                     <span style={{ color: C.textDim, fontSize: 11 }}>{authorHandle}</span>
                     <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(comment.created_at)}</span>
-                    {comment.game_tag && (
-                      <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, color: C.accentSoft, fontWeight: 600 }}>🎮</span>
+                    {comment.game_tag && commentGameNames[comment.game_tag] && (
+                      <span onClick={() => { setCurrentGame(comment.game_tag); setActivePage("game"); }} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, color: C.accentSoft, fontWeight: 600, cursor: "pointer" }}>
+                        {commentGameNames[comment.game_tag]}
+                      </span>
                     )}
                   </div>
                   {parentName && (
@@ -476,7 +495,7 @@ return (
                 {commentTaggedGame && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                     <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
-                      🎮 {commentTaggedGameName}
+                      {commentTaggedGameName}
                     </span>
                     <button onClick={() => { setCommentTaggedGame(null); setCommentTaggedGameName(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1 }}>×</button>
                   </div>
