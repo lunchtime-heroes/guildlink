@@ -230,7 +230,7 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
               </div>
             )}
             <div style={{ marginTop: 16, color: C.textDim, fontSize: 12 }}>
-              To make your profile public: Steam → Settings → Privacy → Profile Status → Public
+              To import your library, both <strong style={{ color: C.textMuted }}>My Profile</strong> and <strong style={{ color: C.textMuted }}>Game details</strong> must be set to Public in Steam → Settings → Privacy.
             </div>
           </div>
         ) : (
