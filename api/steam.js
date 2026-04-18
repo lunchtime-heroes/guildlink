@@ -81,23 +81,32 @@ async function getWishlist(steamId) {
     const res = await fetch(
       `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=0`
     );
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.log("[steam] wishlist fetch failed:", res.status);
+      return [];
+    }
     const data = await res.json();
+    console.log("[steam] wishlist response type:", typeof data, "keys:", data ? Object.keys(data).length : 0);
     if (!data || typeof data !== "object") return [];
+    // Steam returns {"success": 2} when wishlist is private
+    if (data.success === 2 || Object.keys(data).length === 0) {
+      console.log("[steam] wishlist is private or empty");
+      return [];
+    }
 
-    return Object.entries(data).map(([appid, game]) => ({
-      appid: parseInt(appid),
-      name: game.name,
-      playtime_hours: 0,
-      recently_played: false,
-      suggested_status: "want_to_play",
-      img_icon: game.capsule
-        ? game.capsule
-        : null,
-      source: "wishlist",
-    }));
-  } catch {
-    // Wishlist may be private or unavailable — non-fatal
+    return Object.entries(data)
+      .filter(([key]) => key !== "success")
+      .map(([appid, game]) => ({
+        appid: parseInt(appid),
+        name: game.name,
+        playtime_hours: 0,
+        recently_played: false,
+        suggested_status: "want_to_play",
+        img_icon: game.capsule || null,
+        source: "wishlist",
+      }));
+  } catch (e) {
+    console.log("[steam] wishlist error:", e.message);
     return [];
   }
 }
