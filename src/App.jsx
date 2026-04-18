@@ -9,6 +9,7 @@ import GamesPage from "./pages/GamesPage.jsx";
 import NPCStudioPage from "./pages/NPCStudioPage.jsx";
 import PlayerProfilePage from "./pages/PlayerPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import NPCProfilePage from "./pages/NPCProfilePage.jsx";
 import { Avatar, AvatarPixel, ITEM_COLORS, DEFAULT_AVATAR_CONFIG } from "./components/Avatar.jsx";
 import { ChartsWidget } from "./components/Charts.jsx";
 import { FeedPostCard } from "./components/FeedPostCard.jsx";
