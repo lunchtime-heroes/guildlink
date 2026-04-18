@@ -615,8 +615,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         {activeTab === "posts" && (
           <div style={{ maxWidth: 680 }}>
             {gamePosts.length > 0 ? gamePosts.map(post => {
-              const author = post.profiles || {};
               const isNPC = !!post.npc_id;
+              const author = isNPC ? (post.npcs || {}) : (post.profiles || {});
               return (
                 <FeedPostCard key={post.id} post={{
                   id: post.id,
@@ -625,12 +625,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   user_id: post.user_id,
                   tagged_users: post.tagged_users || [],
                   user: {
-                    name: author.username || "Gamer",
+                    name: isNPC ? (author.name || "NPC") : (author.username || "Gamer"),
                     handle: author.handle || "@gamer",
                     avatar: author.avatar_initials || "GL",
                     status: "online",
                     isNPC,
-                    isFounding: author.is_founding || false,
+                    isFounding: !isNPC && (author.is_founding || false),
                     activeRing: !isNPC ? (author.active_ring || "none") : "none",
                     avatarConfig: !isNPC ? (author.avatar_config || null) : null,
                   },
