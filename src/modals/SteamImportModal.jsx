@@ -31,14 +31,12 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
       const overrides = {};
       data.games.forEach(g => { overrides[g.appid] = g.suggested_status; });
       setStatusOverrides(overrides);
-      // Save Steam ID to user_private
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser && data.steamId) {
-        await supabase.from("user_private").upsert(
-          { id: authUser.id, steam_id: data.steamId },
-          { onConflict: "id" }
-        );
-        onSteamConnected?.(data.steamId);
+      // Check for empty library
+      if (data.games.length === 0) {
+        setError("No games found. Make sure your Steam profile and Game details are both set to Public in Steam → Settings → Privacy.");
+        setSteamData(null);
+        setLoading(false);
+        return;
       }
     } catch (e) {
       setError("Failed to connect to Steam. Please try again.");
@@ -132,6 +130,15 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
 
     setImporting(false);
     setImportDone(true);
+
+    // Save Steam ID only after successful import
+    if (steamData?.steamId) {
+      await supabase.from("user_private").upsert(
+        { id: authUser.id, steam_id: steamData.steamId },
+        { onConflict: "id" }
+      );
+      onSteamConnected?.(steamData.steamId);
+    }
   };
 
   const statusColors = { playing: C.green, have_played: C.gold, want_to_play: C.accent };
