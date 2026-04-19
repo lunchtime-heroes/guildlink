@@ -95,7 +95,13 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
       </div>
       {/* Read more */}
       <div style={{ borderTop: "1px solid " + C.border, padding: "8px 14px" }}>
-        <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); }}
+        <button onClick={() => {
+          console.log("[ReviewSpotlight] setGameDefaultTab:", typeof setGameDefaultTab, setGameDefaultTab);
+          if (setGameDefaultTab) setGameDefaultTab("reviews");
+          console.log("[ReviewSpotlight] navigating to game:", card.game.id);
+          setCurrentGame(card.game.id);
+          setActivePage("game");
+        }}
           style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
           Read full review →
         </button>
