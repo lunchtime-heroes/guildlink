@@ -11,8 +11,8 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   const [activeTab, setActiveTab] = useState(defaultTab || "pulse");
 
   useEffect(() => {
-    if (defaultTab) { setActiveTab(defaultTab); onTabConsumed?.(); }
-  }, [gameId]);
+  if (defaultTab) { setActiveTab(defaultTab); onTabConsumed?.(); }
+}, [gameId, defaultTab]);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [shelfStatus, setShelfStatus] = useState(null);
