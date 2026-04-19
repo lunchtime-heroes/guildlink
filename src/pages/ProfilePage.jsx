@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { C, NPCS, QUESTS, PROFILE_RINGS, QUEST_THEMES, FOUNDING, THEMES, applyTheme } from "../constants.js";
 import supabase from "../supabase.js";
-import { timeAgo, logChartEvent, getAge, isUsernameRestricted } from "../utils.js";
+import { timeAgo, logChartEvent, updateTasteProfile, isUsernameRestricted } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { AvatarPixel } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
@@ -314,7 +314,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       to_status: toStatus,
     });
     const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
-    if (eventMap[toStatus]) logChartEvent(gameId, eventMap[toStatus], authUser.id);
+    if (eventMap[toStatus]) { logChartEvent(gameId, eventMap[toStatus], authUser.id); updateTasteProfile(gameId, eventMap[toStatus], authUser.id); }
     // Quest triggers — only fire for the destination status
     if (toStatus === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
     if (toStatus === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
@@ -349,7 +349,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         to_status: status,
       });
       const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
-      if (eventMap[status]) logChartEvent(game.id, eventMap[status], authUser.id);
+      if (eventMap[status]) { logChartEvent(game.id, eventMap[status], authUser.id); updateTasteProfile(game.id, eventMap[status], authUser.id); }
       // Quest triggers
       await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add" });
       if (status === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });

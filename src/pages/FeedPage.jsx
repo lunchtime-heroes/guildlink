@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { C, NPCS, FOUNDING } from "../constants.js";
 import supabase from "../supabase.js";
-import { timeAgo, logChartEvent } from "../utils.js";
+import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard, renderPostContent } from "../components/FeedPostCard.jsx";
 import { ShelfPulseCard, ReviewSpotlightCard, QACard } from "../components/PulseCards.jsx";
@@ -758,7 +758,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       link_url: linkPreview?.url || urls?.[0] || null,
     }).select().single();
     if (!error && data) {
-      if (data.game_tag) logChartEvent(data.game_tag, 'post', authUser?.id);
+      if (data.game_tag) { logChartEvent(data.game_tag, 'post', authUser?.id); updateTasteProfile(data.game_tag, 'post', authUser?.id); }
       const newPost = {
         ...data,
         profiles: {

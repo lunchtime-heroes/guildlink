@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { C, NPCS } from "../constants.js";
 import supabase from "../supabase.js";
-import { timeAgo, logChartEvent } from "../utils.js";
+import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
@@ -214,7 +214,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
     await supabase.from("user_games_history").insert({ user_id: user.id, game_id: dbGame.id, from_status: shelfStatus, to_status: status });
     const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
-    if (eventMap[status]) logChartEvent(dbGame.id, eventMap[status], user.id);
+    if (eventMap[status]) { logChartEvent(dbGame.id, eventMap[status], user.id); updateTasteProfile(dbGame.id, eventMap[status], user.id); }
     setShelfStatus(status);
     setShowShelfMenu(false);
   };
@@ -252,7 +252,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     if (!error) {
       const isEdit = !!myReview;
       if (!isEdit) {
-        logChartEvent(dbGame.id, 'review', authUser.id);
+        logChartEvent(dbGame.id, 'review', authUser.id); updateTasteProfile(dbGame.id, 'review', authUser.id);
         supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "review_written" }).then(() => onQuestComplete?.());
       }
       const { data: reviews } = await supabase.from("reviews")
@@ -283,7 +283,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     }).select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)").single();
     if (!error && data) {
       setGameQA(prev => [{ ...data, comments: [] }, ...prev]);
-      logChartEvent(dbGame.id, 'post', authUser.id);
+      logChartEvent(dbGame.id, 'post', authUser.id); updateTasteProfile(dbGame.id, 'post', authUser.id);
       setAskText("");
       setShowAskForm(false);
     }
@@ -305,7 +305,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         ? { ...q, comments: [...(q.comments || []), data] }
         : q
       ));
-      logChartEvent(dbGame.id, 'comment', authUser.id);
+      logChartEvent(dbGame.id, 'comment', authUser.id); updateTasteProfile(dbGame.id, 'comment', authUser.id);
       // Update shelf status for new commenter
       const { data: shelfData } = await supabase.from("user_games")
         .select("status").eq("game_id", dbGame.id).eq("user_id", authUser.id).maybeSingle();

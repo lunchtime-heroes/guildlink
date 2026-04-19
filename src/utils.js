@@ -122,7 +122,18 @@ function useWindowSize() {
   return width;
 }
 
-export { getWeekStart, logAnalytics, logChartEvent, getAge, timeAgo, notifLabel, useWindowSize };
+async function updateTasteProfile(gameId, eventType, userId) {
+  if (!gameId || !gameId.includes('-') || !userId) return;
+  try {
+    await supabase.rpc("update_taste_profile", {
+      p_user_id: userId,
+      p_game_id: gameId,
+      p_event_type: eventType,
+    });
+  } catch(e) { /* non-fatal */ }
+}
+
+export { getWeekStart, logAnalytics, logChartEvent, updateTasteProfile, getAge, timeAgo, notifLabel, useWindowSize };
 
 export async function isUsernameRestricted(value) {
   const normalize = (str) => str
