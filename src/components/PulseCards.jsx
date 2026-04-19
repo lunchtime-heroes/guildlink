@@ -44,7 +44,7 @@ function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAd
   );
 }
 
-function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActivePage, onExit }) {
+function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActivePage, setGameDefaultTab, onExit }) {
   const preview = card.review.content
     ? card.review.content.slice(0, 140) + (card.review.content.length > 140 ? "…" : "")
     : card.review.headline || null;
@@ -55,7 +55,7 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
       <div style={{ display: "flex", alignItems: "stretch" }}>
         {/* Game cover */}
         {card.game.cover_url && (
-          <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          <div onClick={() => { setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); }}
             style={{ width: 56, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
             <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }} />
           </div>
@@ -72,7 +72,7 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
               {card.profile?.username || "Guildies Member"}
             </span>
             <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
-            <span onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+            <span onClick={() => { setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); }}
               style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {card.game.name}
             </span>
@@ -95,7 +95,7 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
       </div>
       {/* Read more */}
       <div style={{ borderTop: "1px solid " + C.border, padding: "8px 14px" }}>
-        <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+        <button onClick={() => { setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); }}
           style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
           Read full review →
         </button>

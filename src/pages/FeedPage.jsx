@@ -163,7 +163,7 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
   );
 }
 
-function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit }) {
+function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit, setGameDefaultTab }) {
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(false);
   const [postText, setPostText] = useState("");
@@ -1056,6 +1056,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               return <ReviewSpotlightCard key={card.id} card={card}
                 setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
                 setActivePage={setActivePage} onExit={onExit}
+                setGameDefaultTab={setGameDefaultTab}
               />;
             }
             if (card.type === "qa_card") {
