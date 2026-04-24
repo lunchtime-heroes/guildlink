@@ -129,7 +129,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Game shelf from user_games table
       const { data: shelfData } = await supabase
         .from("user_games")
-        .select("*, games(id, name, developer, genre)")
+        .select("*, games(id, name, developer, genre, cover_url)")
         .eq("user_id", authUser.id)
         .order("sort_order", { ascending: true, nullsFirst: false });
       if (shelfData) {
@@ -199,7 +199,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (!authUser) return;
     const { data: shelfData } = await supabase
       .from("user_games")
-      .select("*, games(id, name, developer, genre)")
+      .select("*, games(id, name, developer, genre, cover_url)")
       .eq("user_id", authUser.id)
       .order("sort_order", { ascending: true, nullsFirst: false });
     if (shelfData) {
@@ -1030,7 +1030,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 : userShelf[col.id];
               if (entries.length === 0) return null;
               return (
-                <div key={col.id} style={{ marginBottom: 28 }}>
+                <div key={col.id} style={{ marginBottom: 28 }}
+                  onDragOver={!isMobile ? e => handleDragOver(e, col.id) : undefined}
+                  onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}>
                   {/* Section header */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
@@ -1038,12 +1040,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   </div>
                   {/* Grid */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
-                    {entries.map(entry => {
+                    {entries.map((entry, entryIndex) => {
                       const game = entry.games;
                       if (!game) return null;
                       const review = userReviews.find(r => r.game_id === game.id);
                       const menuOpen = shelfMenuOpen === entry.game_id;
-                      const shelfRank = entry.shelf_rank || null;
+                      const shelfRank = col.id === "have_played" && entryIndex < 10 ? entryIndex + 1 : null;
                       return (
                         <div key={entry.game_id}
                           draggable={!isMobile}
@@ -1110,10 +1112,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                   → {target.label}
                                 </button>
                               ))}
-                              <button onClick={() => { removeFromShelf(entry.game_id, col.id); setShelfMenuOpen(null); }}
-                                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "7px 8px", color: C.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                                Remove
-                              </button>
                               <button onClick={() => setShelfMenuOpen(null)}
                                 style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 10, cursor: "pointer", marginTop: 2 }}>
                                 Cancel
