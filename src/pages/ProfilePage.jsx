@@ -532,9 +532,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     e.preventDefault();
     e.stopPropagation();
     setDragOver(colId);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    const val = { gameId: targetGameId, position: e.clientY < midY ? "above" : "below" };
+    const val = { gameId: targetGameId, position: "before" };
     setDragOverCard(val);
     dragOverCardRef.current = val;
   };
@@ -588,17 +586,16 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     const currentDragOverCard = dragOverCardRef.current;
 
     if (fromStatus === toStatus) {
-      // Reorder within column
       const col = [...userShelf[toStatus]];
       const fromIdx = col.findIndex(e => e.game_id === gameId);
       if (fromIdx === -1) { handleDragEnd(); return; }
-      let toIdx;
-      if (currentDragOverCard && userShelf[toStatus].find(e => e.game_id === currentDragOverCard.gameId)) {
+      let toIdx = col.length - 1;
+      if (currentDragOverCard) {
         const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
-        toIdx = currentDragOverCard.position === "above" ? targetIdx : targetIdx + 1;
-        if (toIdx > fromIdx) toIdx -= 1;
-      } else {
-        toIdx = col.length - 1;
+        if (targetIdx !== -1) {
+          // Insert before target, adjusting for removal of dragged item
+          toIdx = targetIdx > fromIdx ? targetIdx - 1 : targetIdx;
+        }
       }
       if (fromIdx === toIdx) { handleDragEnd(); return; }
       const reordered = [...col];
@@ -607,7 +604,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       setUserShelf(prev => ({ ...prev, [toStatus]: reordered }));
       saveSortOrder(toStatus, reordered);
     } else {
-      // Move to different column — append to end with new sort_order
       moveGame(gameId, fromStatus, toStatus);
     }
     handleDragEnd();
@@ -1027,12 +1023,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           {/* Cover art grid shelf */}
           <div data-tour="shelf-columns">
             {SHELF_COLUMNS.map(col => {
-              const entries = col.id === "have_played"
-                ? [...userShelf[col.id]].sort((a, b) => {
-                    const rank = v => v === true ? 0 : v === null || v === undefined ? 1 : 2;
-                    return rank(a.liked) - rank(b.liked);
-                  })
-                : userShelf[col.id];
+              const entries = userShelf[col.id];
               if (entries.length === 0) return null;
               return (
                 <div key={col.id} style={{ marginBottom: 28 }}
@@ -1050,10 +1041,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       if (!game) return null;
                       const review = userReviews.find(r => r.game_id === game.id);
                       const menuOpen = shelfMenuOpen === entry.game_id;
-                      // Use unsorted array index for rank so drag reorder matches rank number
-                      const actualIdx = col.id === "have_played"
-                        ? userShelf["have_played"].findIndex(e => e.game_id === entry.game_id)
-                        : entryIndex;
+                      const actualIdx = entryIndex;
                       const shelfRank = col.id === "have_played" && actualIdx < 10 ? actualIdx + 1 : null;
                       return (
                         <div key={entry.game_id}
