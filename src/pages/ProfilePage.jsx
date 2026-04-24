@@ -1027,8 +1027,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               if (entries.length === 0) return null;
               return (
                 <div key={col.id} style={{ marginBottom: 28 }}
-                  onDragOver={!isMobile ? e => handleDragOver(e, col.id) : undefined}
-                  onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}>
+                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}>
                   {/* Section header */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
@@ -1051,8 +1050,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
                           style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none" }}
-                          onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; } }}
-                          onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; } }}
+                          onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
+                          onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
 
                           {/* Cover art */}
@@ -1075,24 +1074,19 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                 #{shelfRank}
                               </div>
                             )}
-                          </div>
-
-                          {/* Below art — name + actions */}
-                          <div style={{ padding: "8px 8px 10px" }}>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: col.id === "have_played" ? 6 : 0 }}>{game.name}</div>
-                            {/* Have Played actions */}
-                            {col.id === "have_played" && (
-                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            {/* Desktop thumbs hover bar — Have Played only */}
+                            {col.id === "have_played" && !isMobile && (
+                              <div className="thumbs-bar" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(8,14,26,0.85)", display: "flex", gap: 4, padding: "4px 6px", opacity: 0, transition: "opacity 0.15s" }}>
                                 <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
-                                  style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 6, padding: "4px 6px", fontSize: 12, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                                  style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>
                                   👍
                                 </button>
                                 <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === false ? null : false); }}
-                                  style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 6, padding: "4px 6px", fontSize: 12, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                                  style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>
                                   👎
                                 </button>
                                 {review && (
-                                  <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 5, padding: "2px 5px", color: C.gold, fontWeight: 800, fontSize: 10, flexShrink: 0 }}>
+                                  <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 5, padding: "2px 5px", color: C.gold, fontWeight: 800, fontSize: 10, alignSelf: "center", flexShrink: 0 }}>
                                     {review.rating}/10
                                   </div>
                                 )}
@@ -1100,11 +1094,29 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             )}
                           </div>
 
+                          {/* Below art — name only */}
+                          <div style={{ padding: "8px 8px 10px" }}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                          </div>
+
                           {/* Mobile status change overlay */}
                           {menuOpen && isMobile && (
                             <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.93)", borderRadius: 12, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 8px", gap: 6 }}
                               onClick={e => e.stopPropagation()}>
                               <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textAlign: "center", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                              {/* Thumbs — Have Played only */}
+                              {col.id === "have_played" && (
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  <button onClick={() => { saveLiked(entry.game_id, entry.liked === true ? null : true); setShelfMenuOpen(null); }}
+                                    style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 7, padding: "7px 0", fontSize: 14, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                                    👍
+                                  </button>
+                                  <button onClick={() => { saveLiked(entry.game_id, entry.liked === false ? null : false); setShelfMenuOpen(null); }}
+                                    style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 7, padding: "7px 0", fontSize: 14, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                                    👎
+                                  </button>
+                                </div>
+                              )}
                               {SHELF_COLUMNS.filter(c => c.id !== col.id).map(target => (
                                 <button key={target.id} onClick={() => { moveGame(entry.game_id, col.id, target.id); setShelfMenuOpen(null); }}
                                   style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 7, padding: "7px 8px", color: target.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
