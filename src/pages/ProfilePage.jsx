@@ -43,6 +43,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
   const [dragOverCard, setDragOverCard] = useState(null); // { gameId, position: "above"|"below" }
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
+  const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
   const [gameSearch, setGameSearch] = useState("");
   const [gameSearchResults, setGameSearchResults] = useState([]);
@@ -936,12 +937,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         </div>
       )}
 
+
+
       {/* Games tab */}
       {activeTab === "games" && (
         <div>
           {/* Add game bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ color: C.textDim, fontSize: 13 }}>Drag games between columns to update status.</div>
+            <div style={{ color: C.textDim, fontSize: 13 }}>{isMobile ? "Tap a game to move or remove it." : "Drag games to reorder. Hover to remove."}</div>
             <button data-tour="add-game-btn" onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
           </div>
 
@@ -988,7 +991,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         {game._fromIGDB ? (
                           SHELF_COLUMNS.map(col => (
                             <button key={col.id} onClick={async () => {
-                              // Insert game from IGDB first, then add to shelf
                               const { data: inserted } = await supabase.from("games").insert({
                                 name: game.name, genre: game.genre, summary: game.summary,
                                 cover_url: game.cover_url, igdb_id: game.igdb_id,
@@ -1017,106 +1019,127 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             </div>
           )}
 
-                  {/* Kanban board */}
-          <div data-tour="shelf-columns" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14, alignItems: "start" }}>
-            {SHELF_COLUMNS.map(col => (
-              <div key={col.id}
-                onDragOver={e => handleDragOver(e, col.id)}
-                onDrop={e => handleDrop(e, col.id)}
-                style={{ background: dragOver === col.id ? col.color + "11" : C.surface, border: "1px solid " + dragOver === col.id ? col.color + "66" : col.color + "33", borderRadius: 14, padding: 14, minHeight: isMobile ? 80 : 200, transition: "all 0.15s" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
-                  <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf[col.id].length}</div>
-                </div>
-                {userShelf[col.id].length > 0 ? (col.id === "have_played"
-                  ? [...userShelf[col.id]].sort((a, b) => {
-                      const rank = v => v === true ? 0 : v === null || v === undefined ? 1 : 2;
-                      return rank(a.liked) - rank(b.liked);
-                    })
-                  : userShelf[col.id]
-                ).map(entry => {
-                  const game = entry.games;
-                  if (!game) return null;
-                  const review = userReviews.find(r => r.game_id === game.id);
-                  const isMoving = mobileMoveCard?.gameId === entry.game_id;
-                  return (
-                    <div key={entry.game_id}>
-                      {/* Drop indicator above */}
-                      {dragOverCard?.gameId === entry.game_id && dragOverCard?.position === "above" && dragging?.fromStatus === col.id && (
-                        <div style={{ height: 3, borderRadius: 2, background: col.color, marginBottom: 4, opacity: 0.8 }} />
-                      )}
-                      <div
-                        draggable={!isMobile}
-                        onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
-                        onDragEnd={!isMobile ? handleDragEnd : undefined}
-                        onDragOver={!isMobile ? e => handleCardDragOver(e, col.id, entry.game_id) : undefined}
-                        onClick={() => {
-                          if (isMobile) {
-                            if (isMoving) { setMobileMoveCard(null); }
-                            else { setMobileMoveCard({ gameId: entry.game_id, fromStatus: col.id }); }
-                          } else {
-                            setCurrentGame(game.id); setActivePage("game");
-                          }
-                        }}
-                        style={{ background: isMoving ? col.color + "22" : col.id === "have_played" && entry.liked === true ? "#10b98118" : col.id === "have_played" && entry.liked === false ? "#ef444418" : C.surfaceRaised, border: "1px solid " + (isMoving ? col.color + "66" : col.id === "have_played" && entry.liked === true ? "#10b98144" : col.id === "have_played" && entry.liked === false ? "#ef444444" : C.border), borderRadius: 10, padding: "10px 12px", marginBottom: isMoving ? 4 : 8, cursor: isMobile ? "pointer" : "grab", userSelect: "none", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "all 0.15s", position: "relative" }}
-                        onMouseEnter={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "1"; }}
-                        onMouseLeave={e => { if (!isMobile) e.currentTarget.querySelector(".remove-btn").style.opacity = "0"; }}>
-                        {/* X button — top right corner */}
-                        {!isMobile && (
-                          <button className="remove-btn" onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); }}
-                            style={{ opacity: 0, transition: "opacity 0.15s", position: "absolute", top: 4, right: 6, background: "transparent", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: "0 2px", lineHeight: 1, zIndex: 2 }}>
-                            ×
-                          </button>
-                        )}
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, color: col.id === "have_played" && entry.liked === true ? "#10b981" : col.id === "have_played" && entry.liked === false ? "#ef4444" : C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                            <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
+          {/* Cover art grid shelf */}
+          <div data-tour="shelf-columns">
+            {SHELF_COLUMNS.map(col => {
+              const entries = col.id === "have_played"
+                ? [...userShelf[col.id]].sort((a, b) => {
+                    const rank = v => v === true ? 0 : v === null || v === undefined ? 1 : 2;
+                    return rank(a.liked) - rank(b.liked);
+                  })
+                : userShelf[col.id];
+              if (entries.length === 0) return null;
+              return (
+                <div key={col.id} style={{ marginBottom: 28 }}>
+                  {/* Section header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
+                    <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
+                  </div>
+                  {/* Grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
+                    {entries.map(entry => {
+                      const game = entry.games;
+                      if (!game) return null;
+                      const review = userReviews.find(r => r.game_id === game.id);
+                      const menuOpen = shelfMenuOpen === entry.game_id;
+                      const shelfRank = entry.shelf_rank || null;
+                      return (
+                        <div key={entry.game_id}
+                          draggable={!isMobile}
+                          onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
+                          onDragEnd={!isMobile ? handleDragEnd : undefined}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s" }}
+                          onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; } }}
+                          onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; } }}
+                          onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
+
+                          {/* Cover art */}
+                          <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
+                            onClick={e => { if (!isMobile) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
+                            {game.cover_url
+                              ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+                            }
+                            {/* X remove button — top right over art */}
+                            <button
+                              onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); setShelfMenuOpen(null); }}
+                              style={{ position: "absolute", top: 4, right: 4, background: "rgba(8,14,26,0.75)", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1, opacity: isMobile ? 1 : 0, transition: "opacity 0.15s" }}
+                              className="remove-btn">
+                              ×
+                            </button>
+                            {/* Top 10 rank badge — bottom left over art, Have Played only */}
+                            {col.id === "have_played" && shelfRank && (
+                              <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "1px 6px", color: C.gold, fontSize: 10, fontWeight: 800 }}>
+                                #{shelfRank}
+                              </div>
+                            )}
                           </div>
-                          {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating + "/10"}</span>}
-                          {col.id === "have_played" && (
-                            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                              <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
-                                style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>
-                                👍
+
+                          {/* Below art — name + actions */}
+                          <div style={{ padding: "8px 8px 10px" }}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: col.id === "have_played" ? 6 : 0 }}>{game.name}</div>
+                            {/* Have Played actions */}
+                            {col.id === "have_played" && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
+                                  style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 6, padding: "4px 6px", fontSize: 12, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                                  👍
+                                </button>
+                                <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === false ? null : false); }}
+                                  style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 6, padding: "4px 6px", fontSize: 12, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                                  👎
+                                </button>
+                                {review && (
+                                  <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 5, padding: "2px 5px", color: C.gold, fontWeight: 800, fontSize: 10, flexShrink: 0 }}>
+                                    {review.rating}/10
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Mobile status change overlay */}
+                          {menuOpen && isMobile && (
+                            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.93)", borderRadius: 12, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 8px", gap: 6 }}
+                              onClick={e => e.stopPropagation()}>
+                              <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textAlign: "center", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                              {SHELF_COLUMNS.filter(c => c.id !== col.id).map(target => (
+                                <button key={target.id} onClick={() => { moveGame(entry.game_id, col.id, target.id); setShelfMenuOpen(null); }}
+                                  style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 7, padding: "7px 8px", color: target.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                                  → {target.label}
+                                </button>
+                              ))}
+                              <button onClick={() => { removeFromShelf(entry.game_id, col.id); setShelfMenuOpen(null); }}
+                                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 7, padding: "7px 8px", color: C.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                                Remove
                               </button>
-                              <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === false ? null : false); }}
-                                style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", lineHeight: 1 }}>
-                                👎
+                              <button onClick={() => setShelfMenuOpen(null)}
+                                style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 10, cursor: "pointer", marginTop: 2 }}>
+                                Cancel
                               </button>
                             </div>
                           )}
-                          {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{isMoving ? "▲" : "⇄"}</span>}
+
+                          {/* Desktop drag drop target */}
+                          {!isMobile && dragging && dragging.gameId !== entry.game_id && (
+                            <div
+                              onDragOver={e => handleCardDragOver(e, col.id, entry.game_id)}
+                              style={{ position: "absolute", inset: 0, zIndex: 5 }} />
+                          )}
                         </div>
-                      </div>
-                      {/* Mobile move picker */}
-                      {isMoving && (
-                        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                          {SHELF_COLUMNS.filter(c => c.id !== col.id).map(target => (
-                            <button key={target.id} onClick={() => { moveGame(entry.game_id, col.id, target.id); setMobileMoveCard(null); }}
-                              style={{ flex: 1, background: target.color + "22", border: "1px solid " + target.color + "66", borderRadius: 8, padding: "6px 8px", color: target.color, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                              → {target.label}
-                            </button>
-                          ))}
-                          <button onClick={() => { removeFromShelf(entry.game_id, col.id); setMobileMoveCard(null); }}
-                            style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 8px", color: C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                            Remove
-                          </button>
-                        </div>
-                      )}
-                      {/* Drop indicator below */}
-                      {dragOverCard?.gameId === entry.game_id && dragOverCard?.position === "below" && dragging?.fromStatus === col.id && (
-                        <div style={{ height: 3, borderRadius: 2, background: col.color, marginTop: -4, marginBottom: 4, opacity: 0.8 }} />
-                      )}
-                    </div>
-                  );
-                }) : (
-                  <div style={{ textAlign: "center", padding: isMobile ? "12px 10px" : "30px 10px", color: C.textDim, fontSize: 12, borderRadius: 8, border: "1px dashed " + col.color + "33" }}>
-                    {col.emptyText}
+                      );
+                    })}
                   </div>
-                )}
+                </div>
+              );
+            })}
+            {shelfCount === 0 && (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
+                <div style={{ fontSize: 14 }}>Your shelf is empty. Add some games to get started.</div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
