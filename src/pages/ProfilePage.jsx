@@ -1051,7 +1051,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           draggable={!isMobile}
                           onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
                           onDragEnd={!isMobile ? handleDragEnd : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s" }}
+                          onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
+                          onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none" }}
                           onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; } }}
                           onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
@@ -1112,6 +1114,34 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                   → {target.label}
                                 </button>
                               ))}
+                              {col.id === "have_played" && (
+                                <div>
+                                  <div style={{ color: C.textDim, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 4, marginTop: 2 }}>Top 10 Rank</div>
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4 }}>
+                                    {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                                      const isCurrentRank = shelfRank === n;
+                                      return (
+                                        <button key={n} onClick={() => {
+                                          const col2 = [...userShelf["have_played"]];
+                                          const fromIdx = col2.findIndex(e => e.game_id === entry.game_id);
+                                          if (fromIdx === -1) return;
+                                          const toIdx = n - 1;
+                                          if (fromIdx === toIdx) return;
+                                          const reordered = [...col2];
+                                          const [moved] = reordered.splice(fromIdx, 1);
+                                          reordered.splice(toIdx, 0, moved);
+                                          setUserShelf(prev => ({ ...prev, have_played: reordered }));
+                                          saveSortOrder("have_played", reordered);
+                                          setShelfMenuOpen(null);
+                                        }}
+                                          style={{ background: isCurrentRank ? C.goldDim : "transparent", border: "1px solid " + (isCurrentRank ? C.gold : C.border), borderRadius: 5, padding: "4px 2px", color: isCurrentRank ? C.gold : C.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                                          {n}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                               <button onClick={() => setShelfMenuOpen(null)}
                                 style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 10, cursor: "pointer", marginTop: 2 }}>
                                 Cancel
@@ -1119,12 +1149,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             </div>
                           )}
 
-                          {/* Desktop drag drop target */}
-                          {!isMobile && dragging && dragging.gameId !== entry.game_id && (
-                            <div
-                              onDragOver={e => handleCardDragOver(e, col.id, entry.game_id)}
-                              style={{ position: "absolute", inset: 0, zIndex: 5 }} />
-                          )}
+
                         </div>
                       );
                     })}
