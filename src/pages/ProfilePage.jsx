@@ -42,6 +42,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
   const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
   const [dragOverCard, setDragOverCard] = useState(null); // { gameId, position: "above"|"below" }
+  const dragOverCardRef = React.useRef(null);
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
@@ -533,13 +534,16 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     setDragOver(colId);
     const rect = e.currentTarget.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
-    setDragOverCard({ gameId: targetGameId, position: e.clientY < midY ? "above" : "below" });
+    const val = { gameId: targetGameId, position: e.clientY < midY ? "above" : "below" };
+    setDragOverCard(val);
+    dragOverCardRef.current = val;
   };
 
   const handleDragEnd = () => {
     setDragging(null);
     setDragOver(null);
     setDragOverCard(null);
+    dragOverCardRef.current = null;
   };
 
   const saveSortOrder = async (colId, orderedEntries) => {
@@ -581,6 +585,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     e.preventDefault();
     if (!dragging) return;
     const { gameId, fromStatus } = dragging;
+    const currentDragOverCard = dragOverCardRef.current;
 
     if (fromStatus === toStatus) {
       // Reorder within column
@@ -588,9 +593,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       const fromIdx = col.findIndex(e => e.game_id === gameId);
       if (fromIdx === -1) { handleDragEnd(); return; }
       let toIdx;
-      if (dragOverCard && userShelf[toStatus].find(e => e.game_id === dragOverCard.gameId)) {
-        const targetIdx = col.findIndex(e => e.game_id === dragOverCard.gameId);
-        toIdx = dragOverCard.position === "above" ? targetIdx : targetIdx + 1;
+      if (currentDragOverCard && userShelf[toStatus].find(e => e.game_id === currentDragOverCard.gameId)) {
+        const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
+        toIdx = currentDragOverCard.position === "above" ? targetIdx : targetIdx + 1;
         if (toIdx > fromIdx) toIdx -= 1;
       } else {
         toIdx = col.length - 1;
@@ -1045,7 +1050,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       if (!game) return null;
                       const review = userReviews.find(r => r.game_id === game.id);
                       const menuOpen = shelfMenuOpen === entry.game_id;
-                      const shelfRank = col.id === "have_played" && entryIndex < 10 ? entryIndex + 1 : null;
+                      // Use unsorted array index for rank so drag reorder matches rank number
+                      const actualIdx = col.id === "have_played"
+                        ? userShelf["have_played"].findIndex(e => e.game_id === entry.game_id)
+                        : entryIndex;
+                      const shelfRank = col.id === "have_played" && actualIdx < 10 ? actualIdx + 1 : null;
                       return (
                         <div key={entry.game_id}
                           draggable={!isMobile}
@@ -1126,7 +1135,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                           const fromIdx = col2.findIndex(e => e.game_id === entry.game_id);
                                           if (fromIdx === -1) return;
                                           const toIdx = n - 1;
-                                          if (fromIdx === toIdx) return;
+                                          if (fromIdx === toIdx) { setShelfMenuOpen(null); return; }
                                           const reordered = [...col2];
                                           const [moved] = reordered.splice(fromIdx, 1);
                                           reordered.splice(toIdx, 0, moved);
