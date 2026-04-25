@@ -16,6 +16,7 @@ module.exports = async function handler(req, res) {
 
   try {
     // Step 1: Exchange code for Microsoft access token
+    // Use common endpoint with consumer account
     const tokenRes = await fetch("https://login.microsoftonline.com/consumers/oauth2/v2.0/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -108,17 +109,21 @@ module.exports = async function handler(req, res) {
 
     // Step 5: Fetch game library (titles played)
     const gamesRes = await fetch(
-      `https://titlehub.xboxlive.com/users/xuid(${xuid})/titles/titlehistory/decoration/detail?maxItems=500`,
+      `https://titlehub.xboxlive.com/users/xuid(${xuid})/titles/titlehistory/decoration/Achievement,Image,GamePass?maxItems=500`,
       {
         headers: {
           Authorization: authHeader,
           "x-xbl-contract-version": "2",
           Accept: "application/json",
+          "Accept-Language": "en-US",
         },
       }
     );
 
     const gamesData = await gamesRes.json();
+    if (!gamesRes.ok) {
+      console.error("[xbox-callback] titlehub failed:", gamesRes.status, JSON.stringify(gamesData));
+    }
     const titles = gamesData.titles || [];
     console.log("[xbox-callback] step 5 complete - found", titles.length, "titles");
 
