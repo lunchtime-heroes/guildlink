@@ -1074,7 +1074,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                 #{shelfRank}
                               </div>
                             )}
-                            {/* Desktop thumbs hover bar — Have Played only */}
+                            {/* Review badge — bottom right over art, always visible */}
+                            {col.id === "have_played" && review && (
+                              <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
+                                {review.rating}/10
+                              </div>
+                            )}
+                            {/* Desktop thumbs hover bar — Have Played, own profile only */}
                             {col.id === "have_played" && !isMobile && (
                               <div className="thumbs-bar" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(8,14,26,0.85)", display: "flex", gap: 4, padding: "4px 6px", opacity: 0, transition: "opacity 0.15s" }}>
                                 <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
@@ -1085,11 +1091,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                   style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>
                                   👎
                                 </button>
-                                {review && (
-                                  <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 5, padding: "2px 5px", color: C.gold, fontWeight: 800, fontSize: 10, alignSelf: "center", flexShrink: 0 }}>
-                                    {review.rating}/10
-                                  </div>
-                                )}
                               </div>
                             )}
                           </div>
@@ -1104,7 +1105,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.93)", borderRadius: 12, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 8px", gap: 6 }}
                               onClick={e => e.stopPropagation()}>
                               <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textAlign: "center", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                              {/* Thumbs — Have Played only */}
+                              {/* Thumbs — Have Played, own profile only */}
                               {col.id === "have_played" && (
                                 <div style={{ display: "flex", gap: 4 }}>
                                   <button onClick={() => { saveLiked(entry.game_id, entry.liked === true ? null : true); setShelfMenuOpen(null); }}
