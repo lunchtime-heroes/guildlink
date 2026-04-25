@@ -1,0 +1,20 @@
+// api/xbox-auth.js
+// Redirects user to Microsoft OAuth to authorize GuildLink to read their Xbox library
+
+export default function handler(req, res) {
+  const clientId = process.env.XBOX_CLIENT_ID;
+  const redirectUri = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}/api/xbox-callback`
+    : "https://guildlink.gg/api/xbox-callback";
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    response_type: "code",
+    redirect_uri: redirectUri,
+    scope: "Xboxlive.signin Xboxlive.offline_access",
+    response_mode: "query",
+  });
+
+  const authUrl = `https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?${params}`;
+  res.redirect(authUrl);
+}
