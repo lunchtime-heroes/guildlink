@@ -616,7 +616,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       if (currentDragOverCard) {
         const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
         if (targetIdx !== -1) {
-          toIdx = targetIdx;
+          // Insert before target, adjusting for removal of dragged item
+          toIdx = targetIdx > fromIdx ? targetIdx - 1 : targetIdx;
         }
       }
       if (fromIdx === toIdx) { handleDragEnd(); return; }
@@ -1109,8 +1110,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               const isDragTarget = !isMobile && dragging && dragging.fromStatus !== col.id && dragOver === col.id;
               return (
                 <div key={col.id} style={{ marginBottom: 28 }}
-                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}
-                  onDrop={!isMobile && entries.length === 0 ? e => handleDrop(e, col.id) : undefined}>
+                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}>
                   {/* Section header */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
@@ -1132,15 +1132,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           onDragEnd={!isMobile ? handleDragEnd : undefined}
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
-                          onMouseDown={!isMobile ? e => { e.currentTarget.style.userSelect = "none"; } : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none", userSelect: "none", WebkitUserSelect: "none" }}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none" }}
                           onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
                           onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
 
                           {/* Cover art */}
                           <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
-                            onClick={e => { if (!isMobile && !dragging) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
+                            onClick={e => { if (!isMobile) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
                             {game.cover_url
                               ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
                               : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
@@ -1184,24 +1183,24 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                           </div>
 
-                          {/* Mobile overlay handled by bottom sheet modal below */}
+                          {/* Mobile tap handled by bottom sheet below */}
 
 
                         </div>
                       );
                     })}
-                    {/* Drop zone tile — always visible when dragging to this column */}
+                    {/* Drop zone — shows when dragging to a different column */}
                     {!isMobile && dragging && dragging.fromStatus !== col.id && (
                       <div
                         onDragOver={e => { e.preventDefault(); setDragOver(col.id); dragOverCardRef.current = null; }}
                         onDrop={e => handleDrop(e, col.id)}
-                        style={{ aspectRatio: "3/4", borderRadius: 12, border: "2px dashed " + (isDragTarget ? col.color : col.color + "44"), background: isDragTarget ? col.color + "11" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
-                        {isDragTarget && <div style={{ color: col.color, fontSize: 11, fontWeight: 700, textAlign: "center" }}>Drop here</div>}
+                        style={{ aspectRatio: "3/4", borderRadius: 12, border: "2px dashed " + (isDragTarget ? col.color : col.color + "44"), background: isDragTarget ? col.color + "11" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", cursor: "copy" }}>
+                        {isDragTarget && <div style={{ color: col.color, fontSize: 11, fontWeight: 700, textAlign: "center", padding: 8 }}>Drop here</div>}
                       </div>
                     )}
                     {/* Empty state */}
                     {entries.length === 0 && !dragging && (
-                      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33" }}>
+                      <div style={{ gridColumn: "1 / -1", padding: "16px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33", textAlign: "center" }}>
                         {col.emptyText}
                       </div>
                     )}
@@ -1224,7 +1223,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             if (!menuEntry) return null;
             const menuGame = menuEntry.games;
             const menuCol = SHELF_COLUMNS.find(c => c.id === menuEntry.status);
-            const menuReview = userReviews.find(r => r.game_id === shelfMenuOpen);
             const menuIdx = userShelf["have_played"].findIndex(e => e.game_id === shelfMenuOpen);
             const menuRank = menuEntry.status === "have_played" && menuIdx < 10 ? menuIdx + 1 : null;
             return (
@@ -1233,17 +1231,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)" }} />
                 <div style={{ position: "relative", width: "100%", background: C.surface, borderRadius: "20px 20px 0 0", padding: "20px 20px 40px", display: "flex", flexDirection: "column", gap: 10 }}
                   onClick={e => e.stopPropagation()}>
-                  {/* Game cover peeking above sheet */}
                   {menuGame?.cover_url && (
                     <div style={{ position: "absolute", top: -140, left: "50%", transform: "translateX(-50%)", width: 100, height: 133, borderRadius: 10, overflow: "hidden", border: "2px solid " + (menuCol?.color || C.border), boxShadow: "0 -4px 20px rgba(0,0,0,0.6)" }}>
                       <img src={menuGame.cover_url} alt={menuGame.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   )}
-                  {/* Handle bar */}
                   <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, alignSelf: "center", marginBottom: menuGame?.cover_url ? 24 : 4 }} />
-                  {/* Game name */}
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16, textAlign: "center", marginBottom: 4 }}>{menuGame?.name}</div>
-                  {/* Thumbs — Have Played only */}
                   {menuEntry.status === "have_played" && (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => { saveLiked(shelfMenuOpen, menuEntry.liked === true ? null : true); setShelfMenuOpen(null); }}
@@ -1256,14 +1250,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       </button>
                     </div>
                   )}
-                  {/* Move status */}
                   {SHELF_COLUMNS.filter(c => c.id !== menuEntry.status).map(target => (
                     <button key={target.id} onClick={() => { moveGame(shelfMenuOpen, menuEntry.status, target.id); setShelfMenuOpen(null); }}
                       style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 10, padding: "14px 16px", color: target.color, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
                       → {target.label}
                     </button>
                   ))}
-                  {/* Top 10 rank — Have Played only */}
                   {menuEntry.status === "have_played" && (
                     <div>
                       <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 8 }}>Top 10 Rank</div>
@@ -1292,7 +1284,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       </div>
                     </div>
                   )}
-                  {/* Cancel */}
                   <button onClick={() => setShelfMenuOpen(null)}
                     style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 0", color: C.textDim, fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
                     Cancel
