@@ -1132,7 +1132,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           onDragEnd={!isMobile ? handleDragEnd : undefined}
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none" }}
+                          onMouseDown={!isMobile ? e => { e.currentTarget.style.userSelect = "none"; } : undefined}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none", userSelect: "none", WebkitUserSelect: "none" }}
                           onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
                           onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
@@ -1141,7 +1142,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
                             onClick={e => { if (!isMobile) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
                             {game.cover_url
-                              ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                              ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
                               : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
                             }
                             {/* X remove button — top right over art */}
