@@ -44,9 +44,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [postGameNames, setPostGameNames] = useState({});
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
-  const [dragOver, setDragOver] = useState(null);  // column id highlight
-  const dragOverCardRef = React.useRef(null); // target card — ref only, no state re-render
-  const dragOverCard = null; // visual highlight disabled to prevent re-render issues
+  const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
+  const [dragOverCard, setDragOverCard] = useState(null); // { gameId, position: "above"|"below" }
+  const dragOverCardRef = React.useRef(null);
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
@@ -90,17 +90,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       .eq("user_id", authUser.id);
     if (rewards) setUserRewards(rewards);
   };
-
-  // Global drag cleanup — ensures drag state clears even if dropped outside shelf
-  useEffect(() => {
-    const cleanup = () => {
-      setDragging(null);
-      setDragOver(null);
-      dragOverCardRef.current = null;
-    };
-    document.addEventListener("dragend", cleanup);
-    return () => document.removeEventListener("dragend", cleanup);
-  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -566,12 +555,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     e.preventDefault();
     e.stopPropagation();
     setDragOver(colId);
-    dragOverCardRef.current = { gameId: targetGameId };
+    const val = { gameId: targetGameId, position: "before" };
+    setDragOverCard(val);
+    dragOverCardRef.current = val;
   };
 
   const handleDragEnd = () => {
     setDragging(null);
     setDragOver(null);
+    setDragOverCard(null);
     dragOverCardRef.current = null;
   };
 
@@ -616,21 +608,18 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     const { gameId, fromStatus } = dragging;
     const currentDragOverCard = dragOverCardRef.current;
 
-    // Clear drag state immediately before any shelf updates
-    handleDragEnd();
-
     if (fromStatus === toStatus) {
       const col = [...userShelf[toStatus]];
       const fromIdx = col.findIndex(e => e.game_id === gameId);
-      if (fromIdx === -1) return;
+      if (fromIdx === -1) { handleDragEnd(); return; }
       let toIdx = col.length - 1;
       if (currentDragOverCard) {
         const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
         if (targetIdx !== -1) {
-          toIdx = targetIdx > fromIdx ? targetIdx - 1 : targetIdx;
+          toIdx = targetIdx;
         }
       }
-      if (fromIdx === toIdx) return;
+      if (fromIdx === toIdx) { handleDragEnd(); return; }
       const reordered = [...col];
       const [moved] = reordered.splice(fromIdx, 1);
       reordered.splice(toIdx, 0, moved);
@@ -639,6 +628,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     } else {
       moveGame(gameId, fromStatus, toStatus);
     }
+    handleDragEnd();
   };
 
   const SHELF_COLUMNS = [
@@ -1119,7 +1109,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               const isDragTarget = !isMobile && dragging && dragging.fromStatus !== col.id && dragOver === col.id;
               return (
                 <div key={col.id} style={{ marginBottom: 28 }}
-                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}>
+                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}
+                  onDrop={!isMobile && entries.length === 0 ? e => handleDrop(e, col.id) : undefined}>
                   {/* Section header */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
@@ -1137,11 +1128,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       return (
                         <div key={entry.game_id}
                           draggable={!isMobile}
-                          onDragStart={!isMobile ? e => { e.dataTransfer.setData("text/plain", entry.game_id); e.dataTransfer.effectAllowed = "move"; handleDragStart(entry.game_id, col.id); } : undefined}
+                          onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
                           onDragEnd={!isMobile ? handleDragEnd : undefined}
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s",  }}
+                          onMouseDown={!isMobile ? e => { e.currentTarget.style.userSelect = "none"; } : undefined}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none", userSelect: "none", WebkitUserSelect: "none" }}
                           onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
                           onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
@@ -1192,24 +1184,24 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                           </div>
 
-                          {/* Mobile tap handled by bottom sheet below */}
+                          {/* Mobile overlay handled by bottom sheet modal below */}
 
 
                         </div>
                       );
                     })}
-                    {/* Drop zone — shows when dragging to a different column */}
+                    {/* Drop zone tile — always visible when dragging to this column */}
                     {!isMobile && dragging && dragging.fromStatus !== col.id && (
                       <div
                         onDragOver={e => { e.preventDefault(); setDragOver(col.id); dragOverCardRef.current = null; }}
                         onDrop={e => handleDrop(e, col.id)}
-                        style={{ aspectRatio: "3/4", borderRadius: 12, border: "2px dashed " + (isDragTarget ? col.color : col.color + "44"), background: isDragTarget ? col.color + "11" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", cursor: "copy" }}>
-                        {isDragTarget && <div style={{ color: col.color, fontSize: 11, fontWeight: 700, textAlign: "center", padding: 8 }}>Drop here</div>}
+                        style={{ aspectRatio: "3/4", borderRadius: 12, border: "2px dashed " + (isDragTarget ? col.color : col.color + "44"), background: isDragTarget ? col.color + "11" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                        {isDragTarget && <div style={{ color: col.color, fontSize: 11, fontWeight: 700, textAlign: "center" }}>Drop here</div>}
                       </div>
                     )}
                     {/* Empty state */}
                     {entries.length === 0 && !dragging && (
-                      <div style={{ gridColumn: "1 / -1", padding: "16px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33", textAlign: "center" }}>
+                      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33" }}>
                         {col.emptyText}
                       </div>
                     )}
@@ -1232,6 +1224,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             if (!menuEntry) return null;
             const menuGame = menuEntry.games;
             const menuCol = SHELF_COLUMNS.find(c => c.id === menuEntry.status);
+            const menuReview = userReviews.find(r => r.game_id === shelfMenuOpen);
             const menuIdx = userShelf["have_played"].findIndex(e => e.game_id === shelfMenuOpen);
             const menuRank = menuEntry.status === "have_played" && menuIdx < 10 ? menuIdx + 1 : null;
             return (
@@ -1240,13 +1233,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)" }} />
                 <div style={{ position: "relative", width: "100%", background: C.surface, borderRadius: "20px 20px 0 0", padding: "20px 20px 40px", display: "flex", flexDirection: "column", gap: 10 }}
                   onClick={e => e.stopPropagation()}>
+                  {/* Game cover peeking above sheet */}
                   {menuGame?.cover_url && (
                     <div style={{ position: "absolute", top: -140, left: "50%", transform: "translateX(-50%)", width: 100, height: 133, borderRadius: 10, overflow: "hidden", border: "2px solid " + (menuCol?.color || C.border), boxShadow: "0 -4px 20px rgba(0,0,0,0.6)" }}>
                       <img src={menuGame.cover_url} alt={menuGame.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   )}
+                  {/* Handle bar */}
                   <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, alignSelf: "center", marginBottom: menuGame?.cover_url ? 24 : 4 }} />
+                  {/* Game name */}
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16, textAlign: "center", marginBottom: 4 }}>{menuGame?.name}</div>
+                  {/* Thumbs — Have Played only */}
                   {menuEntry.status === "have_played" && (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => { saveLiked(shelfMenuOpen, menuEntry.liked === true ? null : true); setShelfMenuOpen(null); }}
@@ -1259,12 +1256,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       </button>
                     </div>
                   )}
+                  {/* Move status */}
                   {SHELF_COLUMNS.filter(c => c.id !== menuEntry.status).map(target => (
                     <button key={target.id} onClick={() => { moveGame(shelfMenuOpen, menuEntry.status, target.id); setShelfMenuOpen(null); }}
                       style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 10, padding: "14px 16px", color: target.color, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
                       → {target.label}
                     </button>
                   ))}
+                  {/* Top 10 rank — Have Played only */}
                   {menuEntry.status === "have_played" && (
                     <div>
                       <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 8 }}>Top 10 Rank</div>
@@ -1293,6 +1292,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       </div>
                     </div>
                   )}
+                  {/* Cancel */}
                   <button onClick={() => setShelfMenuOpen(null)}
                     style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 0", color: C.textDim, fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
                     Cancel
