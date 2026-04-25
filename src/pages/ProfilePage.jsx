@@ -1532,7 +1532,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {(showXboxImport || xboxImportData || xboxImportError) && (
         <XboxImportModal
           currentUser={user}
-          initialData={xboxImportData ? JSON.parse(decodeURIComponent(xboxImportData)) : null}
+          initialData={xboxImportData}
           initialError={xboxImportError}
           onClose={() => { setShowXboxImport(false); onXboxImportConsumed?.(); }}
           onImportComplete={() => { setShowXboxImport(false); onXboxImportConsumed?.(); loadShelf(); onProfileSaved?.(); }}

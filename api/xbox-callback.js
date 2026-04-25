@@ -124,14 +124,23 @@ export default async function handler(req, res) {
           : "have_played",
       }));
 
-    // Encode and redirect back to app with data
-    const encoded = encodeURIComponent(JSON.stringify({
-      gamertag,
-      xuid,
-      games,
-    }));
+    // Store in Supabase temp table instead of URL (game lists are too large for URL params)
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
-    return res.redirect(`/?xbox_import=${encoded}`);
+    const sessionId = `xbox_${xuid}_${Date.now()}`;
+    await supabase.from("xbox_import_sessions").upsert({
+      session_id: sessionId,
+      xuid,
+      gamertag,
+      games,
+      created_at: new Date().toISOString(),
+    }, { onConflict: "session_id" });
+
+    return res.redirect(`/?xbox_session=${sessionId}`);
 
   } catch (err) {
     console.error("[xbox-callback] unexpected error:", err);

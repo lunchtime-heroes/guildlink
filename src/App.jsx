@@ -1225,14 +1225,28 @@ export default function GuildLink() {
     if (page === "reset") { setShowAuth("reset"); }
     // Handle Xbox OAuth return params
     const urlParams = new URLSearchParams(window.location.search);
-    const xboxImportParam = urlParams.get("xbox_import");
+    const xboxSessionParam = urlParams.get("xbox_session");
     const xboxErrorParam = urlParams.get("xbox_error");
-    if (xboxImportParam || xboxErrorParam) {
+    if (xboxSessionParam || xboxErrorParam) {
       setActivePage("profile");
       setProfileDefaultTab("games");
-      if (xboxImportParam) setXboxImportData(xboxImportParam);
+      if (xboxSessionParam) {
+        // Fetch from Supabase instead of URL param (data too large for URL)
+        supabase.from("xbox_import_sessions")
+          .select("*")
+          .eq("session_id", xboxSessionParam)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) {
+              setXboxImportData({ gamertag: data.gamertag, xuid: data.xuid, games: data.games });
+              // Clean up session
+              supabase.from("xbox_import_sessions").delete().eq("session_id", xboxSessionParam);
+            } else {
+              setXboxImportError("session_not_found");
+            }
+          });
+      }
       if (xboxErrorParam) setXboxImportError(xboxErrorParam);
-      // Clean URL
       window.history.replaceState({}, "", window.location.pathname);
     }
     window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname + window.location.hash);
