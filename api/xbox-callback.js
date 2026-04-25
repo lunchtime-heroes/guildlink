@@ -130,16 +130,20 @@ module.exports = async function handler(req, res) {
     // Step 6: Filter and format games
     const games = titles
       .filter(t => t.type === "Game" && t.name)
-      .map(t => ({
-        id: t.titleId,
-        name: t.name,
-        cover_url: t.displayImage || t.images?.find(i => i.type === "BoxArt")?.url || null,
-        last_played: t.titleHistory?.lastTimePlayed || null,
-        minutes_played: t.titleHistory?.minutesPlayed || 0,
-        suggested_status: t.titleHistory?.minutesPlayed > 0
-          ? (isRecentlyPlayed(t.titleHistory?.lastTimePlayed) ? "playing" : "have_played")
-          : "have_played",
-      }));
+      .map(t => {
+        const rawCover = t.displayImage || t.images?.find(i => i.type === "BoxArt")?.url || null;
+        const cover_url = rawCover ? rawCover.replace(/^http:\/\//i, "https://") : null;
+        return {
+          id: t.titleId,
+          name: t.name,
+          cover_url,
+          last_played: t.titleHistory?.lastTimePlayed || null,
+          minutes_played: t.titleHistory?.minutesPlayed || 0,
+          suggested_status: t.titleHistory?.minutesPlayed > 0
+            ? (isRecentlyPlayed(t.titleHistory?.lastTimePlayed) ? "playing" : "have_played")
+            : "have_played",
+        };
+      });
 
     // Store in Supabase temp table instead of URL (game lists are too large for URL params)
     const supabaseAdmin = createClient(
