@@ -1179,12 +1179,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   onClick={e => e.stopPropagation()}>
                   {/* Game cover peeking above sheet */}
                   {menuGame?.cover_url && (
-                    <div style={{ position: "absolute", top: -90, left: "50%", transform: "translateX(-50%)", width: 70, height: 93, borderRadius: 10, overflow: "hidden", border: "2px solid " + (menuCol?.color || C.border), boxShadow: "0 -4px 20px rgba(0,0,0,0.6)" }}>
+                    <div style={{ position: "absolute", top: -140, left: "50%", transform: "translateX(-50%)", width: 100, height: 133, borderRadius: 10, overflow: "hidden", border: "2px solid " + (menuCol?.color || C.border), boxShadow: "0 -4px 20px rgba(0,0,0,0.6)" }}>
                       <img src={menuGame.cover_url} alt={menuGame.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   )}
                   {/* Handle bar */}
-                  <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, alignSelf: "center", marginBottom: menuGame?.cover_url ? 16 : 4 }} />
+                  <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, alignSelf: "center", marginBottom: menuGame?.cover_url ? 24 : 4 }} />
                   {/* Game name */}
                   <div style={{ fontWeight: 800, color: C.text, fontSize: 16, textAlign: "center", marginBottom: 4 }}>{menuGame?.name}</div>
                   {/* Thumbs — Have Played only */}
