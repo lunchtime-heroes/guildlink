@@ -593,8 +593,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       if (currentDragOverCard) {
         const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
         if (targetIdx !== -1) {
-          // Insert before target, adjusting for removal of dragged item
-          toIdx = targetIdx > fromIdx ? targetIdx - 1 : targetIdx;
+          // When moving right (forward), splice removes item first so no adjustment needed
+          // When moving left (backward), target index is stable so insert directly
+          toIdx = targetIdx;
         }
       }
       if (fromIdx === toIdx) { handleDragEnd(); return; }
