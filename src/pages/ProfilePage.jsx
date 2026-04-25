@@ -91,8 +91,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (rewards) setUserRewards(rewards);
   };
 
+  // Global drag cleanup — ensures drag state clears even if dropped outside shelf
   useEffect(() => {
-    const load = async () => {
+    const cleanup = () => {
+      setDragging(null);
+      setDragOver(null);
+      setDragOverCard(null);
+      dragOverCardRef.current = null;
+    };
+    document.addEventListener("dragend", cleanup);
+    return () => document.removeEventListener("dragend", cleanup);
+  }, []);
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
@@ -608,19 +617,21 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     const { gameId, fromStatus } = dragging;
     const currentDragOverCard = dragOverCardRef.current;
 
+    // Clear drag state immediately before any shelf updates
+    handleDragEnd();
+
     if (fromStatus === toStatus) {
       const col = [...userShelf[toStatus]];
       const fromIdx = col.findIndex(e => e.game_id === gameId);
-      if (fromIdx === -1) { handleDragEnd(); return; }
+      if (fromIdx === -1) return;
       let toIdx = col.length - 1;
       if (currentDragOverCard) {
         const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
         if (targetIdx !== -1) {
-          // Insert before target, adjusting for removal of dragged item
           toIdx = targetIdx > fromIdx ? targetIdx - 1 : targetIdx;
         }
       }
-      if (fromIdx === toIdx) { handleDragEnd(); return; }
+      if (fromIdx === toIdx) return;
       const reordered = [...col];
       const [moved] = reordered.splice(fromIdx, 1);
       reordered.splice(toIdx, 0, moved);
@@ -629,7 +640,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     } else {
       moveGame(gameId, fromStatus, toStatus);
     }
-    handleDragEnd();
   };
 
   const SHELF_COLUMNS = [
