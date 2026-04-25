@@ -1228,25 +1228,9 @@ export default function GuildLink() {
     const xboxSessionParam = urlParams.get("xbox_session");
     const xboxErrorParam = urlParams.get("xbox_error");
     if (xboxSessionParam || xboxErrorParam) {
-      setActivePage("profile");
-      setProfileDefaultTab("games");
-      if (xboxSessionParam) {
-        // Fetch from Supabase instead of URL param (data too large for URL)
-        supabase.from("xbox_import_sessions")
-          .select("*")
-          .eq("session_id", xboxSessionParam)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data) {
-              setXboxImportData({ gamertag: data.gamertag, xuid: data.xuid, games: data.games });
-              // Clean up session
-              supabase.from("xbox_import_sessions").delete().eq("session_id", xboxSessionParam);
-            } else {
-              setXboxImportError("session_not_found");
-            }
-          });
-      }
-      if (xboxErrorParam) setXboxImportError(xboxErrorParam);
+      // Store params — navigation happens after auth loads in the auth useEffect
+      if (xboxSessionParam) window.__xboxSession = xboxSessionParam;
+      if (xboxErrorParam) window.__xboxError = xboxErrorParam;
       window.history.replaceState({}, "", window.location.pathname);
     }
     window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname + window.location.hash);
@@ -1271,7 +1255,33 @@ export default function GuildLink() {
   }
   setSession(session);
   setAuthLoading(false);
-  if (session) fetchProfile(session.user.id);
+  if (session) {
+    fetchProfile(session.user.id);
+    // Handle Xbox OAuth return — navigate after auth is ready
+    if (window.__xboxSession) {
+      const sessionId = window.__xboxSession;
+      delete window.__xboxSession;
+      setActivePage("profile");
+      setProfileDefaultTab("games");
+      supabase.from("xbox_import_sessions")
+        .select("*")
+        .eq("session_id", sessionId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setXboxImportData({ gamertag: data.gamertag, xuid: data.xuid, games: data.games });
+            supabase.from("xbox_import_sessions").delete().eq("session_id", sessionId);
+          } else {
+            setXboxImportError("session_not_found");
+          }
+        });
+    }
+    if (window.__xboxError) {
+      setActivePage("profile");
+      setXboxImportError(window.__xboxError);
+      delete window.__xboxError;
+    }
+  }
 });    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") { console.log("RECOVERY EVENT FIRED"); setShowAuth("reset"); return; }
       setSession(session);
