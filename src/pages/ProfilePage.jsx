@@ -102,6 +102,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     document.addEventListener("dragend", cleanup);
     return () => document.removeEventListener("dragend", cleanup);
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
