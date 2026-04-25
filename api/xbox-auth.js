@@ -9,7 +9,7 @@ module.exports = function handler(req, res) {
     client_id: clientId,
     response_type: "code",
     redirect_uri: redirectUri,
-    scope: "Xboxlive.signin Xboxlive.offline_access",
+    scope: "openid profile offline_access",
     response_mode: "query",
     prompt: "select_account",
   });
