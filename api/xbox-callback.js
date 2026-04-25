@@ -46,12 +46,18 @@ module.exports = async function handler(req, res) {
         Properties: {
           AuthMethod: "RPS",
           SiteName: "user.auth.xboxlive.com",
-          RpsTicket: `d=${msAccessToken}`,
+          RpsTicket: `t=${msAccessToken}`,
         },
         RelyingParty: "http://auth.xboxlive.com",
         TokenType: "JWT",
       }),
     });
+
+    if (!xblRes.ok) {
+      const xblText = await xblRes.text();
+      console.error("[xbox-callback] XBL auth failed with status:", xblRes.status, xblText);
+      return res.redirect("/?xbox_error=xbl_failed");
+    }
 
     const xblData = await xblRes.json();
     if (!xblData.Token) {

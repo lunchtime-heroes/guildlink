@@ -9,7 +9,7 @@ module.exports = function handler(req, res) {
     client_id: clientId,
     response_type: "code",
     redirect_uri: redirectUri,
-    scope: "openid profile offline_access",
+    scope: "openid profile offline_access https://graph.microsoft.com/User.Read",
     response_mode: "query",
     prompt: "select_account",
   });
