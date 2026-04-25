@@ -1147,6 +1147,8 @@ export default function GuildLink() {
   const [currentGame, setCurrentGame] = useState(null);
   const [currentNPC, setCurrentNPC] = useState("merv");
   const [gameDefaultTab, setGameDefaultTab] = useState(null);
+  const [xboxImportData, setXboxImportData] = useState(null);
+  const [xboxImportError, setXboxImportError] = useState(null);
 
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [currentGuild, setCurrentGuild] = useState(null);
@@ -1221,6 +1223,18 @@ export default function GuildLink() {
     // Seed initial history state so back works from first page
     const { page, gameId, playerHandle } = parsePath(window.location.pathname);
     if (page === "reset") { setShowAuth("reset"); }
+    // Handle Xbox OAuth return params
+    const urlParams = new URLSearchParams(window.location.search);
+    const xboxImportParam = urlParams.get("xbox_import");
+    const xboxErrorParam = urlParams.get("xbox_error");
+    if (xboxImportParam || xboxErrorParam) {
+      setActivePage("profile");
+      setProfileDefaultTab("games");
+      if (xboxImportParam) setXboxImportData(xboxImportParam);
+      if (xboxErrorParam) setXboxImportError(xboxErrorParam);
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname + window.location.hash);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -1554,7 +1568,7 @@ export default function GuildLink() {
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npc" && <NPCProfilePage npcId={currentNPC} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}
       {activePage === "npcs" && <NPCBrowsePage setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
-      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />)}
+      {activePage === "profile" && (isGuest ? (openSignIn("Create an account to build your profile and game shelf."), setActivePage("feed"), null) : <ProfilePage setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} xboxImportData={xboxImportData} xboxImportError={xboxImportError} onXboxImportConsumed={() => { setXboxImportData(null); setXboxImportError(null); }} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={navToPlayer} setActivePage={navToPage} setCurrentGuild={navToGuild} />}
       {activePage === "guild" && <GuildPortal guildId={currentGuild} isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}

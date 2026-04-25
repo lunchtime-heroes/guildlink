@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 
-function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnected }) {
-  const [step, setStep] = useState("explain"); // explain | connecting | review | importing | done
+function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnected, initialData, initialError }) {
+  const [step, setStep] = useState("explain");
   const [xboxData, setXboxData] = useState(null);
   const [selectedGames, setSelectedGames] = useState(new Set());
   const [statusOverrides, setStatusOverrides] = useState({});
@@ -11,39 +11,22 @@ function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnect
   const [importProgress, setImportProgress] = useState(0);
   const [error, setError] = useState(null);
 
-  // On mount, check if we're returning from Xbox OAuth
+  // Handle data passed directly from App.jsx (post OAuth return)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const xboxImport = params.get("xbox_import");
-    const xboxError = params.get("xbox_error");
-
-    if (xboxError) {
-      setError(getErrorMessage(xboxError));
-      setStep("explain");
-      // Clean URL
-      window.history.replaceState({}, "", window.location.pathname);
+    if (initialData) {
+      setXboxData(initialData);
+      setSelectedGames(new Set(initialData.games.map(g => g.id)));
+      const overrides = {};
+      initialData.games.forEach(g => { overrides[g.id] = g.suggested_status; });
+      setStatusOverrides(overrides);
+      setStep("review");
       return;
     }
-
-    if (xboxImport) {
-      try {
-        const data = JSON.parse(decodeURIComponent(xboxImport));
-        setXboxData(data);
-        // Pre-select all games
-        setSelectedGames(new Set(data.games.map(g => g.id)));
-        // Init status overrides
-        const overrides = {};
-        data.games.forEach(g => { overrides[g.id] = g.suggested_status; });
-        setStatusOverrides(overrides);
-        setStep("review");
-        // Clean URL
-        window.history.replaceState({}, "", window.location.pathname);
-      } catch (e) {
-        setError("Failed to read Xbox data. Please try again.");
-        setStep("explain");
-      }
+    if (initialError) {
+      setError(getErrorMessage(initialError));
+      setStep("explain");
     }
-  }, []);
+  }, [initialData, initialError]);
 
   const startAuth = () => {
     setStep("connecting");

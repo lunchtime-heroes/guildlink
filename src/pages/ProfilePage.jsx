@@ -10,7 +10,7 @@ import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
 import XboxImportModal from "../modals/XboxImportModal.jsx";
 
-function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onProfileSaved, onThemeChange, onQuestComplete }) {
+function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onProfileSaved, onThemeChange, onQuestComplete, xboxImportData, xboxImportError, onXboxImportConsumed }) {
   const user = currentUser;
   const [activeTab, setActiveTab] = useState(defaultTab || "posts");
 
@@ -1529,11 +1529,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         />
       )}
 
-      {(showXboxImport || (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("xbox_import"))) && (
+      {(showXboxImport || xboxImportData || xboxImportError) && (
         <XboxImportModal
           currentUser={user}
-          onClose={() => setShowXboxImport(false)}
-          onImportComplete={() => { setShowXboxImport(false); loadShelf(); onProfileSaved?.(); }}
+          initialData={xboxImportData ? JSON.parse(decodeURIComponent(xboxImportData)) : null}
+          initialError={xboxImportError}
+          onClose={() => { setShowXboxImport(false); onXboxImportConsumed?.(); }}
+          onImportComplete={() => { setShowXboxImport(false); onXboxImportConsumed?.(); loadShelf(); onProfileSaved?.(); }}
           onXboxConnected={(gamertag) => setXboxGamertag(gamertag)}
         />
       )}
