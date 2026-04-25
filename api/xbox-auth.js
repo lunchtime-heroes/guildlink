@@ -3,9 +3,7 @@
 
 export default function handler(req, res) {
   const clientId = process.env.XBOX_CLIENT_ID;
-  const redirectUri = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}/api/xbox-callback`
-    : "https://guildlink.gg/api/xbox-callback";
+  const redirectUri = process.env.XBOX_REDIRECT_URI || "https://guildlink.gg/api/xbox-callback";
 
   const params = new URLSearchParams({
     client_id: clientId,

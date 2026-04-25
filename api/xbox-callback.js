@@ -10,9 +10,7 @@ export default async function handler(req, res) {
 
   const clientId = process.env.XBOX_CLIENT_ID;
   const clientSecret = process.env.XBOX_CLIENT_SECRET;
-  const redirectUri = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}/api/xbox-callback`
-    : "https://guildlink.gg/api/xbox-callback";
+  const redirectUri = process.env.XBOX_REDIRECT_URI || "https://guildlink.gg/api/xbox-callback";
 
   try {
     // Step 1: Exchange code for Microsoft access token
