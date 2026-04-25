@@ -1128,7 +1128,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       return (
                         <div key={entry.game_id}
                           draggable={!isMobile}
-                          onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
+                          onDragStart={!isMobile ? e => { e.dataTransfer.setData("text/plain", entry.game_id); e.dataTransfer.effectAllowed = "move"; handleDragStart(entry.game_id, col.id); } : undefined}
                           onDragEnd={!isMobile ? handleDragEnd : undefined}
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
@@ -1140,7 +1140,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
                           {/* Cover art */}
                           <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
-                            onClick={e => { if (!isMobile) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
+                            onClick={e => { if (!isMobile && !dragging) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
                             {game.cover_url
                               ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
                               : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
