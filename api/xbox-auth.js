@@ -1,7 +1,7 @@
 // api/xbox-auth.js
 // Redirects user to Microsoft OAuth to authorize GuildLink to read their Xbox library
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   const clientId = process.env.XBOX_CLIENT_ID;
   const redirectUri = process.env.XBOX_REDIRECT_URI || "https://guildlink.gg/api/xbox-callback";
 

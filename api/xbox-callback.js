@@ -1,8 +1,9 @@
 // api/xbox-callback.js
 // Handles Microsoft OAuth return, exchanges code for tokens, fetches Xbox game library
-import { createClient } from "@supabase/supabase-js";
 
-export default async function handler(req, res) {
+const { createClient } = require("@supabase/supabase-js");
+
+module.exports = async function handler(req, res) {
   const { code, error } = req.query;
 
   if (error || !code) {
