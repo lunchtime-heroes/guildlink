@@ -125,20 +125,25 @@ export default async function handler(req, res) {
       }));
 
     // Store in Supabase temp table instead of URL (game lists are too large for URL params)
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+    const { createClient } = require("@supabase/supabase-js");
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
     const sessionId = `xbox_${xuid}_${Date.now()}`;
-    await supabase.from("xbox_import_sessions").upsert({
+    const { error: insertError } = await supabaseAdmin.from("xbox_import_sessions").upsert({
       session_id: sessionId,
       xuid,
       gamertag,
       games,
       created_at: new Date().toISOString(),
     }, { onConflict: "session_id" });
+
+    if (insertError) {
+      console.error("[xbox-callback] failed to save session:", insertError);
+      return res.redirect("/?xbox_error=session_save_failed");
+    }
 
     return res.redirect(`/?xbox_session=${sessionId}`);
 
