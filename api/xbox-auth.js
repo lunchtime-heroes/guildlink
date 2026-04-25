@@ -11,6 +11,7 @@ export default function handler(req, res) {
     redirect_uri: redirectUri,
     scope: "Xboxlive.signin Xboxlive.offline_access",
     response_mode: "query",
+    prompt: "select_account",
   });
 
   const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
