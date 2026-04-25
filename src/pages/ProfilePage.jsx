@@ -1106,10 +1106,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           <div data-tour="shelf-columns">
             {SHELF_COLUMNS.map(col => {
               const entries = userShelf[col.id];
-              if (entries.length === 0) return null;
+              const isDragTarget = !isMobile && dragging && dragging.fromStatus !== col.id && dragOver === col.id;
               return (
                 <div key={col.id} style={{ marginBottom: 28 }}
-                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}>
+                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}
+                  onDrop={!isMobile && entries.length === 0 ? e => handleDrop(e, col.id) : undefined}>
                   {/* Section header */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
@@ -1188,6 +1189,21 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         </div>
                       );
                     })}
+                    {/* Drop zone tile — always visible when dragging to this column */}
+                    {!isMobile && dragging && dragging.fromStatus !== col.id && (
+                      <div
+                        onDragOver={e => { e.preventDefault(); setDragOver(col.id); dragOverCardRef.current = null; }}
+                        onDrop={e => handleDrop(e, col.id)}
+                        style={{ aspectRatio: "3/4", borderRadius: 12, border: "2px dashed " + (isDragTarget ? col.color : col.color + "44"), background: isDragTarget ? col.color + "11" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                        {isDragTarget && <div style={{ color: col.color, fontSize: 11, fontWeight: 700, textAlign: "center" }}>Drop here</div>}
+                      </div>
+                    )}
+                    {/* Empty state */}
+                    {entries.length === 0 && !dragging && (
+                      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33" }}>
+                        {col.emptyText}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
