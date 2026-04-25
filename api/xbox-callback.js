@@ -16,8 +16,8 @@ module.exports = async function handler(req, res) {
 
   try {
     // Step 1: Exchange code for Microsoft access token
-    // Must use consumers endpoint for personal Microsoft/Xbox accounts
-    const tokenRes = await fetch("https://login.microsoftonline.com/consumers/oauth2/v2.0/token", {
+    // Use common endpoint with consumer account
+    const tokenRes = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
         Properties: {
           AuthMethod: "RPS",
           SiteName: "user.auth.xboxlive.com",
-          RpsTicket: `t=${msAccessToken}`,
+          RpsTicket: `d=${msAccessToken}`,
         },
         RelyingParty: "http://auth.xboxlive.com",
         TokenType: "JWT",
