@@ -44,9 +44,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [postGameNames, setPostGameNames] = useState({});
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
-  const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
-  const [dragOverCard, setDragOverCard] = useState(null); // { gameId, position: "above"|"below" }
-  const dragOverCardRef = React.useRef(null);
+  const [dragOver, setDragOver] = useState(null);  // column id highlight
+  const dragOverCardRef = React.useRef(null); // target card — ref only, no state re-render
+  const dragOverCard = null; // visual highlight disabled to prevent re-render issues
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
@@ -96,7 +96,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     const cleanup = () => {
       setDragging(null);
       setDragOver(null);
-      setDragOverCard(null);
       dragOverCardRef.current = null;
     };
     document.addEventListener("dragend", cleanup);
@@ -567,15 +566,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     e.preventDefault();
     e.stopPropagation();
     setDragOver(colId);
-    const val = { gameId: targetGameId, position: "before" };
-    setDragOverCard(val);
-    dragOverCardRef.current = val;
+    dragOverCardRef.current = { gameId: targetGameId };
   };
 
   const handleDragEnd = () => {
     setDragging(null);
     setDragOver(null);
-    setDragOverCard(null);
     dragOverCardRef.current = null;
   };
 
@@ -1145,7 +1141,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           onDragEnd={!isMobile ? handleDragEnd : undefined}
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none" }}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s",  }}
                           onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
                           onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
