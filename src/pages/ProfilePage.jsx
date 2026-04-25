@@ -1145,66 +1145,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                           </div>
 
-                          {/* Mobile status change overlay */}
-                          {menuOpen && isMobile && (
-                            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.93)", borderRadius: 12, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 8px", gap: 6 }}
-                              onClick={e => e.stopPropagation()}>
-                              <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textAlign: "center", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                              {/* Thumbs — Have Played, own profile only */}
-                              {col.id === "have_played" && (
-                                <div style={{ display: "flex", gap: 4 }}>
-                                  <button onClick={() => { saveLiked(entry.game_id, entry.liked === true ? null : true); setShelfMenuOpen(null); }}
-                                    style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border), borderRadius: 7, padding: "7px 0", fontSize: 14, cursor: "pointer", lineHeight: 1, flex: 1 }}>
-                                    👍
-                                  </button>
-                                  <button onClick={() => { saveLiked(entry.game_id, entry.liked === false ? null : false); setShelfMenuOpen(null); }}
-                                    style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border), borderRadius: 7, padding: "7px 0", fontSize: 14, cursor: "pointer", lineHeight: 1, flex: 1 }}>
-                                    👎
-                                  </button>
-                                </div>
-                              )}
-                              {SHELF_COLUMNS.filter(c => c.id !== col.id).map(target => (
-                                <button key={target.id} onClick={() => { moveGame(entry.game_id, col.id, target.id); setShelfMenuOpen(null); }}
-                                  style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 7, padding: "7px 8px", color: target.color, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                                  → {target.label}
-                                </button>
-                              ))}
-                              {col.id === "have_played" && (
-                                <div>
-                                  <div style={{ color: C.textDim, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 4, marginTop: 2 }}>Top 10 Rank</div>
-                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4 }}>
-                                    {[1,2,3,4,5,6,7,8,9,10].map(n => {
-                                      const isCurrentRank = shelfRank === n;
-                                      return (
-                                        <button key={n} onClick={() => {
-                                          const col2 = [...userShelf["have_played"]];
-                                          const fromIdx = col2.findIndex(e => e.game_id === entry.game_id);
-                                          if (fromIdx === -1) return;
-                                          const toIdx = n - 1;
-                                          if (fromIdx === toIdx) { setShelfMenuOpen(null); return; }
-                                          const reordered = [...col2];
-                                          const [moved] = reordered.splice(fromIdx, 1);
-                                          reordered.splice(toIdx, 0, moved);
-                                          setUserShelf(prev => ({ ...prev, have_played: reordered }));
-                                          saveSortOrder("have_played", reordered);
-                                          setShelfMenuOpen(null);
-                                        }}
-                                          style={{ background: isCurrentRank ? C.goldDim : "transparent", border: "1px solid " + (isCurrentRank ? C.gold : C.border), borderRadius: 5, padding: "4px 2px", color: isCurrentRank ? C.gold : C.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                                          {n}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                              <button onClick={() => setShelfMenuOpen(null)}
-                                style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 10, cursor: "pointer", marginTop: 2 }}>
-                                Cancel
-                              </button>
-                            </div>
-                          )}
-
-
+                          {/* Mobile overlay handled by fixed modal below */}
                         </div>
                       );
                     })}
@@ -1219,6 +1160,85 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               </div>
             )}
           </div>
+
+          {/* Mobile shelf action modal — fixed full screen */}
+          {isMobile && shelfMenuOpen && (() => {
+            const allEntries = [...userShelf.want_to_play, ...userShelf.playing, ...userShelf.have_played];
+            const menuEntry = allEntries.find(e => e.game_id === shelfMenuOpen);
+            if (!menuEntry) return null;
+            const menuGame = menuEntry.games;
+            const menuCol = SHELF_COLUMNS.find(c => c.id === menuEntry.status);
+            const menuReview = userReviews.find(r => r.game_id === shelfMenuOpen);
+            const menuIdx = userShelf["have_played"].findIndex(e => e.game_id === shelfMenuOpen);
+            const menuRank = menuEntry.status === "have_played" && menuIdx < 10 ? menuIdx + 1 : null;
+            return (
+              <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "flex-end" }}
+                onClick={() => setShelfMenuOpen(null)}>
+                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)" }} />
+                <div style={{ position: "relative", width: "100%", background: C.surface, borderRadius: "20px 20px 0 0", padding: "20px 20px 40px", display: "flex", flexDirection: "column", gap: 10 }}
+                  onClick={e => e.stopPropagation()}>
+                  {/* Handle bar */}
+                  <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, alignSelf: "center", marginBottom: 4 }} />
+                  {/* Game name */}
+                  <div style={{ fontWeight: 800, color: C.text, fontSize: 16, textAlign: "center", marginBottom: 4 }}>{menuGame?.name}</div>
+                  {/* Thumbs — Have Played only */}
+                  {menuEntry.status === "have_played" && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => { saveLiked(shelfMenuOpen, menuEntry.liked === true ? null : true); setShelfMenuOpen(null); }}
+                        style={{ background: menuEntry.liked === true ? "#10b98133" : C.surfaceRaised, border: "1px solid " + (menuEntry.liked === true ? "#10b98166" : C.border), borderRadius: 10, padding: "12px 0", fontSize: 20, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                        👍
+                      </button>
+                      <button onClick={() => { saveLiked(shelfMenuOpen, menuEntry.liked === false ? null : false); setShelfMenuOpen(null); }}
+                        style={{ background: menuEntry.liked === false ? "#ef444433" : C.surfaceRaised, border: "1px solid " + (menuEntry.liked === false ? "#ef444466" : C.border), borderRadius: 10, padding: "12px 0", fontSize: 20, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                        👎
+                      </button>
+                    </div>
+                  )}
+                  {/* Move status */}
+                  {SHELF_COLUMNS.filter(c => c.id !== menuEntry.status).map(target => (
+                    <button key={target.id} onClick={() => { moveGame(shelfMenuOpen, menuEntry.status, target.id); setShelfMenuOpen(null); }}
+                      style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 10, padding: "14px 16px", color: target.color, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+                      → {target.label}
+                    </button>
+                  ))}
+                  {/* Top 10 rank — Have Played only */}
+                  {menuEntry.status === "have_played" && (
+                    <div>
+                      <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 8 }}>Top 10 Rank</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(n => {
+                          const isCurrentRank = menuRank === n;
+                          return (
+                            <button key={n} onClick={() => {
+                              const col2 = [...userShelf["have_played"]];
+                              const fromIdx = col2.findIndex(e => e.game_id === shelfMenuOpen);
+                              if (fromIdx === -1) return;
+                              const toIdx = n - 1;
+                              if (fromIdx === toIdx) { setShelfMenuOpen(null); return; }
+                              const reordered = [...col2];
+                              const [moved] = reordered.splice(fromIdx, 1);
+                              reordered.splice(toIdx, 0, moved);
+                              setUserShelf(prev => ({ ...prev, have_played: reordered }));
+                              saveSortOrder("have_played", reordered);
+                              setShelfMenuOpen(null);
+                            }}
+                              style={{ background: isCurrentRank ? C.goldDim : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? C.gold : C.border), borderRadius: 8, padding: "10px 0", color: isCurrentRank ? C.gold : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                              {n}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {/* Cancel */}
+                  <button onClick={() => setShelfMenuOpen(null)}
+                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 0", color: C.textDim, fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
