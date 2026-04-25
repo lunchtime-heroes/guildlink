@@ -1,5 +1,6 @@
 // api/xbox-callback.js
 // Handles Microsoft OAuth return, exchanges code for tokens, fetches Xbox game library
+import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
   const { code, error } = req.query;
@@ -34,6 +35,7 @@ export default async function handler(req, res) {
     }
 
     const msAccessToken = tokenData.access_token;
+    console.log("[xbox-callback] step 1 complete - got MS token");
 
     // Step 2: Exchange Microsoft token for Xbox Live token
     const xblRes = await fetch("https://user.auth.xboxlive.com/user/authenticate", {
@@ -58,6 +60,7 @@ export default async function handler(req, res) {
 
     const xblToken = xblData.Token;
     const userHash = xblData.DisplayClaims?.xui?.[0]?.uhs;
+    console.log("[xbox-callback] step 2 complete - got XBL token");
 
     // Step 3: Exchange XBL token for XSTS token
     const xstsRes = await fetch("https://xsts.auth.xboxlive.com/xsts/authorize", {
@@ -81,6 +84,7 @@ export default async function handler(req, res) {
 
     const xstsToken = xstsData.Token;
     const authHeader = `XBL3.0 x=${userHash};${xstsToken}`;
+    console.log("[xbox-callback] step 3 complete - got XSTS token");
 
     // Step 4: Get Xbox profile (gamertag)
     const profileRes = await fetch("https://profile.xboxlive.com/users/me/profile/settings?settings=Gamertag", {
@@ -94,6 +98,7 @@ export default async function handler(req, res) {
     const profileData = await profileRes.json();
     const gamertag = profileData.profileUsers?.[0]?.settings?.find(s => s.id === "Gamertag")?.value || "Xbox User";
     const xuid = profileData.profileUsers?.[0]?.id;
+    console.log("[xbox-callback] step 4 complete - gamertag:", gamertag, "xuid:", xuid);
 
     // Step 5: Fetch game library (titles played)
     const gamesRes = await fetch(
@@ -109,6 +114,7 @@ export default async function handler(req, res) {
 
     const gamesData = await gamesRes.json();
     const titles = gamesData.titles || [];
+    console.log("[xbox-callback] step 5 complete - found", titles.length, "titles");
 
     // Step 6: Filter and format games
     const games = titles
@@ -125,7 +131,6 @@ export default async function handler(req, res) {
       }));
 
     // Store in Supabase temp table instead of URL (game lists are too large for URL params)
-    const { createClient } = require("@supabase/supabase-js");
     const supabaseAdmin = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
