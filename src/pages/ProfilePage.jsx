@@ -22,6 +22,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
   const [showSteamImport, setShowSteamImport] = useState(false);
   const [showXboxImport, setShowXboxImport] = useState(false);
+  const [pendingXboxData, setPendingXboxData] = useState(null);
+  const [pendingXboxError, setPendingXboxError] = useState(null);
   const [localAvatarConfig, setLocalAvatarConfig] = useState(null);
   const [previewThemeId, setPreviewThemeId] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", bio: "", games: "" });
@@ -186,6 +188,23 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         .maybeSingle();
       if (privateData?.steam_id) setSteamId(privateData.steam_id);
       if (privateData?.xbox_gamertag) setXboxGamertag(privateData.xbox_gamertag);
+
+      // Check for pending Xbox import session
+      if (window.__xboxSession) {
+        const sessionId = window.__xboxSession;
+        delete window.__xboxSession;
+        const { data: xboxSession } = await supabase
+          .from("xbox_import_sessions")
+          .select("*")
+          .eq("session_id", sessionId)
+          .maybeSingle();
+        if (xboxSession) {
+          setPendingXboxData({ gamertag: xboxSession.gamertag, xuid: xboxSession.xuid, games: xboxSession.games });
+          await supabase.from("xbox_import_sessions").delete().eq("session_id", sessionId);
+        } else {
+          setPendingXboxError("session_not_found");
+        }
+      }
     };
     load();
     loadQuests();
@@ -1529,13 +1548,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         />
       )}
 
-      {(showXboxImport || xboxImportData || xboxImportError) && (
+      {(showXboxImport || pendingXboxData || pendingXboxError || xboxImportData || xboxImportError) && (
         <XboxImportModal
           currentUser={user}
-          initialData={xboxImportData}
-          initialError={xboxImportError}
-          onClose={() => { setShowXboxImport(false); onXboxImportConsumed?.(); }}
-          onImportComplete={() => { setShowXboxImport(false); onXboxImportConsumed?.(); loadShelf(); onProfileSaved?.(); }}
+          initialData={pendingXboxData || xboxImportData}
+          initialError={pendingXboxError || xboxImportError}
+          onClose={() => { setShowXboxImport(false); setPendingXboxData(null); setPendingXboxError(null); onXboxImportConsumed?.(); }}
+          onImportComplete={() => { setShowXboxImport(false); setPendingXboxData(null); setPendingXboxError(null); onXboxImportConsumed?.(); loadShelf(); onProfileSaved?.(); }}
           onXboxConnected={(gamertag) => setXboxGamertag(gamertag)}
         />
       )}
