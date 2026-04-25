@@ -13,6 +13,6 @@ export default function handler(req, res) {
     response_mode: "query",
   });
 
-  const authUrl = `https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?${params}`;
+  const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
   res.redirect(authUrl);
 }
