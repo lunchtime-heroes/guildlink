@@ -45,8 +45,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
   const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
-  const [dragOverCard, setDragOverCard] = useState(null); // { gameId, position: "above"|"below" }
+  const [dragOverCard, _setDragOverCard] = useState(null); // kept for style references, updated via ref only
   const dragOverCardRef = React.useRef(null);
+  const setDragOverCard = (val) => { dragOverCardRef.current = val; }; // no state update = no re-render
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
@@ -90,6 +91,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       .eq("user_id", authUser.id);
     if (rewards) setUserRewards(rewards);
   };
+
+  // Global drag cleanup
+  useEffect(() => {
+    const cleanup = () => { setDragging(null); setDragOver(null); dragOverCardRef.current = null; };
+    document.addEventListener("dragend", cleanup);
+    return () => document.removeEventListener("dragend", cleanup);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -608,10 +616,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     const { gameId, fromStatus } = dragging;
     const currentDragOverCard = dragOverCardRef.current;
 
+    // Clear drag state first to prevent re-render issues
+    handleDragEnd();
+
     if (fromStatus === toStatus) {
       const col = [...userShelf[toStatus]];
       const fromIdx = col.findIndex(e => e.game_id === gameId);
-      if (fromIdx === -1) { handleDragEnd(); return; }
+      if (fromIdx === -1) return;
       let toIdx = col.length - 1;
       if (currentDragOverCard) {
         const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
@@ -619,7 +630,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           toIdx = targetIdx;
         }
       }
-      if (fromIdx === toIdx) { handleDragEnd(); return; }
+      if (fromIdx === toIdx) return;
       const reordered = [...col];
       const [moved] = reordered.splice(fromIdx, 1);
       reordered.splice(toIdx, 0, moved);
@@ -628,7 +639,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     } else {
       moveGame(gameId, fromStatus, toStatus);
     }
-    handleDragEnd();
   };
 
   const SHELF_COLUMNS = [
