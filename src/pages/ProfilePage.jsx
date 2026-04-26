@@ -18,14 +18,14 @@ import SteamImportModal from "../modals/SteamImportModal.jsx";
 import XboxImportModal from "../modals/XboxImportModal.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
-function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
+function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, isDropTarget, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: isMobile });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
     background: C.surface,
-    border: "1px solid " + (menuOpen ? col.color : C.border),
+    border: "2px solid " + (isDropTarget ? col.color : menuOpen ? col.color : "transparent"),
     borderRadius: 12,
     cursor: isMobile ? "pointer" : "default",
     position: "relative",
@@ -33,13 +33,15 @@ function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMob
     alignSelf: "start",
     userSelect: "none",
     WebkitUserSelect: "none",
+    boxShadow: isDropTarget ? "0 0 0 2px " + col.color + "44" : "none",
+    outline: "1px solid " + (menuOpen ? col.color : isDragging ? "transparent" : C.border),
   };
   return (
     <div
       ref={setNodeRef}
       style={style}
-      onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
-      onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
+      onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; const handle = e.currentTarget.querySelector(".drag-handle"); if (handle) handle.style.opacity = "1"; } }}
+      onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; const handle = e.currentTarget.querySelector(".drag-handle"); if (handle) handle.style.opacity = "0"; } }}
       onClick={onTileClick}>
 
       {/* Cover art */}
@@ -129,6 +131,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [activeId, setActiveId] = useState(null); // dnd-kit active drag id
   const [activeStatus, setActiveStatus] = useState(null); // which column is being dragged from
+  const [dragOverCol, setDragOverCol] = useState(null); // column highlighted during cross-column drag
+  const [dragOverIndex, setDragOverIndex] = useState(null); // insertion index in target column
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
@@ -438,7 +442,51 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     });
   };
 
-  const addToShelf = async (game, status = "want_to_play") => {
+  // Like moveGame but inserts at a specific index in the destination column
+  const moveGameAtIndex = async (gameId, fromStatus, toStatus, idx) => {
+    if (fromStatus === toStatus) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    await supabase.from("user_games").upsert({
+      user_id: authUser.id, game_id: gameId, status: toStatus,
+      sort_order: idx ?? 9999, updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,game_id" });
+    await supabase.from("user_games_history").insert({
+      user_id: authUser.id, game_id: gameId, from_status: fromStatus, to_status: toStatus,
+    });
+    const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
+    if (eventMap[toStatus]) { logChartEvent(gameId, eventMap[toStatus], authUser.id); updateTasteProfile(gameId, eventMap[toStatus], authUser.id); }
+    if (toStatus === "have_played") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played" });
+    if (toStatus === "want_to_play") await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play" });
+    checkShelfGenres(authUser.id);
+    onQuestComplete?.();
+    setUserShelf(prev => {
+      const entry = prev[fromStatus].find(e => e.game_id === gameId);
+      if (!entry) return prev;
+      const newEntry = { ...entry, status: toStatus };
+      const destCol = [...prev[toStatus]];
+      const insertAt = idx != null ? Math.min(idx, destCol.length) : destCol.length;
+      destCol.splice(insertAt, 0, newEntry);
+      return {
+        ...prev,
+        [fromStatus]: prev[fromStatus].filter(e => e.game_id !== gameId),
+        [toStatus]: destCol,
+      };
+    });
+    // Re-save sort order for destination column after insert
+    setTimeout(async () => {
+      const { data: { user: au } } = await supabase.auth.getUser();
+      if (!au) return;
+      const currentDest = userShelf[toStatus];
+      const destWithNew = [...currentDest];
+      const newEntryIdx = destWithNew.findIndex(e => e.game_id === gameId);
+      if (newEntryIdx === -1) return;
+      const updates = destWithNew.map((e, i) => ({
+        user_id: au.id, game_id: e.game_id, status: toStatus, sort_order: i, updated_at: new Date().toISOString(),
+      }));
+      await supabase.from("user_games").upsert(updates, { onConflict: "user_id,game_id" });
+    }, 500);
+  };
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const { error } = await supabase.from("user_games").upsert({
@@ -640,10 +688,37 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     }
   };
 
+  const handleDndDragOver = (event) => {
+    const { active, over } = event;
+    if (!active || !over) { setDragOverCol(null); setDragOverIndex(null); return; }
+
+    // Find which column the over target belongs to
+    let overCol = null;
+    for (const col of ["want_to_play", "playing", "have_played"]) {
+      if (over.id === col) { overCol = col; break; }
+      if (userShelf[col].find(e => e.game_id === over.id)) { overCol = col; break; }
+    }
+    let fromCol = null;
+    for (const col of ["want_to_play", "playing", "have_played"]) {
+      if (userShelf[col].find(e => e.game_id === active.id)) { fromCol = col; break; }
+    }
+
+    if (overCol && overCol !== fromCol) {
+      setDragOverCol(overCol);
+      const idx = userShelf[overCol].findIndex(e => e.game_id === over.id);
+      setDragOverIndex(idx >= 0 ? idx : userShelf[overCol].length);
+    } else {
+      setDragOverCol(null);
+      setDragOverIndex(null);
+    }
+  };
+
   const handleDndDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
     setActiveStatus(null);
+    setDragOverCol(null);
+    setDragOverIndex(null);
     if (!active || !over || active.id === over.id) return;
 
     let fromCol = null;
@@ -651,9 +726,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       if (userShelf[col].find(e => e.game_id === active.id)) { fromCol = col; break; }
     }
     let toCol = null;
+    let insertIdx = null;
     for (const col of ["want_to_play", "playing", "have_played"]) {
-      if (userShelf[col].find(e => e.game_id === over.id)) { toCol = col; break; }
-      if (over.id === col) { toCol = col; break; }
+      if (userShelf[col].find(e => e.game_id === over.id)) {
+        toCol = col;
+        insertIdx = userShelf[col].findIndex(e => e.game_id === over.id);
+        break;
+      }
+      if (over.id === col) { toCol = col; insertIdx = userShelf[col].length; break; }
     }
     if (!fromCol || !toCol) return;
 
@@ -666,7 +746,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       setUserShelf(prev => ({ ...prev, [fromCol]: reordered }));
       saveSortOrder(fromCol, reordered);
     } else {
-      moveGame(active.id, fromCol, toCol);
+      // Cross-column: insert at position rather than appending to end
+      moveGameAtIndex(active.id, fromCol, toCol, insertIdx);
     }
   };
 
@@ -1181,6 +1262,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               sensors={!isMobile ? sensors : []}
               collisionDetection={closestCenter}
               onDragStart={!isMobile ? handleDndDragStart : undefined}
+              onDragOver={!isMobile ? handleDndDragOver : undefined}
               onDragEnd={!isMobile ? handleDndDragEnd : undefined}>
               {SHELF_COLUMNS.map(col => {
                 const entries = userShelf[col.id];
@@ -1190,7 +1272,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                       <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
                       <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
+                      {/* Cross-column drop indicator */}
+                      {activeId && activeStatus !== col.id && dragOverCol === col.id && (
+                        <div style={{ marginLeft: "auto", background: col.color + "22", border: "1px solid " + col.color, borderRadius: 8, padding: "2px 10px", color: col.color, fontSize: 11, fontWeight: 700 }}>
+                          Drop to move here
+                        </div>
+                      )}
                     </div>
+                    {/* Column highlight when dragging cross-column */}
+                    <div style={{ borderRadius: 12, border: activeId && activeStatus !== col.id && dragOverCol === col.id ? "2px solid " + col.color : "2px solid transparent", transition: "border-color 0.15s", padding: 4 }}>
                     {/* Grid */}
                     <SortableContext
                       items={entries.map(e => e.game_id)}
@@ -1215,6 +1305,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                               shelfRank={shelfRank}
                               isMobile={isMobile}
                               activeId={activeId}
+                              isDropTarget={!isMobile && dragOverCol === col.id && dragOverIndex === entryIndex}
                               onTileClick={() => { if (isMobile) setShelfMenuOpen(menuOpen ? null : entry.game_id); }}
                               onGameClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
                               onRemove={() => { removeFromShelf(entry.game_id, col.id); setShelfMenuOpen(null); }}
@@ -1232,6 +1323,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         )}
                       </div>
                     </SortableContext>
+                    </div>
                   </div>
                 );
               })}
