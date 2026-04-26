@@ -1134,18 +1134,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       const review = userReviews.find(r => r.game_id === game.id);
                       const menuOpen = shelfMenuOpen === entry.game_id;
                       const actualIdx = entryIndex;
-                      const shelfRank = col.id === "have_played" && actualIdx < 10 ? actualIdx + 1 : null;
+                      const shelfRank = actualIdx < 25 ? actualIdx + 1 : null;
                       return (
                         <div key={entry.game_id}
-                          draggable={!isMobile}
-                          onDragStart={!isMobile ? () => handleDragStart(entry.game_id, col.id) : undefined}
-                          onDragEnd={!isMobile ? handleDragEnd : undefined}
                           onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
                           onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
-                          onMouseDown={!isMobile ? e => { e.currentTarget.style.userSelect = "none"; } : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : dragOverCard?.gameId === entry.game_id ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "grab", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", boxShadow: dragOverCard?.gameId === entry.game_id ? "0 0 0 2px " + col.color + "66" : "none", userSelect: "none", WebkitUserSelect: "none" }}
-                          onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
-                          onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
+                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "default", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", userSelect: "none", WebkitUserSelect: "none" }}
+                          onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; const handle = e.currentTarget.querySelector(".drag-handle"); if (handle) handle.style.opacity = "1"; } }}
+                          onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; const handle = e.currentTarget.querySelector(".drag-handle"); if (handle) handle.style.opacity = "0"; } }}
                           onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
 
                           {/* Cover art */}
@@ -1162,9 +1158,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                               className="remove-btn">
                               ×
                             </button>
-                            {/* Top 10 rank badge — bottom left over art, Have Played only */}
-                            {col.id === "have_played" && shelfRank && (
-                              <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "66", borderRadius: 6, padding: "1px 6px", color: C.gold, fontSize: 10, fontWeight: 800 }}>
+                            {/* Top 25 rank badge — bottom left over art */}
+                            {shelfRank && (
+                              <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
                                 #{shelfRank}
                               </div>
                             )}
@@ -1189,9 +1185,19 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             )}
                           </div>
 
-                          {/* Below art — name only */}
-                          <div style={{ padding: "8px 8px 10px" }}>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                          {/* Below art — name + drag handle */}
+                          <div style={{ padding: "8px 8px 6px" }}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>{game.name}</div>
+                            {!isMobile && (
+                              <div
+                                className="drag-handle"
+                                draggable={true}
+                                onDragStart={e => { e.dataTransfer.setData("text/plain", entry.game_id); e.dataTransfer.effectAllowed = "move"; handleDragStart(entry.game_id, col.id); }}
+                                onDragEnd={handleDragEnd}
+                                style={{ opacity: 0, transition: "opacity 0.15s", cursor: "grab", textAlign: "center", color: C.textDim, fontSize: 12, letterSpacing: 2, lineHeight: 1, padding: "2px 0", WebkitUserSelect: "none" }}>
+                                ⠿⠿⠿
+                              </div>
+                            )}
                           </div>
 
                           {/* Mobile overlay handled by bottom sheet modal below */}
@@ -1235,8 +1241,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             const menuGame = menuEntry.games;
             const menuCol = SHELF_COLUMNS.find(c => c.id === menuEntry.status);
             const menuReview = userReviews.find(r => r.game_id === shelfMenuOpen);
-            const menuIdx = userShelf["have_played"].findIndex(e => e.game_id === shelfMenuOpen);
-            const menuRank = menuEntry.status === "have_played" && menuIdx < 10 ? menuIdx + 1 : null;
+            const menuIdx = userShelf[menuEntry.status].findIndex(e => e.game_id === shelfMenuOpen);
             return (
               <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "flex-end" }}
                 onClick={() => setShelfMenuOpen(null)}>
@@ -1274,34 +1279,35 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     </button>
                   ))}
                   {/* Top 10 rank — Have Played only */}
-                  {menuEntry.status === "have_played" && (
-                    <div>
-                      <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 8 }}>Top 10 Rank</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-                        {[1,2,3,4,5,6,7,8,9,10].map(n => {
-                          const isCurrentRank = menuRank === n;
-                          return (
-                            <button key={n} onClick={() => {
-                              const col2 = [...userShelf["have_played"]];
-                              const fromIdx = col2.findIndex(e => e.game_id === shelfMenuOpen);
-                              if (fromIdx === -1) return;
-                              const toIdx = n - 1;
-                              if (fromIdx === toIdx) { setShelfMenuOpen(null); return; }
-                              const reordered = [...col2];
-                              const [moved] = reordered.splice(fromIdx, 1);
-                              reordered.splice(toIdx, 0, moved);
-                              setUserShelf(prev => ({ ...prev, have_played: reordered }));
-                              saveSortOrder("have_played", reordered);
-                              setShelfMenuOpen(null);
-                            }}
-                              style={{ background: isCurrentRank ? C.goldDim : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? C.gold : C.border), borderRadius: 8, padding: "10px 0", color: isCurrentRank ? C.gold : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-                              {n}
-                            </button>
-                          );
-                        })}
-                      </div>
+                  {/* Top 25 rank — all statuses */}
+                  <div>
+                    <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 8 }}>Rank</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                      {Array.from({ length: 25 }, (_, i) => i + 1).map(n => {
+                        const colEntries = userShelf[menuEntry.status];
+                        const currentPos = colEntries.findIndex(e => e.game_id === shelfMenuOpen);
+                        const isCurrentRank = currentPos + 1 === n;
+                        return (
+                          <button key={n} onClick={() => {
+                            const col2 = [...userShelf[menuEntry.status]];
+                            const fromIdx = col2.findIndex(e => e.game_id === shelfMenuOpen);
+                            if (fromIdx === -1) return;
+                            const toIdx = n - 1;
+                            if (fromIdx === toIdx) { setShelfMenuOpen(null); return; }
+                            const reordered = [...col2];
+                            const [moved] = reordered.splice(fromIdx, 1);
+                            reordered.splice(toIdx, 0, moved);
+                            setUserShelf(prev => ({ ...prev, [menuEntry.status]: reordered }));
+                            saveSortOrder(menuEntry.status, reordered);
+                            setShelfMenuOpen(null);
+                          }}
+                            style={{ background: isCurrentRank ? menuCol?.color + "33" : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? menuCol?.color : C.border), borderRadius: 8, padding: "10px 0", color: isCurrentRank ? menuCol?.color : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                            {n}
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
                   {/* Cancel */}
                   <button onClick={() => setShelfMenuOpen(null)}
                     style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 0", color: C.textDim, fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
