@@ -741,7 +741,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       if (authUser) await supabase.from("user_private").update({ xbox_gamertag: null }).eq("id", authUser.id);
                       setXboxGamertag(null);
                     }}
-                      style={{ background: "#107c1022", border: "1px solid #107c1066", borderRadius: 8, padding: "4px 12px", color: "#107c10", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       ✓ Xbox
                     </button>
                   ) : (
@@ -1158,7 +1158,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                               className="remove-btn">
                               ×
                             </button>
-                            {/* Top 25 rank badge — bottom left over art */}
+                            {/* Top 25 rank badge — bottom left over art, all statuses */}
                             {shelfRank && (
                               <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
                                 #{shelfRank}
@@ -1187,15 +1187,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
                           {/* Below art — name + drag handle */}
                           <div style={{ padding: "8px 8px 6px" }}>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>{game.name}</div>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: isMobile ? 0 : 4 }}>{game.name}</div>
                             {!isMobile && (
                               <div
                                 className="drag-handle"
                                 draggable={true}
-                                onDragStart={e => { e.dataTransfer.setData("text/plain", entry.game_id); e.dataTransfer.effectAllowed = "move"; handleDragStart(entry.game_id, col.id); }}
-                                onDragEnd={handleDragEnd}
-                                style={{ opacity: 0, transition: "opacity 0.15s", cursor: "grab", textAlign: "center", color: C.textDim, fontSize: 12, letterSpacing: 2, lineHeight: 1, padding: "2px 0", WebkitUserSelect: "none" }}>
-                                ⠿⠿⠿
+                                onMouseDown={e => e.stopPropagation()}
+                                onClick={e => e.stopPropagation()}
+                                onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData("text/plain", entry.game_id); e.dataTransfer.effectAllowed = "move"; handleDragStart(entry.game_id, col.id); }}
+                                onDragEnd={e => { e.stopPropagation(); handleDragEnd(); }}
+                                style={{ opacity: 0, transition: "opacity 0.15s", cursor: "grab", textAlign: "center", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "3px 8px", color: C.textDim, fontSize: 10, fontWeight: 600, WebkitUserSelect: "none", userSelect: "none" }}>
+                                Drag to reorder
                               </div>
                             )}
                           </div>
@@ -1242,6 +1244,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             const menuCol = SHELF_COLUMNS.find(c => c.id === menuEntry.status);
             const menuReview = userReviews.find(r => r.game_id === shelfMenuOpen);
             const menuIdx = userShelf[menuEntry.status].findIndex(e => e.game_id === shelfMenuOpen);
+            const menuRank = menuIdx < 25 ? menuIdx + 1 : null;
             return (
               <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "flex-end" }}
                 onClick={() => setShelfMenuOpen(null)}>
@@ -1278,15 +1281,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       → {target.label}
                     </button>
                   ))}
-                  {/* Top 10 rank — Have Played only */}
                   {/* Top 25 rank — all statuses */}
                   <div>
                     <div style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "center", marginBottom: 8 }}>Rank</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
                       {Array.from({ length: 25 }, (_, i) => i + 1).map(n => {
-                        const colEntries = userShelf[menuEntry.status];
-                        const currentPos = colEntries.findIndex(e => e.game_id === shelfMenuOpen);
-                        const isCurrentRank = currentPos + 1 === n;
+                        const isCurrentRank = menuRank === n;
                         return (
                           <button key={n} onClick={() => {
                             const col2 = [...userShelf[menuEntry.status]];
@@ -1301,7 +1301,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             saveSortOrder(menuEntry.status, reordered);
                             setShelfMenuOpen(null);
                           }}
-                            style={{ background: isCurrentRank ? menuCol?.color + "33" : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? menuCol?.color : C.border), borderRadius: 8, padding: "10px 0", color: isCurrentRank ? menuCol?.color : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                            style={{ background: isCurrentRank ? (menuCol?.color || C.gold) + "33" : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? (menuCol?.color || C.gold) : C.border), borderRadius: 8, padding: "10px 0", color: isCurrentRank ? (menuCol?.color || C.gold) : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
                             {n}
                           </button>
                         );
