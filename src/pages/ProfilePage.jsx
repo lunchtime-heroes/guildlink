@@ -487,6 +487,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       await supabase.from("user_games").upsert(updates, { onConflict: "user_id,game_id" });
     }, 500);
   };
+
+  const addToShelf = async (game, status = "want_to_play") => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const { error } = await supabase.from("user_games").upsert({
