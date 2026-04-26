@@ -29,7 +29,7 @@ function decodeHtml(str) {
 function LinkPreviewCard({ preview, onExit }) {
   if (!preview?.url) return null;
   return (
-    <div onClick={e => { e.stopPropagation(); onExit(preview.url); }}
+    <div onClick={e => { e.stopPropagation(); if (onExit) { onExit(preview.url); } else { window.open(preview.url, "_blank", "noopener,noreferrer"); } }}
       style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none" }}
       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
