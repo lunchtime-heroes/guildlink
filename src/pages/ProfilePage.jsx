@@ -590,7 +590,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       loved: reviewEditForm.loved || null,
       didnt_love: reviewEditForm.didnt_love || null,
       content: reviewEditForm.content || null,
-    });
+    }, { onConflict: "user_id,game_id" });
     if (!error) {
       setUserReviews(prev => prev.map(r =>
         r.game_id === editingReview.game_id ? { ...r, ...reviewEditForm } : r
