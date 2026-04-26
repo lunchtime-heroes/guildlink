@@ -1,4 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, rectSortingStrategy, arrayMove
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { C, NPCS, QUESTS, PROFILE_RINGS, QUEST_THEMES, FOUNDING, THEMES, applyTheme } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent, updateTasteProfile, isUsernameRestricted } from "../utils.js";
@@ -9,6 +16,83 @@ import { FoundingBadge, Badge } from "../components/FoundingBadge.jsx";
 import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
 import XboxImportModal from "../modals/XboxImportModal.jsx";
+
+// SortableTile — individual draggable shelf tile using dnd-kit
+function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: isMobile });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    background: C.surface,
+    border: "1px solid " + (menuOpen ? col.color : C.border),
+    borderRadius: 12,
+    cursor: isMobile ? "pointer" : "default",
+    position: "relative",
+    overflow: "hidden",
+    alignSelf: "start",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; } }}
+      onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; } }}
+      onClick={onTileClick}>
+
+      {/* Cover art */}
+      <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
+        onClick={e => { if (!isMobile) { e.stopPropagation(); onGameClick(); } }}>
+        {game.cover_url
+          ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
+          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+        }
+        {/* X remove */}
+        <button onClick={e => { e.stopPropagation(); onRemove(); }}
+          style={{ position: "absolute", top: 4, right: 4, background: "rgba(8,14,26,0.75)", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1, opacity: isMobile ? 1 : 0, transition: "opacity 0.15s" }}
+          className="remove-btn">×</button>
+        {/* Rank badge */}
+        {shelfRank && (
+          <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
+            #{shelfRank}
+          </div>
+        )}
+        {/* Review badge */}
+        {col.id === "have_played" && review && (
+          <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
+            {review.rating}/10
+          </div>
+        )}
+        {/* Desktop thumbs hover bar */}
+        {col.id === "have_played" && !isMobile && (
+          <div className="thumbs-bar" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(8,14,26,0.85)", display: "flex", gap: 4, padding: "4px 6px", opacity: 0, transition: "opacity 0.15s" }}>
+            <button onClick={e => { e.stopPropagation(); onLike(); }}
+              style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>👍</button>
+            <button onClick={e => { e.stopPropagation(); onDislike(); }}
+              style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>👎</button>
+          </div>
+        )}
+      </div>
+
+      {/* Below art — name + drag handle */}
+      <div style={{ padding: "8px 8px 6px" }}>
+        <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: isMobile ? 0 : 4 }}>{game.name}</div>
+        {!isMobile && (
+          <div
+            {...attributes}
+            {...listeners}
+            style={{ cursor: "grab", textAlign: "center", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "3px 8px", color: C.textDim, fontSize: 10, fontWeight: 600, opacity: 0, transition: "opacity 0.15s" }}
+            className="drag-handle"
+            onClick={e => e.stopPropagation()}>
+            Drag to reorder
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onProfileSaved, onThemeChange, onQuestComplete, xboxImportData, xboxImportError, onXboxImportConsumed }) {
   const user = currentUser;
@@ -43,11 +127,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
-  const [dragging, setDragging] = useState(null); // { gameId, fromStatus }
-  const [dragOver, setDragOver] = useState(null);  // column id (cross-column target)
-  const [dragOverCard, _setDragOverCard] = useState(null); // kept for style references, updated via ref only
-  const dragOverCardRef = React.useRef(null);
-  const setDragOverCard = (val) => { dragOverCardRef.current = val; }; // no state update = no re-render
+  const [activeId, setActiveId] = useState(null); // dnd-kit active drag id
+  const [activeStatus, setActiveStatus] = useState(null); // which column is being dragged from
   const [mobileMoveCard, setMobileMoveCard] = useState(null);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null); // gameId of open tile menu
   const [addingGame, setAddingGame] = useState(false);
@@ -91,13 +172,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       .eq("user_id", authUser.id);
     if (rewards) setUserRewards(rewards);
   };
-
-  // Global drag cleanup
-  useEffect(() => {
-    const cleanup = () => { setDragging(null); setDragOver(null); dragOverCardRef.current = null; };
-    document.addEventListener("dragend", cleanup);
-    return () => document.removeEventListener("dragend", cleanup);
-  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -552,27 +626,48 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     } catch (e) { /* IGDB unavailable, local results are fine */ }
   };
 
-  const handleDragStart = (gameId, fromStatus) => setDragging({ gameId, fromStatus });
+  // dnd-kit sensors — distance:8 prevents accidental drags on click
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
-  const handleDragOver = (e, colId) => {
-    e.preventDefault();
-    setDragOver(colId);
+  const handleDndDragStart = (event) => {
+    setActiveId(event.active.id);
+    for (const col of ["want_to_play", "playing", "have_played"]) {
+      if (userShelf[col].find(e => e.game_id === event.active.id)) {
+        setActiveStatus(col); break;
+      }
+    }
   };
 
-  const handleCardDragOver = (e, colId, targetGameId) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(colId);
-    const val = { gameId: targetGameId, position: "before" };
-    setDragOverCard(val);
-    dragOverCardRef.current = val;
-  };
+  const handleDndDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveId(null);
+    setActiveStatus(null);
+    if (!active || !over || active.id === over.id) return;
 
-  const handleDragEnd = () => {
-    setDragging(null);
-    setDragOver(null);
-    setDragOverCard(null);
-    dragOverCardRef.current = null;
+    let fromCol = null;
+    for (const col of ["want_to_play", "playing", "have_played"]) {
+      if (userShelf[col].find(e => e.game_id === active.id)) { fromCol = col; break; }
+    }
+    let toCol = null;
+    for (const col of ["want_to_play", "playing", "have_played"]) {
+      if (userShelf[col].find(e => e.game_id === over.id)) { toCol = col; break; }
+      if (over.id === col) { toCol = col; break; }
+    }
+    if (!fromCol || !toCol) return;
+
+    if (fromCol === toCol) {
+      const col = userShelf[fromCol];
+      const oldIdx = col.findIndex(e => e.game_id === active.id);
+      const newIdx = col.findIndex(e => e.game_id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return;
+      const reordered = arrayMove(col, oldIdx, newIdx);
+      setUserShelf(prev => ({ ...prev, [fromCol]: reordered }));
+      saveSortOrder(fromCol, reordered);
+    } else {
+      moveGame(active.id, fromCol, toCol);
+    }
   };
 
   const saveSortOrder = async (colId, orderedEntries) => {
@@ -587,13 +682,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     }));
     await supabase.from("user_games").upsert(updates, { onConflict: "user_id,game_id" });
 
-    // Log elevations for Want to Play column — any game that moved up
     if (colId === "want_to_play") {
       const prevOrder = userShelf.want_to_play;
       const elevations = orderedEntries
         .map((entry, toIdx) => {
           const fromIdx = prevOrder.findIndex(e => e.game_id === entry.game_id);
-          if (fromIdx === -1 || toIdx >= fromIdx) return null; // didn't move up
+          if (fromIdx === -1 || toIdx >= fromIdx) return null;
           return { game_id: entry.game_id, from_position: fromIdx, to_position: toIdx };
         })
         .filter(Boolean);
@@ -607,37 +701,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           }))
         );
       }
-    }
-  };
-
-  const handleDrop = (e, toStatus) => {
-    e.preventDefault();
-    if (!dragging) return;
-    const { gameId, fromStatus } = dragging;
-    const currentDragOverCard = dragOverCardRef.current;
-
-    // Clear drag state first to prevent re-render issues
-    handleDragEnd();
-
-    if (fromStatus === toStatus) {
-      const col = [...userShelf[toStatus]];
-      const fromIdx = col.findIndex(e => e.game_id === gameId);
-      if (fromIdx === -1) return;
-      let toIdx = col.length - 1;
-      if (currentDragOverCard) {
-        const targetIdx = col.findIndex(e => e.game_id === currentDragOverCard.gameId);
-        if (targetIdx !== -1) {
-          toIdx = targetIdx;
-        }
-      }
-      if (fromIdx === toIdx) return;
-      const reordered = [...col];
-      const [moved] = reordered.splice(fromIdx, 1);
-      reordered.splice(toIdx, 0, moved);
-      setUserShelf(prev => ({ ...prev, [toStatus]: reordered }));
-      saveSortOrder(toStatus, reordered);
-    } else {
-      moveGame(gameId, fromStatus, toStatus);
     }
   };
 
@@ -1112,121 +1175,87 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             </>
           )}
 
-          {/* Cover art grid shelf */}
+          {/* Cover art grid shelf — dnd-kit */}
           <div data-tour="shelf-columns">
-            {SHELF_COLUMNS.map(col => {
-              const entries = userShelf[col.id];
-              const isDragTarget = !isMobile && dragging && dragging.fromStatus !== col.id && dragOver === col.id;
-              return (
-                <div key={col.id} style={{ marginBottom: 28 }}
-                  onDragOver={!isMobile ? e => { e.preventDefault(); setDragOver(col.id); } : undefined}
-                  onDrop={!isMobile && entries.length === 0 ? e => handleDrop(e, col.id) : undefined}>
-                  {/* Section header */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                    <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
-                    <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
-                  </div>
-                  {/* Grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
-                    {entries.map((entry, entryIndex) => {
-                      const game = entry.games;
-                      if (!game) return null;
-                      const review = userReviews.find(r => r.game_id === game.id);
-                      const menuOpen = shelfMenuOpen === entry.game_id;
-                      const actualIdx = entryIndex;
-                      const shelfRank = actualIdx < 25 ? actualIdx + 1 : null;
-                      return (
-                        <div key={entry.game_id}
-                          onDragOver={!isMobile ? e => { e.preventDefault(); handleCardDragOver(e, col.id, entry.game_id); } : undefined}
-                          onDrop={!isMobile ? e => handleDrop(e, col.id) : undefined}
-                          style={{ background: C.surface, border: "1px solid " + (menuOpen ? col.color : C.border), borderRadius: 12, cursor: isMobile ? "pointer" : "default", position: "relative", overflow: "hidden", alignSelf: "start", opacity: dragging?.gameId === entry.game_id ? 0.5 : 1, transition: "border-color 0.15s", userSelect: "none", WebkitUserSelect: "none" }}
-                          onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = col.color + "88"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "1"; const handle = e.currentTarget.querySelector(".drag-handle"); if (handle) handle.style.opacity = "1"; } }}
-                          onMouseLeave={e => { if (!isMobile) { e.currentTarget.style.borderColor = menuOpen ? col.color : C.border; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; const tb = e.currentTarget.querySelector(".thumbs-bar"); if (tb) tb.style.opacity = "0"; const handle = e.currentTarget.querySelector(".drag-handle"); if (handle) handle.style.opacity = "0"; } }}
-                          onClick={() => { if (isMobile) { setShelfMenuOpen(menuOpen ? null : entry.game_id); } }}>
-
-                          {/* Cover art */}
-                          <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
-                            onClick={e => { if (!isMobile) { e.stopPropagation(); setCurrentGame(game.id); setActivePage("game"); } }}>
-                            {game.cover_url
-                              ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
-                              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
-                            }
-                            {/* X remove button — top right over art */}
-                            <button
-                              onClick={e => { e.stopPropagation(); removeFromShelf(entry.game_id, col.id); setShelfMenuOpen(null); }}
-                              style={{ position: "absolute", top: 4, right: 4, background: "rgba(8,14,26,0.75)", border: "none", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1, opacity: isMobile ? 1 : 0, transition: "opacity 0.15s" }}
-                              className="remove-btn">
-                              ×
-                            </button>
-                            {/* Top 25 rank badge — bottom left over art, all statuses */}
-                            {shelfRank && (
-                              <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
-                                #{shelfRank}
-                              </div>
-                            )}
-                            {/* Review badge — bottom right over art, always visible */}
-                            {col.id === "have_played" && review && (
-                              <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
-                                {review.rating}/10
-                              </div>
-                            )}
-                            {/* Desktop thumbs hover bar — Have Played, own profile only */}
-                            {col.id === "have_played" && !isMobile && (
-                              <div className="thumbs-bar" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(8,14,26,0.85)", display: "flex", gap: 4, padding: "4px 6px", opacity: 0, transition: "opacity 0.15s" }}>
-                                <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === true ? null : true); }}
-                                  style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>
-                                  👍
-                                </button>
-                                <button onClick={e => { e.stopPropagation(); saveLiked(entry.game_id, entry.liked === false ? null : false); }}
-                                  style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>
-                                  👎
-                                </button>
-                              </div>
-                            )}
+            <DndContext
+              sensors={!isMobile ? sensors : []}
+              collisionDetection={closestCenter}
+              onDragStart={!isMobile ? handleDndDragStart : undefined}
+              onDragEnd={!isMobile ? handleDndDragEnd : undefined}>
+              {SHELF_COLUMNS.map(col => {
+                const entries = userShelf[col.id];
+                return (
+                  <div key={col.id} style={{ marginBottom: 28 }}>
+                    {/* Section header */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
+                      <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
+                    </div>
+                    {/* Grid */}
+                    <SortableContext
+                      items={entries.map(e => e.game_id)}
+                      strategy={rectSortingStrategy}
+                      id={col.id}>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
+                        {entries.map((entry, entryIndex) => {
+                          const game = entry.games;
+                          if (!game) return null;
+                          const review = userReviews.find(r => r.game_id === game.id);
+                          const menuOpen = shelfMenuOpen === entry.game_id;
+                          const shelfRank = entryIndex < 25 ? entryIndex + 1 : null;
+                          return (
+                            <SortableTile
+                              key={entry.game_id}
+                              id={entry.game_id}
+                              entry={entry}
+                              game={game}
+                              col={col}
+                              review={review}
+                              menuOpen={menuOpen}
+                              shelfRank={shelfRank}
+                              isMobile={isMobile}
+                              activeId={activeId}
+                              onTileClick={() => { if (isMobile) setShelfMenuOpen(menuOpen ? null : entry.game_id); }}
+                              onGameClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                              onRemove={() => { removeFromShelf(entry.game_id, col.id); setShelfMenuOpen(null); }}
+                              onLike={() => saveLiked(entry.game_id, entry.liked === true ? null : true)}
+                              onDislike={() => saveLiked(entry.game_id, entry.liked === false ? null : false)}
+                              C={C}
+                            />
+                          );
+                        })}
+                        {/* Empty state */}
+                        {entries.length === 0 && (
+                          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33" }}>
+                            {col.emptyText}
                           </div>
-
-                          {/* Below art — name + drag handle */}
-                          <div style={{ padding: "8px 8px 6px" }}>
-                            <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: isMobile ? 0 : 4 }}>{game.name}</div>
-                            {!isMobile && (
-                              <div
-                                className="drag-handle"
-                                draggable={true}
-                                onMouseDown={e => e.stopPropagation()}
-                                onClick={e => e.stopPropagation()}
-                                onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData("text/plain", entry.game_id); e.dataTransfer.effectAllowed = "move"; handleDragStart(entry.game_id, col.id); }}
-                                onDragEnd={e => { e.stopPropagation(); handleDragEnd(); }}
-                                style={{ opacity: 0, transition: "opacity 0.15s", cursor: "grab", textAlign: "center", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "3px 8px", color: C.textDim, fontSize: 10, fontWeight: 600, WebkitUserSelect: "none", userSelect: "none" }}>
-                                Drag to reorder
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Mobile overlay handled by bottom sheet modal below */}
-
-
-                        </div>
-                      );
-                    })}
-                    {/* Drop zone tile — always visible when dragging to this column */}
-                    {!isMobile && dragging && dragging.fromStatus !== col.id && (
-                      <div
-                        onDragOver={e => { e.preventDefault(); setDragOver(col.id); dragOverCardRef.current = null; }}
-                        onDrop={e => handleDrop(e, col.id)}
-                        style={{ aspectRatio: "3/4", borderRadius: 12, border: "2px dashed " + (isDragTarget ? col.color : col.color + "44"), background: isDragTarget ? col.color + "11" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
-                        {isDragTarget && <div style={{ color: col.color, fontSize: 11, fontWeight: 700, textAlign: "center" }}>Drop here</div>}
+                        )}
                       </div>
-                    )}
-                    {/* Empty state */}
-                    {entries.length === 0 && !dragging && (
-                      <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33" }}>
-                        {col.emptyText}
-                      </div>
-                    )}
+                    </SortableContext>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+              {/* Drag overlay — shows ghost while dragging */}
+              <DragOverlay>
+                {activeId && (() => {
+                  const allEntries = [...userShelf.want_to_play, ...userShelf.playing, ...userShelf.have_played];
+                  const entry = allEntries.find(e => e.game_id === activeId);
+                  const game = entry?.games;
+                  if (!game) return null;
+                  return (
+                    <div style={{ background: C.surface, borderRadius: 12, overflow: "hidden", opacity: 0.9, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", transform: "rotate(2deg)" }}>
+                      <div style={{ width: "100%", aspectRatio: "3/4" }}>
+                        {game.cover_url
+                          ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
+                          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+                        }
+                      </div>
+                      <div style={{ padding: "8px 8px 6px", fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                    </div>
+                  );
+                })()}
+              </DragOverlay>
+            </DndContext>
             {shelfCount === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
