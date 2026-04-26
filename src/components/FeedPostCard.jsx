@@ -393,7 +393,7 @@ return (
           )}
 
           {/* Link preview */}
-          {localPost.link_url && onExit && (
+          {localPost.link_url && (
             <div style={{ marginBottom: 12 }}>
               <LinkPreviewCard preview={{ url: localPost.link_url, title: localPost.link_title, description: localPost.link_description, image: localPost.link_image, domain: localPost.link_domain }} onExit={onExit} />
             </div>

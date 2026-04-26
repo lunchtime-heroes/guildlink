@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": "GuildLink/1.0 (link preview bot)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; GuildLink/1.0; +https://guildlink.gg)" },
       redirect: "follow",
       signal: AbortSignal.timeout(5000),
     });
