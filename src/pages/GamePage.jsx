@@ -249,7 +249,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
       loved: reviewForm.loved || null,
       didnt_love: reviewForm.didnt_love || null,
       content: reviewForm.content || null,
-    });
+    }, { onConflict: "user_id,game_id" });
     if (!error) {
       const isEdit = !!myReview;
       if (!isEdit) {
