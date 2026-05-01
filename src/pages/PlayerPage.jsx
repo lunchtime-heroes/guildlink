@@ -63,8 +63,9 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
 
       // Shelf
       const { data: shelfData } = await supabase
-        .from("user_games").select("*, games(id, name, developer, genre)")
-        .eq("user_id", userId);
+        .from("user_games").select("*, games(id, name, developer, genre, cover_url)")
+        .eq("user_id", userId)
+        .order("sort_order", { ascending: true });
       if (shelfData) {
         const s = { want_to_play: [], playing: [], have_played: [] };
         shelfData.forEach(e => { if (s[e.status]) s[e.status].push(e); });
@@ -286,39 +287,66 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
         </div>
       )}
 
-      {/* Games — read-only kanban */}
+      {/* Games — artwork grid (read-only) */}
       {activeTab === "games" && (
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14, minWidth: 0, overflow: "hidden" }}>
-          {SHELF_COLUMNS.map(col => (
-            <div key={col.id} style={{ background: C.surface, border: "1px solid " + col.color + "33", borderRadius: 14, padding: 14, minHeight: 160, minWidth: 0, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ fontWeight: 800, color: col.color, fontSize: 13, whiteSpace: "nowrap" }}>{col.label}</div>
-                <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{shelf[col.id].length}</div>
-              </div>
-              {shelf[col.id].length > 0 ? shelf[col.id].map(entry => {
-                const game = entry.games;
-                if (!game) return null;
-                const review = reviews.find(r => r.game_id === entry.game_id);
-                return (
-                  <div key={entry.game_id}
-                    onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
-                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 12px", marginBottom: 8, cursor: "pointer" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                        <div style={{ color: C.textDim, fontSize: 11 }}>{game.genre}</div>
-                      </div>
-                      {review && <span style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "1px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{review.rating + "/10"}</span>}
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div style={{ textAlign: "center", padding: "20px 10px", color: C.textDim, fontSize: 12, borderRadius: 8, border: "1px dashed " + col.color + "33" }}>
-                  Nothing here yet
+        <div>
+          {SHELF_COLUMNS.map(col => {
+            const entries = shelf[col.id];
+            if (entries.length === 0) return null;
+            return (
+              <div key={col.id} style={{ marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
+                  <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
                 </div>
-              )}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
+                  {entries.map((entry, entryIndex) => {
+                    const game = entry.games;
+                    if (!game) return null;
+                    const review = reviews.find(r => r.game_id === entry.game_id);
+                    const shelfRank = entryIndex < 25 ? entryIndex + 1 : null;
+                    return (
+                      <div key={entry.game_id}
+                        onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                        style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, cursor: "pointer", position: "relative", overflow: "hidden", alignSelf: "start", transition: "border-color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = col.color + "88"}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                        {/* Cover art */}
+                        <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}>
+                          {game.cover_url
+                            ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+                          }
+                          {/* Rank badge */}
+                          {shelfRank && (
+                            <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
+                              #{shelfRank}
+                            </div>
+                          )}
+                          {/* Review badge */}
+                          {col.id === "have_played" && review && (
+                            <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
+                              {review.rating}/10
+                            </div>
+                          )}
+                        </div>
+                        {/* Game name */}
+                        <div style={{ padding: "8px 8px 8px" }}>
+                          <div style={{ fontWeight: 700, color: C.text, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {totalGames === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
+              <div style={{ fontSize: 14 }}>No games on shelf yet.</div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
