@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
                 gameTag ? {
                   type: "div",
                   props: {
-                    style: { display: "flex" },
+                    style: { display: "flex", justifyContent: "center" },
                     children: [{
                       type: "div",
                       props: {
@@ -86,11 +86,11 @@ module.exports = async function handler(req, res) {
                 {
                   type: "div",
                   props: {
-                    style: { flex: 1, display: "flex", alignItems: "center" },
+                    style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center" },
                     children: {
                       type: "div",
                       props: {
-                        style: { color: WHITE, fontSize, fontWeight: 700, lineHeight: 1.35 },
+                        style: { color: WHITE, fontSize, fontWeight: 700, lineHeight: 1.35, textAlign: "center" },
                         children: displayContent,
                       }
                     }
