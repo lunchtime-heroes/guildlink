@@ -79,20 +79,20 @@ module.exports = async function handler(req, res) {
               loved ? {
                 type: "div",
                 props: {
-                  style: { display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 },
+                  style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 },
                   children: [
-                    { type: "div", props: { style: { color: GREEN, fontSize: 40, lineHeight: 1, marginTop: 4 }, children: "✓" } },
-                    { type: "div", props: { style: { color: WHITE, fontSize: 38, fontWeight: 700, lineHeight: 1.4, flex: 1 }, children: loved.length > 100 ? loved.slice(0, 100) + "…" : loved } },
+                    { type: "div", props: { style: { color: GREEN, fontSize: 22, fontWeight: 800, letterSpacing: "0.05em" }, children: "WHAT I LOVED:" } },
+                    { type: "div", props: { style: { color: WHITE, fontSize: 36, fontWeight: 700, lineHeight: 1.4, paddingLeft: 16 }, children: loved.length > 100 ? loved.slice(0, 100) + "…" : loved } },
                   ]
                 }
               } : { type: "div", props: { children: "" } },
               didntLove ? {
                 type: "div",
                 props: {
-                  style: { display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 },
+                  style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 },
                   children: [
-                    { type: "div", props: { style: { color: RED, fontSize: 40, lineHeight: 1, marginTop: 4 }, children: "✗" } },
-                    { type: "div", props: { style: { color: WHITE + "cc", fontSize: 38, fontWeight: 700, lineHeight: 1.4, flex: 1 }, children: didntLove.length > 100 ? didntLove.slice(0, 100) + "…" : didntLove } },
+                    { type: "div", props: { style: { color: RED, fontSize: 22, fontWeight: 800, letterSpacing: "0.05em" }, children: "WHAT I DIDN'T LOVE:" } },
+                    { type: "div", props: { style: { color: WHITE + "cc", fontSize: 36, fontWeight: 700, lineHeight: 1.4, paddingLeft: 16 }, children: didntLove.length > 100 ? didntLove.slice(0, 100) + "…" : didntLove } },
                   ]
                 }
               } : { type: "div", props: { children: "" } },
