@@ -896,9 +896,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           {emerging.length > 0 && (
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
-              <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
-                <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Emerging</div>
-                <div style={{ color: C.textDim, fontSize: 12 }}>Games gaining new momentum this week</div>
+              <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Emerging</div>
+                  <div style={{ color: C.textDim, fontSize: 12 }}>Games gaining new momentum this week</div>
+                </div>
+                <ShareChartsButton
+                  games={emerging.slice(0, 10).map((entry, i) => ({ name: entry.name, change: 0 }))}
+                  label="Emerging"
+                />
               </div>
               {emerging.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="emerging" />)}
             </div>

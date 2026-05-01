@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
               {
                 type: "div",
                 props: {
-                  style: { flex: 1, display: "flex", flexDirection: "column", background: BG, borderRadius: 14, overflow: "hidden", border: "1px solid " + GOLD + "33" },
+                  style: { display: "flex", flexDirection: "column", background: BG, borderRadius: 14, overflow: "hidden", border: "1px solid " + GOLD + "33" },
                   children: rows,
                 }
               },
