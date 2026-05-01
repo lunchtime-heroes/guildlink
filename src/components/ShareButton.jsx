@@ -150,10 +150,11 @@ export function ShareChartsButton({ games, style = {} }) {
   return (
     <>
       <button onClick={handleShare} disabled={loading} title="Share the charts"
-        style={{ background: "none", border: "none", cursor: loading ? "default" : "pointer", color: C.textDim, display: "flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 6, opacity: loading ? 0.5 : 1, ...style }}
-        onMouseEnter={e => { if (!loading) e.currentTarget.style.color = C.accentSoft; }}
-        onMouseLeave={e => { e.currentTarget.style.color = C.textDim; }}>
-        {loading ? <span style={{ fontSize: 10 }}>...</span> : <ShareIcon size={13} />}
+        style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 20, padding: "5px 14px", cursor: loading ? "default" : "pointer", color: C.accentSoft, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, opacity: loading ? 0.5 : 1, flexShrink: 0, ...style }}
+        onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = C.accent + "33"; } }}
+        onMouseLeave={e => { e.currentTarget.style.background = C.accentGlow; }}>
+        <ShareIcon size={13} />
+        {loading ? "..." : "Share"}
       </button>
       {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-charts.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
     </>

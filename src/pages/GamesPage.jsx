@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { logChartEvent } from "../utils.js";
+import { ShareChartsButton } from "../components/ShareButton.jsx";
 
 const GAMES = {};
 
@@ -877,9 +878,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       ) : (
         <>
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, marginBottom: 32, overflow: "hidden" }}>
-            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "baseline", gap: 10 }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
-              <div style={{ color: C.textDim, fontSize: 12 }}>Last 8 days</div>
+            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Top 10 Overall</div>
+                <div style={{ color: C.textDim, fontSize: 12 }}>Last 8 days</div>
+              </div>
+              <ShareChartsButton
+                games={overall.slice(0, 10).map((entry, i) => {
+                  const prev = prevRanks[entry.id];
+                  const change = prev ? prev - (i + 1) : 0;
+                  return { name: entry.name, change };
+                })}
+              />
             </div>
             {overall.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section="overall" />)}
           </div>
