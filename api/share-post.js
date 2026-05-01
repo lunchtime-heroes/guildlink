@@ -99,27 +99,8 @@ module.exports = async function handler(req, res) {
                 {
                   type: "div",
                   props: {
-                    style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 48 },
-                    children: [
-                      avatarSrc ? {
-                        type: "img",
-                        props: { src: avatarSrc, style: { width: 80, height: 80, borderRadius: 14, border: `2px solid ${GOLD}`, objectFit: "cover" } }
-                      } : {
-                        type: "div",
-                        props: {
-                          style: { width: 80, height: 80, borderRadius: 14, background: GOLD + "33", border: `2px solid ${GOLD}`, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 28, fontWeight: 700 },
-                          children: handle ? handle.replace("@", "").slice(0, 2).toUpperCase() : "GL",
-                        }
-                      },
-                      { type: "div", props: { style: { color: WHITE, fontSize: 30, fontWeight: 700 }, children: handle } },
-                    ]
-                  }
-                },
-                {
-                  type: "div",
-                  props: {
-                    style: { display: "flex", justifyContent: "center", marginTop: 40 },
-                    children: { type: "div", props: { style: { color: GOLD, fontSize: 36, fontWeight: 700 }, children: "GuildLink.gg" } }
+                    style: { display: "flex", justifyContent: "center", marginTop: 48 },
+                    children: { type: "div", props: { style: { color: GOLD, fontSize: 38, fontWeight: 700, textAlign: "center" }, children: handle + " on GuildLink.gg" } }
                   }
                 },
               ]

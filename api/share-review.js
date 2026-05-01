@@ -39,7 +39,6 @@ module.exports = async function handler(req, res) {
     } catch {}
   }
 
-  const initials = handle ? handle.replace(/^@+/, "").slice(0, 2).toUpperCase() : "GL";
   const lovedText = loved.length > 90 ? loved.slice(0, 90) + "…" : loved;
   const didntLoveText = didntLove.length > 90 ? didntLove.slice(0, 90) + "…" : didntLove;
 
@@ -114,22 +113,12 @@ module.exports = async function handler(req, res) {
               } : { type: "div", props: { children: "" } },
               // Spacer
               { type: "div", props: { style: { flex: 1 }, children: "" } },
-              // Credit — centered
+              // Credit
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
-                  children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: { width: 72, height: 72, borderRadius: 12, background: GOLD + "33", border: "2px solid " + GOLD, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 26, fontWeight: 700 },
-                        children: initials,
-                      }
-                    },
-                    { type: "div", props: { style: { color: WHITE, fontSize: 26, fontWeight: 700 }, children: handle } },
-                    { type: "div", props: { style: { color: GOLD, fontSize: 28, fontWeight: 700 }, children: "GuildLink.gg" } },
-                  ]
+                  style: { display: "flex", justifyContent: "center", marginTop: 24 },
+                  children: { type: "div", props: { style: { color: GOLD, fontSize: 32, fontWeight: 700, textAlign: "center" }, children: handle + " on GuildLink.gg" } }
                 }
               },
             ]
