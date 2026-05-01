@@ -28,45 +28,58 @@ module.exports = async function handler(req, res) {
 
   const bgPath = path.join(process.cwd(), "public", "share-bg.png");
   const bgBase64 = fs.readFileSync(bgPath).toString("base64");
-  const bgSrc = `data:image/png;base64,${bgBase64}`;
+  const bgSrc = "data:image/png;base64," + bgBase64;
 
-  // Fetch cover image as base64 if present
   let coverSrc = "";
   if (coverUrl) {
     try {
       const coverRes = await fetch(coverUrl);
       const coverBuf = Buffer.from(await coverRes.arrayBuffer());
-      coverSrc = `data:image/jpeg;base64,${coverBuf.toString("base64")}`;
+      coverSrc = "data:image/jpeg;base64," + coverBuf.toString("base64");
     } catch {}
   }
+
+  const initials = handle ? handle.replace(/^@+/, "").slice(0, 2).toUpperCase() : "GL";
+  const lovedText = loved.length > 90 ? loved.slice(0, 90) + "…" : loved;
+  const didntLoveText = didntLove.length > 90 ? didntLove.slice(0, 90) + "…" : didntLove;
 
   const svg = await satori(
     {
       type: "div",
       props: {
-        style: { width: 1080, height: 1080, display: "flex", position: "relative", backgroundColor: BG, backgroundImage: `url(${bgSrc})`, backgroundSize: "cover" },
+        style: { width: 1080, height: 1080, display: "flex", position: "relative", backgroundColor: BG, backgroundImage: "url(" + bgSrc + ")", backgroundSize: "cover" },
         children: [{
           type: "div",
           props: {
-            style: { position: "absolute", top: 88, left: 88, width: 904, height: 904, backgroundColor: CARD_BG, borderRadius: 50, border: `5px solid ${GOLD}`, display: "flex", flexDirection: "column", padding: "55px 90px" },
+            style: { position: "absolute", top: 60, left: 60, width: 960, height: 960, backgroundColor: CARD_BG, borderRadius: 50, border: "5px solid " + GOLD, display: "flex", flexDirection: "column", padding: "55px 80px 50px" },
             children: [
+              // Game header — cover + name + rating
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", alignItems: "center", gap: 40, marginBottom: 48 },
+                  style: { display: "flex", alignItems: "center", gap: 36, marginBottom: 36 },
                   children: [
-                    coverSrc ? { type: "img", props: { src: coverSrc, style: { width: 120, height: 160, borderRadius: 12, objectFit: "cover" } } } : { type: "div", props: { children: "" } },
+                    coverSrc ? {
+                      type: "img",
+                      props: { src: coverSrc, style: { width: 110, height: 147, borderRadius: 10, objectFit: "cover", flexShrink: 0 } }
+                    } : { type: "div", props: { style: { width: 110, height: 147, borderRadius: 10, background: GOLD + "22", flexShrink: 0 }, children: "" } },
                     {
                       type: "div",
                       props: {
-                        style: { flex: 1, display: "flex", flexDirection: "column", gap: 16 },
+                        style: { flex: 1, display: "flex", flexDirection: "column", gap: 14 },
                         children: [
-                          { type: "div", props: { style: { color: WHITE, fontSize: 52, fontWeight: 700, lineHeight: 1.2 }, children: gameName } },
+                          { type: "div", props: { style: { color: WHITE, fontSize: 44, fontWeight: 700, lineHeight: 1.2 }, children: gameName } },
                           {
                             type: "div",
                             props: {
-                              style: { display: "flex", width: "fit-content", background: GOLD + "22", border: `2px solid ${GOLD}55`, borderRadius: 12, padding: "8px 24px" },
-                              children: { type: "div", props: { style: { color: GOLD, fontSize: 48, fontWeight: 700 }, children: `${rating}/10` } }
+                              style: { display: "flex" },
+                              children: {
+                                type: "div",
+                                props: {
+                                  style: { background: GOLD + "22", border: "2px solid " + GOLD + "55", borderRadius: 10, padding: "6px 20px", display: "flex", alignItems: "center" },
+                                  children: { type: "div", props: { style: { color: GOLD, fontSize: 40, fontWeight: 700 }, children: rating + "/10" } }
+                                }
+                              }
                             }
                           },
                         ]
@@ -75,42 +88,47 @@ module.exports = async function handler(req, res) {
                   ]
                 }
               },
-              { type: "div", props: { style: { height: 2, background: GOLD + "33", marginBottom: 48 }, children: "" } },
+              // Divider
+              { type: "div", props: { style: { height: 2, background: GOLD + "33", marginBottom: 32 }, children: "" } },
+              // What I loved
               loved ? {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 },
+                  style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 },
                   children: [
-                    { type: "div", props: { style: { color: GREEN, fontSize: 22, fontWeight: 800, letterSpacing: "0.05em" }, children: "WHAT I LOVED:" } },
-                    { type: "div", props: { style: { color: WHITE, fontSize: 36, fontWeight: 700, lineHeight: 1.4, paddingLeft: 16 }, children: loved.length > 100 ? loved.slice(0, 100) + "…" : loved } },
+                    { type: "div", props: { style: { color: GREEN, fontSize: 20, fontWeight: 800, letterSpacing: "0.05em" }, children: "WHAT I LOVED:" } },
+                    { type: "div", props: { style: { color: WHITE, fontSize: 32, fontWeight: 700, lineHeight: 1.4, paddingLeft: 16 }, children: lovedText } },
                   ]
                 }
               } : { type: "div", props: { children: "" } },
+              // What I didn't love
               didntLove ? {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 },
+                  style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 },
                   children: [
-                    { type: "div", props: { style: { color: RED, fontSize: 22, fontWeight: 800, letterSpacing: "0.05em" }, children: "WHAT I DIDN'T LOVE:" } },
-                    { type: "div", props: { style: { color: WHITE + "cc", fontSize: 36, fontWeight: 700, lineHeight: 1.4, paddingLeft: 16 }, children: didntLove.length > 100 ? didntLove.slice(0, 100) + "…" : didntLove } },
+                    { type: "div", props: { style: { color: RED, fontSize: 20, fontWeight: 800, letterSpacing: "0.05em" }, children: "WHAT I DIDN'T LOVE:" } },
+                    { type: "div", props: { style: { color: WHITE + "cc", fontSize: 32, fontWeight: 700, lineHeight: 1.4, paddingLeft: 16 }, children: didntLoveText } },
                   ]
                 }
               } : { type: "div", props: { children: "" } },
+              // Spacer
               { type: "div", props: { style: { flex: 1 }, children: "" } },
+              // Credit — centered
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 32 },
+                  style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
                   children: [
                     {
                       type: "div",
                       props: {
-                        style: { width: 80, height: 80, borderRadius: 14, background: GOLD + "33", border: "2px solid " + GOLD, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 28, fontWeight: 700 },
-                        children: handle ? handle.replace(/^@+/, "").slice(0, 2).toUpperCase() : "GL",
+                        style: { width: 72, height: 72, borderRadius: 12, background: GOLD + "33", border: "2px solid " + GOLD, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 26, fontWeight: 700 },
+                        children: initials,
                       }
                     },
-                    { type: "div", props: { style: { color: WHITE, fontSize: 30, fontWeight: 700 }, children: handle } },
-                    { type: "div", props: { style: { color: GOLD, fontSize: 32, fontWeight: 700 }, children: "GuildLink.gg" } },
+                    { type: "div", props: { style: { color: WHITE, fontSize: 26, fontWeight: 700 }, children: handle } },
+                    { type: "div", props: { style: { color: GOLD, fontSize: 28, fontWeight: 700 }, children: "GuildLink.gg" } },
                   ]
                 }
               },
