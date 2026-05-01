@@ -12,23 +12,16 @@ function ShareIcon({ size = 16 }) {
   );
 }
 
-// Lightbox to preview and download the generated image
 function ShareLightbox({ imageUrl, filename, onClose }) {
   return (
-    <div
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div onClick={e => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, maxWidth: 560, width: "100%" }}>
         <img src={imageUrl} alt="Share preview" style={{ width: "100%", borderRadius: 16, boxShadow: "0 8px 40px rgba(0,0,0,0.6)" }} />
         <div style={{ display: "flex", gap: 12 }}>
-          <a
-            href={imageUrl}
-            download={filename}
-            style={{ background: "#fbae17", border: "none", borderRadius: 10, padding: "12px 28px", color: "#0d1424", fontSize: 15, fontWeight: 800, cursor: "pointer", textDecoration: "none" }}>
+          <a href={imageUrl} download={filename} style={{ background: "#fbae17", border: "none", borderRadius: 10, padding: "12px 28px", color: "#0d1424", fontSize: 15, fontWeight: 800, cursor: "pointer", textDecoration: "none" }}>
             ↓ Download
           </a>
-          <button onClick={onClose}
-            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "12px 20px", color: "rgba(255,255,255,0.7)", fontSize: 15, cursor: "pointer" }}>
+          <button onClick={onClose} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "12px 20px", color: "rgba(255,255,255,0.7)", fontSize: 15, cursor: "pointer" }}>
             Close
           </button>
         </div>
@@ -44,17 +37,21 @@ async function fetchShareImage(url) {
   return URL.createObjectURL(blob);
 }
 
+// Normalize handle — always exactly one @
+function normalizeHandle(raw) {
+  if (!raw) return "";
+  const stripped = raw.replace(/^@+/, "");
+  return stripped ? `@${stripped}` : "";
+}
+
 export function SharePostButton({ post, currentUser, taggedGameName, style = {} }) {
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
 
-  const handle = currentUser?.handle
-    ? `@${currentUser.handle}`
-    : post.profiles?.handle
-      ? `@${post.profiles.handle}`
-      : post.profiles?.username
-        ? `@${post.profiles.username}`
-        : "";
+  // Use post author's handle
+  const handle = normalizeHandle(
+    post.user?.handle || post.profiles?.handle || post.profiles?.username || post.user?.username || ""
+  );
 
   const handleShare = async (e) => {
     e.stopPropagation();
@@ -81,9 +78,7 @@ export function SharePostButton({ post, currentUser, taggedGameName, style = {} 
         onMouseLeave={e => { e.currentTarget.style.color = C.textDim; }}>
         {loading ? <span style={{ fontSize: 11 }}>...</span> : <ShareIcon size={15} />}
       </button>
-      {imageUrl && (
-        <ShareLightbox imageUrl={imageUrl} filename="guildlink-post.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />
-      )}
+      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-post.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
     </>
   );
 }
@@ -92,11 +87,9 @@ export function ShareReviewButton({ review, style = {} }) {
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
 
-  const handle = review.profiles?.handle
-    ? `@${review.profiles.handle}`
-    : review.profiles?.username
-      ? `@${review.profiles.username}`
-      : "";
+  const handle = normalizeHandle(
+    review.profiles?.handle || review.profiles?.username || ""
+  );
 
   const handleShare = async (e) => {
     e.stopPropagation();
@@ -121,15 +114,13 @@ export function ShareReviewButton({ review, style = {} }) {
   return (
     <>
       <button onClick={handleShare} disabled={loading}
-        style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", cursor: loading ? "default" : "pointer", color: C.textMuted, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, opacity: loading ? 0.5 : 1, ...style }}
+        style={{ background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 8, padding: "6px 12px", cursor: loading ? "default" : "pointer", color: C.textMuted, fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, opacity: loading ? 0.5 : 1, flexShrink: 0, ...style }}
         onMouseEnter={e => { if (!loading) { e.currentTarget.style.borderColor = C.accentDim; e.currentTarget.style.color = C.accentSoft; } }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMuted; }}>
         <ShareIcon size={13} />
         {loading ? "Generating..." : "Share"}
       </button>
-      {imageUrl && (
-        <ShareLightbox imageUrl={imageUrl} filename="guildlink-review.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />
-      )}
+      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-review.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
     </>
   );
 }
@@ -159,15 +150,12 @@ export function ShareChartsButton({ games, style = {} }) {
   return (
     <>
       <button onClick={handleShare} disabled={loading} title="Share the charts"
-        style={{ background: "none", border: "none", cursor: loading ? "default" : "pointer", color: C.textDim, display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600, opacity: loading ? 0.5 : 1, ...style }}
+        style={{ background: "none", border: "none", cursor: loading ? "default" : "pointer", color: C.textDim, display: "flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 6, opacity: loading ? 0.5 : 1, ...style }}
         onMouseEnter={e => { if (!loading) e.currentTarget.style.color = C.accentSoft; }}
         onMouseLeave={e => { e.currentTarget.style.color = C.textDim; }}>
-        <ShareIcon size={14} />
-        {loading ? "..." : "Share"}
+        {loading ? <span style={{ fontSize: 10 }}>...</span> : <ShareIcon size={13} />}
       </button>
-      {imageUrl && (
-        <ShareLightbox imageUrl={imageUrl} filename="guildlink-charts.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />
-      )}
+      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-charts.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
     </>
   );
 }

@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
         children: [{
           type: "div",
           props: {
-            style: { position: "absolute", top: 88, left: 88, width: 904, height: 904, backgroundColor: CARD_BG, borderRadius: 50, border: `5px solid ${GOLD}`, display: "flex", flexDirection: "column", padding: "70px 90px" },
+            style: { position: "absolute", top: 88, left: 88, width: 904, height: 904, backgroundColor: CARD_BG, borderRadius: 50, border: `5px solid ${GOLD}`, display: "flex", flexDirection: "column", padding: "55px 90px" },
             children: [
               {
                 type: "div",
@@ -100,10 +100,17 @@ module.exports = async function handler(req, res) {
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" },
+                  style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 32 },
                   children: [
-                    { type: "div", props: { style: { color: WHITE + "99", fontSize: 30, fontWeight: 700 }, children: handle } },
-                    { type: "div", props: { style: { color: GOLD, fontSize: 34, fontWeight: 700 }, children: "GuildLink.gg" } },
+                    {
+                      type: "div",
+                      props: {
+                        style: { width: 80, height: 80, borderRadius: 14, background: GOLD + "33", border: "2px solid " + GOLD, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 28, fontWeight: 700 },
+                        children: handle ? handle.replace(/^@+/, "").slice(0, 2).toUpperCase() : "GL",
+                      }
+                    },
+                    { type: "div", props: { style: { color: WHITE, fontSize: 30, fontWeight: 700 }, children: handle } },
+                    { type: "div", props: { style: { color: GOLD, fontSize: 32, fontWeight: 700 }, children: "GuildLink.gg" } },
                   ]
                 }
               },
