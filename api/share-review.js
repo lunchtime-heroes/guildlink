@@ -1,10 +1,10 @@
-// api/share-review.js — Generates a shareable PNG image for a review
+// api/share-review.js — Generates a shareable PNG for a review
 
-import { ImageResponse } from "@vercel/og";
+const satori = require("satori").default;
+const sharp = require("sharp");
+const fs = require("fs");
+const path = require("path");
 
-export const config = { runtime: "edge" };
-
-const BG_URL = "https://guildlink.gg/share-bg.png";
 const GOLD = "#fbae17";
 const WHITE = "#e2e8f4";
 const CARD_BG = "#162035";
@@ -12,79 +12,111 @@ const BG = "#0d1424";
 const GREEN = "#10b981";
 const RED = "#ef4444";
 
-export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
-  const gameName = searchParams.get("game") || "";
-  const rating = searchParams.get("rating") || "";
-  const loved = searchParams.get("loved") || "";
-  const didntLove = searchParams.get("didnt_love") || "";
-  const handle = searchParams.get("handle") || "";
-  const coverUrl = searchParams.get("cover") || "";
+module.exports = async function handler(req, res) {
+  if (req.method !== "GET") return res.status(405).end();
 
-  const fontRes = await fetch(
-    "https://fonts.gstatic.com/s/playfairdisplay/v36/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtY.woff"
-  );
-  const fontData = await fontRes.arrayBuffer();
+  const url = new URL(req.url, "https://guildlink.gg");
+  const gameName = url.searchParams.get("game") || "";
+  const rating = url.searchParams.get("rating") || "";
+  const loved = url.searchParams.get("loved") || "";
+  const didntLove = url.searchParams.get("didnt_love") || "";
+  const handle = url.searchParams.get("handle") || "";
+  const coverUrl = url.searchParams.get("cover") || "";
 
-  return new ImageResponse(
-    <div style={{ width: 1080, height: 1080, display: "flex", position: "relative", backgroundColor: BG }}>
-      <img src={BG_URL} style={{ position: "absolute", inset: 0, width: 1080, height: 1080, objectFit: "cover" }} />
-      <div style={{
-        position: "absolute", top: 88, left: 88, width: 904, height: 904,
-        backgroundColor: CARD_BG, borderRadius: 50, border: "5px solid " + GOLD,
-        display: "flex", flexDirection: "column", padding: "70px 90px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 40, marginBottom: 48 }}>
-          {coverUrl ? (
-            <img src={coverUrl} style={{ width: 120, height: 160, borderRadius: 12, objectFit: "cover" }} />
-          ) : null}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ color: WHITE, fontSize: 52, fontFamily: "Playfair", fontWeight: 700, lineHeight: 1.2 }}>
-              {gameName}
-            </div>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: GOLD + "22", border: "2px solid " + GOLD + "55",
-              borderRadius: 12, padding: "8px 24px", width: "fit-content",
-            }}>
-              <span style={{ color: GOLD, fontSize: 48, fontFamily: "Playfair", fontWeight: 700 }}>
-                {rating}/10
-              </span>
-            </div>
-          </div>
-        </div>
+  const fontPath = path.join(process.cwd(), "public", "DMSans-Bold.ttf");
+  const fontData = fs.readFileSync(fontPath);
 
-        <div style={{ height: 2, background: GOLD + "33", marginBottom: 48 }} />
+  const bgPath = path.join(process.cwd(), "public", "share-bg.png");
+  const bgBase64 = fs.readFileSync(bgPath).toString("base64");
+  const bgSrc = `data:image/png;base64,${bgBase64}`;
 
-        {loved ? (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 }}>
-            <div style={{ color: GREEN, fontSize: 40, lineHeight: 1, marginTop: 4 }}>✓</div>
-            <div style={{ color: WHITE, fontSize: 38, fontFamily: "Playfair", fontWeight: 700, lineHeight: 1.4, flex: 1 }}>
-              {loved.length > 100 ? loved.slice(0, 100) + "…" : loved}
-            </div>
-          </div>
-        ) : null}
+  // Fetch cover image as base64 if present
+  let coverSrc = "";
+  if (coverUrl) {
+    try {
+      const coverRes = await fetch(coverUrl);
+      const coverBuf = Buffer.from(await coverRes.arrayBuffer());
+      coverSrc = `data:image/jpeg;base64,${coverBuf.toString("base64")}`;
+    } catch {}
+  }
 
-        {didntLove ? (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 }}>
-            <div style={{ color: RED, fontSize: 40, lineHeight: 1, marginTop: 4 }}>✗</div>
-            <div style={{ color: WHITE + "cc", fontSize: 38, fontFamily: "Playfair", fontWeight: 700, lineHeight: 1.4, flex: 1 }}>
-              {didntLove.length > 100 ? didntLove.slice(0, 100) + "…" : didntLove}
-            </div>
-          </div>
-        ) : null}
-
-        <div style={{ flex: 1 }} />
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div style={{ color: WHITE + "99", fontSize: 30, fontFamily: "Playfair", fontWeight: 700 }}>{handle}</div>
-          <div style={{ color: GOLD, fontSize: 34, fontFamily: "Playfair", fontWeight: 700 }}>GuildLink.gg</div>
-        </div>
-      </div>
-    </div>,
+  const svg = await satori(
     {
-      width: 1080, height: 1080,
-      fonts: [{ name: "Playfair", data: fontData, weight: 700 }],
-    }
+      type: "div",
+      props: {
+        style: { width: 1080, height: 1080, display: "flex", position: "relative", backgroundColor: BG, backgroundImage: `url(${bgSrc})`, backgroundSize: "cover" },
+        children: [{
+          type: "div",
+          props: {
+            style: { position: "absolute", top: 88, left: 88, width: 904, height: 904, backgroundColor: CARD_BG, borderRadius: 50, border: `5px solid ${GOLD}`, display: "flex", flexDirection: "column", padding: "70px 90px" },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", alignItems: "center", gap: 40, marginBottom: 48 },
+                  children: [
+                    coverSrc ? { type: "img", props: { src: coverSrc, style: { width: 120, height: 160, borderRadius: 12, objectFit: "cover" } } } : { type: "div", props: { children: "" } },
+                    {
+                      type: "div",
+                      props: {
+                        style: { flex: 1, display: "flex", flexDirection: "column", gap: 16 },
+                        children: [
+                          { type: "div", props: { style: { color: WHITE, fontSize: 52, fontWeight: 700, lineHeight: 1.2 }, children: gameName } },
+                          {
+                            type: "div",
+                            props: {
+                              style: { display: "flex", width: "fit-content", background: GOLD + "22", border: `2px solid ${GOLD}55`, borderRadius: 12, padding: "8px 24px" },
+                              children: { type: "div", props: { style: { color: GOLD, fontSize: 48, fontWeight: 700 }, children: `${rating}/10` } }
+                            }
+                          },
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              { type: "div", props: { style: { height: 2, background: GOLD + "33", marginBottom: 48 }, children: "" } },
+              loved ? {
+                type: "div",
+                props: {
+                  style: { display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 },
+                  children: [
+                    { type: "div", props: { style: { color: GREEN, fontSize: 40, lineHeight: 1, marginTop: 4 }, children: "✓" } },
+                    { type: "div", props: { style: { color: WHITE, fontSize: 38, fontWeight: 700, lineHeight: 1.4, flex: 1 }, children: loved.length > 100 ? loved.slice(0, 100) + "…" : loved } },
+                  ]
+                }
+              } : { type: "div", props: { children: "" } },
+              didntLove ? {
+                type: "div",
+                props: {
+                  style: { display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 },
+                  children: [
+                    { type: "div", props: { style: { color: RED, fontSize: 40, lineHeight: 1, marginTop: 4 }, children: "✗" } },
+                    { type: "div", props: { style: { color: WHITE + "cc", fontSize: 38, fontWeight: 700, lineHeight: 1.4, flex: 1 }, children: didntLove.length > 100 ? didntLove.slice(0, 100) + "…" : didntLove } },
+                  ]
+                }
+              } : { type: "div", props: { children: "" } },
+              { type: "div", props: { style: { flex: 1 }, children: "" } },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end" },
+                  children: [
+                    { type: "div", props: { style: { color: WHITE + "99", fontSize: 30, fontWeight: 700 }, children: handle } },
+                    { type: "div", props: { style: { color: GOLD, fontSize: 34, fontWeight: 700 }, children: "GuildLink.gg" } },
+                  ]
+                }
+              },
+            ]
+          }
+        }]
+      }
+    },
+    { width: 1080, height: 1080, fonts: [{ name: "DM Sans", data: fontData, weight: 700 }] }
   );
-}
+
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=60");
+  res.end(png);
+};

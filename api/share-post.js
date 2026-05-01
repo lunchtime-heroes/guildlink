@@ -1,151 +1,129 @@
-// api/share-post.js — Generates a shareable PNG image for a post
-// Uses @vercel/og with Satori
+// api/share-post.js — Generates a shareable PNG for a post
+// Uses satori (SVG) + sharp (PNG) — Node.js CommonJS
 
-import { ImageResponse } from "@vercel/og";
-import { readFileSync } from "fs";
-import { join } from "path";
+const satori = require("satori").default;
+const sharp = require("sharp");
+const fs = require("fs");
+const path = require("path");
 
-export const config = { runtime: "edge" };
-
-// Load background image as base64
-const bgBase64 = Buffer.from(
-  readFileSync(join(process.cwd(), "public", "share-bg.png"))
-).toString("base64");
-const bgDataUrl = `data:image/png;base64,${bgBase64}`;
-
-// Colors from SVG
 const GOLD = "#fbae17";
 const WHITE = "#e2e8f4";
 const CARD_BG = "#162035";
 const BG = "#0d1424";
 
-export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
-  const content = searchParams.get("content") || "";
-  const handle = searchParams.get("handle") || "";
-  const gameTag = searchParams.get("game") || "";
-  const avatarUrl = searchParams.get("avatar") || "";
+module.exports = async function handler(req, res) {
+  if (req.method !== "GET") return res.status(405).end();
 
-  // Truncate long content
+  const url = new URL(req.url, "https://guildlink.gg");
+  const content = url.searchParams.get("content") || "";
+  const handle = url.searchParams.get("handle") || "";
+  const gameTag = url.searchParams.get("game") || "";
+
   const maxChars = 240;
   const displayContent = content.length > maxChars
     ? content.slice(0, maxChars).trimEnd() + "…"
     : content;
 
-  // Load Playfair Display Bold from Google Fonts
-  const fontRes = await fetch(
-    "https://fonts.gstatic.com/s/playfairdisplay/v36/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtY.woff"
-  );
-  const fontData = await fontRes.arrayBuffer();
+  // Load font
+  const fontPath = path.join(process.cwd(), "public", "DMSans-Bold.ttf");
+  const fontData = fs.readFileSync(fontPath);
 
-  return new ImageResponse(
-    <div
-      style={{
-        width: 1080,
-        height: 1080,
-        display: "flex",
-        position: "relative",
-        backgroundColor: BG,
-      }}
-    >
-      {/* Background pattern */}
-      <img
-        src={bgDataUrl}
-        style={{ position: "absolute", inset: 0, width: 1080, height: 1080, objectFit: "cover" }}
-      />
+  // Load background image as base64
+  const bgPath = path.join(process.cwd(), "public", "share-bg.png");
+  const bgBase64 = fs.readFileSync(bgPath).toString("base64");
+  const bgSrc = `data:image/png;base64,${bgBase64}`;
 
-      {/* Card */}
-      <div
-        style={{
-          position: "absolute",
-          top: 88,
-          left: 88,
-          width: 904,
-          height: 904,
-          backgroundColor: CARD_BG,
-          borderRadius: 50,
-          border: `5px solid ${GOLD}`,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "80px 90px",
-        }}
-      >
-        {/* Game tag if present */}
-        {gameTag ? (
-          <div style={{ display: "flex", marginBottom: 24 }}>
-            <div style={{
-              background: GOLD + "22",
-              border: `1px solid ${GOLD}55`,
-              borderRadius: 20,
-              padding: "6px 18px",
-              color: GOLD,
-              fontSize: 28,
-              fontFamily: "Playfair",
-              fontWeight: 700,
-            }}>
-              {gameTag}
-            </div>
-          </div>
-        ) : <div />}
+  const fontSize = displayContent.length > 120 ? 52 : 64;
 
-        {/* Post content */}
-        <div style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-        }}>
-          <div style={{
-            color: WHITE,
-            fontSize: displayContent.length > 120 ? 52 : 64,
-            fontFamily: "Playfair",
-            fontWeight: 700,
-            lineHeight: 1.35,
-          }}>
-            {displayContent}
-          </div>
-        </div>
-
-        {/* Avatar + handle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 24, marginTop: 48 }}>
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              style={{ width: 72, height: 72, borderRadius: 12, border: `2px solid ${GOLD}` }}
-            />
-          ) : (
-            <div style={{
-              width: 72, height: 72, borderRadius: 12,
-              background: GOLD + "33", border: `2px solid ${GOLD}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: GOLD, fontSize: 28, fontFamily: "Playfair", fontWeight: 700,
-            }}>
-              {handle ? handle.slice(1, 3).toUpperCase() : "GL"}
-            </div>
-          )}
-          <div style={{ color: WHITE, fontSize: 32, fontFamily: "Playfair", fontWeight: 700 }}>
-            {handle}
-          </div>
-        </div>
-
-        {/* GuildLink branding */}
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginTop: 48,
-          gap: 8,
-        }}>
-          <div style={{ color: GOLD, fontSize: 36, fontFamily: "Playfair", fontWeight: 700 }}>
-            GuildLink.gg
-          </div>
-        </div>
-      </div>
-    </div>,
+  const svg = await satori(
     {
-      width: 1080,
-      height: 1080,
-      fonts: [{ name: "Playfair", data: fontData, weight: 700 }],
+      type: "div",
+      props: {
+        style: {
+          width: 1080, height: 1080, display: "flex", position: "relative",
+          backgroundColor: BG,
+          backgroundImage: `url(${bgSrc})`,
+          backgroundSize: "cover",
+        },
+        children: [
+          {
+            type: "div",
+            props: {
+              style: {
+                position: "absolute", top: 88, left: 88, width: 904, height: 904,
+                backgroundColor: CARD_BG, borderRadius: 50,
+                border: `5px solid ${GOLD}`,
+                display: "flex", flexDirection: "column",
+                justifyContent: "space-between", padding: "80px 90px",
+              },
+              children: [
+                gameTag ? {
+                  type: "div",
+                  props: {
+                    style: { display: "flex" },
+                    children: [{
+                      type: "div",
+                      props: {
+                        style: { background: GOLD + "22", border: `1px solid ${GOLD}55`, borderRadius: 20, padding: "6px 18px", color: GOLD, fontSize: 28, fontWeight: 700 },
+                        children: gameTag,
+                      }
+                    }]
+                  }
+                } : { type: "div", props: { children: "" } },
+                {
+                  type: "div",
+                  props: {
+                    style: { flex: 1, display: "flex", alignItems: "center" },
+                    children: {
+                      type: "div",
+                      props: {
+                        style: { color: WHITE, fontSize, fontWeight: 700, lineHeight: 1.35 },
+                        children: displayContent,
+                      }
+                    }
+                  }
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", alignItems: "center", gap: 24, marginTop: 48 },
+                    children: [
+                      {
+                        type: "div",
+                        props: {
+                          style: { width: 72, height: 72, borderRadius: 12, background: GOLD + "33", border: `2px solid ${GOLD}`, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 28, fontWeight: 700 },
+                          children: handle ? handle.replace("@", "").slice(0, 2).toUpperCase() : "GL",
+                        }
+                      },
+                      {
+                        type: "div",
+                        props: { style: { color: WHITE, fontSize: 32, fontWeight: 700 }, children: handle }
+                      },
+                    ]
+                  }
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", justifyContent: "center", marginTop: 40 },
+                    children: { type: "div", props: { style: { color: GOLD, fontSize: 36, fontWeight: 700 }, children: "GuildLink.gg" } }
+                  }
+                },
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      width: 1080, height: 1080,
+      fonts: [{ name: "DM Sans", data: fontData, weight: 700 }],
     }
   );
-}
+
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=60");
+  res.end(png);
+};
