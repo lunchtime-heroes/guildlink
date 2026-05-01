@@ -5,6 +5,7 @@ import { timeAgo, logChartEvent } from "../utils.js";
 import { Avatar } from "./Avatar.jsx";
 import { FoundingBadge, NPCBadge, Badge } from "./FoundingBadge.jsx";
 import { ExitModal, LinkPreviewFetcher, LinkPreviewCard } from "./LinkPreview.jsx";
+import { SharePostButton } from "./ShareButton.jsx";
 
 function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC, setActivePage) {
   if (!content) return null;
@@ -393,7 +394,7 @@ return (
           )}
 
           {/* Link preview */}
-          {localPost.link_url && (
+          {localPost.link_url && onExit && (
             <div style={{ marginBottom: 12 }}>
               <LinkPreviewCard preview={{ url: localPost.link_url, title: localPost.link_title, description: localPost.link_description, image: localPost.link_image, domain: localPost.link_domain }} onExit={onExit} />
             </div>
@@ -409,6 +410,7 @@ return (
               <span style={{ fontSize: 15 }}>💬</span>
               <span>{localPost.comment_count || 0}</span>
             </button>
+            <SharePostButton post={localPost} currentUser={currentUser} />
           </div>
         </div>
       </div>

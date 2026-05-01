@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import { useWindowSize } from "../utils.js";
 import supabase from "../supabase.js";
+import { ShareChartsButton } from "./ShareButton.jsx";
 
 function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, limit }) {
   const isMobile = useWindowSize() < 768;
@@ -100,6 +101,11 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ color: C.textDim, fontSize: 10 }}>This week</div>
+          {!collapsed && charts.length > 0 && (
+            <ShareChartsButton
+              games={charts.map(c => ({ name: c.name, change: getMovement(c.id, c.rank).label === "—" ? 0 : getMovement(c.id, c.rank).label === "NEW" ? 0 : parseInt(getMovement(c.id, c.rank).label) }))}
+            />
+          )}
           {isMobile && <span style={{ color: C.textDim, fontSize: 11 }}>{collapsed ? "▼" : "▲"}</span>}
         </div>
       </div>

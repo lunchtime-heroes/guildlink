@@ -15,7 +15,7 @@ import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { FoundingBadge, Badge } from "../components/FoundingBadge.jsx";
 import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
-import XboxImportModal from "../modals/XboxImportModal.jsx";
+import { ShareReviewButton } from "../components/ShareButton.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
 function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, isDropTarget, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
@@ -590,7 +590,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       loved: reviewEditForm.loved || null,
       didnt_love: reviewEditForm.didnt_love || null,
       content: reviewEditForm.content || null,
-    }, { onConflict: "user_id,game_id" });
+    });
     if (!error) {
       setUserReviews(prev => prev.map(r =>
         r.game_id === editingReview.game_id ? { ...r, ...reviewEditForm } : r
@@ -1553,6 +1553,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                       Edit
                     </button>
+                    <ShareReviewButton review={{ ...review, profiles: { handle: user?.handle, username: user?.username } }} />
                     <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
                   </div>
                   {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
