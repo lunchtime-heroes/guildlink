@@ -1,16 +1,10 @@
 // api/share-review.js — Generates a shareable PNG image for a review
 
 import { ImageResponse } from "@vercel/og";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 export const config = { runtime: "edge" };
 
-const bgBase64 = Buffer.from(
-  readFileSync(join(process.cwd(), "public", "share-bg.png"))
-).toString("base64");
-const bgDataUrl = `data:image/png;base64,${bgBase64}`;
-
+const BG_URL = "https://guildlink.gg/share-bg.png";
 const GOLD = "#fbae17";
 const WHITE = "#e2e8f4";
 const CARD_BG = "#162035";
@@ -34,28 +28,23 @@ export default async function handler(req) {
 
   return new ImageResponse(
     <div style={{ width: 1080, height: 1080, display: "flex", position: "relative", backgroundColor: BG }}>
-      {/* Background */}
-      <img src={bgDataUrl} style={{ position: "absolute", inset: 0, width: 1080, height: 1080, objectFit: "cover" }} />
-
-      {/* Card */}
+      <img src={BG_URL} style={{ position: "absolute", inset: 0, width: 1080, height: 1080, objectFit: "cover" }} />
       <div style={{
         position: "absolute", top: 88, left: 88, width: 904, height: 904,
-        backgroundColor: CARD_BG, borderRadius: 50, border: `5px solid ${GOLD}`,
+        backgroundColor: CARD_BG, borderRadius: 50, border: "5px solid " + GOLD,
         display: "flex", flexDirection: "column", padding: "70px 90px",
       }}>
-
-        {/* Game cover + name + rating */}
         <div style={{ display: "flex", alignItems: "center", gap: 40, marginBottom: 48 }}>
           {coverUrl ? (
-            <img src={coverUrl} style={{ width: 120, height: 160, borderRadius: 12, objectFit: "cover", border: `2px solid ${GOLD}33` }} />
+            <img src={coverUrl} style={{ width: 120, height: 160, borderRadius: 12, objectFit: "cover" }} />
           ) : null}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ color: WHITE, fontSize: 52, fontFamily: "Playfair", fontWeight: 700, lineHeight: 1.2 }}>
               {gameName}
             </div>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: GOLD + "22", border: `2px solid ${GOLD}55`,
+              background: GOLD + "22", border: "2px solid " + GOLD + "55",
               borderRadius: 12, padding: "8px 24px", width: "fit-content",
             }}>
               <span style={{ color: GOLD, fontSize: 48, fontFamily: "Playfair", fontWeight: 700 }}>
@@ -65,10 +54,8 @@ export default async function handler(req) {
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ height: 2, background: GOLD + "33", marginBottom: 48 }} />
 
-        {/* Loved */}
         {loved ? (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 }}>
             <div style={{ color: GREEN, fontSize: 40, lineHeight: 1, marginTop: 4 }}>✓</div>
@@ -78,7 +65,6 @@ export default async function handler(req) {
           </div>
         ) : null}
 
-        {/* Didn't love */}
         {didntLove ? (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 32 }}>
             <div style={{ color: RED, fontSize: 40, lineHeight: 1, marginTop: 4 }}>✗</div>
@@ -88,10 +74,8 @@ export default async function handler(req) {
           </div>
         ) : null}
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Handle + branding */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div style={{ color: WHITE + "99", fontSize: 30, fontFamily: "Playfair", fontWeight: 700 }}>{handle}</div>
           <div style={{ color: GOLD, fontSize: 34, fontFamily: "Playfair", fontWeight: 700 }}>GuildLink.gg</div>
@@ -99,8 +83,7 @@ export default async function handler(req) {
       </div>
     </div>,
     {
-      width: 1080,
-      height: 1080,
+      width: 1080, height: 1080,
       fonts: [{ name: "Playfair", data: fontData, weight: 700 }],
     }
   );

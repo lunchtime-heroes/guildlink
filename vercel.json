@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "functions": {
+    "api/share-post.js": { "runtime": "edge" },
+    "api/share-review.js": { "runtime": "edge" },
+    "api/share-charts.js": { "runtime": "edge" }
+  }
 }
