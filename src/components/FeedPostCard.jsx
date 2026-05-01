@@ -410,7 +410,7 @@ return (
               <span style={{ fontSize: 15 }}>💬</span>
               <span>{localPost.comment_count || 0}</span>
             </button>
-            <SharePostButton post={localPost} currentUser={currentUser} />
+            <SharePostButton post={localPost} currentUser={currentUser} taggedGameName={taggedGameName} />
           </div>
         </div>
       </div>
