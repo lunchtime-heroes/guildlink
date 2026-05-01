@@ -125,7 +125,7 @@ export function ShareReviewButton({ review, style = {} }) {
   );
 }
 
-export function ShareChartsButton({ games, style = {} }) {
+export function ShareChartsButton({ games, label, style = {} }) {
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
 
@@ -138,6 +138,7 @@ export function ShareChartsButton({ games, style = {} }) {
       const params = new URLSearchParams({
         games: JSON.stringify(games.slice(0, 10).map(g => ({ name: g.name, change: g.change ?? 0 }))),
         date,
+        label: label || "The Charts",
       });
       const url = await fetchShareImage(`/api/share-charts?${params}`);
       setImageUrl(url);
@@ -150,10 +151,10 @@ export function ShareChartsButton({ games, style = {} }) {
   return (
     <>
       <button onClick={handleShare} disabled={loading} title="Share the charts"
-        style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 20, padding: "5px 14px", cursor: loading ? "default" : "pointer", color: C.accentSoft, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, opacity: loading ? 0.5 : 1, flexShrink: 0, ...style }}
-        onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = C.accent + "33"; } }}
+        style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "4px 12px", cursor: loading ? "default" : "pointer", color: C.accentSoft, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, opacity: loading ? 0.5 : 1, flexShrink: 0, ...style }}
+        onMouseEnter={e => { if (!loading) e.currentTarget.style.background = C.accent + "33"; }}
         onMouseLeave={e => { e.currentTarget.style.background = C.accentGlow; }}>
-        <ShareIcon size={13} />
+        <ShareIcon size={12} />
         {loading ? "..." : "Share"}
       </button>
       {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-charts.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}

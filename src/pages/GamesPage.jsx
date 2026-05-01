@@ -918,8 +918,16 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     const hasMore = fullList.length > games.length;
                     return (
                       <div key={genre} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden" }}>
-                        <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid " + C.border }}>
+                        <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{genre}</div>
+                          <ShareChartsButton
+                            games={fullList.slice(0, 10).map((entry, i) => {
+                              const prev = prevRanks[entry.id];
+                              const change = prev ? prev - (i + 1) : 0;
+                              return { name: entry.name, change };
+                            })}
+                            label={genre + " Charts"}
+                          />
                         </div>
                         {displayList.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />)}
                         {(hasMore || isExpanded) && (
