@@ -117,8 +117,11 @@ module.exports = async function handler(req, res) {
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", justifyContent: "center", marginTop: 24 },
-                  children: { type: "div", props: { style: { color: GOLD, fontSize: 32, fontWeight: 700, textAlign: "center" }, children: handle + " on GuildLink.gg" } }
+                  style: { display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 24 },
+                  children: [
+                    { type: "div", props: { style: { color: WHITE, fontSize: 32, fontWeight: 700 }, children: handle + " on" } },
+                    { type: "div", props: { style: { color: GOLD, fontSize: 32, fontWeight: 700 }, children: "GuildLink.gg" } },
+                  ]
                 }
               },
             ]
