@@ -18,6 +18,7 @@ module.exports = async function handler(req, res) {
   const content = url.searchParams.get("content") || "";
   const handle = url.searchParams.get("handle") || "";
   const gameTag = url.searchParams.get("game") || "";
+  const avatarUrl = url.searchParams.get("avatar") || "";
 
   const maxChars = 240;
   const displayContent = content.length > maxChars
@@ -33,7 +34,19 @@ module.exports = async function handler(req, res) {
   const bgBase64 = fs.readFileSync(bgPath).toString("base64");
   const bgSrc = `data:image/png;base64,${bgBase64}`;
 
-  const fontSize = displayContent.length > 120 ? 52 : 64;
+  // Fetch avatar as base64 if present
+  let avatarSrc = "";
+  if (avatarUrl) {
+    try {
+      const avatarRes = await fetch(avatarUrl);
+      const avatarBuf = Buffer.from(await avatarRes.arrayBuffer());
+      avatarSrc = `data:image/png;base64,${avatarBuf.toString("base64")}`;
+    } catch {}
+  }
+
+  // Font size: smaller and more adaptive
+  const len = displayContent.length;
+  const fontSize = len > 180 ? 36 : len > 120 ? 42 : len > 60 ? 48 : 54;
 
   const svg = await satori(
     {
@@ -86,19 +99,19 @@ module.exports = async function handler(req, res) {
                 {
                   type: "div",
                   props: {
-                    style: { display: "flex", alignItems: "center", gap: 24, marginTop: 48 },
+                    style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 48 },
                     children: [
-                      {
+                      avatarSrc ? {
+                        type: "img",
+                        props: { src: avatarSrc, style: { width: 80, height: 80, borderRadius: 14, border: `2px solid ${GOLD}`, objectFit: "cover" } }
+                      } : {
                         type: "div",
                         props: {
-                          style: { width: 72, height: 72, borderRadius: 12, background: GOLD + "33", border: `2px solid ${GOLD}`, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 28, fontWeight: 700 },
+                          style: { width: 80, height: 80, borderRadius: 14, background: GOLD + "33", border: `2px solid ${GOLD}`, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 28, fontWeight: 700 },
                           children: handle ? handle.replace("@", "").slice(0, 2).toUpperCase() : "GL",
                         }
                       },
-                      {
-                        type: "div",
-                        props: { style: { color: WHITE, fontSize: 32, fontWeight: 700 }, children: handle }
-                      },
+                      { type: "div", props: { style: { color: WHITE, fontSize: 30, fontWeight: 700 }, children: handle } },
                     ]
                   }
                 },
