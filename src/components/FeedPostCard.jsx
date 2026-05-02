@@ -282,6 +282,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const [commentDropdownPos, setCommentDropdownPos] = useState(null);
   const [editDropdownPos, setEditDropdownPos] = useState(null);
+  const [commentMentionResults, setCommentMentionResults] = useState([]);
   const [commentMentionIndex, setCommentMentionIndex] = useState(0);
   const [commentTaggedUsers, setCommentTaggedUsers] = useState([]);
   const [commentTaggedGame, setCommentTaggedGame] = useState(null);
