@@ -341,6 +341,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const atIdx = textToCursor.lastIndexOf("@");
     const beforeAt = commentText.slice(0, atIdx);
     const afterCursor = commentText.slice(cursorPos);
+    console.log("[mention] cursorPos:", cursorPos, "atIdx:", atIdx, "beforeAt:", JSON.stringify(beforeAt), "afterCursor:", JSON.stringify(afterCursor), "full:", JSON.stringify(commentText));
 
     if (item._type === "game") {
       let gameId = item.id;
