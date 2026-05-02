@@ -162,11 +162,15 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     }
   };
 
+  const editCursorRef = useRef(null);
+
   const selectEditMention = async (item) => {
     const text = editingComment.text;
-    const atIdx = text.lastIndexOf("@");
+    const cursorPos = editCursorRef.current ?? text.length;
+    const textToCursor = text.slice(0, cursorPos);
+    const atIdx = textToCursor.lastIndexOf("@");
     const beforeAt = text.slice(0, atIdx);
-    const after = ""; // edit textarea cursor tracking is simpler — just use end
+    const afterCursor = text.slice(cursorPos);
 
     if (item._type === "game") {
       let gameId = item.id;
@@ -179,15 +183,17 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       setEditTaggedGame(gameId);
       setEditTaggedGameName(gameName);
-      setEditingComment(prev => ({ ...prev, text: beforeAt + "@" + gameName + " " }));
+      setEditingComment(prev => ({ ...prev, text: beforeAt + "@" + gameName + " " + afterCursor }));
       setEditMentionResults([]);
+      setEditDropdownPos(null);
       return;
     }
     const displayName = item._type === "npc"
       ? (item.handle?.replace("@", "") || item.name)
       : (item.handle?.replace("@", "") || item.username);
-    setEditingComment(prev => ({ ...prev, text: beforeAt + "@" + displayName + " " }));
+    setEditingComment(prev => ({ ...prev, text: beforeAt + "@" + displayName + " " + afterCursor }));
     setEditMentionResults([]);
+    setEditDropdownPos(null);
   };
 
   const toggleLike = async () => {
@@ -341,7 +347,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const atIdx = textToCursor.lastIndexOf("@");
     const beforeAt = commentText.slice(0, atIdx);
     const afterCursor = commentText.slice(cursorPos);
-    console.log("[mention] cursorPos:", cursorPos, "atIdx:", atIdx, "beforeAt:", JSON.stringify(beforeAt), "afterCursor:", JSON.stringify(afterCursor), "full:", JSON.stringify(commentText));
 
     if (item._type === "game") {
       let gameId = item.id;
@@ -623,7 +628,7 @@ return (
                       <div style={{ position: "relative" }}>
                         <textarea
                           value={editingComment.text}
-                          onChange={e => { handleEditTextChange(e); const rect = e.target.getBoundingClientRect(); setEditDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width }); }}
+                          onChange={e => { editCursorRef.current = e.target.selectionStart; handleEditTextChange(e); const rect = e.target.getBoundingClientRect(); setEditDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width }); }}
                           autoFocus
                           rows={3}
                           style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
