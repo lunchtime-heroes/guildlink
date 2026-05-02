@@ -192,6 +192,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [dbGames, setDbGames] = useState({}); // id -> game object cache
   const [dailyPrompt, setDailyPrompt] = useState(null);
   const [sidebarNPCs, setSidebarNPCs] = useState([]);
+  const [showTagNudge, setShowTagNudge] = useState(false);
+  const [nudgeQuery, setNudgeQuery] = useState("");
+  const [nudgeResults, setNudgeResults] = useState([]);
   const textareaRef = useRef(null); // array of game ids, max 3
 
   const URL_REGEX = /https?:\/\/[^\s<>"]+/gi;
@@ -334,6 +337,35 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
   const removeTaggedGame = (gameId) => {
     setTaggedGames(prev => prev.filter(id => id !== gameId));
+  };
+
+  const handleNudgeSearch = async (val) => {
+    setNudgeQuery(val);
+    if (val.length < 2) { setNudgeResults([]); return; }
+    const [localRes, igdbRes] = await Promise.allSettled([
+      supabase.from("games").select("id, name, cover_url, genre").ilike("name", "%" + val + "%").order("followers", { ascending: false }).limit(5),
+      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: val }) }).then(r => r.json()).catch(() => ({ games: [] })),
+    ]);
+    const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+    const localNames = new Set(local.map(g => g.name.toLowerCase()));
+    const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+    setNudgeResults([...local, ...fromIGDB].slice(0, 6));
+  };
+
+  const selectNudgeGame = async (item) => {
+    let resolvedGame = item;
+    if (item._fromIGDB) {
+      const inserted = await addGameFromIGDB(item);
+      if (!inserted) return;
+      resolvedGame = inserted;
+    }
+    setDbGames(prev => ({ ...prev, [resolvedGame.id]: resolvedGame }));
+    setShowTagNudge(false);
+    setNudgeQuery("");
+    setNudgeResults([]);
+    // Pass the resolved game id directly to avoid React state timing issue
+    doSubmitPost(resolvedGame.id);
   };
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
@@ -743,15 +775,28 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     }
   };
 
-  const submitPost = async () => {
+  const submitPost = () => {
+    if (!postText.trim() || posting) return;
+    if (taggedGames.length === 0) {
+      setShowTagNudge(true);
+      setNudgeQuery("");
+      setNudgeResults([]);
+      return;
+    }
+    doSubmitPost();
+  };
+
+  const doSubmitPost = async (overrideGameId) => {
+    setShowTagNudge(false);
     if (!postText.trim() || posting) return;
     setPosting(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const urls = postText.match(URL_REGEX);
+    const gameTag = overrideGameId || taggedGames[0] || null;
     const { data, error } = await supabase.from("posts").insert({
       user_id: authUser?.id || null,
       content: postText.trim(),
-      game_tag: taggedGames[0] || null,
+      game_tag: gameTag,
       tagged_users: taggedUsers.length > 0 ? taggedUsers : [],
       likes: 0,
       comment_count: 0,
@@ -1017,6 +1062,45 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               {/* Link preview card */}
               {linkPreviewLoading && (
                 <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 12 }}>Fetching preview…</div>
+              )}
+              {/* Game tag nudge */}
+              {showTagNudge && (
+                <div style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 8 }}>Want to tag a game?</div>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      autoFocus
+                      value={nudgeQuery}
+                      onChange={e => handleNudgeSearch(e.target.value)}
+                      placeholder="Search for a game..."
+                      style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                    />
+                    {nudgeResults.length > 0 && (
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", maxHeight: 260, overflowY: "auto" }}>
+                        {nudgeResults.map((item, i) => (
+                          <div key={item.id || item.igdb_id} onClick={() => selectNudgeGame(item)}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", borderBottom: i < nudgeResults.length - 1 ? "1px solid " + C.border : "none", background: "transparent" }}
+                            onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                            {item.cover_url
+                              ? <img src={item.cover_url} alt="" style={{ width: 36, height: 48, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                              : <div style={{ width: 36, height: 48, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                            }
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                              {item.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{item.genre}</div>}
+                            </div>
+                            {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => doSubmitPost()}
+                    style={{ marginTop: 10, background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                    Post without tag
+                  </button>
+                </div>
               )}
               {linkPreview && !linkPreviewLoading && (
                 <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, overflow: "hidden", display: "flex", gap: 0 }}>
