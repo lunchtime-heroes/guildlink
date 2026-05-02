@@ -139,26 +139,38 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const handleEditTextChange = async (e) => {
     const val = e.target.value;
     setEditingComment(prev => ({ ...prev, text: val }));
-    const atIdx = val.lastIndexOf("@");
-    if (atIdx === -1 || val.slice(atIdx).includes(" ")) { setEditMentionResults([]); return; }
-    const query = val.slice(atIdx + 1);
-    if (query.length < 1) { setEditMentionResults([]); return; }
-    const [{ data: games }, { data: players }] = await Promise.all([
-      supabase.from("games").select("id, name").ilike("name", "%" + query + "%").limit(4),
-      supabase.from("profiles").select("id, username, handle, avatar_initials").ilike("username", "%" + query + "%").limit(4),
-    ]);
-    setEditMentionResults([
-      ...(games || []).map(g => ({ ...g, _type: "game" })),
-      ...(players || []).map(p => ({ ...p, _type: "player" })),
-    ]);
-    setEditMentionIndex(0);
+    const atMatch = val.match(/@([^@\s]*)$/);
+    if (atMatch && atMatch[1].length >= 2) {
+      const q = atMatch[1];
+      const [playersRes, npcsRes, gamesRes] = await Promise.allSettled([
+        supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
+        supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
+        supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(4),
+      ]);
+      const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
+      const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
+      const games = (gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : []).map(g => ({ ...g, _type: "game", handle: g.name }));
+      setEditMentionResults([...players, ...npcs, ...games].slice(0, 7));
+      setEditMentionIndex(0);
+    } else {
+      setEditMentionResults([]);
+    }
   };
 
   const selectEditMention = (item) => {
-    if (item._type === "game") { setEditTaggedGame(item.id); setEditTaggedGameName(item.name); }
-    const text = editingComment.text;
-    const atIdx = text.lastIndexOf("@");
-    setEditingComment(prev => ({ ...prev, text: text.slice(0, atIdx) + "@" + (item.name || item.username) + " " }));
+    if (item._type === "game") {
+      setEditTaggedGame(item.id);
+      setEditTaggedGameName(item.name);
+      const newText = editingComment.text.replace(/@([^@\s]*)$/, `@${item.name.replace(/\s+/g, "")} `);
+      setEditingComment(prev => ({ ...prev, text: newText }));
+      setEditMentionResults([]);
+      return;
+    }
+    const handle = item._type === "npc"
+      ? (item.handle?.replace("@", "") || item.name.replace(/\s+/g, ""))
+      : (item.handle?.replace("@", "") || item.username);
+    const newText = editingComment.text.replace(/@([^@\s]*)$/, `@${handle} `);
+    setEditingComment(prev => ({ ...prev, text: newText }));
     setEditMentionResults([]);
   };
 
@@ -267,7 +279,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       const [playersRes, npcsRes, gamesRes] = await Promise.allSettled([
         supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
         supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
-        supabase.from("games").select("id, name").ilike("name", `%${q}%`).order("followers", { ascending: false }).limit(3),
+        supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(4),
       ]);
       const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
       const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
