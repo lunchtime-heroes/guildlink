@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import ReactDOM from "react-dom";
 import { C, NPCS } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent } from "../utils.js";
@@ -279,7 +280,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     }
   };
 
-  const [commentMentionResults, setCommentMentionResults] = useState([]);
+  const [commentDropdownPos, setCommentDropdownPos] = useState(null);
+  const [editDropdownPos, setEditDropdownPos] = useState(null);
   const [commentMentionIndex, setCommentMentionIndex] = useState(0);
   const [commentTaggedUsers, setCommentTaggedUsers] = useState([]);
   const [commentTaggedGame, setCommentTaggedGame] = useState(null);
@@ -308,6 +310,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setCommentText(val);
     const q = getActiveMention(val, cursorPos);
     if (q) {
+      const rect = e.target.getBoundingClientRect();
+      setCommentDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
       const [playersRes, npcsRes, gamesRes, igdbRes] = await Promise.allSettled([
         supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
         supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
@@ -323,17 +327,17 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       setCommentMentionResults([...players, ...npcs, ...localGames, ...newFromIGDB].slice(0, 8));
     } else {
       setCommentMentionResults([]);
+      setCommentDropdownPos(null);
     }
   };
 
   const selectCommentMention = async (item) => {
     const textarea = commentInputRef.current;
     const cursorPos = textarea?.selectionStart ?? commentText.length;
-    const before = commentText.slice(0, cursorPos);
-    const after = commentText.slice(cursorPos);
-    // Find where the current @query started
-    const atIdx = before.lastIndexOf("@");
-    const beforeAt = before.slice(0, atIdx);
+    const textToCursor = commentText.slice(0, cursorPos);
+    const atIdx = textToCursor.lastIndexOf("@");
+    const beforeAt = commentText.slice(0, atIdx);
+    const afterCursor = commentText.slice(cursorPos);
 
     if (item._type === "game") {
       let gameId = item.id;
@@ -345,10 +349,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         gameName = inserted.name;
       }
       const insertion = "@" + gameName + " ";
-      setCommentText(beforeAt + insertion + after);
+      setCommentText(beforeAt + insertion + afterCursor);
       setCommentTaggedGame(gameId);
       setCommentTaggedGameName(gameName);
       setCommentMentionResults([]);
+      setCommentDropdownPos(null);
       setTimeout(() => {
         if (textarea) { const pos = (beforeAt + insertion).length; textarea.setSelectionRange(pos, pos); textarea.focus(); }
       }, 0);
@@ -358,12 +363,13 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       ? (item.handle?.replace("@", "") || item.name)
       : (item.handle?.replace("@", "") || item.username);
     const insertion = "@" + displayName + " ";
-    setCommentText(beforeAt + insertion + after);
+    setCommentText(beforeAt + insertion + afterCursor);
     setCommentTaggedUsers(prev => {
       if (prev.find(u => u.id === item.id)) return prev;
       return [...prev, { id: item.id, handle: item.handle || `@${displayName}`, name: item.name || item.username, type: item._type === "npc" ? "npc" : "user" }];
     });
     setCommentMentionResults([]);
+    setCommentDropdownPos(null);
     setTimeout(() => {
       if (textarea) { const pos = (beforeAt + insertion).length; textarea.setSelectionRange(pos, pos); textarea.focus(); }
     }, 0);
@@ -613,7 +619,7 @@ return (
                       <div style={{ position: "relative" }}>
                         <textarea
                           value={editingComment.text}
-                          onChange={handleEditTextChange}
+                          onChange={e => { handleEditTextChange(e); const rect = e.target.getBoundingClientRect(); setEditDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width }); }}
                           autoFocus
                           rows={3}
                           style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
@@ -622,12 +628,12 @@ return (
                               if (e.key === "ArrowDown") { e.preventDefault(); setEditMentionIndex(i => Math.min(i+1, editMentionResults.length-1)); return; }
                               if (e.key === "ArrowUp") { e.preventDefault(); setEditMentionIndex(i => Math.max(i-1, 0)); return; }
                               if (e.key === "Enter") { e.preventDefault(); selectEditMention(editMentionResults[editMentionIndex]); return; }
-                              if (e.key === "Escape") { setEditMentionResults([]); return; }
+                              if (e.key === "Escape") { setEditMentionResults([]); setEditDropdownPos(null); return; }
                             }
                           }}
                         />
-                        {editMentionResults.length > 0 && (
-                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "auto", maxHeight: 280, zIndex: 500, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                        {editMentionResults.length > 0 && editDropdownPos && ReactDOM.createPortal(
+                          <div style={{ position: "absolute", top: editDropdownPos.top, left: editDropdownPos.left, width: editDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
                             {editMentionResults.map((item, i) => (
                               <div key={item.id} onMouseDown={() => selectEditMention(item)}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === editMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < editMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
@@ -642,7 +648,8 @@ return (
                                 <span style={{ color: item._type === "game" ? C.accentSoft : C.accent, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{item._type === "game" ? "Game" : "Player"}</span>
                               </div>
                             ))}
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>
@@ -650,7 +657,7 @@ return (
                           style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           Save
                         </button>
-                        <button onClick={() => { setEditingComment(null); setEditTaggedGame(null); setEditTaggedGameName(null); setEditMentionResults([]); }}
+                        <button onClick={() => { setEditingComment(null); setEditTaggedGame(null); setEditTaggedGameName(null); setEditMentionResults([]); setEditDropdownPos(null); }}
                           style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
                           Cancel
                         </button>
@@ -723,8 +730,8 @@ return (
                       rows={1}
                       style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
                     />
-                    {commentMentionResults.length > 0 && (
-                      <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "auto", maxHeight: 280, zIndex: 500, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                    {commentMentionResults.length > 0 && commentDropdownPos && ReactDOM.createPortal(
+                      <div style={{ position: "absolute", top: commentDropdownPos.top, left: commentDropdownPos.left, width: commentDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
                         {commentMentionResults.map((item, i) => (
                           <div key={item.id} onMouseDown={() => selectCommentMention(item)}
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === commentMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < commentMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
@@ -739,7 +746,8 @@ return (
                             <span style={{ color: item._type === "npc" ? C.gold : item._type === "game" ? C.accentSoft : C.accent, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{item._type === "npc" ? "NPC" : item._type === "game" ? "Game" : "Player"}</span>
                           </div>
                         ))}
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
                   <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>
