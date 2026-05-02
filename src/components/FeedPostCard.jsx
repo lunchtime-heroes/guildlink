@@ -114,6 +114,18 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
   };
 
+  const [editingComment, setEditingComment] = useState(null); // { id, text }
+
+  const saveCommentEdit = async () => {
+    if (!editingComment?.text?.trim()) return;
+    const { error } = await supabase.from("comments")
+      .update({ content: editingComment.text })
+      .eq("id", editingComment.id);
+    if (error) { console.error("[saveCommentEdit] error:", error); return; }
+    setLiveComments(prev => (prev || []).map(c => c.id === editingComment.id ? { ...c, content: editingComment.text } : c));
+    setEditingComment(null);
+  };
+
   const toggleLike = async () => {
     if (isGuest) { onSignIn?.("Like posts and join the conversation."); return; }
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -467,6 +479,12 @@ return (
                         Reply
                       </button>
                     )}
+                    {currentUser && comment.user_id === currentUser.id && (
+                      <button onClick={() => setEditingComment({ id: comment.id, text: comment.content })}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 12, padding: 0 }}>
+                        Edit
+                      </button>
+                    )}
                     {currentUser && (comment.user_id === currentUser.id || currentUser.is_admin) && (
                       <button onClick={() => deleteComment(comment.id)}
                         style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 12, padding: 0 }}>
@@ -474,6 +492,28 @@ return (
                       </button>
                     )}
                   </div>
+                  {/* Inline edit form */}
+                  {editingComment?.id === comment.id && (
+                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <textarea
+                        value={editingComment.text}
+                        onChange={e => setEditingComment(prev => ({ ...prev, text: e.target.value }))}
+                        autoFocus
+                        rows={3}
+                        style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                      />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={saveCommentEdit}
+                          style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          Save
+                        </button>
+                        <button onClick={() => setEditingComment(null)}
+                          style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
