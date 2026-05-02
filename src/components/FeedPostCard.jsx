@@ -142,26 +142,38 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const atMatch = val.match(/@([^@\s]*)$/);
     if (atMatch && atMatch[1].length >= 2) {
       const q = atMatch[1];
-      const [playersRes, npcsRes, gamesRes] = await Promise.allSettled([
+      const [playersRes, npcsRes, gamesRes, igdbRes] = await Promise.allSettled([
         supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
         supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
         supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(4),
+        fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
       ]);
       const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
       const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
-      const games = (gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : []).map(g => ({ ...g, _type: "game", handle: g.name }));
-      setEditMentionResults([...players, ...npcs, ...games].slice(0, 7));
+      const localGames = (gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : []).map(g => ({ ...g, _type: "game", handle: g.name }));
+      const igdbGames = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+      const localNames = new Set(localGames.map(g => g.name.toLowerCase()));
+      const newFromIGDB = igdbGames.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _type: "game", _fromIGDB: true, handle: g.name }));
+      setEditMentionResults([...players, ...npcs, ...localGames, ...newFromIGDB].slice(0, 8));
       setEditMentionIndex(0);
     } else {
       setEditMentionResults([]);
     }
   };
 
-  const selectEditMention = (item) => {
+  const selectEditMention = async (item) => {
     if (item._type === "game") {
-      setEditTaggedGame(item.id);
-      setEditTaggedGameName(item.name);
-      const newText = editingComment.text.replace(/@([^@\s]*)$/, `@${item.name.replace(/\s+/g, "")} `);
+      let gameId = item.id;
+      let gameName = item.name;
+      if (item._fromIGDB) {
+        const inserted = await addCommentGameFromIGDB(item);
+        if (!inserted) return;
+        gameId = inserted.id;
+        gameName = inserted.name;
+      }
+      setEditTaggedGame(gameId);
+      setEditTaggedGameName(gameName);
+      const newText = editingComment.text.replace(/@([^@\s]*)$/, `@${gameName.replace(/\s+/g, "")} `);
       setEditingComment(prev => ({ ...prev, text: newText }));
       setEditMentionResults([]);
       return;
@@ -270,32 +282,52 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [commentTaggedGame, setCommentTaggedGame] = useState(null);
   const [commentTaggedGameName, setCommentTaggedGameName] = useState(null);
 
+  const addCommentGameFromIGDB = async (game) => {
+    const { data, error } = await supabase.from("games").upsert({
+      name: game.name, igdb_id: game.igdb_id, cover_url: game.cover_url, genre: game.genre,
+    }, { onConflict: "igdb_id" }).select("id, name").single();
+    if (error) { console.error("[addCommentGameFromIGDB]", error); return null; }
+    return data;
+  };
+
   const handleCommentTextChange = async (e) => {
     const val = e.target.value;
     setCommentText(val);
     const atMatch = val.match(/@([^@\s]*)$/);
     if (atMatch && atMatch[1].length >= 2) {
       const q = atMatch[1];
-      const [playersRes, npcsRes, gamesRes] = await Promise.allSettled([
+      const [playersRes, npcsRes, gamesRes, igdbRes] = await Promise.allSettled([
         supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
         supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
         supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(4),
+        fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
       ]);
       const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
       const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
-      const games = (gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : []).map(g => ({ ...g, _type: "game", handle: g.name }));
-      setCommentMentionResults([...players, ...npcs, ...games].slice(0, 7));
+      const localGames = (gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : []).map(g => ({ ...g, _type: "game", handle: g.name }));
+      const igdbGames = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+      const localNames = new Set(localGames.map(g => g.name.toLowerCase()));
+      const newFromIGDB = igdbGames.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _type: "game", _fromIGDB: true, handle: g.name }));
+      setCommentMentionResults([...players, ...npcs, ...localGames, ...newFromIGDB].slice(0, 8));
     } else {
       setCommentMentionResults([]);
     }
   };
 
-  const selectCommentMention = (item) => {
+  const selectCommentMention = async (item) => {
     if (item._type === "game") {
-      const newText = commentText.replace(/@([^@\s]*)$/, `@${item.name.replace(/\s+/g, "")} `);
+      let gameId = item.id;
+      let gameName = item.name;
+      if (item._fromIGDB) {
+        const inserted = await addCommentGameFromIGDB(item);
+        if (!inserted) return;
+        gameId = inserted.id;
+        gameName = inserted.name;
+      }
+      const newText = commentText.replace(/@([^@\s]*)$/, `@${gameName.replace(/\s+/g, "")} `);
       setCommentText(newText);
-      setCommentTaggedGame(item.id);
-      setCommentTaggedGameName(item.name);
+      setCommentTaggedGame(gameId);
+      setCommentTaggedGameName(gameName);
       setCommentMentionResults([]);
       commentInputRef.current?.focus();
       return;
@@ -550,7 +582,7 @@ return (
                     <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                       {editTaggedGame && editTaggedGameName && (
                         <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "4px 10px", width: "fit-content" }}>
-                          <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>🎮 {editTaggedGameName}</span>
+                          <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>{editTaggedGameName}</span>
                           <button onClick={() => { setEditTaggedGame(null); setEditTaggedGameName(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1 }}>×</button>
                         </div>
                       )}
