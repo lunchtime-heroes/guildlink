@@ -138,14 +138,14 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const handleEditTextChange = async (e) => {
     const val = e.target.value;
+    const cursorPos = e.target.selectionStart;
     setEditingComment(prev => ({ ...prev, text: val }));
-    const atMatch = val.match(/@([^@\s]*)$/);
-    if (atMatch && atMatch[1].length >= 2) {
-      const q = atMatch[1];
+    const q = getActiveMention(val, cursorPos);
+    if (q) {
       const [playersRes, npcsRes, gamesRes, igdbRes] = await Promise.allSettled([
         supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
         supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
-        supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(4),
+        supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(5),
         fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
       ]);
       const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
@@ -173,7 +173,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       setEditTaggedGame(gameId);
       setEditTaggedGameName(gameName);
-      const newText = editingComment.text.replace(/@([^@\s]*)$/, `@${gameName.replace(/\s+/g, "")} `);
+      const newText = editingComment.text.replace(/@([^@]*)$/, `@${gameName.replace(/\s+/g, "")} `);
       setEditingComment(prev => ({ ...prev, text: newText }));
       setEditMentionResults([]);
       return;
@@ -181,7 +181,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const handle = item._type === "npc"
       ? (item.handle?.replace("@", "") || item.name.replace(/\s+/g, ""))
       : (item.handle?.replace("@", "") || item.username);
-    const newText = editingComment.text.replace(/@([^@\s]*)$/, `@${handle} `);
+    const newText = editingComment.text.replace(/@([^@]*)$/, `@${handle} `);
     setEditingComment(prev => ({ ...prev, text: newText }));
     setEditMentionResults([]);
   };
@@ -290,16 +290,25 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     return data;
   };
 
+  // Find the current @mention being typed — works anywhere in the string
+  const getActiveMention = (val, cursorPos) => {
+    const textToCursor = val.slice(0, cursorPos);
+    const match = textToCursor.match(/@([^@]*)$/);
+    if (!match) return null;
+    const query = match[1].trim();
+    return query.length >= 2 ? query : null;
+  };
+
   const handleCommentTextChange = async (e) => {
     const val = e.target.value;
+    const cursorPos = e.target.selectionStart;
     setCommentText(val);
-    const atMatch = val.match(/@([^@\s]*)$/);
-    if (atMatch && atMatch[1].length >= 2) {
-      const q = atMatch[1];
+    const q = getActiveMention(val, cursorPos);
+    if (q) {
       const [playersRes, npcsRes, gamesRes, igdbRes] = await Promise.allSettled([
         supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(3),
         supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${q}%,handle.ilike.%${q}%`).eq("is_active", true).limit(2),
-        supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(4),
+        supabase.from("games").select("id, name").ilike("name", `%${q}%`).limit(5),
         fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
       ]);
       const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
@@ -324,7 +333,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         gameId = inserted.id;
         gameName = inserted.name;
       }
-      const newText = commentText.replace(/@([^@\s]*)$/, `@${gameName.replace(/\s+/g, "")} `);
+      // Replace the @query with @GameName, works mid-sentence
+      const newText = commentText.replace(/@([^@]*)$/, `@${gameName.replace(/\s+/g, "")} `);
       setCommentText(newText);
       setCommentTaggedGame(gameId);
       setCommentTaggedGameName(gameName);
@@ -335,7 +345,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const handle = item._type === "npc"
       ? (item.handle?.replace("@", "") || item.name.replace(/\s+/g, ""))
       : (item.handle?.replace("@", "") || item.username);
-    const newText = commentText.replace(/@([^@\s]*)$/, `@${handle} `);
+    const newText = commentText.replace(/@([^@]*)$/, `@${handle} `);
     setCommentText(newText);
     setCommentTaggedUsers(prev => {
       if (prev.find(u => u.id === item.id)) return prev;
