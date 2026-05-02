@@ -162,6 +162,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   };
 
   const selectEditMention = async (item) => {
+    const cursorPos = editingComment.text.length; // textarea ref not available here, use end
+    const before = editingComment.text.slice(0, cursorPos);
+    const after = editingComment.text.slice(cursorPos);
     if (item._type === "game") {
       let gameId = item.id;
       let gameName = item.name;
@@ -173,16 +176,16 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       }
       setEditTaggedGame(gameId);
       setEditTaggedGameName(gameName);
-      const newText = editingComment.text.replace(/@([^@]*)$/, `@${gameName.replace(/\s+/g, "")} `);
-      setEditingComment(prev => ({ ...prev, text: newText }));
+      const newBefore = before.replace(/@([^@]*)$/, `@${gameName.replace(/\s+/g, "")} `);
+      setEditingComment(prev => ({ ...prev, text: newBefore + after }));
       setEditMentionResults([]);
       return;
     }
     const handle = item._type === "npc"
       ? (item.handle?.replace("@", "") || item.name.replace(/\s+/g, ""))
       : (item.handle?.replace("@", "") || item.username);
-    const newText = editingComment.text.replace(/@([^@]*)$/, `@${handle} `);
-    setEditingComment(prev => ({ ...prev, text: newText }));
+    const newBefore = before.replace(/@([^@]*)$/, `@${handle} `);
+    setEditingComment(prev => ({ ...prev, text: newBefore + after }));
     setEditMentionResults([]);
   };
 
@@ -324,6 +327,9 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   };
 
   const selectCommentMention = async (item) => {
+    const cursorPos = commentInputRef.current?.selectionStart ?? commentText.length;
+    const before = commentText.slice(0, cursorPos);
+    const after = commentText.slice(cursorPos);
     if (item._type === "game") {
       let gameId = item.id;
       let gameName = item.name;
@@ -333,9 +339,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
         gameId = inserted.id;
         gameName = inserted.name;
       }
-      // Replace the @query with @GameName, works mid-sentence
-      const newText = commentText.replace(/@([^@]*)$/, `@${gameName.replace(/\s+/g, "")} `);
-      setCommentText(newText);
+      const newBefore = before.replace(/@([^@]*)$/, `@${gameName.replace(/\s+/g, "")} `);
+      setCommentText(newBefore + after);
       setCommentTaggedGame(gameId);
       setCommentTaggedGameName(gameName);
       setCommentMentionResults([]);
@@ -345,8 +350,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     const handle = item._type === "npc"
       ? (item.handle?.replace("@", "") || item.name.replace(/\s+/g, ""))
       : (item.handle?.replace("@", "") || item.username);
-    const newText = commentText.replace(/@([^@]*)$/, `@${handle} `);
-    setCommentText(newText);
+    const newBefore = before.replace(/@([^@]*)$/, `@${handle} `);
+    setCommentText(newBefore + after);
     setCommentTaggedUsers(prev => {
       if (prev.find(u => u.id === item.id)) return prev;
       return [...prev, { id: item.id, handle: item.handle || `@${handle}`, name: item.name || item.username, type: item._type === "npc" ? "npc" : "user" }];
@@ -613,7 +618,7 @@ return (
                           }}
                         />
                         {editMentionResults.length > 0 && (
-                          <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
                             {editMentionResults.map((item, i) => (
                               <div key={item.id} onMouseDown={() => selectEditMention(item)}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === editMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < editMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
@@ -710,7 +715,7 @@ return (
                       style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
                     />
                     {commentMentionResults.length > 0 && (
-                      <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                      <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
                         {commentMentionResults.map((item, i) => (
                           <div key={item.id} onMouseDown={() => selectCommentMention(item)}
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === commentMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < commentMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
