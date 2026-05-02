@@ -114,16 +114,52 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
   };
 
-  const [editingComment, setEditingComment] = useState(null); // { id, text }
+  const [editingComment, setEditingComment] = useState(null); // { id, text, game_tag }
+  const [editTaggedGame, setEditTaggedGame] = useState(null);
+  const [editTaggedGameName, setEditTaggedGameName] = useState(null);
+  const [editMentionResults, setEditMentionResults] = useState([]);
+  const [editMentionIndex, setEditMentionIndex] = useState(0);
 
   const saveCommentEdit = async () => {
     if (!editingComment?.text?.trim()) return;
     const { error } = await supabase.from("comments")
-      .update({ content: editingComment.text })
+      .update({ content: editingComment.text, game_tag: editTaggedGame || null })
       .eq("id", editingComment.id);
     if (error) { console.error("[saveCommentEdit] error:", error); return; }
-    setLiveComments(prev => (prev || []).map(c => c.id === editingComment.id ? { ...c, content: editingComment.text } : c));
+    setLiveComments(prev => (prev || []).map(c => c.id === editingComment.id ? { ...c, content: editingComment.text, game_tag: editTaggedGame || null } : c));
+    if (editTaggedGame && editTaggedGameName) {
+      setCommentGameNames(prev => ({ ...prev, [editTaggedGame]: editTaggedGameName }));
+    }
     setEditingComment(null);
+    setEditTaggedGame(null);
+    setEditTaggedGameName(null);
+    setEditMentionResults([]);
+  };
+
+  const handleEditTextChange = async (e) => {
+    const val = e.target.value;
+    setEditingComment(prev => ({ ...prev, text: val }));
+    const atIdx = val.lastIndexOf("@");
+    if (atIdx === -1 || val.slice(atIdx).includes(" ")) { setEditMentionResults([]); return; }
+    const query = val.slice(atIdx + 1);
+    if (query.length < 1) { setEditMentionResults([]); return; }
+    const [{ data: games }, { data: players }] = await Promise.all([
+      supabase.from("games").select("id, name").ilike("name", "%" + query + "%").limit(4),
+      supabase.from("profiles").select("id, username, handle, avatar_initials").ilike("username", "%" + query + "%").limit(4),
+    ]);
+    setEditMentionResults([
+      ...(games || []).map(g => ({ ...g, _type: "game" })),
+      ...(players || []).map(p => ({ ...p, _type: "player" })),
+    ]);
+    setEditMentionIndex(0);
+  };
+
+  const selectEditMention = (item) => {
+    if (item._type === "game") { setEditTaggedGame(item.id); setEditTaggedGameName(item.name); }
+    const text = editingComment.text;
+    const atIdx = text.lastIndexOf("@");
+    setEditingComment(prev => ({ ...prev, text: text.slice(0, atIdx) + "@" + (item.name || item.username) + " " }));
+    setEditMentionResults([]);
   };
 
   const toggleLike = async () => {
@@ -480,7 +516,12 @@ return (
                       </button>
                     )}
                     {currentUser && comment.user_id === currentUser.id && (
-                      <button onClick={() => setEditingComment({ id: comment.id, text: comment.content })}
+                      <button onClick={() => {
+                        setEditingComment({ id: comment.id, text: comment.content, game_tag: comment.game_tag || null });
+                        setEditTaggedGame(comment.game_tag || null);
+                        setEditTaggedGameName(comment.game_tag ? commentGameNames[comment.game_tag] : null);
+                        setEditMentionResults([]);
+                      }}
                         style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 12, padding: 0 }}>
                         Edit
                       </button>
@@ -495,19 +536,53 @@ return (
                   {/* Inline edit form */}
                   {editingComment?.id === comment.id && (
                     <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                      <textarea
-                        value={editingComment.text}
-                        onChange={e => setEditingComment(prev => ({ ...prev, text: e.target.value }))}
-                        autoFocus
-                        rows={3}
-                        style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                      />
+                      {editTaggedGame && editTaggedGameName && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "4px 10px", width: "fit-content" }}>
+                          <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>🎮 {editTaggedGameName}</span>
+                          <button onClick={() => { setEditTaggedGame(null); setEditTaggedGameName(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1 }}>×</button>
+                        </div>
+                      )}
+                      <div style={{ position: "relative" }}>
+                        <textarea
+                          value={editingComment.text}
+                          onChange={handleEditTextChange}
+                          autoFocus
+                          rows={3}
+                          style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                          onKeyDown={e => {
+                            if (editMentionResults.length > 0) {
+                              if (e.key === "ArrowDown") { e.preventDefault(); setEditMentionIndex(i => Math.min(i+1, editMentionResults.length-1)); return; }
+                              if (e.key === "ArrowUp") { e.preventDefault(); setEditMentionIndex(i => Math.max(i-1, 0)); return; }
+                              if (e.key === "Enter") { e.preventDefault(); selectEditMention(editMentionResults[editMentionIndex]); return; }
+                              if (e.key === "Escape") { setEditMentionResults([]); return; }
+                            }
+                          }}
+                        />
+                        {editMentionResults.length > 0 && (
+                          <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 200, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                            {editMentionResults.map((item, i) => (
+                              <div key={item.id} onMouseDown={() => selectEditMention(item)}
+                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === editMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < editMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
+                                onMouseEnter={() => setEditMentionIndex(i)}>
+                                <div style={{ width: 26, height: 26, borderRadius: item._type === "game" ? 6 : "50%", background: item._type === "game" ? C.accent + "22" : C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+                                  {item._type === "game" ? "G" : (item.avatar_initials || (item.username || "?").slice(0,2)).toUpperCase()}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontWeight: 600, fontSize: 12, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name || item.username}</div>
+                                  <div style={{ color: C.textDim, fontSize: 10 }}>{item._type === "game" ? "Game" : item.handle}</div>
+                                </div>
+                                <span style={{ color: item._type === "game" ? C.accentSoft : C.accent, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{item._type === "game" ? "Game" : "Player"}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={saveCommentEdit}
                           style={{ background: C.accent, border: "none", borderRadius: 7, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           Save
                         </button>
-                        <button onClick={() => setEditingComment(null)}
+                        <button onClick={() => { setEditingComment(null); setEditTaggedGame(null); setEditTaggedGameName(null); setEditMentionResults([]); }}
                           style={{ background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
                           Cancel
                         </button>
