@@ -282,6 +282,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const [commentDropdownPos, setCommentDropdownPos] = useState(null);
   const [editDropdownPos, setEditDropdownPos] = useState(null);
+  const commentCursorRef = useRef(null);
   const [commentMentionResults, setCommentMentionResults] = useState([]);
   const [commentMentionIndex, setCommentMentionIndex] = useState(0);
   const [commentTaggedUsers, setCommentTaggedUsers] = useState([]);
@@ -308,6 +309,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const handleCommentTextChange = async (e) => {
     const val = e.target.value;
     const cursorPos = e.target.selectionStart;
+    commentCursorRef.current = cursorPos;
     setCommentText(val);
     const q = getActiveMention(val, cursorPos);
     if (q) {
@@ -334,7 +336,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const selectCommentMention = async (item) => {
     const textarea = commentInputRef.current;
-    const cursorPos = textarea?.selectionStart ?? commentText.length;
+    const cursorPos = commentCursorRef.current ?? commentText.length;
     const textToCursor = commentText.slice(0, cursorPos);
     const atIdx = textToCursor.lastIndexOf("@");
     const beforeAt = commentText.slice(0, atIdx);
