@@ -1035,22 +1035,64 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, flexWrap: isMobile ? "wrap" : "nowrap", gap: 8 }}>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  {taggedGames.map(gameId => {
-                    const game = dbGames[gameId];
-                    return (
-                      <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                        {game?.name || gameId}
-                        <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
-                      </span>
-                    );
-                  })}
-                  {taggedGames.length === 0 && (
-                    <span style={{ color: C.textDim, fontSize: 12 }}>@ a game, player, or NPC to tag</span>
-                  )}
-                </div>
-                <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s" }}>{posting ? "Posting..." : "Post"}</button>
+              {/* Bottom row — toggles between normal state and tag nudge */}
+              <div style={{ display: "flex", alignItems: "center", marginTop: 8, gap: 8 }}>
+                {showTagNudge ? (
+                  <>
+                    <span style={{ color: C.text, fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>Want to tag a game?</span>
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <input
+                        autoFocus
+                        value={nudgeQuery}
+                        onChange={e => handleNudgeSearch(e.target.value)}
+                        placeholder="Search for a game..."
+                        style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                      />
+                      {nudgeResults.length > 0 && (
+                        <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, marginBottom: 4, boxShadow: "0 -4px 20px rgba(0,0,0,0.4)", maxHeight: 260, overflowY: "auto" }}>
+                          {nudgeResults.map((item, i) => (
+                            <div key={item.id || item.igdb_id} onClick={() => selectNudgeGame(item)}
+                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", borderBottom: i < nudgeResults.length - 1 ? "1px solid " + C.border : "none", background: "transparent" }}
+                              onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              {item.cover_url
+                                ? <img src={item.cover_url} alt="" style={{ width: 32, height: 42, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                                : <div style={{ width: 32, height: 42, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
+                              }
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                                {item.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{item.genre}</div>}
+                              </div>
+                              {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => doSubmitPost()}
+                      style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 14px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      Post Anyway
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ flex: 1, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                      {taggedGames.map(gameId => {
+                        const game = dbGames[gameId];
+                        return (
+                          <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                            {game?.name || gameId}
+                            <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
+                          </span>
+                        );
+                      })}
+                      {taggedGames.length === 0 && (
+                        <span style={{ color: C.textDim, fontSize: 12 }}>@ a game, player, or NPC to tag</span>
+                      )}
+                    </div>
+                    <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s", flexShrink: 0 }}>{posting ? "Posting..." : "Post"}</button>
+                  </>
+                )}
               </div>
               {/* Link warning */}
               {linkWarning && (
@@ -1062,45 +1104,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               {/* Link preview card */}
               {linkPreviewLoading && (
                 <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 12 }}>Fetching preview…</div>
-              )}
-              {/* Game tag nudge */}
-              {showTagNudge && (
-                <div style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 8 }}>Want to tag a game?</div>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      autoFocus
-                      value={nudgeQuery}
-                      onChange={e => handleNudgeSearch(e.target.value)}
-                      placeholder="Search for a game..."
-                      style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
-                    />
-                    {nudgeResults.length > 0 && (
-                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", maxHeight: 260, overflowY: "auto" }}>
-                        {nudgeResults.map((item, i) => (
-                          <div key={item.id || item.igdb_id} onClick={() => selectNudgeGame(item)}
-                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", borderBottom: i < nudgeResults.length - 1 ? "1px solid " + C.border : "none", background: "transparent" }}
-                            onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                            {item.cover_url
-                              ? <img src={item.cover_url} alt="" style={{ width: 36, height: 48, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                              : <div style={{ width: 36, height: 48, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
-                            }
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
-                              {item.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{item.genre}</div>}
-                            </div>
-                            {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <button onClick={() => doSubmitPost()}
-                    style={{ marginTop: 10, background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
-                    Post without tag
-                  </button>
-                </div>
               )}
               {linkPreview && !linkPreviewLoading && (
                 <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, overflow: "hidden", display: "flex", gap: 0 }}>
