@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import ReactDOM from "react-dom";
 import { C, NPCS, FOUNDING } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
@@ -195,6 +196,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [showTagNudge, setShowTagNudge] = useState(false);
   const [nudgeQuery, setNudgeQuery] = useState("");
   const [nudgeResults, setNudgeResults] = useState([]);
+  const [nudgeDropdownPos, setNudgeDropdownPos] = useState(null);
+  const nudgeInputRef = useRef(null);
   const textareaRef = useRef(null); // array of game ids, max 3
 
   const URL_REGEX = /https?:\/\/[^\s<>"]+/gi;
@@ -339,8 +342,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     setTaggedGames(prev => prev.filter(id => id !== gameId));
   };
 
-  const handleNudgeSearch = async (val) => {
+  const handleNudgeSearch = async (val, inputEl) => {
     setNudgeQuery(val);
+    if (inputEl) {
+      const rect = inputEl.getBoundingClientRect();
+      setNudgeDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
+    }
     if (val.length < 2) { setNudgeResults([]); return; }
     const [localRes, igdbRes] = await Promise.allSettled([
       supabase.from("games").select("id, name, cover_url, genre").ilike("name", "%" + val + "%").order("followers", { ascending: false }).limit(5),
@@ -364,6 +371,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     setShowTagNudge(false);
     setNudgeQuery("");
     setNudgeResults([]);
+    setNudgeDropdownPos(null);
     // Pass the resolved game id directly to avoid React state timing issue
     doSubmitPost(resolvedGame.id);
   };
@@ -781,6 +789,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setShowTagNudge(true);
       setNudgeQuery("");
       setNudgeResults([]);
+      setNudgeDropdownPos(null);
       return;
     }
     doSubmitPost();
@@ -1042,16 +1051,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                     <span style={{ color: C.text, fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>Want to tag a game?</span>
                     <div style={{ flex: 1, position: "relative" }}>
                       <input
+                        ref={nudgeInputRef}
                         autoFocus
                         value={nudgeQuery}
-                        onChange={e => handleNudgeSearch(e.target.value)}
+                        onChange={e => handleNudgeSearch(e.target.value, e.target)}
                         placeholder="Search for a game..."
                         style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
                       />
-                      {nudgeResults.length > 0 && (
-                        <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, marginBottom: 4, boxShadow: "0 -4px 20px rgba(0,0,0,0.4)", maxHeight: 260, overflowY: "auto" }}>
+                      {nudgeResults.length > 0 && nudgeDropdownPos && ReactDOM.createPortal(
+                        <div style={{ position: "absolute", top: nudgeDropdownPos.top, left: nudgeDropdownPos.left, width: nudgeDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", maxHeight: 260, overflowY: "auto" }}>
                           {nudgeResults.map((item, i) => (
-                            <div key={item.id || item.igdb_id} onClick={() => selectNudgeGame(item)}
+                            <div key={item.id || item.igdb_id} onMouseDown={() => selectNudgeGame(item)}
                               style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", borderBottom: i < nudgeResults.length - 1 ? "1px solid " + C.border : "none", background: "transparent" }}
                               onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -1066,7 +1076,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                               {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
                             </div>
                           ))}
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                     <button onClick={() => doSubmitPost()}
