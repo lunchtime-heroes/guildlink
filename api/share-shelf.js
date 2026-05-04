@@ -38,8 +38,8 @@ function makeTile(game, rank, size) {
   const safeName = truncate(game.name || "", isTop ? 24 : 14);
 
   const coverImg = game.cover
-    ? { type: "img", props: { src: game.cover, style: { width: size, height: coverH, objectFit: "cover", borderRadius: 8 } } }
-    : { type: "div", props: { style: { width: size, height: coverH, borderRadius: 8, background: CARD_BG, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 22, fontWeight: 700 }, children: "?" } };
+    ? { type: "div", props: { style: { width: size, height: coverH, backgroundImage: "url(" + game.cover + ")", backgroundSize: "cover", backgroundPosition: "center" } } }
+    : { type: "div", props: { style: { width: size, height: coverH, background: CARD_BG, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 22, fontWeight: 700 }, children: "?" } };
 
   const badge = {
     type: "div",
@@ -85,7 +85,7 @@ function makeTile(game, rank, size) {
               {
                 type: "div",
                 props: {
-                  style: { flex: 1, height: coverH, overflow: "hidden", marginLeft: -(badgeSize + 10) },
+                  style: { flex: 1, height: coverH, overflow: "hidden", marginLeft: 0 },
                   children: coverImg,
                 },
               },
