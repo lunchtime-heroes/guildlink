@@ -125,6 +125,41 @@ export function ShareReviewButton({ review, style = {} }) {
   );
 }
 
+export function ShareShelfButton({ games, handle, style = {} }) {
+  const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState(null);
+
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const top10 = games.slice(0, 10).map(g => ({ name: g.name, cover_url: g.cover_url || null }));
+      const params = new URLSearchParams({
+        games: JSON.stringify(top10),
+        handle: handle || "",
+      });
+      const url = await fetchShareImage(`/api/share-shelf?${params}`);
+      setImageUrl(url);
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <>
+      <button onClick={handleShare} disabled={loading} title="Share your top 10"
+        style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 14px", cursor: loading ? "default" : "pointer", color: C.accentSoft, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, opacity: loading ? 0.5 : 1, flexShrink: 0, ...style }}
+        onMouseEnter={e => { if (!loading) e.currentTarget.style.background = C.accent + "33"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = C.accentGlow; }}>
+        <ShareIcon size={12} />
+        {loading ? "Generating..." : "Share Top 10"}
+      </button>
+      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-top10.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
+    </>
+  );
+}
+
 export function ShareChartsButton({ games, label, style = {} }) {
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);

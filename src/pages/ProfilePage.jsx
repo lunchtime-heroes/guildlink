@@ -15,7 +15,7 @@ import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { FoundingBadge, Badge } from "../components/FoundingBadge.jsx";
 import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
-import { ShareReviewButton } from "../components/ShareButton.jsx";
+import { ShareReviewButton, ShareShelfButton } from "../components/ShareButton.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
 function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, isDropTarget, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
@@ -1137,10 +1137,25 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {activeTab === "games" && (
         <div>
           {/* Add game bar */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ color: C.textDim, fontSize: 13 }}>{isMobile ? "Tap a game to move or remove it." : "Drag games to reorder. Hover to remove."}</div>
-            <button data-tour="add-game-btn" onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
-          </div>
+          {(() => {
+            const allRanked = [
+              ...userShelf.have_played,
+            ].slice(0, 10).map(e => ({ name: e.games?.name || "", cover_url: e.games?.cover_url || null }));
+            return (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ color: C.textDim, fontSize: 13 }}>{isMobile ? "Tap a game to move or remove it." : "Drag games to reorder. Hover to remove."}</div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {allRanked.length >= 10 && (
+                    <ShareShelfButton
+                      games={allRanked}
+                      handle={user?.handle ? "@" + user.handle.replace(/^@+/, "") : ""}
+                    />
+                  )}
+                  <button data-tour="add-game-btn" onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Search to add */}
           {addingGame && (
