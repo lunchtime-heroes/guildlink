@@ -14,21 +14,12 @@ const DIM = "#ffffff22";
 // Fetch a remote image and return as base64 data URI
 async function imageToBase64(url) {
   try {
-    const https = require("https");
-    const http = require("http");
-    const client = url.startsWith("https") ? https : http;
-    return await new Promise((resolve, reject) => {
-      client.get(url, (res) => {
-        const chunks = [];
-        res.on("data", c => chunks.push(c));
-        res.on("end", () => {
-          const buf = Buffer.concat(chunks);
-          const mime = res.headers["content-type"] || "image/jpeg";
-          resolve("data:" + mime + ";base64," + buf.toString("base64"));
-        });
-        res.on("error", reject);
-      }).on("error", reject);
-    });
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    const buf = Buffer.from(arrayBuffer);
+    const mime = res.headers.get("content-type") || "image/jpeg";
+    return "data:" + mime + ";base64," + buf.toString("base64");
   } catch {
     return null;
   }
@@ -144,7 +135,8 @@ function makeTile(game, rank, size) {
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).end();
 
-  const url = new URL(req.url, "https://guildlink.gg");
+  try {
+    const url = new URL(req.url, "https://guildlink.gg");
 
   let games = [];
   try { games = JSON.parse(url.searchParams.get("games") || "[]"); } catch {}
@@ -271,4 +263,8 @@ module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "image/png");
   res.setHeader("Cache-Control", "public, max-age=60");
   res.end(png);
+  } catch (err) {
+    console.error("share-shelf error:", err);
+    res.status(500).json({ error: err.message });
+  }
 };
