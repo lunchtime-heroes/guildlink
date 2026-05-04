@@ -11,7 +11,6 @@ const CARD_BG = "#162035";
 const BG = "#0d1424";
 const DIM = "#ffffff22";
 
-// Fetch a remote image and return as base64 data URI
 async function imageToBase64(url) {
   try {
     const res = await fetch(url);
@@ -25,109 +24,92 @@ async function imageToBase64(url) {
   }
 }
 
-// Build a single cover tile with rank badge
+function truncate(str, max) {
+  if (!str) return "";
+  return str.length > max ? str.slice(0, max) + "…" : str;
+}
+
 function makeTile(game, rank, size) {
   const isTop = rank === 1;
-  const badgeSize = isTop ? 36 : 28;
-  const badgeFontSize = isTop ? 18 : 14;
+  const coverH = Math.round(size * 1.33);
+  const badgeSize = isTop ? 34 : 26;
+  const badgeFontSize = isTop ? 17 : 13;
+  const nameFontSize = isTop ? 15 : 11;
+  const safeName = truncate(game.name || "", isTop ? 24 : 14);
+
+  const coverImg = game.cover
+    ? { type: "img", props: { src: game.cover, style: { width: size, height: coverH, objectFit: "cover", borderRadius: 8 } } }
+    : { type: "div", props: { style: { width: size, height: coverH, borderRadius: 8, background: CARD_BG, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 22, fontWeight: 700 }, children: "?" } };
+
+  const badge = {
+    type: "div",
+    props: {
+      style: {
+        width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2,
+        background: isTop ? GOLD : BG + "cc",
+        border: isTop ? "none" : "1.5px solid " + GOLD + "99",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: isTop ? BG : GOLD,
+        fontSize: badgeFontSize, fontWeight: 700,
+      },
+      children: String(rank),
+    },
+  };
 
   return {
     type: "div",
     props: {
-      style: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 6,
-        flex: isTop ? "none" : 1,
-        width: isTop ? size : undefined,
-      },
+      style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: size },
       children: [
-        // Cover art with rank badge
         {
           type: "div",
           props: {
             style: {
-              position: "relative",
-              width: size,
-              height: Math.round(size * 1.33),
-              borderRadius: 10,
-              overflow: "hidden",
-              border: isTop ? "3px solid " + GOLD : "2px solid " + DIM,
-              flexShrink: 0,
+              display: "flex", flexDirection: "row", alignItems: "flex-start",
+              border: isTop ? "2.5px solid " + GOLD : "1.5px solid " + DIM,
+              borderRadius: 10, overflow: "hidden", width: size, height: coverH,
             },
             children: [
-              // Cover image or fallback
-              game.cover
-                ? {
-                    type: "img",
-                    props: {
-                      src: game.cover,
-                      style: { width: "100%", height: "100%", objectFit: "cover" },
-                    },
-                  }
-                : {
-                    type: "div",
-                    props: {
-                      style: {
-                        width: "100%",
-                        height: "100%",
-                        background: CARD_BG,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: GOLD,
-                        fontSize: 28,
-                        fontWeight: 700,
-                      },
-                      children: "?",
-                    },
-                  },
-              // Rank badge
               {
                 type: "div",
                 props: {
                   style: {
-                    position: "absolute",
-                    top: 6,
-                    left: 6,
-                    width: badgeSize,
-                    height: badgeSize,
-                    borderRadius: badgeSize / 2,
-                    background: isTop ? GOLD : BG + "dd",
-                    border: isTop ? "none" : "1px solid " + GOLD + "88",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: isTop ? BG : GOLD,
-                    fontSize: badgeFontSize,
-                    fontWeight: 700,
+                    display: "flex", flexDirection: "column", alignItems: "flex-start",
+                    justifyContent: "flex-start", padding: 5,
+                    width: badgeSize + 10, height: coverH,
+                    flexShrink: 0,
                   },
-                  children: String(rank),
+                  children: badge,
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { flex: 1, height: coverH, overflow: "hidden", marginLeft: -(badgeSize + 10) },
+                  children: coverImg,
                 },
               },
             ],
           },
         },
-        // Game name below tile
         {
           type: "div",
           props: {
-            style: {
-              color: isTop ? WHITE : WHITE + "bb",
-              fontSize: isTop ? 18 : 13,
-              fontWeight: 700,
-              textAlign: "center",
-              overflow: "hidden",
-              whiteSpace: "nowrap",
-              width: size,
-            },
-            children: game.name.length > (isTop ? 28 : 18)
-              ? game.name.slice(0, isTop ? 28 : 18) + "…"
-              : game.name,
+            style: { color: isTop ? WHITE : WHITE + "bb", fontSize: nameFontSize, fontWeight: 700, textAlign: "center", width: size },
+            children: safeName,
           },
         },
       ],
+    },
+  };
+}
+
+function makeRow(items, startRank, tileSize, gap) {
+  return {
+    type: "div",
+    props: {
+      style: { display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap },
+      children: items.map((g, i) => makeTile(g, startRank + i, tileSize)),
     },
   };
 }
@@ -138,133 +120,72 @@ module.exports = async function handler(req, res) {
   try {
     const url = new URL(req.url, "https://guildlink.gg");
 
-  let games = [];
-  try { games = JSON.parse(url.searchParams.get("games") || "[]"); } catch {}
+    let games = [];
+    try { games = JSON.parse(url.searchParams.get("games") || "[]"); } catch {}
 
-  const handle = url.searchParams.get("handle") || "";
-  const top10 = games.slice(0, 10);
+    const handle = url.searchParams.get("handle") || "";
+    const top10 = games.slice(0, 10);
 
-  // Fetch all cover images as base64 in parallel
-  const covers = await Promise.all(
-    top10.map(g => g.cover_url ? imageToBase64(g.cover_url) : Promise.resolve(null))
-  );
+    const covers = await Promise.all(top10.map(g => g.cover_url ? imageToBase64(g.cover_url) : Promise.resolve(null)));
+    const enriched = top10.map((g, i) => ({ ...g, cover: covers[i] }));
 
-  const enriched = top10.map((g, i) => ({ ...g, cover: covers[i] }));
+    const fontPath = path.join(process.cwd(), "public", "DMSans-Bold.ttf");
+    const fontData = fs.readFileSync(fontPath);
+    const bgPath = path.join(process.cwd(), "public", "share-bg.png");
+    const bgBase64 = fs.readFileSync(bgPath).toString("base64");
+    const bgSrc = "data:image/png;base64," + bgBase64;
 
-  const fontPath = path.join(process.cwd(), "public", "DMSans-Bold.ttf");
-  const fontData = fs.readFileSync(fontPath);
+    const GAP = 10;
+    const INNER_W = 880;
+    const tile1 = 160;
+    const tile3 = Math.floor((INNER_W - GAP * 2) / 3);
 
-  const bgPath = path.join(process.cwd(), "public", "share-bg.png");
-  const bgBase64 = fs.readFileSync(bgPath).toString("base64");
-  const bgSrc = "data:image/png;base64," + bgBase64;
-
-  // Layout constants
-  const CARD_W = 970;
-  const INNER_PAD = 32;
-  const GAP = 12;
-
-  // Row sizing
-  // Row 1: 1 tile — large
-  const tile1Size = 180;
-  // Rows 2-4: 3 tiles each
-  const tile3Size = Math.floor((CARD_W - INNER_PAD * 2 - GAP * 2) / 3);
-
-  // Build rows
-  const row1 = enriched.slice(0, 1);   // #1
-  const row2 = enriched.slice(1, 4);   // #2–4
-  const row3 = enriched.slice(4, 7);   // #5–7
-  const row4 = enriched.slice(7, 10);  // #8–10
-
-  const makeRow = (items, startRank, tileSize, centered) => ({
-    type: "div",
-    props: {
-      style: {
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: centered ? "center" : "space-between",
-        alignItems: "flex-start",
-        gap: GAP,
-        width: "100%",
-      },
-      children: items.map((g, i) => makeTile(g, startRank + i, tileSize)),
-    },
-  });
-
-  const svg = await satori(
-    {
-      type: "div",
-      props: {
-        style: {
-          width: 1080,
-          height: 1080,
-          display: "flex",
-          position: "relative",
-          backgroundColor: BG,
-          backgroundImage: "url(" + bgSrc + ")",
-          backgroundSize: "cover",
-        },
-        children: [
-          {
+    const svg = await satori(
+      {
+        type: "div",
+        props: {
+          style: { width: 1080, height: 1080, display: "flex", backgroundColor: BG, backgroundImage: "url(" + bgSrc + ")", backgroundSize: "cover" },
+          children: [{
             type: "div",
             props: {
               style: {
-                position: "absolute",
-                top: 40,
-                left: 55,
-                width: CARD_W,
-                height: 1000,
-                backgroundColor: CARD_BG,
-                borderRadius: 48,
-                border: "5px solid " + GOLD,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "36px " + INNER_PAD + "px 28px",
-                gap: 20,
+                position: "absolute", top: 40, left: 55, width: 970, height: 1000,
+                backgroundColor: CARD_BG, borderRadius: 48, border: "5px solid " + GOLD,
+                display: "flex", flexDirection: "column", alignItems: "center",
+                padding: "32px 45px 24px", gap: 14,
               },
               children: [
-                // Header
-                {
-                  type: "div",
-                  props: {
-                    style: { color: GOLD, fontSize: 40, fontWeight: 700, textAlign: "center" },
-                    children: "My GuildLink Top 10",
-                  },
-                },
-                // Row 1 — #1 alone, centered
-                makeRow(row1, 1, tile1Size, true),
-                // Row 2 — #2–4
-                makeRow(row2, 2, tile3Size, false),
-                // Row 3 — #5–7
-                makeRow(row3, 5, tile3Size, false),
-                // Row 4 — #8–10
-                makeRow(row4, 8, tile3Size, false),
-                // Footer
+                { type: "div", props: { style: { color: GOLD, fontSize: 38, fontWeight: 700, textAlign: "center" }, children: "My GuildLink Top 10" } },
+                makeRow(enriched.slice(0, 1), 1, tile1, GAP),
+                makeRow(enriched.slice(1, 4), 2, tile3, GAP),
+                makeRow(enriched.slice(4, 7), 5, tile3, GAP),
+                makeRow(enriched.slice(7, 10), 8, tile3, GAP),
                 {
                   type: "div",
                   props: {
                     style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, marginTop: "auto" },
                     children: [
-                      { type: "div", props: { style: { color: WHITE + "88", fontSize: 20, fontWeight: 700 }, children: handle } },
-                      { type: "div", props: { style: { color: GOLD, fontSize: 26, fontWeight: 700 }, children: "GuildLink.gg" } },
+                      { type: "div", props: { style: { color: WHITE + "77", fontSize: 18, fontWeight: 700 }, children: handle } },
+                      { type: "div", props: { style: { color: GOLD, fontSize: 24, fontWeight: 700 }, children: "GuildLink.gg" } },
                     ],
                   },
                 },
               ],
             },
-          },
-        ],
+          }],
+        },
       },
-    },
-    { width: 1080, height: 1080, fonts: [{ name: "DM Sans", data: fontData, weight: 700 }] }
-  );
+      { width: 1080, height: 1080, fonts: [{ name: "DM Sans", data: fontData, weight: 700 }] }
+    );
 
-  const png = await sharp(Buffer.from(svg)).png().toBuffer();
-  res.setHeader("Content-Type", "image/png");
-  res.setHeader("Cache-Control", "public, max-age=60");
-  res.end(png);
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.end(png);
+
   } catch (err) {
-    console.error("share-shelf error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("share-shelf error:", err?.message || err);
+    console.error("share-shelf stack:", err?.stack);
+    res.status(500).json({ error: err?.message || String(err) });
   }
 };
