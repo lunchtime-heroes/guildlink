@@ -45,7 +45,7 @@ function makeTile(game, rank, size) {
     type: "div",
     props: {
       style: {
-        width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2,
+        width: badgeSize, height: badgeSize, borderRadius: (badgeSize / 2) + "px",
         background: isTop ? GOLD : BG + "cc",
         border: isTop ? "none" : "1.5px solid " + GOLD + "99",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -59,7 +59,7 @@ function makeTile(game, rank, size) {
   return {
     type: "div",
     props: {
-      style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 5, width: size },
+      style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", width: size },
       children: [
         {
           type: "div",
@@ -85,7 +85,7 @@ function makeTile(game, rank, size) {
               {
                 type: "div",
                 props: {
-                  style: { flex: 1, height: coverH, overflow: "hidden", marginLeft: 0 },
+                  style: { display: "flex", flex: 1, height: coverH, overflow: "hidden", marginLeft: 0 },
                   children: coverImg,
                 },
               },
@@ -108,7 +108,7 @@ function makeRow(items, startRank, tileSize, gap) {
   return {
     type: "div",
     props: {
-      style: { display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap },
+      style: { display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap: gap + "px" },
       children: items.map((g, i) => makeTile(g, startRank + i, tileSize)),
     },
   };
@@ -152,7 +152,7 @@ module.exports = async function handler(req, res) {
                 position: "absolute", top: 40, left: 55, width: 970, height: 1000,
                 backgroundColor: CARD_BG, borderRadius: 48, border: "5px solid " + GOLD,
                 display: "flex", flexDirection: "column", alignItems: "center",
-                padding: "32px 45px 24px", gap: 14,
+                padding: "32px 45px 24px", gap: "14px",
               },
               children: [
                 { type: "div", props: { style: { color: GOLD, fontSize: 38, fontWeight: 700, textAlign: "center" }, children: "My GuildLink Top 10" } },
@@ -163,7 +163,7 @@ module.exports = async function handler(req, res) {
                 {
                   type: "div",
                   props: {
-                    style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, marginTop: "auto" },
+                    style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", marginTop: "auto" },
                     children: [
                       { type: "div", props: { style: { color: WHITE + "77", fontSize: 18, fontWeight: 700 }, children: handle } },
                       { type: "div", props: { style: { color: GOLD, fontSize: 24, fontWeight: 700 }, children: "GuildLink.gg" } },
