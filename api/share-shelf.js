@@ -31,7 +31,7 @@ function truncate(str, max) {
 
 function makeTile(game, rank, size) {
   const isTop = rank === 1;
-  const coverH = Math.round(size * 1.33);
+  const coverH = Math.round(size * 1.2);
   const badgeSize = isTop ? 34 : 26;
   const badgeFontSize = isTop ? 17 : 13;
   const nameFontSize = isTop ? 15 : 11;
@@ -135,10 +135,11 @@ module.exports = async function handler(req, res) {
     const bgBase64 = fs.readFileSync(bgPath).toString("base64");
     const bgSrc = "data:image/png;base64," + bgBase64;
 
-    const GAP = 10;
-    const INNER_W = 880;
-    const tile1 = 160;
-    const tile3 = Math.floor((INNER_W - GAP * 2) / 3);
+    const GAP = 8;
+    const CARD_PAD = 36;
+    const INNER_W = 970 - CARD_PAD * 2; // 898px usable
+    const tile1 = 200;
+    const tile3 = Math.floor((INNER_W - GAP * 2) / 3); // ~294px each
 
     const svg = await satori(
       {
@@ -152,7 +153,7 @@ module.exports = async function handler(req, res) {
                 position: "absolute", top: 40, left: 55, width: 970, height: 1000,
                 backgroundColor: CARD_BG, borderRadius: 48, border: "5px solid " + GOLD,
                 display: "flex", flexDirection: "column", alignItems: "center",
-                padding: "32px 45px 24px", gap: "14px",
+                padding: "28px " + CARD_PAD + "px 20px", gap: "10px",
               },
               children: [
                 { type: "div", props: { style: { color: GOLD, fontSize: 38, fontWeight: 700, textAlign: "center" }, children: "My GuildLink Top 10" } },
