@@ -58,26 +58,26 @@ module.exports = async function handler(req, res) {
     const fontData = fs.readFileSync(fontPath);
     const bgPath = path.join(process.cwd(), "public", "top-10-share.png");
 
-    // ── Pixel-perfect layout constants (measured from mockup) ───────
-    const B_LEFT = 58;
-    const B_TOP  = 160;
-    const BW     = 360;
-    const BH     = 490;
+    // ── Pixel-perfect layout constants (from grid overlay analysis) ─
+    const B_LEFT = 60;
+    const B_TOP  = 175;
+    const BW     = 410;    // 470 - 60
+    const BH     = 465;    // 640 - 175 (spans rows 1+2)
 
-    const S_LEFT = 458;
-    const S_GAP  = 16;
-    const SW     = Math.floor((1080 - S_LEFT - 58 - S_GAP * 2) / 3); // 164px
-    const SH     = 200;
+    const S_LEFT = 470;    // right col starts at x=470
+    const SW     = 153;    // tile width measured from grid
+    const SH     = 202;    // tile height measured from grid
+    const S_GAP  = 45;     // gap between tiles (includes label space? no — this is horizontal gap)
 
-    const ROW1_Y = 160;
-    const ROW2_Y = 402;
-    const ROW3_Y = 644;
+    const ROW1_Y = 175;    // top of row 1
+    const ROW2_Y = 437;    // top of row 2
+    const ROW3_Y = 692;    // top of row 3
 
     const BIG_LABEL_FS   = 28;
-    const SMALL_LABEL_FS = 22;
+    const SMALL_LABEL_FS = 20;
     const LABEL_GAP = 8;
 
-    const FOOTER_Y = 1005;
+    const FOOTER_Y = 1000;
     // ────────────────────────────────────────────────────────────────
 
     // Resize covers
