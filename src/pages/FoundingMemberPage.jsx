@@ -180,7 +180,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 48 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 12 }}>Your Profile Is Yours</div>
             <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 0 }}>
-              Every time you add a game to your shelf, write a review, post or comment, or join a guild, you're building a clear picture of who you are as a gamer. The more you share, the more tailored your discovery recommendations become. The goal is to help you find your next favorite game.
+              Every time you add a game to your shelf, write a review, post or comment, or join a guild, you're building a clear picture of who you are as a gamer. The more you share, the more tailored your discovery recommendations become. The goal is to help you find your next favorite game. Your data stays on GuildLink, works for you, and you can export or delete it at any time.
             </p>
           </div>
         </div>
@@ -205,10 +205,10 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
             Ads aren't a part of GuildLink yet, but they are part of our roadmap. Because of that, we want to be clear about what we will and won't do.
           </p>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
-            Ads aren't sold based on demographic information because we don't capture it. Ads target meaningful gaming behaviors you've told us about. Our goal is to create a platform where ads are a meaningful piece of the game discovery process. If an indie developer is making a game like Elden Ring, they'll be able to reach players who have actually played Elden Ring.
+            Ads aren't sold based on demographic information because we don't capture it. When ads come to GuildLink, they'll target games — not people. If an indie developer is making a game like Elden Ring, they'll be able to reach players who have Elden Ring on their shelf. The game is the target, not you.
           </p>
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: isMobile ? 14 : 16, lineHeight: 1.8, marginBottom: 16 }}>
-            That's the role ads will play. Game recommendations won't be influenced to favor specific games and we won't tweak the algorithm to show you ads that aren't relevant. We'll even show you what led to you seeing a specific ad.
+            That's the role ads will play. Game recommendations won't be influenced to favor specific games and we won't tweak the algorithm to show you ads that aren't relevant.
           </p>
           <p style={{ color: C.gold, fontSize: isMobile ? 14 : 16, lineHeight: 1.8, fontWeight: 600, marginBottom: 24 }}>
             We believe there can be a mutually beneficial balance struck with advertising.
