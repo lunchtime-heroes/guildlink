@@ -61,19 +61,19 @@ module.exports = async function handler(req, res) {
     // ── Pixel-perfect layout constants (measured from mockup) ───────
     const B_LEFT = 58;
     const B_TOP  = 160;
-    const BW     = 390;
-    const BH     = 490;   // #1 spans rows 1+2 height
+    const BW     = 360;
+    const BH     = 490;
 
-    const SW     = 190;   // small tile width (measured from mockup)
-    const SH     = 200;   // small tile height
-    const S_LEFT = 490;   // x start of right column
-    const S_GAP  = 20;    // gap between small tiles horizontally
+    const S_LEFT = 458;
+    const S_GAP  = 16;
+    const SW     = Math.floor((1080 - S_LEFT - 58 - S_GAP * 2) / 3); // 164px
+    const SH     = 200;
 
-    const ROW1_Y = 160;   // top of row 1
-    const ROW2_Y = 402;   // top of row 2 (160 + 200 + 42 label/gap)
-    const ROW3_Y = 644;   // top of row 3
+    const ROW1_Y = 160;
+    const ROW2_Y = 402;
+    const ROW3_Y = 644;
 
-    const BIG_LABEL_FS  = 28;
+    const BIG_LABEL_FS   = 28;
     const SMALL_LABEL_FS = 22;
     const LABEL_GAP = 8;
 
