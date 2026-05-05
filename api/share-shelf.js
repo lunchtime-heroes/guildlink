@@ -25,15 +25,12 @@ async function resizeCover(buf, w, h, radius = 12) {
       .png()
       .toBuffer();
 
-    // Create SVG rounded rect mask
     const mask = Buffer.from(
-      `<svg width="${w}" height="${h}">
-        <rect x="0" y="0" width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="white"/>
-      </svg>`
+      `<svg><rect x="0" y="0" width="${w}" height="${h}" rx="${radius}" ry="${radius}"/></svg>`
     );
 
     return await sharp(resized)
-      .composite([{ input: mask, blend: "dest-in" }])
+      .composite([{ input: mask, blend: "destination-in" }])
       .png()
       .toBuffer();
   } catch {
@@ -96,7 +93,7 @@ module.exports = async function handler(req, res) {
     const LABEL_GAP = 8;
     const LABEL_H = LABEL_FONT + 4;
     const rightColW = SW * 3 + GAP * 2;
-    const leftColW = 1080 - PAD * 2 - GAP - rightColW;
+    const leftColW = 380;
     const BW = leftColW;
     const BH = 470;
     const BIG_LABEL_FONT = 28;
