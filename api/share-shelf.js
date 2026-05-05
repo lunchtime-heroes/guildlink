@@ -108,18 +108,18 @@ module.exports = async function handler(req, res) {
     const GAP = 12;
     const INNER_W = 1080 - PAD * 2; // 984px
 
-    // Left col: #1 large
-    const leftColW = Math.floor(INNER_W * 0.43); // 423px
-    // Right col: 3 tiles wide with gaps
-    const rightColW = INNER_W - leftColW - GAP; // 549px
-    const smallW = Math.floor((rightColW - GAP * 2) / 3); // 175px
+    // Small tiles: exactly 150x200 per mockup
+    const smallW = 150;
+    const smallH = 200;
 
-    // Heights — portrait ratio ~1.35
-    const smallH = Math.floor(smallW * 1.3); // 227px
-    // #1 height = 3 rows of small + 2 gaps between images + rank labels
-    // each small unit = smallH + 6(gap) + 22(label) + 6(gap between tiles) 
-    const unitH = smallH + 28; // cover + label
-    const bigH = unitH * 3 + GAP * 2 - 28; // align big cover to same total height, no label gap at bottom
+    // Right col: 3 tiles + 2 gaps
+    const rightColW = smallW * 3 + GAP * 2; // 474px
+
+    // Left col: remaining width
+    const leftColW = INNER_W - rightColW - GAP; // 498px
+
+    // #1 tile: same width as leftColW, 470px tall (2 rows high per mockup)
+    const bigH = 470;
 
     const svg = await satori(
       {
