@@ -43,7 +43,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
             { pill: <GreenPill>We use it to</GreenPill>, text: "run the platform. Your shelf powers game discovery, The Charts, and game recommendations." },
             { pill: <RedPill>We never sell</RedPill>, text: "your data to anyone." },
             { pill: <RedPill>We never profile</RedPill>, text: "you based on browsing history, demographics, or behavior outside GuildLink." },
-            { pill: <GreenPill>If we show ads</GreenPill>, text: "they're matched to the game library information you've shared with GuildLink." },
+            { pill: <GreenPill>If we show ads</GreenPill>, text: "they target games, not people. A developer can reach players who have a specific game on their shelf — no demographic profiling, no off-platform data." },
             { pill: <GreenPill>You can</GreenPill>, text: "delete your account and all your data at any time from your profile page. No matter where you live." },
             { pill: <GreenPill>You can</GreenPill>, text: "request a full export of your data before leaving." },
             { pill: <GreenPill>Analytics</GreenPill>, text: "are handled without cookies and are GDPR compliant by design." },
@@ -58,13 +58,13 @@ function PrivacyPage({ isMobile, setActivePage }) {
 
       {/* Full Policy */}
       <Section title="1. Who we are">
-        GuildLink is a gaming social platform built and operated by Matt Curtis, sole founder. GuildLink is accessible at guildlink.gg. For any privacy-related questions or requests, contact us through your profile page or reach out directly at <Highlight>matt@lunchtimeheroes.co</Highlight>.
+        GuildLink is a gaming social platform built and operated by Matt Curtis, sole founder. GuildLink is accessible at guildlink.gg. For any privacy-related questions or requests, contact us through your profile page or reach out directly at <Highlight>privacy@guildlink.gg</Highlight>.
       </Section>
 
       <Section title="2. What we collect and why">
         <div style={{ marginBottom: 12 }}><Highlight>Account credentials.</Highlight> When you sign up, we collect your email address and a hashed password. Your email is used for account authentication, password resets, and occasional platform communications. It is stored separately from your public profile and is never visible to other users.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Profile information.</Highlight> Your username, handle, bio, avatar, and player tags. This is what other users see when they visit your profile. You control all of it and can update or delete it at any time.</div>
-        <div style={{ marginBottom: 12 }}><Highlight>Gaming activity.</Highlight> The games you add to your shelf, your reviews, posts, Q&A, and comments. This is the core of what GuildLink is — your game history is your profile, and it drives discovery for you and others. You choose what you add.</div>
+        <div style={{ marginBottom: 12 }}><Highlight>Gaming activity.</Highlight> The games you add to your shelf, your reviews, posts, Q&A, and comments. This is the core of what GuildLink is — your game history is your profile, and it drives discovery for you and others. You choose what you add. If you connect a Steam or Xbox account to import your library, we store only the game titles and cover art — not your platform credentials, purchase history, or playtime data. Imported games are treated identically to games you add manually.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Guild activity.</Highlight> Guild memberships, sessions you create or join, and posts in guild threads. This is visible to your fellow guild members.</div>
         <div><Highlight>Usage analytics.</Highlight> We use Vercel Analytics to understand how people navigate GuildLink. GuildLink doesn't collect cookies, perform fingerprinting, or track you across other websites. GuildLink collects aggregate data like page views and session counts in a way that isn't connected to your identity.</div>
       </Section>
@@ -82,12 +82,15 @@ function PrivacyPage({ isMobile, setActivePage }) {
       </Section>
 
       <Section title="5. Advertising">
-        GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads will be matched to your game library and gaming behavior you share on GuildLink. Nothing else.</Highlight> If a game studio wants to reach players who have a similar game on their shelf, GuildLink can surface that game to them through advertising.
+        GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads are targeted to games, not to people.</Highlight> A developer can choose to reach players who have a specific game on their shelf — that's it. GuildLink does not build user profiles for advertising purposes.
         <div style={{ marginTop: 12 }}>
-          We see this as a genuine part of game discovery. Independent studios and smaller developers benefit when they have a way to reach the players most likely to love their game. Browsing history, demographic information, purchase history, or any other data from outside GuildLink will never be used to target ads. We will never sell your data to advertisers.
+          The distinction matters. Traditional ad targeting asks "who is this person and what are they likely to buy?" GuildLink advertising asks "which players have already shown interest in games like this one?" No demographic data. No behavioral profiling. No data from outside GuildLink. The game is the target, not you.
         </div>
         <div style={{ marginTop: 12 }}>
-          When ads are introduced, this policy will be updated and users will be notified. 
+          We see this as a genuine part of game discovery — a way for independent studios and smaller developers to reach players who are already predisposed to love their game. We will never sell your data to advertisers, and we will never use browsing history, demographics, or off-platform behavior to target ads.
+        </div>
+        <div style={{ marginTop: 12 }}>
+          When ads are introduced, this policy will be updated and users will be notified.
         </div>
       </Section>
 
@@ -107,7 +110,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
         <div style={{ marginBottom: 8 }}><Highlight>Right to correction.</Highlight> You can update your profile information at any time from your profile page.</div>
         <div style={{ marginBottom: 8 }}><Highlight>Right to deletion.</Highlight> You can delete your account from your profile page. All data is permanently removed within 14 days.</div>
         <div style={{ marginBottom: 8 }}><Highlight>Right to portability.</Highlight> You can request a full export of your data before deleting your account. Use the data export option in the account deletion menu and we will fulfill your request within 14 days.</div>
-        <div><Highlight>Right to object.</Highlight> If you have concerns about how we process your data, contact us at matt@lunchtimeheroes.co. We will respond within 30 days.</div>
+        <div><Highlight>Right to object.</Highlight> If you have concerns about how we process your data, contact us at privacy@guildlink.gg. We will respond within 30 days.</div>
       </Section>
 
       <Section title="9. Security">
@@ -123,7 +126,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
       </Section>
 
       <Section title="12. Contact">
-        Questions, requests, or concerns about your data: <Highlight>matt@lunchtimeheroes.co</Highlight>
+        Questions, requests, or concerns about your data: <Highlight>privacy@guildlink.gg</Highlight>
         <div style={{ marginTop: 8 }}>Data export or deletion requests can also be submitted directly from your profile page.</div>
       </Section>
 
