@@ -18,10 +18,22 @@ async function fetchImageBuffer(url) {
   }
 }
 
-async function resizeCover(buf, w, h) {
+async function resizeCover(buf, w, h, radius = 12) {
   try {
-    return await sharp(buf)
+    const resized = await sharp(buf)
       .resize(w, h, { fit: "cover", position: "center" })
+      .png()
+      .toBuffer();
+
+    // Create SVG rounded rect mask
+    const mask = Buffer.from(
+      `<svg width="${w}" height="${h}">
+        <rect x="0" y="0" width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="white"/>
+      </svg>`
+    );
+
+    return await sharp(resized)
+      .composite([{ input: mask, blend: "dest-in" }])
       .png()
       .toBuffer();
   } catch {
@@ -76,7 +88,7 @@ module.exports = async function handler(req, res) {
 
     // Layout
     const PAD = 58;
-    const GAP = 18;
+    const GAP = 24;
     const CONTENT_TOP = 165;
     const SW = 150;
     const SH = 200;
@@ -84,7 +96,7 @@ module.exports = async function handler(req, res) {
     const LABEL_GAP = 8;
     const LABEL_H = LABEL_FONT + 4;
     const rightColW = SW * 3 + GAP * 2;
-    const leftColW = 340;
+    const leftColW = 1080 - PAD * 2 - GAP - rightColW;
     const BW = leftColW;
     const BH = 470;
     const BIG_LABEL_FONT = 28;
@@ -92,12 +104,7 @@ module.exports = async function handler(req, res) {
 
     // Resize covers
     const bigCover = rawBuffers[0]
-      ? await sharp(rawBuffers[0])
-          .resize(BW, BH, { fit: "inside", position: "center", background: { r: 22, g: 32, b: 53, alpha: 1 } })
-          .extend({ top: 0, bottom: 0, left: 0, right: 0, background: { r: 22, g: 32, b: 53, alpha: 1 } })
-          .resize(BW, BH)
-          .png()
-          .toBuffer()
+      ? await resizeCover(rawBuffers[0], BW, BH, 16)
       : await placeholderTile(BW, BH);
 
     const smallCovers = await Promise.all(
