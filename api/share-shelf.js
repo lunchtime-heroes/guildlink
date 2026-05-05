@@ -23,7 +23,6 @@ async function resizeCover(buf, w, h) {
   try {
     return await sharp(buf)
       .resize(w, h, { fit: "cover", position: "center" })
-      .roundCorners(10)
       .png()
       .toBuffer();
   } catch {
