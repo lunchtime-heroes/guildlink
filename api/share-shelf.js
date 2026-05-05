@@ -25,16 +25,20 @@ async function resizeCover(buf, w, h, radius = 12) {
       .png()
       .toBuffer();
 
-    const mask = Buffer.from(
-      `<svg><rect x="0" y="0" width="${w}" height="${h}" rx="${radius}" ry="${radius}"/></svg>`
-    );
-
-    return await sharp(resized)
-      .composite([{ input: mask, blend: "destination-in" }])
-      .png()
-      .toBuffer();
+    try {
+      const mask = Buffer.from(
+        `<svg width="${w}" height="${h}"><rect x="0" y="0" width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="white"/></svg>`
+      );
+      return await sharp(resized)
+        .composite([{ input: mask, blend: "dest-in" }])
+        .png()
+        .toBuffer();
+    } catch {
+      // Rounded corners not supported — return without
+      return resized;
+    }
   } catch {
-    return null;
+    return await placeholderTile(w, h);
   }
 }
 
@@ -163,7 +167,7 @@ module.exports = async function handler(req, res) {
     composites.push({ input: footerBuf, top: 1010, left: footerX });
 
     const png = await sharp(bgPath)
-      .composite(composites)
+      .composite(composites.filter(c => c.input != null))
       .png()
       .toBuffer();
 
