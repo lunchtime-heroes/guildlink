@@ -67,7 +67,7 @@ function makeTile(game, rank, w, h, fontSize) {
         {
           type: "div",
           props: {
-            style: { display: "flex", color: GOLD, fontSize: fontSize || 22, fontWeight: 700 },
+            style: { display: "flex", color: GOLD, fontSize: fontSize || 20, fontWeight: 700 },
             children: "#" + rank,
           },
         },
@@ -97,29 +97,33 @@ module.exports = async function handler(req, res) {
     const bgBase64 = fs.readFileSync(bgPath).toString("base64");
     const bgSrc = "data:image/png;base64," + bgBase64;
 
-    // Layout constants
-    // Canvas: 1080x1080
-    // Background image handles: title pill, gold lines, footer area
-    // Content starts at y~160 (below title), ends at y~960 (above footer)
-    // Content height available: ~800px
-    // Side padding: 48px each side => inner width: 984px
+    // Exact measurements from background image analysis:
+    // Content area: y=150 to y=1040 = 890px tall
+    // Background is uniform — no built-in side padding
+    // We use PAD=40 each side
 
-    const PAD = 48;
+    const PAD = 40;
     const GAP = 12;
-    const INNER_W = 1080 - PAD * 2; // 984px
 
-    // Small tiles: exactly 150x200 per mockup
-    const smallW = 150;
-    const smallH = 200;
+    // Small tiles: exactly 150x200 per mockup spec
+    const SW = 150;
+    const SH = 200;
+    const LABEL_H = 28; // rank label height + gap
 
-    // Right col: 3 tiles + 2 gaps
-    const rightColW = smallW * 3 + GAP * 2; // 474px
+    // Right column: 3 tiles + 2 gaps = 474px wide
+    const rightColW = SW * 3 + GAP * 2; // 474px
 
-    // Left col: remaining width
-    const leftColW = INNER_W - rightColW - GAP; // 498px
+    // Left col: fill remaining width
+    const leftColW = 1080 - PAD * 2 - GAP - rightColW; // 1000 - 12 - 474 = 514px
 
-    // #1 tile: same width as leftColW, 470px tall (2 rows high per mockup)
-    const bigH = 470;
+    // #1 tile height: 2 tile units tall
+    // One unit = SH + LABEL_H = 228px
+    // Two units + one gap between = 228 + 12 + 228 = 468, minus the bottom label of the second unit
+    // since #1 has its own label below: 2*SH + GAP = 412px
+    const bigH = SH * 2 + GAP; // 412px — pure cover height matching 2 rows
+
+    // Top spacer: content starts at y=150
+    const TOP_SPACER = 150;
 
     const svg = await satori(
       {
@@ -135,25 +139,26 @@ module.exports = async function handler(req, res) {
             backgroundPosition: "center",
           },
           children: [
-            // Spacer for title area (background handles this visually)
-            { type: "div", props: { style: { display: "flex", height: 155 }, children: [] } },
+            // Spacer — pushes content below title pill
+            { type: "div", props: { style: { display: "flex", height: TOP_SPACER, width: 1080 }, children: [] } },
 
-            // Main content
+            // Main content row
             {
               type: "div",
               props: {
                 style: {
                   display: "flex",
                   flexDirection: "row",
-                  padding: "0px " + PAD + "px",
+                  paddingLeft: PAD + "px",
+                  paddingRight: PAD + "px",
                   gap: GAP + "px",
                   alignItems: "flex-start",
                 },
                 children: [
-                  // #1 — large left
+                  // #1 — large left tile
                   makeTile(enriched[0], 1, leftColW, bigH, 28),
 
-                  // #2-10 — 3x3 grid right
+                  // #2–10 — 3x3 grid right
                   {
                     type: "div",
                     props: {
@@ -165,9 +170,9 @@ module.exports = async function handler(req, res) {
                           props: {
                             style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
                             children: [
-                              makeTile(enriched[1], 2, smallW, smallH, 20),
-                              makeTile(enriched[2], 3, smallW, smallH, 20),
-                              makeTile(enriched[3], 4, smallW, smallH, 20),
+                              makeTile(enriched[1], 2, SW, SH, 20),
+                              makeTile(enriched[2], 3, SW, SH, 20),
+                              makeTile(enriched[3], 4, SW, SH, 20),
                             ],
                           },
                         },
@@ -177,9 +182,9 @@ module.exports = async function handler(req, res) {
                           props: {
                             style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
                             children: [
-                              makeTile(enriched[4], 5, smallW, smallH, 20),
-                              makeTile(enriched[5], 6, smallW, smallH, 20),
-                              makeTile(enriched[6], 7, smallW, smallH, 20),
+                              makeTile(enriched[4], 5, SW, SH, 20),
+                              makeTile(enriched[5], 6, SW, SH, 20),
+                              makeTile(enriched[6], 7, SW, SH, 20),
                             ],
                           },
                         },
@@ -189,9 +194,9 @@ module.exports = async function handler(req, res) {
                           props: {
                             style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
                             children: [
-                              makeTile(enriched[7], 8, smallW, smallH, 20),
-                              makeTile(enriched[8], 9, smallW, smallH, 20),
-                              makeTile(enriched[9], 10, smallW, smallH, 20),
+                              makeTile(enriched[7], 8, SW, SH, 20),
+                              makeTile(enriched[8], 9, SW, SH, 20),
+                              makeTile(enriched[9], 10, SW, SH, 20),
                             ],
                           },
                         },
