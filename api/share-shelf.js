@@ -1,79 +1,60 @@
-// api/share-shelf.js
+// api/share-shelf.js — Uses sharp compositing for pixel-perfect layout
 
-const satori = require("satori").default;
 const sharp = require("sharp");
 const fs = require("fs");
 const path = require("path");
 
-const GOLD = "#fbae17";
-const WHITE = "#e2e8f4";
-const CARD_BG = "#162035";
+const GOLD_HEX = "#fbae17";
+const WHITE_HEX = "#e2e8f4";
 
-async function imageToBase64(url) {
+async function fetchImageBuffer(url) {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
     const arrayBuffer = await res.arrayBuffer();
-    const buf = Buffer.from(arrayBuffer);
-    const mime = res.headers.get("content-type") || "image/jpeg";
-    return "data:" + mime + ";base64," + buf.toString("base64");
+    return Buffer.from(arrayBuffer);
   } catch {
     return null;
   }
 }
 
-function makeTile(game, rank, w, h, fontSize) {
-  const cover = game.cover
-    ? {
-        type: "div",
-        props: {
-          style: {
-            display: "flex",
-            width: w,
-            height: h,
-            backgroundImage: "url(" + game.cover + ")",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            borderRadius: "10px",
-          },
-          children: [],
-        },
-      }
-    : {
-        type: "div",
-        props: {
-          style: {
-            display: "flex",
-            width: w,
-            height: h,
-            borderRadius: "10px",
-            backgroundColor: CARD_BG,
-            alignItems: "center",
-            justifyContent: "center",
-            color: GOLD,
-            fontSize: 24,
-            fontWeight: 700,
-          },
-          children: "?",
-        },
-      };
+// Resize a cover image buffer to exact dimensions, cropping to fill
+async function resizeCover(buf, w, h) {
+  try {
+    return await sharp(buf)
+      .resize(w, h, { fit: "cover", position: "center" })
+      .roundCorners(10)
+      .png()
+      .toBuffer();
+  } catch {
+    return null;
+  }
+}
 
-  return {
-    type: "div",
-    props: {
-      style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" },
-      children: [
-        cover,
-        {
-          type: "div",
-          props: {
-            style: { display: "flex", color: GOLD, fontSize: fontSize || 20, fontWeight: 700 },
-            children: "#" + rank,
-          },
-        },
-      ],
+// Create a placeholder tile for missing covers
+async function placeholderTile(w, h) {
+  return await sharp({
+    create: { width: w, height: h, channels: 4, background: { r: 22, g: 32, b: 53, alpha: 1 } }
+  }).png().toBuffer();
+}
+
+// Render text as SVG then to buffer via sharp
+async function textBuffer(text, fontSize, color, fontData) {
+  const satori = require("satori").default;
+  const svg = await satori(
+    {
+      type: "div",
+      props: {
+        style: { display: "flex", color, fontSize, fontWeight: 700, whiteSpace: "nowrap" },
+        children: text,
+      },
     },
-  };
+    {
+      width: 300, height: fontSize + 10,
+      fonts: [{ name: "DM Sans", data: fontData, weight: 700 }],
+    }
+  );
+  return await sharp(Buffer.from(svg)).png().toBuffer();
 }
 
 module.exports = async function handler(req, res) {
@@ -88,131 +69,105 @@ module.exports = async function handler(req, res) {
     const handle = url.searchParams.get("handle") || "";
     const top10 = games.slice(0, 10);
 
-    const covers = await Promise.all(top10.map(g => g.cover_url ? imageToBase64(g.cover_url) : Promise.resolve(null)));
-    const enriched = top10.map((g, i) => ({ ...g, cover: covers[i] }));
+    // Fetch all cover images in parallel
+    const rawBuffers = await Promise.all(
+      top10.map(g => g.cover_url ? fetchImageBuffer(g.cover_url) : Promise.resolve(null))
+    );
 
     const fontPath = path.join(process.cwd(), "public", "DMSans-Bold.ttf");
     const fontData = fs.readFileSync(fontPath);
     const bgPath = path.join(process.cwd(), "public", "top-10-share.png");
-    const bgBase64 = fs.readFileSync(bgPath).toString("base64");
-    const bgSrc = "data:image/png;base64," + bgBase64;
 
-    // Exact measurements from background image analysis:
-    // Content area: y=150 to y=1040 = 890px tall
-    // Background is uniform — no built-in side padding
-    // We use PAD=40 each side
-
-    const PAD = 40;
+    // Layout constants — pixel perfect
+    const PAD = 44;
     const GAP = 12;
+    const CONTENT_TOP = 152; // measured from bg image analysis
 
-    // Small tiles: exactly 150x200 per mockup spec
+    // Small tiles: 150x200
     const SW = 150;
     const SH = 200;
-    const LABEL_H = 28; // rank label height + gap
+    const LABEL_FONT = 22;
+    const LABEL_GAP = 8; // gap between cover and label
+    const LABEL_H = LABEL_FONT + 4;
 
-    // Right column: 3 tiles + 2 gaps = 474px wide
+    // Unit height (tile + label + gap below)
+    const UNIT_H = SH + LABEL_GAP + LABEL_H;
+
+    // Right col: 3 tiles wide
     const rightColW = SW * 3 + GAP * 2; // 474px
+    // Left col
+    const leftColW = 1080 - PAD * 2 - GAP - rightColW; // 1080-88-12-474 = 506px
+    // Big tile height = 2 units + 1 gap (covers 2 rows)
+    const BW = leftColW;
+    const BH = SH * 2 + GAP; // 412px
+    const BIG_LABEL_FONT = 28;
+    const BIG_LABEL_H = BIG_LABEL_FONT + 4;
 
-    // Left col: fill remaining width
-    const leftColW = 1080 - PAD * 2 - GAP - rightColW; // 1000 - 12 - 474 = 514px
+    // Right col X start
+    const rightX = PAD + leftColW + GAP;
 
-    // #1 tile height: 2 tile units tall
-    // One unit = SH + LABEL_H = 228px
-    // Two units + one gap between = 228 + 12 + 228 = 468, minus the bottom label of the second unit
-    // since #1 has its own label below: 2*SH + GAP = 412px
-    const bigH = SH * 2 + GAP; // 412px — pure cover height matching 2 rows
+    // Resize all covers
+    const bigCover = rawBuffers[0]
+      ? await resizeCover(rawBuffers[0], BW, BH)
+      : await placeholderTile(BW, BH);
 
-    // Top spacer: content starts at y=150
-    const TOP_SPACER = 150;
-
-    const svg = await satori(
-      {
-        type: "div",
-        props: {
-          style: {
-            display: "flex",
-            flexDirection: "column",
-            width: 1080,
-            height: 1080,
-            backgroundImage: "url(" + bgSrc + ")",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          },
-          children: [
-            // Spacer — pushes content below title pill
-            { type: "div", props: { style: { display: "flex", height: TOP_SPACER, width: 1080 }, children: [] } },
-
-            // Main content row
-            {
-              type: "div",
-              props: {
-                style: {
-                  display: "flex",
-                  flexDirection: "row",
-                  paddingLeft: PAD + "px",
-                  paddingRight: PAD + "px",
-                  gap: GAP + "px",
-                  alignItems: "flex-start",
-                },
-                children: [
-                  // #1 — large left tile
-                  makeTile(enriched[0], 1, leftColW, bigH, 28),
-
-                  // #2–10 — 3x3 grid right
-                  {
-                    type: "div",
-                    props: {
-                      style: { display: "flex", flexDirection: "column", gap: GAP + "px" },
-                      children: [
-                        // Row: #2-4
-                        {
-                          type: "div",
-                          props: {
-                            style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
-                            children: [
-                              makeTile(enriched[1], 2, SW, SH, 20),
-                              makeTile(enriched[2], 3, SW, SH, 20),
-                              makeTile(enriched[3], 4, SW, SH, 20),
-                            ],
-                          },
-                        },
-                        // Row: #5-7
-                        {
-                          type: "div",
-                          props: {
-                            style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
-                            children: [
-                              makeTile(enriched[4], 5, SW, SH, 20),
-                              makeTile(enriched[5], 6, SW, SH, 20),
-                              makeTile(enriched[6], 7, SW, SH, 20),
-                            ],
-                          },
-                        },
-                        // Row: #8-10
-                        {
-                          type: "div",
-                          props: {
-                            style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
-                            children: [
-                              makeTile(enriched[7], 8, SW, SH, 20),
-                              makeTile(enriched[8], 9, SW, SH, 20),
-                              makeTile(enriched[9], 10, SW, SH, 20),
-                            ],
-                          },
-                        },
-                      ],
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-      { width: 1080, height: 1080, fonts: [{ name: "DM Sans", data: fontData, weight: 700 }] }
+    const smallCovers = await Promise.all(
+      rawBuffers.slice(1).map(buf =>
+        buf ? resizeCover(buf, SW, SH) : placeholderTile(SW, SH)
+      )
     );
 
-    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    // Build rank labels
+    const bigLabel = await textBuffer("#1", BIG_LABEL_FONT, GOLD_HEX, fontData);
+    const smallLabels = await Promise.all(
+      [2,3,4,5,6,7,8,9,10].map(n => textBuffer("#" + n, LABEL_FONT, GOLD_HEX, fontData))
+    );
+
+    // Footer text
+    const footerBuf = await textBuffer(handle + " on GuildLink.gg", 28, WHITE_HEX, fontData);
+    // Measure footer width to center it
+    const footerMeta = await sharp(footerBuf).metadata();
+    const footerX = Math.floor((1080 - (footerMeta.width || 400)) / 2);
+
+    // Measure big label to center it under #1
+    const bigLabelMeta = await sharp(bigLabel).metadata();
+    const bigLabelX = PAD + Math.floor((BW - (bigLabelMeta.width || 40)) / 2);
+
+    // Build composites
+    const composites = [];
+
+    // #1 cover
+    composites.push({ input: bigCover, top: CONTENT_TOP, left: PAD });
+    // #1 label
+    composites.push({ input: bigLabel, top: CONTENT_TOP + BH + LABEL_GAP, left: bigLabelX });
+
+    // #2-10 covers and labels
+    const rows = [[0,1,2], [3,4,5], [6,7,8]]; // indices into smallCovers / smallLabels
+    rows.forEach((row, rowIdx) => {
+      const tileTop = CONTENT_TOP + rowIdx * (SH + LABEL_GAP + LABEL_H + GAP);
+      row.forEach((coverIdx, colIdx) => {
+        const tileLeft = rightX + colIdx * (SW + GAP);
+        composites.push({ input: smallCovers[coverIdx], top: tileTop, left: tileLeft });
+
+        // Center label under tile
+        sharp(smallLabels[coverIdx]).metadata().then(meta => {
+          const labelX = tileLeft + Math.floor((SW - (meta.width || 30)) / 2);
+          composites.push({ input: smallLabels[coverIdx], top: tileTop + SH + LABEL_GAP, left: labelX });
+        });
+      });
+    });
+
+    // Footer — placed at y=1010
+    composites.push({ input: footerBuf, top: 1010, left: footerX });
+
+    // Wait a tick for the async label measurements to complete
+    await new Promise(r => setTimeout(r, 50));
+
+    const png = await sharp(bgPath)
+      .composite(composites)
+      .png()
+      .toBuffer();
+
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "public, max-age=60");
     res.end(png);
