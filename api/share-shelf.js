@@ -16,13 +16,31 @@ async function fetchImageBuffer(url) {
   } catch { return null; }
 }
 
-async function resizeCover(buf, w, h) {
+async function resizeCover(buf, w, h, radius = 14) {
   try {
+    const resized = await sharp(buf)
+      .resize(w, h, { fit: "cover", position: "center" })
+      .ensureAlpha()
+      .png()
+      .toBuffer();
+
+    const mask = Buffer.from(
+      `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="black"/>
+      </svg>`
+    );
+
+    return await sharp(resized)
+      .composite([{ input: mask, blend: "dest-in" }])
+      .png()
+      .toBuffer();
+  } catch {
+    // Fallback: no rounded corners
     return await sharp(buf)
       .resize(w, h, { fit: "cover", position: "center" })
       .png()
       .toBuffer();
-  } catch { return null; }
+  }
 }
 
 async function placeholderTile(w, h) {
@@ -61,7 +79,7 @@ module.exports = async function handler(req, res) {
     // ── Pixel-perfect layout constants (from grid overlay analysis) ─
     const B_LEFT = 60;
     const B_TOP  = 175;
-    const BW     = 410;    // 470 - 60
+    const BW     = 350;    // per mockup spec
     const BH     = 465;    // 640 - 175 (spans rows 1+2)
 
     const S_LEFT = 470;    // right col starts at x=470
