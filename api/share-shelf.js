@@ -1,4 +1,4 @@
-// api/share-shelf.js — Generates a shareable PNG of a user's top 10 shelf-ranked games
+// api/share-shelf.js
 
 const satori = require("satori").default;
 const sharp = require("sharp");
@@ -8,8 +8,6 @@ const path = require("path");
 const GOLD = "#fbae17";
 const WHITE = "#e2e8f4";
 const CARD_BG = "#162035";
-const BG = "#0d1424";
-const DIM = "#ffffff22";
 
 async function imageToBase64(url) {
   try {
@@ -24,100 +22,57 @@ async function imageToBase64(url) {
   }
 }
 
-function truncate(str, max) {
-  if (!str) return "";
-  return str.length > max ? str.slice(0, max) + "…" : str;
-}
-
+// Single tile: cover art + rank label below
 function makeTile(game, rank, w, h) {
-  const isTop = rank === 1;
-  const badgeSize = isTop ? 32 : 24;
-  const badgeFontSize = isTop ? 15 : 12;
-  const nameFontSize = isTop ? 14 : 11;
-  const safeName = truncate(game.name || "", isTop ? 22 : 13);
+  const cover = game.cover
+    ? {
+        type: "div",
+        props: {
+          style: {
+            display: "flex",
+            width: w,
+            height: h,
+            backgroundImage: "url(" + game.cover + ")",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            borderRadius: "12px",
+          },
+          children: [],
+        },
+      }
+    : {
+        type: "div",
+        props: {
+          style: {
+            display: "flex",
+            width: w,
+            height: h,
+            borderRadius: "12px",
+            backgroundColor: CARD_BG,
+            alignItems: "center",
+            justifyContent: "center",
+            color: GOLD,
+            fontSize: 24,
+            fontWeight: 700,
+          },
+          children: "?",
+        },
+      };
 
   return {
     type: "div",
     props: {
-      style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", width: w },
+      style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" },
       children: [
-        // Outer wrapper — position:relative + display:flex required for satori absolute children
+        cover,
         {
           type: "div",
           props: {
-            style: {
-              display: "flex",
-              position: "relative",
-              width: w,
-              height: h,
-              borderRadius: "8px",
-              overflow: "hidden",
-              border: isTop ? "2px solid " + GOLD : "1.5px solid " + DIM,
-            },
-            children: [
-              // Cover art fills entire tile
-              {
-                type: "div",
-                props: {
-                  style: {
-                    display: "flex",
-                    width: w,
-                    height: h,
-                    backgroundImage: game.cover ? "url(" + game.cover + ")" : "none",
-                    backgroundColor: game.cover ? "transparent" : CARD_BG,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  },
-                  children: game.cover ? [] : [
-                    { type: "div", props: { style: { display: "flex", width: w, height: h, alignItems: "center", justifyContent: "center", color: GOLD, fontSize: 20, fontWeight: 700 }, children: "?" } }
-                  ],
-                },
-              },
-              // Badge — absolutely positioned top-left
-              {
-                type: "div",
-                props: {
-                  style: {
-                    display: "flex",
-                    position: "absolute",
-                    top: 5,
-                    left: 5,
-                    width: badgeSize,
-                    height: badgeSize,
-                    borderRadius: (badgeSize / 2) + "px",
-                    background: isTop ? GOLD : "rgba(13,20,36,0.85)",
-                    border: isTop ? "none" : "1.5px solid " + GOLD,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: isTop ? BG : GOLD,
-                    fontSize: badgeFontSize,
-                    fontWeight: 700,
-                  },
-                  children: String(rank),
-                },
-              },
-            ],
-          },
-        },
-        // Name label
-        {
-          type: "div",
-          props: {
-            style: { display: "flex", color: isTop ? WHITE : WHITE + "cc", fontSize: nameFontSize, fontWeight: 700, textAlign: "center", width: w },
-            children: safeName,
+            style: { display: "flex", color: GOLD, fontSize: 22, fontWeight: 700 },
+            children: "#" + rank,
           },
         },
       ],
-    },
-  };
-}
-
-function makeRow(items, startRank, w, h, gap) {
-  return {
-    type: "div",
-    props: {
-      style: { display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap: gap + "px" },
-      children: items.map((g, i) => makeTile(g, startRank + i, w, h)),
     },
   };
 }
@@ -139,70 +94,161 @@ module.exports = async function handler(req, res) {
 
     const fontPath = path.join(process.cwd(), "public", "DMSans-Bold.ttf");
     const fontData = fs.readFileSync(fontPath);
-    const bgPath = path.join(process.cwd(), "public", "share-bg.png");
+    const bgPath = path.join(process.cwd(), "public", "top-10-share.png");
     const bgBase64 = fs.readFileSync(bgPath).toString("base64");
     const bgSrc = "data:image/png;base64," + bgBase64;
 
-    // Layout
-    // Card: 970w x 1000h, padding 28px sides
-    // Inner width: 970 - 56 = 914px
-    const GAP = 8;
-    const INNER_W = 914;
+    // Sizing
+    // Canvas: 1080x1080
+    // Left column: #1 large tile
+    // Right column: #2-4 stacked vertically
+    // Row 2: #5-7
+    // Row 3: #8-10
 
-    // Row 1: 1 tile centered, larger
-    const w1 = 180;
-    const h1 = 240;
+    const PAD = 48;
+    const GAP = 14;
+    const CONTENT_W = 1080 - PAD * 2; // 984px
 
-    // Rows 2-4: 3 tiles each
-    const w3 = Math.floor((INNER_W - GAP * 2) / 3); // 299px
-    const h3 = Math.floor(w3 * 1.1); // 329px — tall enough to look good
+    // Left col + right col layout for top section
+    // Left: ~44% of content width
+    const leftW = Math.floor(CONTENT_W * 0.44); // 433px
+    const rightW = CONTENT_W - leftW - GAP;      // 537px
+    // Right col has 3 tiles with 2 gaps
+    const smallW = Math.floor((rightW - GAP * 2) / 3); // 170px
+    // #1 height matches 3 small tiles stacked
+    const smallH = 180;
+    const bigH = smallH * 3 + GAP * 2; // 568px
 
-    // Name label height ~18px, gap 4px per tile
-    // Total height budget: 28(top) + 38(title) + 10(gap) + (h1+18+4) + 10 + (h3+18+4)*3 + 20(footer) + 20(bottom)
-    // = 28 + 38 + 10 + 262 + 10 + 351*3 + 20 + 20 = ~1441 — too tall
-    // Need to shrink h3
-    const h3Final = 200;
-    const h1Final = 220;
+    // Bottom rows: 3 tiles each across full width
+    const rowW = Math.floor((CONTENT_W - GAP * 2) / 3); // 318px
+    const rowH = 200;
+
+    // Top section Y start (after title area)
+    const TITLE_H = 100;
+    const TOP_Y = PAD + TITLE_H + 20;
 
     const svg = await satori(
       {
         type: "div",
         props: {
-          style: { width: 1080, height: 1080, display: "flex", backgroundColor: BG, backgroundImage: "url(" + bgSrc + ")", backgroundSize: "cover" },
-          children: [{
-            type: "div",
-            props: {
-              style: {
-                position: "absolute", top: 40, left: 55, width: 970, height: 1000,
-                backgroundColor: CARD_BG, borderRadius: "48px", border: "5px solid " + GOLD,
-                display: "flex", flexDirection: "column", alignItems: "center",
-                padding: "24px 28px 16px", gap: "8px",
-              },
-              children: [
-                // Title
-                { type: "div", props: { style: { display: "flex", color: GOLD, fontSize: 36, fontWeight: 700, textAlign: "center" }, children: "My GuildLink Top 10" } },
-                // Row 1 — #1
-                makeRow(enriched.slice(0, 1), 1, w1, h1Final, GAP),
-                // Row 2 — #2–4
-                makeRow(enriched.slice(1, 4), 2, w3, h3Final, GAP),
-                // Row 3 — #5–7
-                makeRow(enriched.slice(4, 7), 5, w3, h3Final, GAP),
-                // Row 4 — #8–10
-                makeRow(enriched.slice(7, 10), 8, w3, h3Final, GAP),
-                // Footer
-                {
+          style: {
+            display: "flex",
+            flexDirection: "column",
+            width: 1080,
+            height: 1080,
+            backgroundImage: "url(" + bgSrc + ")",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          },
+          children: [
+            // Top gold line
+            { type: "div", props: { style: { display: "flex", width: 1080, height: 3, backgroundColor: GOLD, marginTop: 70 } } },
+
+            // Title pill
+            {
+              type: "div",
+              props: {
+                style: { display: "flex", justifyContent: "center", marginTop: -24 },
+                children: {
                   type: "div",
                   props: {
-                    style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", marginTop: "auto" },
-                    children: [
-                      { type: "div", props: { style: { display: "flex", color: WHITE + "77", fontSize: 16, fontWeight: 700 }, children: handle } },
-                      { type: "div", props: { style: { display: "flex", color: GOLD, fontSize: 22, fontWeight: 700 }, children: "GuildLink.gg" } },
-                    ],
+                    style: {
+                      display: "flex",
+                      border: "3px solid " + GOLD,
+                      borderRadius: "16px",
+                      padding: "10px 40px",
+                      backgroundColor: "#0d1424",
+                    },
+                    children: {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", color: GOLD, fontSize: 40, fontWeight: 700, letterSpacing: "2px" },
+                        children: "MY TOP 10",
+                      },
+                    },
                   },
                 },
-              ],
+              },
             },
-          }],
+
+            // Main content area
+            {
+              type: "div",
+              props: {
+                style: { display: "flex", flexDirection: "column", padding: "24px " + PAD + "px 0", gap: GAP + "px", flex: 1 },
+                children: [
+                  // Top section: #1 left, #2-4 right
+                  {
+                    type: "div",
+                    props: {
+                      style: { display: "flex", flexDirection: "row", gap: GAP + "px", alignItems: "flex-start" },
+                      children: [
+                        // #1 — large left tile
+                        makeTile(enriched[0], 1, leftW, bigH),
+                        // #2–4 — stacked right column
+                        {
+                          type: "div",
+                          props: {
+                            style: { display: "flex", flexDirection: "column", gap: GAP + "px" },
+                            children: [
+                              {
+                                type: "div",
+                                props: {
+                                  style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
+                                  children: [
+                                    makeTile(enriched[1], 2, smallW, smallH),
+                                    makeTile(enriched[2], 3, smallW, smallH),
+                                    makeTile(enriched[3], 4, smallW, smallH),
+                                  ],
+                                },
+                              },
+                              {
+                                type: "div",
+                                props: {
+                                  style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
+                                  children: [
+                                    makeTile(enriched[4], 5, smallW, smallH),
+                                    makeTile(enriched[5], 6, smallW, smallH),
+                                    makeTile(enriched[6], 7, smallW, smallH),
+                                  ],
+                                },
+                              },
+                              {
+                                type: "div",
+                                props: {
+                                  style: { display: "flex", flexDirection: "row", gap: GAP + "px" },
+                                  children: [
+                                    makeTile(enriched[7], 8, smallW, smallH),
+                                    makeTile(enriched[8], 9, smallW, smallH),
+                                    makeTile(enriched[9], 10, smallW, smallH),
+                                  ],
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+
+            // Bottom gold line
+            { type: "div", props: { style: { display: "flex", width: 1080, height: 3, backgroundColor: GOLD } } },
+
+            // Footer
+            {
+              type: "div",
+              props: {
+                style: { display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", padding: "16px 0" },
+                children: [
+                  { type: "div", props: { style: { display: "flex", color: WHITE, fontSize: 28, fontWeight: 700 }, children: handle + " on " } },
+                  { type: "div", props: { style: { display: "flex", color: GOLD, fontSize: 28, fontWeight: 700 }, children: "GuildLink.gg" } },
+                ],
+              },
+            },
+          ],
         },
       },
       { width: 1080, height: 1080, fonts: [{ name: "DM Sans", data: fontData, weight: 700 }] }
