@@ -84,15 +84,20 @@ module.exports = async function handler(req, res) {
     const LABEL_GAP = 8;
     const LABEL_H = LABEL_FONT + 4;
     const rightColW = SW * 3 + GAP * 2;
-    const leftColW = 1080 - PAD * 2 - GAP - rightColW;
+    const leftColW = 340;
     const BW = leftColW;
-    const BH = SH * 2 + GAP; // 412px — spans 2 rows
+    const BH = 470;
     const BIG_LABEL_FONT = 28;
     const rightX = PAD + leftColW + GAP;
 
     // Resize covers
     const bigCover = rawBuffers[0]
-      ? await resizeCover(rawBuffers[0], BW, BH)
+      ? await sharp(rawBuffers[0])
+          .resize(BW, BH, { fit: "inside", position: "center", background: { r: 22, g: 32, b: 53, alpha: 1 } })
+          .extend({ top: 0, bottom: 0, left: 0, right: 0, background: { r: 22, g: 32, b: 53, alpha: 1 } })
+          .resize(BW, BH)
+          .png()
+          .toBuffer()
       : await placeholderTile(BW, BH);
 
     const smallCovers = await Promise.all(
@@ -114,8 +119,8 @@ module.exports = async function handler(req, res) {
         props: {
           style: { display: "flex", flexDirection: "row", alignItems: "center", gap: 10, whiteSpace: "nowrap" },
           children: [
-            { type: "div", props: { style: { display: "flex", color: WHITE_HEX, fontSize: 26, fontWeight: 700 }, children: handle + " on " } },
-            { type: "div", props: { style: { display: "flex", color: GOLD_HEX, fontSize: 26, fontWeight: 700 }, children: "GuildLink.gg" } },
+            { type: "div", props: { style: { display: "flex", color: WHITE_HEX, fontSize: 32, fontWeight: 700 }, children: handle + " on " } },
+            { type: "div", props: { style: { display: "flex", color: GOLD_HEX, fontSize: 32, fontWeight: 700 }, children: "GuildLink.gg" } },
           ],
         },
       },
