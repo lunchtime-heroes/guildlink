@@ -58,33 +58,26 @@ module.exports = async function handler(req, res) {
     const fontData = fs.readFileSync(fontPath);
     const bgPath = path.join(process.cwd(), "public", "top-10-share.png");
 
-    // ── Pixel-perfect layout constants ──────────────────────────────
-    // All positions are absolute (left, top) on the 1080×1080 canvas
-
-    // #1 tile
+    // ── Pixel-perfect layout constants (measured from mockup) ───────
     const B_LEFT = 58;
-    const B_TOP  = 165;
+    const B_TOP  = 160;
     const BW     = 390;
-    const BH     = 470;
+    const BH     = 490;   // #1 spans rows 1+2 height
 
-    // Small tiles
-    const SW     = 150;
-    const SH     = 200;
+    const SW     = 190;   // small tile width (measured from mockup)
+    const SH     = 200;   // small tile height
     const S_LEFT = 490;   // x start of right column
-    const S_GAP  = 18;    // gap between small tiles horizontally
+    const S_GAP  = 20;    // gap between small tiles horizontally
 
-    // Row y positions (top of each cover image)
-    const ROW1_Y = 165;
-    const ROW2_Y = 403;   // ROW1_Y + SH + 38 (label area)
-    const ROW3_Y = 641;   // ROW2_Y + SH + 38
+    const ROW1_Y = 160;   // top of row 1
+    const ROW2_Y = 402;   // top of row 2 (160 + 200 + 42 label/gap)
+    const ROW3_Y = 644;   // top of row 3
 
-    // Label font sizes
     const BIG_LABEL_FS  = 28;
     const SMALL_LABEL_FS = 22;
-    const LABEL_GAP = 8; // gap between bottom of cover and label
+    const LABEL_GAP = 8;
 
-    // Footer
-    const FOOTER_Y = 1010;
+    const FOOTER_Y = 1005;
     // ────────────────────────────────────────────────────────────────
 
     // Resize covers
