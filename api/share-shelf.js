@@ -75,9 +75,9 @@ module.exports = async function handler(req, res) {
     const bgPath = path.join(process.cwd(), "public", "top-10-share.png");
 
     // Layout
-    const PAD = 44;
-    const GAP = 12;
-    const CONTENT_TOP = 152;
+    const PAD = 58;
+    const GAP = 18;
+    const CONTENT_TOP = 165;
     const SW = 150;
     const SH = 200;
     const LABEL_FONT = 22;
@@ -106,7 +106,22 @@ module.exports = async function handler(req, res) {
     const smallLabels = await Promise.all(
       [2,3,4,5,6,7,8,9,10].map(n => textBuffer("#" + n, LABEL_FONT, GOLD_HEX, fontData))
     );
-    const footerBuf = await textBuffer(handle + " on GuildLink.gg", 28, WHITE_HEX, fontData);
+    // Footer — two-color satori render matching share-post pattern
+    const satori = require("satori").default;
+    const footerSvg = await satori(
+      {
+        type: "div",
+        props: {
+          style: { display: "flex", flexDirection: "row", alignItems: "center", gap: 10, whiteSpace: "nowrap" },
+          children: [
+            { type: "div", props: { style: { display: "flex", color: WHITE_HEX, fontSize: 26, fontWeight: 700 }, children: handle + " on " } },
+            { type: "div", props: { style: { display: "flex", color: GOLD_HEX, fontSize: 26, fontWeight: 700 }, children: "GuildLink.gg" } },
+          ],
+        },
+      },
+      { width: 800, height: 50, fonts: [{ name: "DM Sans", data: fontData, weight: 700 }] }
+    );
+    const footerBuf = await sharp(Buffer.from(footerSvg)).trim().png().toBuffer();
 
     // Measure all text widths for centering — all awaited before compositing
     const bigLabelMeta = await sharp(bigLabel).metadata();
