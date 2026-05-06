@@ -172,19 +172,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       {/* Private wall */}
       <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 32 : 48, textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
-        <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 8 }}>This account is private</div>
-        <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, maxWidth: 360, margin: "0 auto 24px" }}>
-          Follow {profile.username} to see their shelf, reviews, and posts.
-        </div>
-        <button onClick={async () => {
-          if (isGuest) { onSignIn?.("Follow players to see their content."); return; }
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-          await supabase.from("follows").insert({ follower_id: user.id, followed_user_id: userId });
-          setFollowed(true);
-        }} style={{ background: C.accent, border: "none", borderRadius: 10, padding: "10px 28px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-          Follow
-        </button>
+        <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>This account is private</div>
       </div>
     </div>
   );
