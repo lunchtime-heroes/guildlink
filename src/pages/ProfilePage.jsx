@@ -150,7 +150,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [exportRequested, setExportRequested] = useState(false);
   const [steamId, setSteamId] = useState(null);
   const [xboxGamertag, setXboxGamertag] = useState(null);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(!!user?.is_private);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
