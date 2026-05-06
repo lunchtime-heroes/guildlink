@@ -152,6 +152,42 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   ];
 
   const isOwnProfile = currentUser?.id === userId;
+  const isPrivateAndLocked = profile.is_private && !isOwnProfile && !followed;
+
+  if (isPrivateAndLocked) return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
+      {/* Header — still visible for private accounts */}
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ height: isMobile ? 100 : 150, background: "linear-gradient(135deg, #1a1040 0%, " + C.accent + "66 50%, #0a2040 100%)" }} />
+        <div style={{ padding: isMobile ? "0 16px 20px" : "0 28px 24px", marginTop: isMobile ? -32 : -42 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginBottom: 12 }}>
+            <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} avatarConfig={profile.avatar_config} />
+            <div style={{ paddingBottom: 4 }}>
+              <h1 style={{ margin: 0, fontWeight: 800, color: C.text, fontSize: isMobile ? 18 : 22 }}>{profile.username}</h1>
+              <div style={{ color: C.textMuted, fontSize: 13 }}>{profile.handle}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Private wall */}
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 32 : 48, textAlign: "center" }}>
+        <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
+        <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 8 }}>This account is private</div>
+        <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, maxWidth: 360, margin: "0 auto 24px" }}>
+          Follow {profile.username} to see their shelf, reviews, and posts.
+        </div>
+        <button onClick={async () => {
+          if (isGuest) { onSignIn?.("Follow players to see their content."); return; }
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          await supabase.from("follows").insert({ follower_id: user.id, followed_user_id: userId });
+          setFollowed(true);
+        }} style={{ background: C.accent, border: "none", borderRadius: 10, padding: "10px 28px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+          Follow
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
