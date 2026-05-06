@@ -150,6 +150,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [exportRequested, setExportRequested] = useState(false);
   const [steamId, setSteamId] = useState(null);
   const [xboxGamertag, setXboxGamertag] = useState(null);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
@@ -274,6 +275,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         .maybeSingle();
       if (privateData?.steam_id) setSteamId(privateData.steam_id);
       if (privateData?.xbox_gamertag) setXboxGamertag(privateData.xbox_gamertag);
+
+      // Load privacy setting from profiles
+      const { data: privacyData } = await supabase
+        .from("profiles")
+        .select("is_private")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      if (privacyData) setIsPrivate(!!privacyData.is_private);
 
       // Check for pending Xbox import session
       if (window.__xboxSession) {
@@ -897,6 +906,30 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     </button>
                   )}
                   {/* Future platforms slot in here */}
+                </div>
+              </div>
+
+              {/* Account privacy toggle */}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Account Privacy</div>
+                <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 8 }}>Make your account private? Private accounts can only be viewed by followers. Shelf data is still used for recommendations.</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={async () => {
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    if (!authUser) return;
+                    await supabase.from("profiles").update({ is_private: false }).eq("id", authUser.id);
+                    setIsPrivate(false);
+                  }} style={{ background: !isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (!isPrivate ? "#10b98166" : C.border), borderRadius: 8, padding: "4px 14px", color: !isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    No
+                  </button>
+                  <button onClick={async () => {
+                    const { data: { user: authUser } } = await supabase.auth.getUser();
+                    if (!authUser) return;
+                    await supabase.from("profiles").update({ is_private: true }).eq("id", authUser.id);
+                    setIsPrivate(true);
+                  }} style={{ background: isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (isPrivate ? "#10b98166" : C.border), borderRadius: 8, padding: "4px 14px", color: isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    Yes
+                  </button>
                 </div>
               </div>
             </div>
