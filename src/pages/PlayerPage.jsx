@@ -152,7 +152,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   ];
 
   const isOwnProfile = currentUser?.id === userId;
-  const isPrivateAndLocked = profile.is_private && !isOwnProfile && !followed;
+  const isPrivateAndLocked = profile.is_private && !isOwnProfile;
 
   if (isPrivateAndLocked) return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
@@ -211,7 +211,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 })()}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
-              {profile.player_tags && Object.keys(profile.player_tags).length > 0 && (
+              {profile.player_tags && Object.keys(profile.player_tags).length > 0 && !profile.is_private && (
                 <div style={{ marginTop: 10, marginBottom: 4 }}>
                   {[
                     { label: "How I play", tags: ["Casual", "Competitive"] },
