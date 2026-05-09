@@ -547,7 +547,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           <defs><linearGradient id={"grad-" + color.replace("#","")} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
           {/* Baseline */}
           <line x1={pad} y1={baseline} x2={W - pad} y2={baseline} stroke={color} strokeWidth="1" strokeOpacity="0.2" />
-          {refLinePts && <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.25" />}
+          {/* refPoints temporarily disabled — causes scale issues */}
           <path d={areaPath} fill={"url(#grad-" + color.replace("#","") + ")"} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
           {points.map((v, i) => v > 0 && <circle key={i} cx={xPos(i)} cy={yPos(v)} r={i === lastIdx ? 5 : 3} fill={color} opacity={i === lastIdx ? 1 : 0.4} />)}
