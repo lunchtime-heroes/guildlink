@@ -258,8 +258,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const scoreMap = {};
     (sparkScores || []).forEach(s => { scoreMap[s.date] = s.score; });
     const ordered = sparkDates.slice().reverse();
-    const points = [...ordered.map(d => scoreMap[d] || 0), 0];
-    const labels = [...ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); }), ""];
+    const points = ordered.map(d => scoreMap[d] || 0);
+    const labels = ordered.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); });
     const existingMax = Object.values(sparklines).map(s => s?.globalMax || 0);
     const globalMax = existingMax.length > 0 ? Math.max(...existingMax) : 0.1;
     const ctx = genreContext[gameId] || {};
@@ -529,10 +529,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     if (!points || points.length === 0) return null;
     const W = 1000, h = 240, pad = 20;
     const slots = points.length;
-    const dataMax = Math.max(...points, ...(refPoints || [0]));
-    const max = dataMax > 0 ? dataMax * 1.1 : 0.1;
+    // Per-game scaling — never use global max
+    const dataMax = Math.max(...points, ...(refPoints || [0]), 0.001);
+    const dataMin = 0; // always start from zero baseline
+    const range = dataMax - dataMin;
+    const max = dataMax * 1.15; // 15% headroom above peak
     const xPos = (i) => pad + (i / (slots - 1)) * (W - pad * 2);
-    const yPos = (v) => h - pad - (v / max) * (h - pad * 2);
+    const yPos = (v) => h - pad - ((v - dataMin) / (max - dataMin)) * (h - pad * 2);
     const baseline = h - pad;
     const linePts = points.map((v, i) => xPos(i) + "," + yPos(v)).join(" ");
     const areaPath = "M " + xPos(0) + "," + baseline + " " + points.map((v, i) => "L " + xPos(i) + "," + yPos(v)).join(" ") + " L " + xPos(slots - 1) + "," + baseline + " Z";
@@ -542,6 +545,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       <div style={{ marginTop: 8, width: "100%" }}>
         <svg viewBox={"0 0 " + W + " " + h} style={{ display: "block", width: "100%", height: h }}>
           <defs><linearGradient id={"grad-" + color.replace("#","")} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.25" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+          {/* Baseline */}
+          <line x1={pad} y1={baseline} x2={W - pad} y2={baseline} stroke={color} strokeWidth="1" strokeOpacity="0.2" />
           {refLinePts && <polyline points={refLinePts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" strokeOpacity="0.25" />}
           <path d={areaPath} fill={"url(#grad-" + color.replace("#","") + ")"} />
           <polyline points={linePts} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
