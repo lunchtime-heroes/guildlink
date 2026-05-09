@@ -573,7 +573,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const ChartRow = ({ entry, rank, section }) => {
     const isExpanded = section === "overall" ? expandedOverall === entry.id : expandedGenre[section] === entry.id;
     const spData = sparklines[entry.id];
-    const sp = spData?.points || spData;
+    const sp = Array.isArray(spData?.points) ? spData.points : (Array.isArray(spData) ? spData : []);
     const spLabels = spData?.labels || null;
     const isOverall = section === "overall";
     const spGlobalMax = isOverall ? (spData?.globalMax || null) : (spData?.genreGlobalMax || spData?.globalMax || null);
