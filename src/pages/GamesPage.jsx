@@ -191,7 +191,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       if (top10.length === 0) return;
       const allRankedIds = [...new Set([...top10.map(g => g.id), ...Object.values(genresFull).flat().map(g => g.id)])];
       const sparkDates = [];
-      for (let i = 7; i >= 0; i--) { sparkDates.push(getPacificDate(i)); }
+      for (let i = 8; i >= 1; i--) { sparkDates.push(getPacificDate(i)); }
       const { data: sparkScores } = await supabase.from("daily_chart_scores").select("game_id, score, date").in("game_id", allRankedIds).in("date", sparkDates);
       const scoresByGame = {};
       (sparkScores || []).forEach(s => { if (!scoresByGame[s.game_id]) scoresByGame[s.game_id] = {}; scoresByGame[s.game_id][s.date] = s.score; });
@@ -530,7 +530,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const W = 1000, h = 240, pad = 20;
     const slots = points.length;
     // Per-game scaling — never use global max
-    const dataMax = Math.max(...points, ...(refPoints || [0]), 0.001);
+    const dataMax = Math.max(...points, 0.001);
     const dataMin = 0; // always start from zero baseline
     const range = dataMax - dataMin;
     const max = dataMax * 1.15; // 15% headroom above peak
