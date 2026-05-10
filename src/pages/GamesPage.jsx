@@ -273,13 +273,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
     const dates = Array.from({ length: 8 }, (_, i) => getPacificDate(i + 1));
     const { data } = await supabase.from("chart_events").select("event_type").eq("game_id", gameId).in("date", dates);
+    const WEIGHTS = { post: 1.0, comment: 0.75, shelf_playing: 1.5, shelf_played: 0.75, review: 3.0, shelf_want: 1.0 };
     const counts = { post: 0, comment: 0, shelf_playing: 0, shelf_played: 0, review: 0, shelf_want: 0 };
     (data || []).forEach(e => { if (counts[e.event_type] !== undefined) counts[e.event_type]++; });
-    const social = counts.post + counts.comment;
-    const history = counts.shelf_playing + counts.shelf_played;
-    const taste = counts.review + counts.shelf_want;
-    const total = social + history + taste || 1;
-    setSignalsByGame(prev => ({ ...prev, [gameId]: { social, history, taste, total, counts } }));
+    const socialScore = Math.round((counts.post * WEIGHTS.post + counts.comment * WEIGHTS.comment) * 100) / 100;
+    const historyScore = Math.round((counts.shelf_playing * WEIGHTS.shelf_playing + counts.shelf_played * WEIGHTS.shelf_played) * 100) / 100;
+    const tasteScore = Math.round((counts.review * WEIGHTS.review + counts.shelf_want * WEIGHTS.shelf_want) * 100) / 100;
+    const totalScore = socialScore + historyScore + tasteScore || 1;
+    setSignalsByGame(prev => ({ ...prev, [gameId]: { socialScore, historyScore, tasteScore, totalScore, counts } }));
   };
 
   const handleExpand = (gameId, section) => {
@@ -621,12 +622,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         </div>
         {isExpanded && (() => {
           const sig = signalsByGame[entry.id];
-          const total = sig?.total || 1;
-          const orbSize = (val) => Math.max(28, Math.min(80, 28 + (val / total) * 52));
+          const totalScore = sig?.totalScore || 1;
+          const orbSize = (val) => Math.max(28, Math.min(80, 28 + (val / totalScore) * 52));
           const orbs = [
-            { label: "Social", value: sig?.social || 0, color: C.accent, detail: [sig?.counts?.post > 0 ? sig.counts.post + " post" + (sig.counts.post > 1 ? "s" : "") : null, sig?.counts?.comment > 0 ? sig.counts.comment + " comment" + (sig.counts.comment > 1 ? "s" : "") : null].filter(Boolean).join(", ") || "No activity" },
-            { label: "History", value: sig?.history || 0, color: "#22c55e", detail: [sig?.counts?.shelf_playing > 0 ? sig.counts.shelf_playing + " playing" : null, sig?.counts?.shelf_played > 0 ? sig.counts.shelf_played + " played" : null].filter(Boolean).join(", ") || "No activity" },
-            { label: "Taste", value: sig?.taste || 0, color: C.gold, detail: [sig?.counts?.review > 0 ? sig.counts.review + " review" + (sig.counts.review > 1 ? "s" : "") : null, sig?.counts?.shelf_want > 0 ? sig.counts.shelf_want + " want to play" : null].filter(Boolean).join(", ") || "No activity" },
+            { label: "Social", value: sig?.socialScore || 0, color: C.accent, detail: [sig?.counts?.post > 0 ? sig.counts.post + " post" + (sig.counts.post > 1 ? "s" : "") : null, sig?.counts?.comment > 0 ? sig.counts.comment + " comment" + (sig.counts.comment > 1 ? "s" : "") : null].filter(Boolean).join(", ") || "No activity" },
+            { label: "History", value: sig?.historyScore || 0, color: "#22c55e", detail: [sig?.counts?.shelf_playing > 0 ? sig.counts.shelf_playing + " playing" : null, sig?.counts?.shelf_played > 0 ? sig.counts.shelf_played + " played" : null].filter(Boolean).join(", ") || "No activity" },
+            { label: "Taste", value: sig?.tasteScore || 0, color: C.gold, detail: [sig?.counts?.review > 0 ? sig.counts.review + " review" + (sig.counts.review > 1 ? "s" : "") : null, sig?.counts?.shelf_want > 0 ? sig.counts.shelf_want + " want to play" : null].filter(Boolean).join(", ") || "No activity" },
           ];
           return (
             <div style={{ padding: "12px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
@@ -637,11 +638,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 <div style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-end", marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid " + C.border }}>
                   {orbs.map(orb => {
                     const size = orbSize(orb.value);
-                    const pct = total > 1 ? Math.round((orb.value / (total)) * 100) : 0;
+                    const displayScore = orb.value > 0 ? "+" + orb.value : "—";
                     return (
                       <div key={orb.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: 1 }}>
-                        <div style={{ position: "relative", width: size, height: size, borderRadius: "50%", background: orb.color + "22", border: "2px solid " + orb.color + (orb.value === 0 ? "33" : "99"), display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s", boxShadow: orb.value > 0 ? "0 0 " + (size * 0.3) + "px " + orb.color + "33" : "none" }}>
-                          <span style={{ color: orb.value > 0 ? orb.color : C.textDim, fontWeight: 800, fontSize: size > 50 ? 16 : 13 }}>{orb.value > 0 ? pct + "%" : "—"}</span>
+                        <div style={{ width: size, height: size, borderRadius: "50%", background: orb.color + "22", border: "2px solid " + orb.color + (orb.value === 0 ? "33" : "99"), display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s", boxShadow: orb.value > 0 ? "0 0 " + (size * 0.3) + "px " + orb.color + "33" : "none" }}>
+                          <span style={{ color: orb.value > 0 ? orb.color : C.textDim, fontWeight: 800, fontSize: size > 50 ? 16 : 13 }}>{displayScore}</span>
                         </div>
                         <div style={{ color: orb.value > 0 ? C.text : C.textDim, fontWeight: 700, fontSize: 12 }}>{orb.label}</div>
                         <div style={{ color: C.textDim, fontSize: 10, textAlign: "center", maxWidth: 100 }}>{orb.detail}</div>
