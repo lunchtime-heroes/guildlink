@@ -1319,8 +1319,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           })
         )}
 
-        )}
-
         {/* Load more posts for logged-in users */}
         {!isGuest && !feedLoading && hasMorePosts && (
           <div style={{ textAlign: "center", padding: "16px 0 24px" }}>
