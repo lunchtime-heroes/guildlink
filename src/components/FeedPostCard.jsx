@@ -63,6 +63,11 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [similarity, setSimilarity] = useState(null);
 
   useEffect(() => {
+    console.log("DEBUG currentUser:", JSON.stringify(currentUser));
+    console.log("DEBUG post.user_id:", post.user_id);
+  }, [currentUser, post.user_id]);
+
+  useEffect(() => {
     if (!currentUser || !post.user_id || post.user_id === currentUser.id || post.user?.isNPC) return;
     supabase.from("user_similarity")
       .select("overlap_count")
