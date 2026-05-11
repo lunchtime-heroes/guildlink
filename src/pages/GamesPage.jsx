@@ -371,14 +371,40 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       {
         id: "highly_rated",
         label: "Highly Rated",
-        desc: "Top rated by the community",
+        desc: "Top rated by reviews and shelf rankings",
         run: async () => {
           if (userShelf.size === 0) return "__empty_shelf__";
-          const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
+          const [reviewRes, shelfRes] = await Promise.all([
+            supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)"),
+            supabase.from("user_games").select("game_id, rank_position, games(id, name, genre, cover_url)").eq("status", "have_played").not("rank_position", "is", null),
+          ]);
           const agg = {};
-          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 }; agg[r.game_id].total += r.rating; agg[r.game_id].count++; });
-          return Object.values(agg).filter(g => g.count >= 2).map(g => ({ ...g, avg: g.total / g.count })).sort((a, b) => b.avg - a.avg).slice(0, 12)
-            .map(g => ({ ...g, _stat: g.avg.toFixed(1) + " avg · " + g.count + " reviews" }));
+          // Reviews contribute directly
+          (reviewRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, reviewTotal: 0, reviewCount: 0, rankScore: 0 };
+            agg[r.game_id].reviewTotal += r.rating;
+            agg[r.game_id].reviewCount++;
+          });
+          // Shelf rank contributes — rank 1 = 10pts, rank 25 = 1pt
+          (shelfRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, reviewTotal: 0, reviewCount: 0, rankScore: 0 };
+            const rankPoints = Math.max(1, 10 - Math.floor((r.rank_position - 1) / 2.5));
+            agg[r.game_id].rankScore += rankPoints;
+          });
+          // Combine: reviews weighted 60%, rank weighted 40%
+          Object.values(agg).forEach(g => {
+            const reviewScore = g.reviewCount > 0 ? (g.reviewTotal / g.reviewCount) * 0.6 : 0;
+            const rankScore = g.rankScore > 0 ? Math.min(10, g.rankScore) * 0.4 : 0;
+            g.score = reviewScore + rankScore;
+          });
+          return Object.values(agg).filter(g => g.score > 0).sort((a, b) => b.score - a.score).slice(0, 12).map(g => {
+            const parts = [];
+            if (g.reviewCount > 0) parts.push((g.reviewTotal / g.reviewCount).toFixed(1) + " avg review");
+            if (g.rankScore > 0) parts.push("ranked highly on " + Math.round(g.rankScore / 5) + "+ shelves");
+            return { ...g, _stat: parts.join(" · ") || "community favorite" };
+          });
         }
       },
     ],
@@ -819,10 +845,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     )}
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                      {g._stat && g._stat.includes("avg") && (
-                        <div style={{ display: "inline-block", background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 7px", color: C.gold, fontWeight: 800, fontSize: 11, marginBottom: 4 }}>
-                          {g._stat.split(" avg")[0]}/10
-                        </div>
+                      {g._stat && (
+                        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 4, lineHeight: 1.4 }}>{g._stat}</div>
                       )}
                       {currentUser && !g._fromIGDB && (
                         onShelf
