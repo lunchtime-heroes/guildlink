@@ -401,7 +401,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           return Object.values(agg).filter(g => g.score > 0).sort((a, b) => b.score - a.score).slice(0, 12).map(g => {
             const parts = [];
             if (g.reviewCount > 0) parts.push((g.reviewTotal / g.reviewCount).toFixed(1) + " avg review");
-            if (g.shelfCount > 0) parts.push(g.shelfCount + " player" + (g.shelfCount !== 1 ? "s" : "") + " have this");
+            if (g.shelfCount > 0) parts.push("on " + g.shelfCount + " player" + (g.shelfCount !== 1 ? "s'" : "'s") + " shelf");
             return { ...g, _stat: parts.join(" · ") };
           });
         }
