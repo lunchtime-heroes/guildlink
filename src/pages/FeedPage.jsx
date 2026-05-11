@@ -172,6 +172,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [pulseCards, setPulseCards] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [linkPreview, setLinkPreview] = useState(null); // { allowed, url, title, description, image, domain } | null
@@ -572,6 +574,37 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
   const PULSE_FREQUENCY = 3;
 
+  const loadMorePosts = async () => {
+    if (loadingMore || !hasMorePosts) return;
+    setLoadingMore(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const nextStart = livePosts.length;
+    const [postsResult, likesResult] = await Promise.all([
+      supabase.from("posts")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+        .order("created_at", { ascending: false })
+        .range(nextStart, nextStart + 19),
+      authUser
+        ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
+        : Promise.resolve({ data: [] }),
+    ]);
+    if (postsResult.data && postsResult.data.length > 0) {
+      const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
+      const mapped = postsResult.data.map(p => ({
+        ...p,
+        comment_count: p.comments?.length || 0,
+        liked: likedIds.has(p.id),
+        tipped: false,
+      }));
+      const resolved = await resolveMentionsInPosts(mapped);
+      setLivePosts(prev => [...prev, ...resolved]);
+      setHasMorePosts(postsResult.data.length === 20);
+    } else {
+      setHasMorePosts(false);
+    }
+    setLoadingMore(false);
+  };
+
   const loadPulseCards = async () => {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const cards = [];
@@ -759,7 +792,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         supabase.from("posts")
           .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .order("created_at", { ascending: false })
-          .limit(20),
+          .range(0, 19),
         authUser
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
@@ -778,6 +811,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           tipped: tippedIds.has(p.id),
         }));
         setLivePosts(await resolveMentionsInPosts(mapped));
+        setHasMorePosts(postsResult.data.length === 20);
       }
       setFeedLoading(false);
     }
@@ -1283,6 +1317,18 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
             );
           })
+        )}
+
+        )}
+
+        {/* Load more posts for logged-in users */}
+        {!isGuest && !feedLoading && hasMorePosts && (
+          <div style={{ textAlign: "center", padding: "16px 0 24px" }}>
+            <button onClick={loadMorePosts} disabled={loadingMore}
+              style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 28px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
+              {loadingMore ? "Loading..." : "Load more posts"}
+            </button>
+          </div>
         )}
 
         {/* Guest sign-up wall after feed */}
