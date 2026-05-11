@@ -14,6 +14,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   const [postGameNames, setPostGameNames] = useState({});
   const [activeTab, setActiveTab] = useState("posts");
   const [compatibility, setCompatibility] = useState(null);
+  const [overlapCount, setOverlapCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -93,6 +94,14 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 if (playedMatch) { setCompatibility({ type: "played", gameName: playedMatch.name }); }
               }
             }
+
+            // Load overlap count from user_similarity
+            const { data: simData } = await supabase.from("user_similarity")
+              .select("overlap_count")
+              .eq("user_id", authUser.id)
+              .eq("similar_user_id", userId)
+              .maybeSingle();
+            setOverlapCount(simData ? simData.overlap_count : 0);
           }
         }
       }
@@ -199,6 +208,11 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 })()}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
+              {overlapCount !== null && !isOwnProfile && (
+                <div style={{ display: "inline-flex", alignItems: "center", background: overlapCount > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (overlapCount > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700, color: overlapCount > 0 ? C.accentSoft : C.textDim, marginTop: 4 }}>
+                  {overlapCount > 0 ? overlapCount + " games in common" : "no games in common"}
+                </div>
+              )}
               {profile.player_tags && Object.keys(profile.player_tags).length > 0 && !profile.is_private && (
                 <div style={{ marginTop: 10, marginBottom: 4 }}>
                   {[
