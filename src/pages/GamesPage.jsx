@@ -39,7 +39,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [genreContext, setGenreContext] = useState({});
   const [sparklines, setSparklines] = useState({});
   const [loadingSparkline, setLoadingSparkline] = useState({});
-  const [signalsByGame, setSignalsByGame] = useState({});
 
   const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
 
@@ -268,63 +267,195 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setLoadingSparkline(prev => ({ ...prev, [gameId]: false }));
   };
 
-  const loadSignals = async (gameId) => {
-    if (signalsByGame[gameId]) return;
-    const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-    const today = getPacificDate(0);
-    const dates = Array.from({ length: 8 }, (_, i) => getPacificDate(i));
-    const { data } = await supabase.from("chart_events").select("event_type, date, post_sequence").eq("game_id", gameId).in("date", dates);
-
-    const DECAY = { 0: 1.0, 1: 0.8, 2: 0.6, 3: 0.45, 4: 0.3, 5: 0.2, 6: 0.1, 7: 0.05 };
-    const WEIGHTS = {
-      review: () => 3.0,
-      shelf_playing: () => 0.75,
-      shelf_want: () => 0.3,
-      shelf_played: () => 0.25,
-      comment: () => 0.75,
-      post: (seq) => seq === 1 ? 1.5 : seq === 2 ? 0.75 : seq === 3 ? 0.4 : 0.1,
-    };
-
-    const counts = { post: 0, comment: 0, shelf_playing: 0, shelf_played: 0, review: 0, shelf_want: 0 };
-    let socialScore = 0, historyScore = 0, tasteScore = 0;
-
-    (data || []).forEach(e => {
-      const daysAgo = Math.round((new Date(today) - new Date(e.date)) / 86400000);
-      const decay = DECAY[daysAgo] ?? 0;
-      const weight = WEIGHTS[e.event_type]?.(e.post_sequence) ?? 0;
-      const score = weight * decay;
-      if (counts[e.event_type] !== undefined) counts[e.event_type]++;
-      if (e.event_type === "post" || e.event_type === "comment") socialScore += score;
-      else if (e.event_type === "shelf_playing" || e.event_type === "shelf_played") historyScore += score;
-      else if (e.event_type === "review" || e.event_type === "shelf_want") tasteScore += score;
-    });
-
-    socialScore = Math.round(socialScore * 100) / 100;
-    historyScore = Math.round(historyScore * 100) / 100;
-    tasteScore = Math.round(tasteScore * 100) / 100;
-    const totalScore = socialScore + historyScore + tasteScore || 1;
-    setSignalsByGame(prev => ({ ...prev, [gameId]: { socialScore, historyScore, tasteScore, totalScore, counts } }));
-  };
-
   const handleExpand = (gameId, section) => {
     if (section === "overall") setExpandedOverall(prev => prev === gameId ? null : gameId);
     else setExpandedGenre(prev => ({ ...prev, [section]: prev[section] === gameId ? null : gameId }));
     loadSparkline(gameId);
-    loadSignals(gameId);
   };
 
   // ── Ring-aware insight definitions ──
   const RING_INSIGHTS = {
     1: [
       {
-        id: "most_talked_about",
+        id: "most_shelved",
+        label: "Most Shelved",
+        desc: "Most added games across the community",
+        run: async () => {
+          if (userShelf.size === 0) return "__empty_shelf__";
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("status", ["playing", "have_played", "want_to_play"]);
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " player" + (r.count !== 1 ? "s" : "") + " have this" }));
+        }
+      },
+      {
+        id: "most_wanted",
+        label: "Most Wanted",
+        desc: "Highest want-to-play across the community",
+        run: async () => {
+          if (userShelf.size === 0) return "__empty_shelf__";
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").eq("status", "want_to_play");
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " want to play" }));
+        }
+      },
+      {
+        id: "played_by_people_like_you",
+        label: "Played by People Like You",
+        desc: "Games on shelves of players with similar taste",
+        run: async () => {
+          if (userShelf.size === 0) return "__empty_shelf__";
+          const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing"]);
+          if (!allShelf) return [];
+          // Find users with shelf overlap
+          const overlapByUser = {};
+          const gamesByUser = {};
+          allShelf.forEach(r => {
+            if (!r.games) return;
+            if (!gamesByUser[r.user_id]) gamesByUser[r.user_id] = [];
+            gamesByUser[r.user_id].push(r);
+            if (userShelf.has(r.game_id)) {
+              overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1;
+            }
+          });
+          const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
+          const similarUsers = new Set(Object.entries(overlapByUser).filter(([, count]) => count >= OVERLAP_THRESHOLD).map(([uid]) => uid));
+          if (similarUsers.size === 0) return [];
+          // Surface their games not on your shelf
+          const candidates = {};
+          allShelf.forEach(r => {
+            if (!r.games || !similarUsers.has(r.user_id) || userShelf.has(r.game_id)) return;
+            if (!candidates[r.game_id]) candidates[r.game_id] = { game: r.games, count: 0 };
+            candidates[r.game_id].count++;
+          });
+          return Object.values(candidates).sort((a, b) => b.count - a.count).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: r.count + " player" + (r.count !== 1 ? "s" : "") + " with a similar shelf" }));
+        }
+      },
+      {
+        id: "hidden_gems",
+        label: "Hidden Gems",
+        desc: "Loved by players with taste like yours, unknown to most",
+        run: async () => {
+          if (userShelf.size === 0) return "__empty_shelf__";
+          const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing"]);
+          if (!allShelf) return [];
+          // Build overlap and platform shelf counts
+          const overlapByUser = {};
+          const platformCounts = {};
+          const gamesByUser = {};
+          allShelf.forEach(r => {
+            if (!r.games) return;
+            platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1;
+            if (!gamesByUser[r.user_id]) gamesByUser[r.user_id] = [];
+            gamesByUser[r.user_id].push(r);
+            if (userShelf.has(r.game_id)) overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1;
+          });
+          const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
+          const RARITY_THRESHOLD = 3; // on fewer than 3 shelves platform-wide
+          const similarUsers = new Set(Object.entries(overlapByUser).filter(([, count]) => count >= OVERLAP_THRESHOLD).map(([uid]) => uid));
+          if (similarUsers.size === 0) return [];
+          // Find rare games from similar users
+          const candidates = {};
+          allShelf.forEach(r => {
+            if (!r.games || !similarUsers.has(r.user_id) || userShelf.has(r.game_id)) return;
+            if ((platformCounts[r.game_id] || 0) > RARITY_THRESHOLD) return;
+            if (!candidates[r.game_id]) candidates[r.game_id] = { game: r.games, count: 0, totalShelves: platformCounts[r.game_id] || 0 };
+            candidates[r.game_id].count++;
+          });
+          return Object.values(candidates).sort((a, b) => b.count - a.count).slice(0, 12)
+            .map(r => ({ ...r.game, _stat: "loved by " + r.count + " player" + (r.count !== 1 ? "s" : "") + " with a shelf like yours" }));
+        }
+      },
+      {
+        id: "highly_rated",
+        label: "Highly Rated",
+        desc: "Top rated by the community",
+        run: async () => {
+          if (userShelf.size === 0) return "__empty_shelf__";
+          const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
+          const agg = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 }; agg[r.game_id].total += r.rating; agg[r.game_id].count++; });
+          return Object.values(agg).filter(g => g.count >= 2).map(g => ({ ...g, avg: g.total / g.count })).sort((a, b) => b.avg - a.avg).slice(0, 12)
+            .map(g => ({ ...g, _stat: g.avg.toFixed(1) + " avg · " + g.count + " reviews" }));
+        }
+      },
+    ],
+    2: currentUser ? [
+      {
+        id: "your_people",
+        label: "Your People Are Playing",
+        desc: "On the currently playing shelf of people you follow",
+        run: async (userPool) => {
+          if (!userPool || userPool.length === 0) return [];
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", userPool).eq("status", "playing");
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " of your connections playing" }));
+        }
+      },
+      {
+        id: "network_favorites",
+        label: "Network Favorites",
+        desc: "Most shelved games among people you follow",
+        run: async (userPool) => {
+          if (!userPool || userPool.length === 0) return [];
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", userPool).in("status", ["have_played", "playing"]);
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " in your network" }));
+        }
+      },
+      {
+        id: "new_to_you",
+        label: "New to You",
+        desc: "On your network's want-to-play shelf",
+        run: async (userPool) => {
+          if (!userPool || userPool.length === 0) return [];
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", userPool).eq("status", "want_to_play");
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " in your network want this" }));
+        }
+      },
+    ] : [],
+    3: currentUser ? [
+      {
+        id: "guild_playing",
+        label: "Guild Is Playing",
+        desc: "What your guild mates are actively playing",
+        run: async (userPool) => {
+          if (!userPool || userPool.length === 0) return [];
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", userPool).eq("status", "playing");
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " guild member" + (r.count !== 1 ? "s" : "") + " playing" }));
+        }
+      },
+      {
+        id: "guild_favorites",
+        label: "Guild Favorites",
+        desc: "Most shelved games among your guild members",
+        run: async (userPool) => {
+          if (!userPool || userPool.length === 0) return [];
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", userPool).in("status", ["have_played", "playing"]);
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " guild member" + (r.count !== 1 ? "s" : "") + " have this" }));
+        }
+      },
+    ] : [],
+  };
+
+
         label: "Most Talked About",
         desc: "Highest combined posts and comments this week",
         run: async () => {
-          const weekStarts = getWeekStarts(1);
+          const weekStarts = getWeekStarts(2);
           const { data } = await supabase.from("chart_events").select("game_id, event_type, games(id, name, genre, cover_url)").in("week_start", weekStarts).in("event_type", ["post", "comment"]);
           const counts = {};
-          (data || []).forEach(e => { if (!e.games) return; if (!counts[e.game_id]) counts[e.game_id] = { game: e.games, count: 0 }; counts[e.game_id].count++; });
+          (data || []).forEach(e => { if (!e.games || userShelf.has(e.game_id)) return; if (!counts[e.game_id]) counts[e.game_id] = { game: e.games, count: 0 }; counts[e.game_id].count++; });
           return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " post" + (r.count !== 1 ? "s" : "") + " & comments" }));
         }
       },
@@ -335,7 +466,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         run: async () => {
           const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").eq("status", "playing");
           const counts = {};
-          (data || []).forEach(r => { if (!r.games) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
           return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " playing now" }));
         }
       },
@@ -356,7 +487,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           const gameMap = {};
           (thisData.data || []).forEach(e => { if (e.games) gameMap[e.game_id] = e.games; });
           return Object.entries(thisScores).map(([id, s]) => { const prev = lastScores[id] || 0; const pct = prev > 0 ? Math.round(((s - prev) / prev) * 100) : 100; return { id, pct, game: gameMap[id] }; })
-            .filter(r => r.game && r.pct > 0).sort((a, b) => b.pct - a.pct).slice(0, 12).map(r => ({ ...r.game, _stat: "+" + r.pct + "% this week" }));
+            .filter(r => r.game && r.pct > 0 && !userShelf.has(r.id)).sort((a, b) => b.pct - a.pct).slice(0, 12).map(r => ({ ...r.game, _stat: "+" + r.pct + "% this week" }));
         }
       },
       {
@@ -366,7 +497,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         run: async () => {
           const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").eq("status", "want_to_play");
           const counts = {};
-          (data || []).forEach(r => { if (!r.games) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
           return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " want to play" }));
         }
       },
@@ -377,7 +508,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         run: async () => {
           const { data } = await supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)");
           const agg = {};
-          (data || []).forEach(r => { if (!r.games) return; if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 }; agg[r.game_id].total += r.rating; agg[r.game_id].count++; });
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, total: 0, count: 0 }; agg[r.game_id].total += r.rating; agg[r.game_id].count++; });
           return Object.values(agg).filter(g => g.count >= 1).map(g => ({ ...g, avg: g.total / g.count })).sort((a, b) => b.avg - a.avg).slice(0, 12)
             .map(g => ({ ...g, _stat: g.avg.toFixed(1) + " avg · " + g.count + " review" + (g.count !== 1 ? "s" : "") }));
         }
@@ -527,7 +658,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     return null;
   };
 
-  const runInsight = async (insight) => {
+  const runInsight = async (insight, ring) => {
     if (activeInsight === insight.id && discoveryResults !== null) {
       setActiveInsight(null); setDiscoveryResults(null); setDiscoveryLabel(""); return;
     }
@@ -536,7 +667,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryResults(null);
     setDiscoveryLabel(insight.label);
     setNameSearch("");
-    const userPool = getUserPool(activeRing);
+    const userPool = getUserPool(ring ?? activeRing);
     const results = await insight.run(userPool);
     setDiscoveryResults(results);
     setDiscoveryLoading(false);
@@ -643,44 +774,25 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           {movement && <div style={{ color: movement.color, fontSize: 13, fontWeight: 700, flexShrink: 0, minWidth: 24, textAlign: "center" }}>{movement.label}</div>}
           <div style={{ color: isExpanded ? C.accentSoft : C.textDim, fontSize: 11, flexShrink: 0 }}>{isExpanded ? "▲" : "▼"}</div>
         </div>
-        {isExpanded && (() => {
-          const sig = signalsByGame[entry.id];
-          const totalScore = sig?.totalScore || 1;
-          const orbSize = (val) => Math.max(28, Math.min(80, 28 + (val / totalScore) * 52));
-          const orbs = [
-            { label: "Social", value: sig?.socialScore || 0, color: C.accent, detail: [sig?.counts?.post > 0 ? sig.counts.post + " post" + (sig.counts.post > 1 ? "s" : "") : null, sig?.counts?.comment > 0 ? sig.counts.comment + " comment" + (sig.counts.comment > 1 ? "s" : "") : null].filter(Boolean).join(", ") || "No activity" },
-            { label: "History", value: sig?.historyScore || 0, color: "#22c55e", detail: [sig?.counts?.shelf_playing > 0 ? sig.counts.shelf_playing + " playing" : null, sig?.counts?.shelf_played > 0 ? sig.counts.shelf_played + " played" : null].filter(Boolean).join(", ") || "No activity" },
-            { label: "Taste", value: sig?.tasteScore || 0, color: C.gold, detail: [sig?.counts?.review > 0 ? sig.counts.review + " review" + (sig.counts.review > 1 ? "s" : "") : null, sig?.counts?.shelf_want > 0 ? sig.counts.shelf_want + " want to play" : null].filter(Boolean).join(", ") || "No activity" },
-          ];
-          return (
-            <div style={{ padding: "12px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
-              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 16, marginTop: 4 }}>Signal breakdown — last 8 days</div>
-              {!sig ? (
-                <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading signals…</div>
-              ) : (
-                <div style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-end", marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid " + C.border }}>
-                  {orbs.map(orb => {
-                    const size = orbSize(orb.value);
-                    const displayScore = orb.value > 0 ? "+" + orb.value : "—";
-                    return (
-                      <div key={orb.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: 1 }}>
-                        <div style={{ width: size, height: size, borderRadius: "50%", background: orb.color + "22", border: "2px solid " + orb.color + (orb.value === 0 ? "33" : "99"), display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s", boxShadow: orb.value > 0 ? "0 0 " + (size * 0.3) + "px " + orb.color + "33" : "none" }}>
-                          <span style={{ color: orb.value > 0 ? orb.color : C.textDim, fontWeight: 800, fontSize: size > 50 ? 16 : 13 }}>{displayScore}</span>
-                        </div>
-                        <div style={{ color: orb.value > 0 ? C.text : C.textDim, fontWeight: 700, fontSize: 12 }}>{orb.label}</div>
-                        <div style={{ color: C.textDim, fontSize: 10, textAlign: "center", maxWidth: 100 }}>{orb.detail}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        {isExpanded && (
+          <div style={{ padding: "4px 20px 18px", borderTop: "1px solid " + C.border, background: C.accentGlow }}>
+            <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 }}>Momentum — last 8 days</div>
+            {sp ? <Sparkline points={sp} labels={spLabels} refPoints={spRefPoints} color={C.accent} />
+              : isLoadingSp ? <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>Loading trend…</div>
+              : <div style={{ color: C.textDim, fontSize: 12, padding: "12px 0" }}>No trend data yet.</div>}
+            <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
+              {entry.post > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.post}</div><div style={{ color: C.textDim, fontSize: 10 }}>posts</div></div>}
+              {entry.comment > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.text, fontSize: 16 }}>{entry.comment}</div><div style={{ color: C.textDim, fontSize: 10 }}>comments</div></div>}
+              {entry.shelf_playing > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: "#22c55e", fontSize: 16 }}>{entry.shelf_playing}</div><div style={{ color: C.textDim, fontSize: 10 }}>playing</div></div>}
+              {entry.shelf_want > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.accentSoft, fontSize: 16 }}>{entry.shelf_want}</div><div style={{ color: C.textDim, fontSize: 10 }}>want to play</div></div>}
+              {entry.review > 0 && <div style={{ textAlign: "center" }}><div style={{ fontWeight: 700, color: C.gold, fontSize: 16 }}>{entry.review}</div><div style={{ color: C.textDim, fontSize: 10 }}>reviews</div></div>}
+              <div style={{ marginLeft: "auto", alignSelf: "flex-end" }}>
                 <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); }}
                   style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Game →</button>
               </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
       </div>
     );
   };
@@ -749,7 +861,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 38 }}>
                       {(RING_INSIGHTS[r.ring] || []).map(insight => (
                         <button key={insight.id}
-                          onClick={() => { if (!r.locked) { setActiveRing(r.ring); runInsight(insight); } }}
+                          onClick={() => { if (!r.locked) { setActiveRing(r.ring); runInsight(insight, r.ring); } }}
                           title={r.locked ? r.lockMsg : insight.desc}
                           disabled={r.locked}
                           style={{ background: activeInsight === insight.id ? r.color + "22" : C.surfaceRaised, border: "1px solid " + (activeInsight === insight.id ? r.color + "55" : r.locked ? C.border + "88" : C.border), borderRadius: 20, padding: "6px 14px", color: r.locked ? C.textDim : activeInsight === insight.id ? r.color : C.textMuted, fontSize: 12, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: r.locked ? "default" : "pointer", opacity: r.locked ? 0.45 : 1, transition: "all 0.15s" }}>
@@ -840,13 +952,20 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         <div style={{ marginBottom: 36 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>
-              {discoveryLoading ? "Finding games…" : discoveryLabel + " · " + (discoveryResults?.length || 0) + " game" + (discoveryResults?.length !== 1 ? "s" : "")}
+              {discoveryLoading ? "Finding games…" : discoveryLabel + (discoveryResults === "__empty_shelf__" ? "" : " · " + (discoveryResults?.length || 0) + " game" + (discoveryResults?.length !== 1 ? "s" : ""))}
             </div>
             <button onClick={clearDiscovery} style={{ background: "transparent", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
           </div>
           {discoveryLoading ? (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
               {[...Array(8)].map((_, i) => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, height: 90 }} />)}
+            </div>
+          ) : discoveryResults === "__empty_shelf__" ? (
+            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
+              <div style={{ color: C.text, fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Add games to your shelf first</div>
+              <div style={{ color: C.textDim, fontSize: 13, lineHeight: 1.6, maxWidth: 360, margin: "0 auto" }}>
+                The more you curate your shelf, the better your recommendations get. Search for games above to get started.
+              </div>
             </div>
           ) : discoveryResults?.length === 0 ? (
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "40px 24px", textAlign: "center", color: C.textDim }}>
