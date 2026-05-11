@@ -271,14 +271,37 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const loadSignals = async (gameId) => {
     if (signalsByGame[gameId]) return;
     const getPacificDate = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(d); };
-    const dates = Array.from({ length: 8 }, (_, i) => getPacificDate(i + 1));
-    const { data } = await supabase.from("chart_events").select("event_type").eq("game_id", gameId).in("date", dates);
-    const WEIGHTS = { post: 1.0, comment: 0.75, shelf_playing: 1.5, shelf_played: 0.75, review: 3.0, shelf_want: 1.0 };
+    const today = getPacificDate(0);
+    const dates = Array.from({ length: 8 }, (_, i) => getPacificDate(i));
+    const { data } = await supabase.from("chart_events").select("event_type, date, post_sequence").eq("game_id", gameId).in("date", dates);
+
+    const DECAY = { 0: 1.0, 1: 0.8, 2: 0.6, 3: 0.45, 4: 0.3, 5: 0.2, 6: 0.1, 7: 0.05 };
+    const WEIGHTS = {
+      review: () => 3.0,
+      shelf_playing: () => 0.75,
+      shelf_want: () => 0.3,
+      shelf_played: () => 0.25,
+      comment: () => 0.75,
+      post: (seq) => seq === 1 ? 1.5 : seq === 2 ? 0.75 : seq === 3 ? 0.4 : 0.1,
+    };
+
     const counts = { post: 0, comment: 0, shelf_playing: 0, shelf_played: 0, review: 0, shelf_want: 0 };
-    (data || []).forEach(e => { if (counts[e.event_type] !== undefined) counts[e.event_type]++; });
-    const socialScore = Math.round((counts.post * WEIGHTS.post + counts.comment * WEIGHTS.comment) * 100) / 100;
-    const historyScore = Math.round((counts.shelf_playing * WEIGHTS.shelf_playing + counts.shelf_played * WEIGHTS.shelf_played) * 100) / 100;
-    const tasteScore = Math.round((counts.review * WEIGHTS.review + counts.shelf_want * WEIGHTS.shelf_want) * 100) / 100;
+    let socialScore = 0, historyScore = 0, tasteScore = 0;
+
+    (data || []).forEach(e => {
+      const daysAgo = Math.round((new Date(today) - new Date(e.date)) / 86400000);
+      const decay = DECAY[daysAgo] ?? 0;
+      const weight = WEIGHTS[e.event_type]?.(e.post_sequence) ?? 0;
+      const score = weight * decay;
+      if (counts[e.event_type] !== undefined) counts[e.event_type]++;
+      if (e.event_type === "post" || e.event_type === "comment") socialScore += score;
+      else if (e.event_type === "shelf_playing" || e.event_type === "shelf_played") historyScore += score;
+      else if (e.event_type === "review" || e.event_type === "shelf_want") tasteScore += score;
+    });
+
+    socialScore = Math.round(socialScore * 100) / 100;
+    historyScore = Math.round(historyScore * 100) / 100;
+    tasteScore = Math.round(tasteScore * 100) / 100;
     const totalScore = socialScore + historyScore + tasteScore || 1;
     setSignalsByGame(prev => ({ ...prev, [gameId]: { socialScore, historyScore, tasteScore, totalScore, counts } }));
   };
