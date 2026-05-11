@@ -467,7 +467,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", userPool).in("status", ["have_played", "playing"]);
           const counts = {};
           (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
-          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: r.count + " guild member" + (r.count !== 1 ? "s" : "") + " have this" }));
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12).map(r => ({ ...r.game, _stat: "high on " + r.count + " guild member" + (r.count !== 1 ? "s'" : "'s") + " shelf" }));
         }
       },
     ] : [],
