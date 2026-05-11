@@ -306,30 +306,33 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         desc: "Games on shelves of players with similar taste",
         run: async () => {
           if (userShelf.size === 0) return "__empty_shelf__";
-          const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing"]);
-          if (!allShelf) return [];
-          // Find users with shelf overlap
-          const overlapByUser = {};
-          const gamesByUser = {};
-          allShelf.forEach(r => {
-            if (!r.games) return;
-            if (!gamesByUser[r.user_id]) gamesByUser[r.user_id] = [];
-            gamesByUser[r.user_id].push(r);
-            if (userShelf.has(r.game_id)) {
-              overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1;
-            }
-          });
-          const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
-          const similarUsers = new Set(Object.entries(overlapByUser).filter(([, count]) => count >= OVERLAP_THRESHOLD).map(([uid]) => uid));
-          if (similarUsers.size === 0) return [];
-          // Surface their games not on your shelf
-          const candidates = {};
-          allShelf.forEach(r => {
-            if (!r.games || !similarUsers.has(r.user_id) || userShelf.has(r.game_id)) return;
-            if (!candidates[r.game_id]) candidates[r.game_id] = { game: r.games, count: 0 };
-            candidates[r.game_id].count++;
-          });
-          return Object.values(candidates).sort((a, b) => b.count - a.count).slice(0, 12)
+          if (!currentUser) return [];
+
+          // Try precomputed similarity first
+          const { data: simData } = await supabase
+            .from("user_similarity")
+            .select("similar_user_id, overlap_count, similarity_score")
+            .eq("user_id", currentUser.id)
+            .order("similarity_score", { ascending: false })
+            .limit(50);
+
+          let similarUserIds = (simData || []).map(r => r.similar_user_id);
+
+          // Fall back to live query for new users not yet in similarity table
+          if (similarUserIds.length === 0) {
+            const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id").in("status", ["have_played", "playing"]);
+            const overlapByUser = {};
+            (allShelf || []).forEach(r => { if (userShelf.has(r.game_id) && r.user_id !== currentUser.id) overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1; });
+            const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
+            similarUserIds = Object.entries(overlapByUser).filter(([, c]) => c >= OVERLAP_THRESHOLD).map(([uid]) => uid);
+          }
+
+          if (similarUserIds.length === 0) return [];
+
+          const { data } = await supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("user_id", similarUserIds).in("status", ["have_played", "playing"]);
+          const counts = {};
+          (data || []).forEach(r => { if (!r.games || userShelf.has(r.game_id)) return; if (!counts[r.game_id]) counts[r.game_id] = { game: r.games, count: 0 }; counts[r.game_id].count++; });
+          return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 12)
             .map(r => ({ ...r.game, _stat: r.count + " player" + (r.count !== 1 ? "s" : "") + " with a similar shelf" }));
         }
       },
@@ -339,29 +342,40 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
         desc: "Loved by players with taste like yours, unknown to most",
         run: async () => {
           if (userShelf.size === 0) return "__empty_shelf__";
+          if (!currentUser) return [];
+
+          // Try precomputed similarity first
+          const { data: simData } = await supabase
+            .from("user_similarity")
+            .select("similar_user_id, overlap_count")
+            .eq("user_id", currentUser.id)
+            .order("similarity_score", { ascending: false })
+            .limit(50);
+
+          let similarUserIds = (simData || []).map(r => r.similar_user_id);
+
+          // Fall back to live query for new users
+          if (similarUserIds.length === 0) {
+            const { data: allShelfRaw } = await supabase.from("user_games").select("game_id, user_id").in("status", ["have_played", "playing"]);
+            const overlapByUser = {};
+            (allShelfRaw || []).forEach(r => { if (userShelf.has(r.game_id) && r.user_id !== currentUser.id) overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1; });
+            const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
+            similarUserIds = Object.entries(overlapByUser).filter(([, c]) => c >= OVERLAP_THRESHOLD).map(([uid]) => uid);
+          }
+
+          if (similarUserIds.length === 0) return [];
+
+          // Get platform shelf counts for rarity check
           const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing"]);
-          if (!allShelf) return [];
-          // Build overlap and platform shelf counts
-          const overlapByUser = {};
           const platformCounts = {};
-          const gamesByUser = {};
-          allShelf.forEach(r => {
-            if (!r.games) return;
-            platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1;
-            if (!gamesByUser[r.user_id]) gamesByUser[r.user_id] = [];
-            gamesByUser[r.user_id].push(r);
-            if (userShelf.has(r.game_id)) overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1;
-          });
-          const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
-          const RARITY_THRESHOLD = 3; // on fewer than 3 shelves platform-wide
-          const similarUsers = new Set(Object.entries(overlapByUser).filter(([, count]) => count >= OVERLAP_THRESHOLD).map(([uid]) => uid));
-          if (similarUsers.size === 0) return [];
-          // Find rare games from similar users
+          (allShelf || []).forEach(r => { platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1; });
+
+          const RARITY_THRESHOLD = Math.max(3, Math.floor((await supabase.from("profiles").select("id", { count: "exact", head: true })).count * 0.1));
           const candidates = {};
-          allShelf.forEach(r => {
-            if (!r.games || !similarUsers.has(r.user_id) || userShelf.has(r.game_id)) return;
+          (allShelf || []).forEach(r => {
+            if (!r.games || !similarUserIds.includes(r.user_id) || userShelf.has(r.game_id)) return;
             if ((platformCounts[r.game_id] || 0) > RARITY_THRESHOLD) return;
-            if (!candidates[r.game_id]) candidates[r.game_id] = { game: r.games, count: 0, totalShelves: platformCounts[r.game_id] || 0 };
+            if (!candidates[r.game_id]) candidates[r.game_id] = { game: r.games, count: 0 };
             candidates[r.game_id].count++;
           });
           return Object.values(candidates).sort((a, b) => b.count - a.count).slice(0, 12)
@@ -494,6 +508,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     const results = await insight.run(userPool);
     setDiscoveryResults(results);
     setDiscoveryLoading(false);
+    // Anonymous aggregate logging — no user ID
+    supabase.from("discovery_events").insert({
+      insight_id: insight.id,
+      ring: ring ?? activeRing,
+      shelf_size: userShelf.size,
+      result_count: results === "__empty_shelf__" ? 0 : (results?.length || 0),
+    });
   };
 
   const runNameSearch = async (q) => {
