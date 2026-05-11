@@ -63,11 +63,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [similarity, setSimilarity] = useState(null);
 
   useEffect(() => {
-    console.log("DEBUG currentUser:", JSON.stringify(currentUser));
-    console.log("DEBUG post.user_id:", post.user_id);
-  }, [currentUser, post.user_id]);
-
-  useEffect(() => {
     if (!currentUser || !post.user_id || post.user_id === currentUser.id || post.user?.isNPC) return;
     supabase.from("user_similarity")
       .select("overlap_count")
@@ -493,7 +488,6 @@ return (
               }}
             >{localPost.user.name}</span>
             {localPost.user.isNPC && <NPCBadge />}
-            <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.user.handle}</span>
             {!localPost.user.isNPC && currentUser && post.user_id !== currentUser.id && similarity !== null && (
               <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
                 {similarity > 0 ? similarity + " games in common" : "no games in common"}
