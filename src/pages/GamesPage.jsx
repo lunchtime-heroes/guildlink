@@ -371,39 +371,38 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       {
         id: "highly_rated",
         label: "Highly Rated",
-        desc: "Top rated by reviews and shelf rankings",
+        desc: "Top rated by reviews and shelf popularity",
         run: async () => {
           if (userShelf.size === 0) return "__empty_shelf__";
           const [reviewRes, shelfRes] = await Promise.all([
             supabase.from("reviews").select("game_id, rating, games(id, name, genre, cover_url)"),
-            supabase.from("user_games").select("game_id, rank_position, games(id, name, genre, cover_url)").eq("status", "have_played").not("rank_position", "is", null),
+            supabase.from("user_games").select("game_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing"]),
           ]);
           const agg = {};
-          // Reviews contribute directly
+          // Shelf count — each shelf add contributes
+          (shelfRes.data || []).forEach(r => {
+            if (!r.games || userShelf.has(r.game_id)) return;
+            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, reviewTotal: 0, reviewCount: 0, shelfCount: 0 };
+            agg[r.game_id].shelfCount++;
+          });
+          // Reviews
           (reviewRes.data || []).forEach(r => {
             if (!r.games || userShelf.has(r.game_id)) return;
-            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, reviewTotal: 0, reviewCount: 0, rankScore: 0 };
+            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, reviewTotal: 0, reviewCount: 0, shelfCount: 0 };
             agg[r.game_id].reviewTotal += r.rating;
             agg[r.game_id].reviewCount++;
           });
-          // Shelf rank contributes — rank 1 = 10pts, rank 25 = 1pt
-          (shelfRes.data || []).forEach(r => {
-            if (!r.games || userShelf.has(r.game_id)) return;
-            if (!agg[r.game_id]) agg[r.game_id] = { ...r.games, score: 0, reviewTotal: 0, reviewCount: 0, rankScore: 0 };
-            const rankPoints = Math.max(1, 10 - Math.floor((r.rank_position - 1) / 2.5));
-            agg[r.game_id].rankScore += rankPoints;
-          });
-          // Combine: reviews weighted 60%, rank weighted 40%
+          // Score: reviews weighted 60%, shelf popularity 40%
           Object.values(agg).forEach(g => {
             const reviewScore = g.reviewCount > 0 ? (g.reviewTotal / g.reviewCount) * 0.6 : 0;
-            const rankScore = g.rankScore > 0 ? Math.min(10, g.rankScore) * 0.4 : 0;
-            g.score = reviewScore + rankScore;
+            const shelfScore = Math.min(10, g.shelfCount * 1.5) * 0.4;
+            g.score = reviewScore + shelfScore;
           });
           return Object.values(agg).filter(g => g.score > 0).sort((a, b) => b.score - a.score).slice(0, 12).map(g => {
             const parts = [];
             if (g.reviewCount > 0) parts.push((g.reviewTotal / g.reviewCount).toFixed(1) + " avg review");
-            if (g.rankScore > 0) parts.push("ranked highly on " + Math.round(g.rankScore / 5) + "+ shelves");
-            return { ...g, _stat: parts.join(" · ") || "community favorite" };
+            if (g.shelfCount > 0) parts.push(g.shelfCount + " player" + (g.shelfCount !== 1 ? "s" : "") + " have this");
+            return { ...g, _stat: parts.join(" · ") };
           });
         }
       },
