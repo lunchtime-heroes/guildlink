@@ -514,7 +514,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       ring: ring ?? activeRing,
       shelf_size: userShelf.size,
       result_count: results === "__empty_shelf__" ? 0 : (results?.length || 0),
-    });
+    }).then(({ error }) => { if (error) console.error("discovery_events insert error:", error); });
   };
 
   const runNameSearch = async (q) => {
