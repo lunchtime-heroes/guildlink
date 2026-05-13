@@ -515,9 +515,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       shelf_size: userShelf.size,
       result_count: results === "__empty_shelf__" ? 0 : (results?.length || 0),
     };
-    const { error: logError } = await supabase.from("discovery_events").insert(insertPayload);
-    if (logError) console.error("discovery_events insert error:", logError);
-    else console.log("discovery_events insert success");
+    supabase.from("discovery_events").insert(insertPayload);
   };
 
   const runNameSearch = async (q) => {
