@@ -509,13 +509,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryResults(results);
     setDiscoveryLoading(false);
     // Anonymous aggregate logging — no user ID
-    console.log("attempting discovery_events insert", insight.id);
-    supabase.from("discovery_events").insert({
+    const insertPayload = {
       insight_id: insight.id,
       ring: ring ?? activeRing,
       shelf_size: userShelf.size,
       result_count: results === "__empty_shelf__" ? 0 : (results?.length || 0),
-    }).then(({ error }) => { if (error) console.error("discovery_events insert error:", error); });
+    };
+    console.log("attempting discovery_events insert", insertPayload);
+    supabase.from("discovery_events").insert(insertPayload).then(({ error }) => { if (error) console.error("discovery_events insert error:", error); });
   };
 
   const runNameSearch = async (q) => {
