@@ -509,6 +509,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setDiscoveryResults(results);
     setDiscoveryLoading(false);
     // Anonymous aggregate logging — no user ID
+    console.log("attempting discovery_events insert", insight.id);
     supabase.from("discovery_events").insert({
       insight_id: insight.id,
       ring: ring ?? activeRing,
