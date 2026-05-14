@@ -9,13 +9,12 @@ function injectRingStyles() {
   style.id = RING_STYLE_ID;
   style.textContent = `
     @keyframes gl-sheen {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
+      0%   { transform: translateX(-150%); }
+      100% { transform: translateX(150%); }
     }
     .gl-ring-invite-bronze {
       border: 3px solid #a0522d !important;
       box-shadow: 0 0 10px #cd8b5a44;
-      overflow: hidden;
     }
     .gl-ring-invite-bronze::after {
       content: '';
@@ -25,11 +24,16 @@ function injectRingStyles() {
       animation: gl-sheen 3.5s ease-in-out infinite;
       border-radius: inherit;
       pointer-events: none;
+      clip-path: inset(0 0 0 0 round 16%);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      padding: 3px;
     }
     .gl-ring-invite-silver {
       border: 3px solid #c0c0c0 !important;
       box-shadow: 0 0 10px #cccccc44;
-      overflow: hidden;
     }
     .gl-ring-invite-silver::after {
       content: '';
@@ -39,11 +43,15 @@ function injectRingStyles() {
       animation: gl-sheen 3.5s ease-in-out infinite;
       border-radius: inherit;
       pointer-events: none;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      padding: 3px;
     }
     .gl-ring-invite-gold {
       border: 3px solid #f5c842 !important;
       box-shadow: 0 0 10px #f5c84244;
-      overflow: hidden;
     }
     .gl-ring-invite-gold::after {
       content: '';
@@ -53,6 +61,11 @@ function injectRingStyles() {
       animation: gl-sheen 3.5s ease-in-out infinite;
       border-radius: inherit;
       pointer-events: none;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      padding: 3px;
     }
   `;
   document.head.appendChild(style);
