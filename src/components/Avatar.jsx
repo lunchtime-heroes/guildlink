@@ -9,63 +9,27 @@ function injectRingStyles() {
   style.id = RING_STYLE_ID;
   style.textContent = `
     @keyframes gl-sheen {
-      0%   { transform: translateX(-150%); }
-      100% { transform: translateX(150%); }
+      0%   { opacity: 0; transform: translateX(-100%) rotate(45deg); }
+      50%  { opacity: 1; }
+      100% { opacity: 0; transform: translateX(100%) rotate(45deg); }
     }
-    .gl-ring-invite-bronze {
-      border: 3px solid #a0522d !important;
-      box-shadow: 0 0 10px #cd8b5a44;
-    }
-    .gl-ring-invite-bronze::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0%, #cd8b5a88 40%, #e8c49a 50%, #cd8b5a88 60%, transparent 100%);
-      animation: gl-sheen 3.5s ease-in-out infinite;
-      border-radius: inherit;
-      pointer-events: none;
-      clip-path: inset(0 0 0 0 round 16%);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: exclude;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      padding: 3px;
-    }
-    .gl-ring-invite-silver {
-      border: 3px solid #c0c0c0 !important;
-      box-shadow: 0 0 10px #cccccc44;
-    }
-    .gl-ring-invite-silver::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0%, #dddddd88 40%, #ffffff 50%, #dddddd88 60%, transparent 100%);
-      animation: gl-sheen 3.5s ease-in-out infinite;
-      border-radius: inherit;
-      pointer-events: none;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: exclude;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      padding: 3px;
-    }
-    .gl-ring-invite-gold {
-      border: 3px solid #f5c842 !important;
-      box-shadow: 0 0 10px #f5c84244;
-    }
+    .gl-ring-invite-bronze { border: 3px solid #cd8b5a !important; box-shadow: 0 0 8px #cd8b5a66, 0 0 2px #cd8b5a inset; }
+    .gl-ring-invite-silver { border: 3px solid #d0d0d0 !important; box-shadow: 0 0 8px #cccccc66, 0 0 2px #dddddd inset; }
+    .gl-ring-invite-gold   { border: 3px solid #f5c842 !important; box-shadow: 0 0 8px #f5c84266, 0 0 2px #fff8dc inset; }
+    .gl-ring-invite-bronze::after,
+    .gl-ring-invite-silver::after,
     .gl-ring-invite-gold::after {
       content: '';
       position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0%, #f5c84288 40%, #fff8dc 50%, #f5c84288 60%, transparent 100%);
+      width: 30%;
+      height: 200%;
+      top: -50%;
+      left: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
       animation: gl-sheen 3.5s ease-in-out infinite;
-      border-radius: inherit;
       pointer-events: none;
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask-composite: exclude;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      padding: 3px;
+      border-radius: inherit;
+      z-index: 0;
     }
   `;
   document.head.appendChild(style);
@@ -292,7 +256,7 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
         <div className={inviteClass} style={{ position: "absolute", inset: -3, borderRadius: "16%", border: isInviteRing ? "none" : "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44"), zIndex: 1, pointerEvents: "none" }} />
       )}
       {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />}
-      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
+      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex", position: "relative", zIndex: 1 }}
         dangerouslySetInnerHTML={{ __html: svgStr }} />
     </div>
   );
