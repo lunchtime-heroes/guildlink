@@ -405,20 +405,24 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   };
 
   const requestDeletion = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const res = await fetch(`https://zpalkpcqihxamedymnwe.supabase.co/functions/v1/delete-user`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`,
-      },
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const now = new Date().toISOString();
+    // Mark profile for deletion
+    const { error } = await supabase.from("profiles")
+      .update({ deletion_requested_at: now })
+      .eq("id", authUser.id);
+    if (error) { console.error("Deletion request error:", error); return; }
+    // Log to admin dashboard
+    await supabase.from("data_requests").insert({
+      user_id: authUser.id,
+      username: user.name || user.username || "Unknown",
+      request_type: "deletion",
+      status: "pending",
     });
-    if (res.ok) {
-      setDeletionPending(true);
-      setShowDeleteModal(false);
-      setDeleteConfirmText("");
-    }
+    setDeletionPending(true);
+    setShowDeleteModal(false);
+    setDeleteConfirmText("");
   };
 
   const cancelDeletion = async () => {
