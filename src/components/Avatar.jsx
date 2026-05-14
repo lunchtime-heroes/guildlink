@@ -1,5 +1,43 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { C, PROFILE_RINGS, AVATAR_SKIN_TONES } from "../constants.js";
+
+// Inject animated ring styles once
+const RING_STYLE_ID = "gl-ring-animations";
+function injectRingStyles() {
+  if (document.getElementById(RING_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = RING_STYLE_ID;
+  style.textContent = `
+    @keyframes gl-sheen-bronze {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes gl-sheen-silver {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes gl-sheen-gold {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .gl-ring-invite-bronze {
+      background: linear-gradient(90deg, #a0522d 30%, #cd8b5a 48%, #e8b48a 50%, #cd8b5a 52%, #a0522d 70%);
+      background-size: 200% 100%;
+      animation: gl-sheen-bronze 2.5s linear infinite;
+    }
+    .gl-ring-invite-silver {
+      background: linear-gradient(90deg, #888 30%, #ddd 48%, #fff 50%, #ddd 52%, #888 70%);
+      background-size: 200% 100%;
+      animation: gl-sheen-silver 2.5s linear infinite;
+    }
+    .gl-ring-invite-gold {
+      background: linear-gradient(90deg, #b8860b 30%, #f5c842 48%, #fff8dc 50%, #f5c842 52%, #b8860b 70%);
+      background-size: 200% 100%;
+      animation: gl-sheen-gold 2.5s linear infinite;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 // ── Item color palette (used for all non-skin items) ──────────────────────────
 export const ITEM_COLORS = {
@@ -204,16 +242,25 @@ function renderAvatarSVG(config = {}, size = 40) {
 
 // ── AvatarPixel component ─────────────────────────────────────────────────────
 function AvatarPixel({ config, size = 40, ring = null, founding = false, status = null }) {
+  useEffect(() => { injectRingStyles(); }, []);
   const svgStr = renderAvatarSVG(config, size);
   const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
   const showFoundingRing = founding && !ring;
-  const ringColor = ringData?.color || (showFoundingRing ? "#f59e0b" : null);
-  const ringGlow = ringData?.glow || (showFoundingRing ? "#f59e0b33" : null);
-  const hasRing = ringColor && ringColor !== "transparent";
+  const isInviteRing = ring && ring.startsWith("invite-");
+  const ringColor = isInviteRing ? "transparent" : (ringData?.color || (showFoundingRing ? "#f59e0b" : null));
+  const ringGlow = isInviteRing
+    ? (ring === "invite-gold" ? "#f5c84244" : ring === "invite-silver" ? "#cccccc44" : "#cd8b5a44")
+    : (ringData?.glow || (showFoundingRing ? "#f59e0b33" : null));
+  const hasRing = isInviteRing || (ringColor && ringColor !== "transparent");
   const isDouble = ringData?.double || showFoundingRing;
+  const inviteClass = isInviteRing ? "gl-ring-invite-" + ring.replace("invite-", "") : "";
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
-      {hasRing && <div style={{ position: "absolute", inset: -3, borderRadius: "16%", border: "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44"), zIndex: 1, pointerEvents: "none" }} />}
+      {hasRing && (
+        <div className={inviteClass} style={{ position: "absolute", inset: -3, borderRadius: "16%", border: isInviteRing ? "none" : "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44"), zIndex: 1, pointerEvents: "none", padding: isInviteRing ? 3 : 0 }}>
+          {isInviteRing && <div style={{ position: "absolute", inset: 0, borderRadius: "16%", border: "3px solid transparent", background: "inherit", backgroundClip: "border-box" }} />}
+        </div>
+      )}
       {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />}
       <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
         dangerouslySetInnerHTML={{ __html: svgStr }} />
@@ -223,19 +270,24 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
 
 // ── Avatar component (initials fallback) ─────────────────────────────────────
 function Avatar({ initials, size = 40, status, isNPC = false, ring = null, founding = false, avatarConfig = null }) {
+  useEffect(() => { injectRingStyles(); }, []);
   if (avatarConfig && !isNPC) {
     return <AvatarPixel config={avatarConfig} size={size} ring={ring} founding={founding} status={status} />;
   }
   const ringData = ring ? PROFILE_RINGS.find(r => r.id === ring) : null;
   const showFoundingRing = founding && !ring;
-  const ringColor = ringData?.color || (showFoundingRing ? "#f59e0b" : null);
-  const ringGlow = ringData?.glow || (showFoundingRing ? "#f59e0b33" : null);
-  const hasRing = ringColor && ringColor !== "transparent";
+  const isInviteRing = ring && ring.startsWith("invite-");
+  const ringColor = isInviteRing ? "transparent" : (ringData?.color || (showFoundingRing ? "#f59e0b" : null));
+  const ringGlow = isInviteRing
+    ? (ring === "invite-gold" ? "#f5c84244" : ring === "invite-silver" ? "#cccccc44" : "#cd8b5a44")
+    : (ringData?.glow || (showFoundingRing ? "#f59e0b33" : null));
+  const hasRing = isInviteRing || (ringColor && ringColor !== "transparent");
   const isDouble = ringData?.double || showFoundingRing;
+  const inviteClass = isInviteRing ? "gl-ring-invite-" + ring.replace("invite-", "") : "";
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
       {hasRing && (
-        <div style={{ position: "absolute", inset: -3, borderRadius: "16%", border: "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44") + ", inset 0 0 " + size * 0.15 + "px " + (ringGlow || ringColor + "22"), zIndex: 1, pointerEvents: "none" }} />
+        <div className={inviteClass} style={{ position: "absolute", inset: -3, borderRadius: "16%", border: isInviteRing ? "none" : "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44") + ", inset 0 0 " + size * 0.15 + "px " + (ringGlow || ringColor + "22"), zIndex: 1, pointerEvents: "none" }} />
       )}
       {hasRing && isDouble && (
         <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />

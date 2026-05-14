@@ -151,6 +151,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [steamId, setSteamId] = useState(null);
   const [xboxGamertag, setXboxGamertag] = useState(null);
   const [isPrivate, setIsPrivate] = useState(!!user?.is_private);
+  const [inviteCode, setInviteCode] = useState(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteCount, setInviteCount] = useState(0);
 
   const TAG_CATEGORIES = [
     { label: "How I play", tags: ["Casual", "Competitive"] },
@@ -283,6 +286,29 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         .eq("id", authUser.id)
         .maybeSingle();
       if (privacyData) setIsPrivate(!!privacyData.is_private);
+
+      // Load or create invite code
+      const { data: existingCode } = await supabase
+        .from("invite_codes")
+        .select("code")
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+      if (existingCode) {
+        setInviteCode(existingCode.code);
+      } else {
+        const { data: newCode } = await supabase
+          .from("invite_codes")
+          .insert({ user_id: authUser.id })
+          .select("code")
+          .single();
+        if (newCode) setInviteCode(newCode.code);
+      }
+      // Load invite count
+      const { count: iCount } = await supabase
+        .from("invite_accepts")
+        .select("*", { count: "exact", head: true })
+        .eq("inviter_id", authUser.id);
+      setInviteCount(iCount || 0);
 
       // Check for pending Xbox import session
       if (window.__xboxSession) {
@@ -931,6 +957,37 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     Yes
                   </button>
                 </div>
+              </div>
+
+              {/* Invite Gamers */}
+              <div style={{ marginTop: 20, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 12, padding: "14px 16px" }}>
+                <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Invite Gamers</div>
+                <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+                  Share your link and earn animated rings for every gamer who joins. {inviteCount > 0 && <span style={{ color: C.accentSoft, fontWeight: 700 }}>{inviteCount} joined so far.</span>}
+                </div>
+                {/* Ring tier preview */}
+                <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center" }}>
+                  {[{label: "1 invite", color: "#a0522d", tier: "Bronze"}, {label: "5 invites", color: "#c0c0c0", tier: "Silver"}, {label: "10 invites", color: "#f5c842", tier: "Gold"}].map(t => (
+                    <div key={t.tier} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: t.color, boxShadow: "0 0 6px " + t.color + "88" }} />
+                      <span style={{ color: C.textDim, fontSize: 10, fontWeight: 600 }}>{t.label} → {t.tier}</span>
+                    </div>
+                  ))}
+                </div>
+                {inviteCode && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 10px", color: C.textDim, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      guildlink.gg/join/{inviteCode}
+                    </div>
+                    <button onClick={() => {
+                      navigator.clipboard.writeText("https://guildlink.gg/join/" + inviteCode);
+                      setInviteCopied(true);
+                      setTimeout(() => setInviteCopied(false), 2000);
+                    }} style={{ background: inviteCopied ? "#10b98122" : C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: inviteCopied ? "#10b981" : C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+                      {inviteCopied ? "Copied!" : "Copy Link"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             {editing ? (

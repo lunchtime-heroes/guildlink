@@ -262,6 +262,9 @@ const PROFILE_RINGS = [
   { id: "silver", label: "Silver Ring", color: "#c0c0c0", glow: "#c0c0c033", description: "You're finding your groove.", icon: "🥈", questId: "shelf_25", how: "Quest: Committed" },
   { id: "gold", label: "Gold Ring", color: "#f59e0b", glow: "#f59e0b44", description: "A seasoned player. Your shelf speaks for itself.", icon: "🥇", questId: "shelf_100", how: "Quest: Legendary Library" },
   { id: "npc", label: "NPC Friend Ring", color: "#a78bfa", glow: "#a78bfa33", description: "You talk to NPCs. Enough said.", icon: "🤝", questId: "npc_follow_all", how: "Quest: One of the Regulars" },
+  { id: "invite-bronze", label: "Inviter Bronze Ring", color: "#a0522d", glow: "#cd8b5a44", description: "You invited your first gamer.", icon: "🔗", questId: "invite_1", how: "Quest: First Invite", animated: true },
+  { id: "invite-silver", label: "Inviter Silver Ring", color: "#c0c0c0", glow: "#cccccc44", description: "You've invited 5 gamers.", icon: "🔗", questId: "invite_5", how: "Quest: Growing the Guild", animated: true },
+  { id: "invite-gold", label: "Inviter Gold Ring", color: "#f5c842", glow: "#f5c84244", description: "You've invited 10 gamers.", icon: "🔗", questId: "invite_10", how: "Quest: Community Builder", animated: true },
 ];
 
 const QUESTS = [
@@ -1190,6 +1193,11 @@ export default function GuildLink() {
     if (p.startsWith("player/")) return { page: "player", playerHandle: p.slice(7) };
     if (p.startsWith("npc/")) return { page: "npc", npcId: p.slice(4) };
     if (p.startsWith("guild/")) return { page: "guild", guildId: p.slice(6) };
+    if (p.startsWith("join/")) {
+      const code = p.slice(5);
+      if (code) localStorage.setItem("gl_invite_code", code);
+      return { page: "feed" };
+    }
     return { page: "feed" };
   };
 
@@ -1285,7 +1293,38 @@ export default function GuildLink() {
 });    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") { console.log("RECOVERY EVENT FIRED"); setShowAuth("reset"); return; }
       setSession(session);
-      if (session && event !== "PASSWORD_RECOVERY") { fetchProfile(session.user.id); setShowAuth(false); setSignInPromptMsg(null); }
+      if (session && event !== "PASSWORD_RECOVERY") {
+        fetchProfile(session.user.id);
+        setShowAuth(false);
+        setSignInPromptMsg(null);
+        // Handle invite code on new signup
+        if (event === "SIGNED_IN") {
+          const inviteCode = localStorage.getItem("gl_invite_code");
+          if (inviteCode) {
+            localStorage.removeItem("gl_invite_code");
+            // Record the invite accept — server checks email confirmed
+            const { data: codeData } = await supabase
+              .from("invite_codes")
+              .select("user_id")
+              .eq("code", inviteCode)
+              .maybeSingle();
+            if (codeData && codeData.user_id !== session.user.id) {
+              await supabase.from("invite_accepts").insert({
+                inviter_id: codeData.user_id,
+                invitee_id: session.user.id,
+                code: inviteCode,
+              });
+              // Check and update inviter's quest progress
+              const { count } = await supabase
+                .from("invite_accepts")
+                .select("*", { count: "exact", head: true })
+                .eq("inviter_id", codeData.user_id);
+              // Fire quest check for inviter
+              await supabase.rpc("check_invite_quests", { p_user_id: codeData.user_id, p_invite_count: count });
+            }
+          }
+        }
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
