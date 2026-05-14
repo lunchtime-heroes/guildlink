@@ -8,32 +8,51 @@ function injectRingStyles() {
   const style = document.createElement("style");
   style.id = RING_STYLE_ID;
   style.textContent = `
-    @keyframes gl-sheen-bronze {
-      0%   { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    @keyframes gl-sheen-silver {
-      0%   { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-    @keyframes gl-sheen-gold {
-      0%   { background-position: -200% center; }
-      100% { background-position: 200% center; }
+    @keyframes gl-sheen {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
     }
     .gl-ring-invite-bronze {
-      background: linear-gradient(90deg, #a0522d 30%, #cd8b5a 48%, #e8b48a 50%, #cd8b5a 52%, #a0522d 70%);
-      background-size: 200% 100%;
-      animation: gl-sheen-bronze 2.5s linear infinite;
+      border: 3px solid #a0522d !important;
+      box-shadow: 0 0 10px #cd8b5a44;
+      overflow: hidden;
+    }
+    .gl-ring-invite-bronze::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, #cd8b5a88 40%, #e8c49a 50%, #cd8b5a88 60%, transparent 100%);
+      animation: gl-sheen 3.5s ease-in-out infinite;
+      border-radius: inherit;
+      pointer-events: none;
     }
     .gl-ring-invite-silver {
-      background: linear-gradient(90deg, #888 30%, #ddd 48%, #fff 50%, #ddd 52%, #888 70%);
-      background-size: 200% 100%;
-      animation: gl-sheen-silver 2.5s linear infinite;
+      border: 3px solid #c0c0c0 !important;
+      box-shadow: 0 0 10px #cccccc44;
+      overflow: hidden;
+    }
+    .gl-ring-invite-silver::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, #dddddd88 40%, #ffffff 50%, #dddddd88 60%, transparent 100%);
+      animation: gl-sheen 3.5s ease-in-out infinite;
+      border-radius: inherit;
+      pointer-events: none;
     }
     .gl-ring-invite-gold {
-      background: linear-gradient(90deg, #b8860b 30%, #f5c842 48%, #fff8dc 50%, #f5c842 52%, #b8860b 70%);
-      background-size: 200% 100%;
-      animation: gl-sheen-gold 2.5s linear infinite;
+      border: 3px solid #f5c842 !important;
+      box-shadow: 0 0 10px #f5c84244;
+      overflow: hidden;
+    }
+    .gl-ring-invite-gold::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, #f5c84288 40%, #fff8dc 50%, #f5c84288 60%, transparent 100%);
+      animation: gl-sheen 3.5s ease-in-out infinite;
+      border-radius: inherit;
+      pointer-events: none;
     }
   `;
   document.head.appendChild(style);
@@ -257,9 +276,7 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
   return (
     <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: size, height: size, flexShrink: 0 }}>
       {hasRing && (
-        <div className={inviteClass} style={{ position: "absolute", inset: -3, borderRadius: "16%", border: isInviteRing ? "none" : "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44"), zIndex: 1, pointerEvents: "none", padding: isInviteRing ? 3 : 0 }}>
-          {isInviteRing && <div style={{ position: "absolute", inset: 0, borderRadius: "16%", border: "3px solid transparent", background: "inherit", backgroundClip: "border-box" }} />}
-        </div>
+        <div className={inviteClass} style={{ position: "absolute", inset: -3, borderRadius: "16%", border: isInviteRing ? "none" : "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44"), zIndex: 1, pointerEvents: "none" }} />
       )}
       {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />}
       <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
