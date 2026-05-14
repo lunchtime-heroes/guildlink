@@ -527,10 +527,30 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                       </div>
                       {isPending && (
                         <button onClick={async () => {
-                          await supabase.from("data_requests").update({ status: "fulfilled", resolved_at: new Date().toISOString() }).eq("id", r.id);
-                          setDataRequests(prev => prev.map(d => d.id === r.id ? { ...d, status: "fulfilled", resolved_at: new Date().toISOString() } : d));
-                        }} style={{ background: C.online + "22", border: "1px solid " + C.online + "55", borderRadius: 8, padding: "7px 16px", color: C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                          Mark fulfilled
+                          if (r.request_type === "deletion") {
+                            const uid = r.user_id;
+                            await supabase.from("posts").delete().eq("user_id", uid);
+                            await supabase.from("comments").delete().eq("user_id", uid);
+                            await supabase.from("reviews").delete().eq("user_id", uid);
+                            await supabase.from("user_games").delete().eq("user_id", uid);
+                            await supabase.from("follows").delete().eq("follower_id", uid);
+                            await supabase.from("follows").delete().eq("followed_user_id", uid);
+                            await supabase.from("user_quests").delete().eq("user_id", uid);
+                            await supabase.from("user_rewards").delete().eq("user_id", uid);
+                            await supabase.from("user_similarity").delete().eq("user_id", uid);
+                            await supabase.from("user_similarity").delete().eq("similar_user_id", uid);
+                            await supabase.from("invite_codes").delete().eq("user_id", uid);
+                            await supabase.from("invite_accepts").delete().eq("inviter_id", uid);
+                            await supabase.from("invite_accepts").delete().eq("invitee_id", uid);
+                            await supabase.from("profiles").delete().eq("id", uid);
+                            await supabase.from("data_requests").update({ status: "fulfilled", resolved_at: new Date().toISOString() }).eq("id", r.id);
+                            setDataRequests(prev => prev.filter(d => d.id !== r.id));
+                          } else {
+                            await supabase.from("data_requests").update({ status: "fulfilled", resolved_at: new Date().toISOString() }).eq("id", r.id);
+                            setDataRequests(prev => prev.map(d => d.id === r.id ? { ...d, status: "fulfilled", resolved_at: new Date().toISOString() } : d));
+                          }
+                        }} style={{ background: r.request_type === "deletion" ? "#c0392b22" : C.online + "22", border: "1px solid " + (r.request_type === "deletion" ? "#c0392b55" : C.online + "55"), borderRadius: 8, padding: "7px 16px", color: r.request_type === "deletion" ? "#c0392b" : C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          {r.request_type === "deletion" ? "Delete now" : "Mark fulfilled"}
                         </button>
                       )}
                     </div>
