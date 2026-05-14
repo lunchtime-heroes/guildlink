@@ -1299,30 +1299,29 @@ export default function GuildLink() {
         setSignInPromptMsg(null);
         // Handle invite code on new signup
         if (event === "SIGNED_IN") {
-          const inviteCode = localStorage.getItem("gl_invite_code");
-          if (inviteCode) {
-            localStorage.removeItem("gl_invite_code");
-            // Record the invite accept — server checks email confirmed
-            const { data: codeData } = await supabase
-              .from("invite_codes")
-              .select("user_id")
-              .eq("code", inviteCode)
-              .maybeSingle();
-            if (codeData && codeData.user_id !== session.user.id) {
-              await supabase.from("invite_accepts").insert({
-                inviter_id: codeData.user_id,
-                invitee_id: session.user.id,
-                code: inviteCode,
-              });
-              // Check and update inviter's quest progress
-              const { count } = await supabase
-                .from("invite_accepts")
-                .select("*", { count: "exact", head: true })
-                .eq("inviter_id", codeData.user_id);
-              // Fire quest check for inviter
-              await supabase.rpc("check_invite_quests", { p_user_id: codeData.user_id, p_invite_count: count });
+          (async () => {
+            const inviteCode = localStorage.getItem("gl_invite_code");
+            if (inviteCode) {
+              localStorage.removeItem("gl_invite_code");
+              const { data: codeData } = await supabase
+                .from("invite_codes")
+                .select("user_id")
+                .eq("code", inviteCode)
+                .maybeSingle();
+              if (codeData && codeData.user_id !== session.user.id) {
+                await supabase.from("invite_accepts").insert({
+                  inviter_id: codeData.user_id,
+                  invitee_id: session.user.id,
+                  code: inviteCode,
+                });
+                const { count } = await supabase
+                  .from("invite_accepts")
+                  .select("*", { count: "exact", head: true })
+                  .eq("inviter_id", codeData.user_id);
+                await supabase.rpc("check_invite_quests", { p_user_id: codeData.user_id, p_invite_count: count });
+              }
             }
-          }
+          })();
         }
       }
     });
