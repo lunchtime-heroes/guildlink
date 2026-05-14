@@ -8,29 +8,21 @@ function injectRingStyles() {
   const style = document.createElement("style");
   style.id = RING_STYLE_ID;
   style.textContent = `
-    @keyframes gl-sheen {
-      0%   { opacity: 0; transform: translateX(-100%) rotate(45deg); }
-      50%  { opacity: 1; }
-      100% { opacity: 0; transform: translateX(100%) rotate(45deg); }
+    @keyframes gl-bronze-pulse {
+      0%, 100% { border-color: #a0522d; box-shadow: 0 0 6px #a0522d44; }
+      50%       { border-color: #e8b48a; box-shadow: 0 0 12px #e8b48a88; }
     }
-    .gl-ring-invite-bronze { border: 3px solid #cd8b5a !important; box-shadow: 0 0 8px #cd8b5a66, 0 0 2px #cd8b5a inset; }
-    .gl-ring-invite-silver { border: 3px solid #d0d0d0 !important; box-shadow: 0 0 8px #cccccc66, 0 0 2px #dddddd inset; }
-    .gl-ring-invite-gold   { border: 3px solid #f5c842 !important; box-shadow: 0 0 8px #f5c84266, 0 0 2px #fff8dc inset; }
-    .gl-ring-invite-bronze::after,
-    .gl-ring-invite-silver::after,
-    .gl-ring-invite-gold::after {
-      content: '';
-      position: absolute;
-      width: 30%;
-      height: 200%;
-      top: -50%;
-      left: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-      animation: gl-sheen 3.5s ease-in-out infinite;
-      pointer-events: none;
-      border-radius: inherit;
-      z-index: 0;
+    @keyframes gl-silver-pulse {
+      0%, 100% { border-color: #999999; box-shadow: 0 0 6px #99999944; }
+      50%       { border-color: #ffffff; box-shadow: 0 0 12px #ffffff88; }
     }
+    @keyframes gl-gold-pulse {
+      0%, 100% { border-color: #b8860b; box-shadow: 0 0 6px #b8860b44; }
+      50%       { border-color: #fff8dc; box-shadow: 0 0 12px #fff8dc88; }
+    }
+    .gl-ring-invite-bronze { border: 3px solid #a0522d !important; animation: gl-bronze-pulse 2.5s ease-in-out infinite; }
+    .gl-ring-invite-silver { border: 3px solid #999999 !important; animation: gl-silver-pulse 2.5s ease-in-out infinite; }
+    .gl-ring-invite-gold   { border: 3px solid #b8860b !important; animation: gl-gold-pulse 2.5s ease-in-out infinite; }
   `;
   document.head.appendChild(style);
 }
@@ -256,7 +248,7 @@ function AvatarPixel({ config, size = 40, ring = null, founding = false, status 
         <div className={inviteClass} style={{ position: "absolute", inset: -3, borderRadius: "16%", border: isInviteRing ? "none" : "3px solid " + ringColor, boxShadow: "0 0 " + size * 0.3 + "px " + (ringGlow || ringColor + "44"), zIndex: 1, pointerEvents: "none" }} />
       )}
       {hasRing && isDouble && <div style={{ position: "absolute", inset: -7, borderRadius: "16%", border: "2px solid " + ringColor + "88", zIndex: 1, pointerEvents: "none" }} />}
-      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex", position: "relative", zIndex: 1 }}
+      <div style={{ width: size, height: size, borderRadius: "12%", overflow: "hidden", imageRendering: "pixelated", flexShrink: 0, display: "flex" }}
         dangerouslySetInnerHTML={{ __html: svgStr }} />
     </div>
   );
