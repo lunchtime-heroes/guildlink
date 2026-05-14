@@ -109,6 +109,9 @@ export const PROFILE_RINGS = [
   { id: "silver", label: "Silver Ring", color: "#c0c0c0", glow: "#c0c0c033", description: "You're finding your groove.", icon: "🥈", questId: "shelf_25", how: "Quest: Committed" },
   { id: "gold", label: "Gold Ring", color: "#f59e0b", glow: "#f59e0b44", description: "A seasoned player. Your shelf speaks for itself.", icon: "🥇", questId: "shelf_100", how: "Quest: Legendary Library" },
   { id: "npc", label: "NPC Friend Ring", color: "#a78bfa", glow: "#a78bfa33", description: "You talk to NPCs. Enough said.", icon: "🤝", questId: "npc_follow_all", how: "Quest: One of the Regulars" },
+  { id: "invite-bronze", label: "Inviter Bronze Ring", color: "#a0522d", glow: "#cd8b5a44", description: "You invited your first gamer.", icon: "🔗", questId: "invite_1", how: "Quest: First Invite", animated: true },
+  { id: "invite-silver", label: "Inviter Silver Ring", color: "#c0c0c0", glow: "#cccccc44", description: "You've invited 5 gamers.", icon: "🔗", questId: "invite_5", how: "Quest: Growing the Guild", animated: true },
+  { id: "invite-gold", label: "Inviter Gold Ring", color: "#f5c842", glow: "#f5c84244", description: "You've invited 10 gamers.", icon: "🔗", questId: "invite_10", how: "Quest: Community Builder", animated: true },
 ];
 
 export const QUESTS = [
@@ -138,6 +141,9 @@ export const QUESTS = [
   { id: "follow_first_npc", title: "Meet the Locals", desc: "Follow your first NPC", reward: "XP", progress: 0, total: 1, done: false, ring: null },
   { id: "npc_follow_3", title: "Making Friends", desc: "Follow 3 NPCs", reward: "XP", progress: 0, total: 3, done: false, ring: null },
   { id: "npc_follow_all", title: "One of the Regulars", desc: "Follow 6 NPCs", reward: "NPC Friend Ring", progress: 0, total: 6, done: false, ring: "npc" },
+  { id: "invite_1", title: "First Invite", desc: "Invite your first gamer to GuildLink", reward: "Bronze Invite Ring", progress: 0, total: 1, done: false, ring: "invite-bronze" },
+  { id: "invite_5", title: "Growing the Guild", desc: "Invite 5 gamers to GuildLink", reward: "Silver Invite Ring", progress: 0, total: 5, done: false, ring: "invite-silver" },
+  { id: "invite_10", title: "Community Builder", desc: "Invite 10 gamers to GuildLink", reward: "Gold Invite Ring", progress: 0, total: 10, done: false, ring: "invite-gold" },
 ];
 
 export const NPCS = {
