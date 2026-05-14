@@ -141,7 +141,13 @@ export function OnboardingModal({ currentUser, isMobile, onComplete, setActivePa
 
   const advance = (toStep) => {
     setTransitioning(true);
-    setTimeout(() => { setStep(toStep !== undefined ? toStep : s => s + 1); setTransitioning(false); }, 200);
+    const nextStep = toStep !== undefined ? toStep : step + 1;
+    // When reaching the "add a game" step, navigate to profile games tab
+    if (nextStep === 2) {
+      setActivePage?.("profile");
+      setProfileDefaultTab?.("games");
+    }
+    setTimeout(() => { setStep(nextStep); setTransitioning(false); }, 200);
   };
 
   const finish = async () => {

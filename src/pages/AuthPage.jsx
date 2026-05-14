@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
-import { isUsernameRestricted } from "../utils.js";
 
 function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
@@ -38,29 +37,19 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       setError("Email or password incorrect.");
 
     } else if (mode === "signup") {
-      if (!username.trim()) { setError("Username is required."); setLoading(false); return; }
-      if (!password) { setError("Password is required."); setLoading(false); return; }
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
-      const restricted = await isUsernameRestricted(username.trim());
-      if (restricted) { setError("Username unavailable."); setLoading(false); return; }
+      if (!password) { setError("Password is required."); setLoading(false); return; }
       const { data, error } = await supabase.auth.signUp({ email: contactEmail.trim(), password });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
-        await supabase.from("profiles").update({
-         username: username.trim(),
-         handle: "@" + username.trim().toLowerCase().replace(/\s+/g, "_"),
-         avatar_initials: username.trim().slice(0, 2).toUpperCase(),
-      }).eq("id", data.user.id);
-
         await supabase.from("user_private").insert({
-         id: data.user.id,
-         contact_email: contactEmail.trim(),
-      });
-
-  setConfirmedEmail(contactEmail.trim());
-  setSignupSuccess(true);
-}
+          id: data.user.id,
+          contact_email: contactEmail.trim(),
+        });
+        setConfirmedEmail(contactEmail.trim());
+        setSignupSuccess(true);
+      }
 
     } else if (mode === "forgot") {
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
@@ -193,11 +182,6 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
 
             {mode === "signup" && (
               <>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username</div>
-                  <input value={username} onChange={e => setUsername(e.target.value)} placeholder="YourGamerName"
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
-                </div>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
                   <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@email.com"
