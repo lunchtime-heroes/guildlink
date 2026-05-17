@@ -86,6 +86,18 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
   const ReviewCard = ({ review }) => {
     const profile = review.profiles;
     const game = review.games;
+    const [similarity, setSimilarity] = useState(null);
+
+    useEffect(() => {
+      if (!currentUser || !review.user_id || review.user_id === currentUser.id) return;
+      supabase.from("user_similarity")
+        .select("overlap_count")
+        .eq("user_id", currentUser.id)
+        .eq("similar_user_id", review.user_id)
+        .maybeSingle()
+        .then(({ data }) => setSimilarity(data ? data.overlap_count : 0));
+    }, [review.user_id]);
+
     if (!game) return null;
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
     const coverW = isMobile ? 72 : 96;
@@ -117,6 +129,11 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: profile?.id ? "pointer" : "default" }}>
                 {profile?.username || "Guildies Member"}
               </span>
+              {similarity !== null && currentUser && review.user_id !== currentUser.id && (
+                <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
+                  {similarity > 0 ? similarity + " games in common" : "no games in common"}
+                </span>
+              )}
               <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(review.created_at)}</span>
               {review.time_played && <span style={{ color: C.textDim, fontSize: 11 }}>· {review.time_played}h</span>}
               {currentUser && review.user_id === currentUser.id && (
