@@ -446,6 +446,18 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
     if (!posts) { setLoadingCandidates(false); return; }
 
+    // Fetch total post counts per user to identify new/low-volume posters
+    const userIds = [...new Set(posts.map(p => p.user_id))];
+    const { data: allUserPosts } = await supabase
+      .from("posts")
+      .select("user_id")
+      .in("user_id", userIds)
+      .is("npc_id", null);
+    const countsByUser = {};
+    (allUserPosts || []).forEach(p => {
+      countsByUser[p.user_id] = (countsByUser[p.user_id] || 0) + 1;
+    });
+
     // Fetch comment counts
     const postIds = posts.map(p => p.id);
     const { data: comments } = await supabase
@@ -476,7 +488,6 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
       .select("post_id, npc_id, created_at")
       .in("post_id", postIds)
       .order("created_at", { ascending: false });
-    // For each post, find the most recent comment
     const lastCommentByPost = {};
     (lastComments || []).forEach(c => {
       if (!lastCommentByPost[c.post_id]) lastCommentByPost[c.post_id] = c;
@@ -485,23 +496,34 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
     const now = Date.now();
     const scored = posts
       .map(p => {
-        const profile = p.profiles;
         const ageHours = (now - new Date(p.created_at).getTime()) / 3600000;
-        const recencyScore = Math.max(0, 1 - ageHours / 72);
+        const recencyScore = Math.max(0, 1 - ageHours / 168); // 7-day window
         const engagementScore = Math.min(1, ((p.likes || 0) + (commentCounts[p.id] || 0) * 1.5) / 50);
         const threadScore = Math.min(1, (replyThreadCounts[p.id] || 0) / 5);
-        const accountAgeDays = profile?.created_at
-          ? (now - new Date(profile.created_at).getTime()) / 86400000
-          : 999;
-        const newUserBonus = accountAgeDays < 7 ? 1 : 0;
+
+        // New user bonus based on total post count — first post gets full boost, tapers off
+        const userPostCount = countsByUser[p.user_id] || 1;
+        const newUserBonus = userPostCount === 1 ? 1.0
+          : userPostCount === 2 ? 0.75
+          : userPostCount === 3 ? 0.5
+          : 0;
+
         const npcReplied = npcRepliedIds.has(p.id);
         const lastComment = lastCommentByPost[p.id];
         // "Needs Reply" = NPC has engaged but user replied since — highest priority
         const needsReply = npcReplied && lastComment && !lastComment.npc_id;
-        const baseScore = newUserBonus * 0.35 + engagementScore * 0.30 + threadScore * 0.20 + recencyScore * 0.15;
-        // needsReply: boost to top. npcReplied but last was NPC: de-prioritise. fresh: normal score.
+        const baseScore = newUserBonus * 0.45 + engagementScore * 0.25 + threadScore * 0.15 + recencyScore * 0.15;
         const score = needsReply ? 0.8 + baseScore * 0.2 : npcReplied ? baseScore * 0.3 : baseScore;
-        return { ...p, commentCount: commentCounts[p.id] || 0, newUser: accountAgeDays < 7, hasThread: (replyThreadCounts[p.id] || 0) > 0, npcReplied, needsReply, score };
+        return {
+          ...p,
+          commentCount: commentCounts[p.id] || 0,
+          userPostCount,
+          newUser: userPostCount <= 3,
+          hasThread: (replyThreadCounts[p.id] || 0) > 0,
+          npcReplied,
+          needsReply,
+          score,
+        };
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
@@ -1159,7 +1181,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       {/* Studio status bar */}
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 5, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ background: st.bg, border: "1px solid " + st.border, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
-                        {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>NEW USER</span>}
+                        {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>{post.userPostCount === 1 ? "1ST POST" : post.userPostCount === 2 ? "2ND POST" : "3RD POST"}</span>}
                         {post.hasThread && <span style={{ background: "#f59e0b22", border: "1px solid #f59e0b44", borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
                         <button onClick={() => { setClosedCandidates(prev => new Set([...prev, post.id])); if (selectedPost?.id === post.id) { setSelectedPost(null); setReplyToComment(null); setComposeText(""); } }}
                           style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
