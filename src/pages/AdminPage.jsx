@@ -59,7 +59,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       supabase.from("user_games").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
       supabase.from("reviews").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("discovery_events").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
-      supabase.from("user_similarity").select("id", { count: "exact", head: true }),
+      supabase.from("user_similarity").select("user_id", { count: "exact", head: true }),
     ]);
 
     if (usersRes.data) setUsers(usersRes.data);
