@@ -47,7 +47,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes] = await Promise.all([
+    const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
       supabase.from("reviews").select("*, profiles(username, avatar_initials, active_ring, is_founding, avatar_config), games(name)").order("created_at", { ascending: false }).limit(20),
@@ -60,6 +60,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       supabase.from("reviews").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("discovery_events").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("user_similarity").select("user_id", { count: "exact", head: true }),
+      supabase.from("user_similarity").select("overlap_count"),
     ]);
 
     if (usersRes.data) setUsers(usersRes.data);
@@ -144,6 +145,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       shelfToday: dayShelfRes.count || 0,
       discoverySearchesWeek: discoveryRes.count || 0,
       similarityPairs: similarityRes.count || 0,
+      totalGameOverlaps: (similarityOverlapRes.data || []).reduce((sum, r) => sum + (r.overlap_count || 0), 0),
+      avgOverlap: similarityOverlapRes.data?.length ? ((similarityOverlapRes.data || []).reduce((sum, r) => sum + (r.overlap_count || 0), 0) / similarityOverlapRes.data.length).toFixed(1) : 0,
+      highestOverlap: similarityOverlapRes.data?.length ? Math.max(...(similarityOverlapRes.data || []).map(r => r.overlap_count || 0)) : 0,
     });
     setLoading(false);
   };
@@ -276,6 +280,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               { label: "Shelf Adds Today", value: stats.shelfToday, color: C.purple, icon: "➕" },
               { label: "Discovery Searches (7d)", value: stats.discoverySearchesWeek, color: C.teal, icon: "🔍" },
               { label: "Similarity Pairs", value: stats.similarityPairs, color: C.accentSoft, icon: "🔗" },
+              { label: "Total Game Overlaps", value: stats.totalGameOverlaps, color: C.accentSoft, icon: "🎯" },
+              { label: "Avg Overlap", value: stats.avgOverlap, color: C.accentSoft, icon: "📊" },
+              { label: "Highest Overlap", value: stats.highestOverlap, color: C.accentSoft, icon: "🏆" },
             ].map(s => (
               <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
