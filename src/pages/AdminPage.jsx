@@ -47,13 +47,19 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes] = await Promise.all([
+    const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
       supabase.from("reviews").select("*, profiles(username, avatar_initials, active_ring, is_founding, avatar_config), games(name)").order("created_at", { ascending: false }).limit(20),
       supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
+      supabase.from("user_games").select("id", { count: "exact", head: true }),
+      supabase.from("user_games").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
+      supabase.from("user_games").select("id", { count: "exact", head: true }).gte("created_at", oneDayAgo),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
+      supabase.from("discovery_events").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
+      supabase.from("user_similarity").select("id", { count: "exact", head: true }),
     ]);
 
     if (usersRes.data) setUsers(usersRes.data);
@@ -132,6 +138,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       postsWeek: weekPostsRes.count || 0,
       postsToday: dayPostsRes.count || 0,
       totalReviews: reviewsRes.data?.length || 0,
+      reviewsWeek: weekReviewsRes.count || 0,
+      totalShelf: totalShelfRes.count || 0,
+      shelfWeek: weekShelfRes.count || 0,
+      shelfToday: dayShelfRes.count || 0,
+      discoverySearchesWeek: discoveryRes.count || 0,
+      similarityPairs: similarityRes.count || 0,
     });
     setLoading(false);
   };
@@ -258,6 +270,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               { label: "Posts This Week", value: stats.postsWeek, color: C.accentSoft, icon: "📝" },
               { label: "Posts Today", value: stats.postsToday, color: C.gold, icon: "🔥" },
               { label: "Reviews", value: stats.totalReviews, color: "#0d9488", icon: "⭐" },
+              { label: "Reviews This Week", value: stats.reviewsWeek, color: "#0d9488", icon: "📋" },
+              { label: "Total Shelf Entries", value: stats.totalShelf, color: C.purple, icon: "🎮" },
+              { label: "Shelf Adds This Week", value: stats.shelfWeek, color: C.purple, icon: "📈" },
+              { label: "Shelf Adds Today", value: stats.shelfToday, color: C.purple, icon: "➕" },
+              { label: "Discovery Searches (7d)", value: stats.discoverySearchesWeek, color: C.teal, icon: "🔍" },
+              { label: "Similarity Pairs", value: stats.similarityPairs, color: C.accentSoft, icon: "🔗" },
             ].map(s => (
               <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
