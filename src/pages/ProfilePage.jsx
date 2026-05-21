@@ -152,6 +152,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [exportRequested, setExportRequested] = useState(false);
   const [steamId, setSteamId] = useState(null);
   const [xboxGamertag, setXboxGamertag] = useState(null);
+  const [psnConnected, setPsnConnected] = useState(false);
   const [isPrivate, setIsPrivate] = useState(!!user?.is_private);
   const [inviteCode, setInviteCode] = useState(null);
   const [inviteCopied, setInviteCopied] = useState(false);
@@ -275,11 +276,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Load Steam ID from user_private
       const { data: privateData } = await supabase
         .from("user_private")
-        .select("steam_id, xbox_gamertag")
+        .select("steam_id, xbox_gamertag, psn_connected")
         .eq("id", authUser.id)
         .maybeSingle();
       if (privateData?.steam_id) setSteamId(privateData.steam_id);
       if (privateData?.xbox_gamertag) setXboxGamertag(privateData.xbox_gamertag);
+      if (privateData?.psn_connected) setPsnConnected(true);
 
       // Load privacy setting from profiles
       const { data: privacyData } = await supabase
@@ -938,10 +940,16 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     </button>
                   )}
                   {/* Future platforms slot in here */}
-                  <button onClick={() => setShowPSNImport(true)}
-                    style={{ background: "#003087" + "22", border: "1px solid #003087" + "66", borderRadius: 8, padding: "4px 12px", color: "#0070cc", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                    + PlayStation
-                  </button>
+                  {psnConnected ? (
+                    <button style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "default" }}>
+                      ✓ PlayStation
+                    </button>
+                  ) : (
+                    <button onClick={() => setShowPSNImport(true)}
+                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      + PlayStation
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1863,6 +1871,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           currentUser={user}
           onClose={() => setShowPSNImport(false)}
           onImportComplete={() => { setShowPSNImport(false); loadShelf(); onProfileSaved?.(); }}
+          onPSNConnected={() => setPsnConnected(true)}
         />
       )}
 

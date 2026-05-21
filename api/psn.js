@@ -34,17 +34,29 @@ module.exports = async (req, res) => {
       offset += limit;
     }
 
+    // Clean up PSN title quirks
+    const cleanName = (name) => {
+      if (!name) return name;
+      return name
+        .replace(/\s+Trophies$/i, "")
+        .replace(/\s+Trophy\s+set$/i, "")
+        .replace(/\s+Trophy\s+Pack$/i, "")
+        .replace(/®/g, "")
+        .replace(/™/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
     // Map to GuildLink game format
     const games = allTitles
-      .filter(t => t.trophyTitleName && t.definedTrophies?.bronze > 0 || t.earnedTrophies?.bronze > 0 || t.earnedTrophies?.silver > 0 || t.earnedTrophies?.gold > 0 || t.earnedTrophies?.platinum > 0)
+      .filter(t => t.trophyTitleName && (t.earnedTrophies?.bronze > 0 || t.earnedTrophies?.silver > 0 || t.earnedTrophies?.gold > 0 || t.earnedTrophies?.platinum > 0))
       .map(t => ({
-        name: t.trophyTitleName,
+        name: cleanName(t.trophyTitleName),
         platform: t.trophyTitlePlatform || "PS",
         iconUrl: t.trophyTitleIconUrl || null,
         trophiesEarned: (t.earnedTrophies?.bronze || 0) + (t.earnedTrophies?.silver || 0) + (t.earnedTrophies?.gold || 0) + (t.earnedTrophies?.platinum || 0),
         lastUpdatedAt: t.lastUpdatedDateTime || null,
-        // Suggest status: if platinum earned = completed, otherwise have_played
-        suggested_status: t.earnedTrophies?.platinum > 0 ? "have_played" : "have_played",
+        suggested_status: "have_played",
       }))
       .sort((a, b) => new Date(b.lastUpdatedAt || 0) - new Date(a.lastUpdatedAt || 0));
 

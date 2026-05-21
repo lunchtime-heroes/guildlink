@@ -125,6 +125,15 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
 
     setImporting(false);
     setImportDone(true);
+    // Save PSN connected status
+    const { data: { user: authUser2 } } = await supabase.auth.getUser();
+    if (authUser2) {
+      await supabase.from("user_private").upsert(
+        { id: authUser2.id, psn_connected: true },
+        { onConflict: "id" }
+      );
+      onPSNConnected?.();
+    }
     onImportComplete?.();
   };
 
@@ -240,15 +249,14 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
                         <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
                         <div style={{ color: C.textDim, fontSize: 11 }}>{game.platform} · {game.trophiesEarned} trophies</div>
                       </div>
-                      <select
-                        value={statusOverrides[idx] || "have_played"}
-                        onClick={e => e.stopPropagation()}
-                        onChange={e => setStatusOverrides(prev => ({ ...prev, [idx]: e.target.value }))}
-                        style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 6, padding: "3px 6px", color: statusColors[statusOverrides[idx] || "have_played"], fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-                        <option value="have_played">Have Played</option>
-                        <option value="playing">Playing Now</option>
-                        <option value="want_to_play">Want to Play</option>
-                      </select>
+                      <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        {["have_played", "playing", "want_to_play"].map(s => (
+                          <button key={s} onClick={e => { e.stopPropagation(); setStatusOverrides(prev => ({ ...prev, [idx]: s })); }}
+                            style={{ background: (statusOverrides[idx] || "have_played") === s ? statusColors[s] + "22" : "transparent", border: "1px solid " + ((statusOverrides[idx] || "have_played") === s ? statusColors[s] + "66" : C.border), borderRadius: 6, padding: "2px 7px", color: (statusOverrides[idx] || "have_played") === s ? statusColors[s] : C.textDim, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                            {s === "have_played" ? "Played" : s === "playing" ? "Playing" : "Want"}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
