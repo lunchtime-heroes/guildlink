@@ -107,14 +107,18 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
           await supabase.from("user_games").upsert({
             user_id: authUser.id, game_id: gameId, status,
-          }, { onConflict: "user_id,game_id" });
+          }, { onConflict: "user_id,game_id", ignoreDuplicates: true });
 
-          await supabase.from("chart_events").insert({
+          // Insert chart event — ignore if already exists
+          const { error: ceError } = await supabase.from("chart_events").insert({
             game_id: gameId, user_id: authUser.id,
             event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
             date: new Date().toISOString().slice(0, 10),
             week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
-          }).onConflict("user_id,game_id,event_type,week_start").ignore();
+          });
+          if (ceError && ceError.code !== "23505") {
+            console.warn("[psn import] chart_events insert skipped:", ceError.message);
+          }
         }
       } catch (err) {
         console.error("[psn import] failed for game:", game.name, err?.message || err);
