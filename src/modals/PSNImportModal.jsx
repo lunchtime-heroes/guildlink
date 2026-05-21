@@ -103,18 +103,27 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           gameId = inserted?.id;
         }
 
-        if (gameId) {
-          const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
+        if (!gameId) {
+          console.warn("[psn import] no gameId found for:", game.name, "— skipping");
+          done++;
+          setImportProgress(Math.round((done / toImport.length) * 100));
+          continue;
+        }
+
+        const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
+
+        try {
+          await supabase.from("user_games").upsert({
+            user_id: authUser.id, game_id: gameId, status,
+          }, { onConflict: "user_id,game_id", ignoreDuplicates: false });
+        } catch {
+          // Try plain insert if upsert fails
           try {
-            await supabase.from("user_games").upsert({
-              user_id: authUser.id, game_id: gameId, status,
-            }, { onConflict: "user_id,game_id", ignoreDuplicates: false });
-          } catch {
-            // Try plain insert if upsert fails
             await supabase.from("user_games").insert({
               user_id: authUser.id, game_id: gameId, status,
             });
-          }
+          } catch { /* already on shelf */ }
+        }
 
           // Insert chart event — silently ignore duplicates
           try {
@@ -125,7 +134,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
               week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
             });
           } catch { /* duplicate chart event — ignore */ }
-        }
+
       } catch (err) {
         console.error("[psn import] failed for game:", game.name, err?.message || err);
       }
