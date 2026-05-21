@@ -110,6 +110,8 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           continue;
         }
 
+        console.log("[psn import] gameId for", game.name, "=", gameId);
+
         const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
 
         try {
