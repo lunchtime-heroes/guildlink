@@ -105,20 +105,26 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
 
         if (gameId) {
           const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
-          await supabase.from("user_games").upsert({
-            user_id: authUser.id, game_id: gameId, status,
-          }, { onConflict: "user_id,game_id", ignoreDuplicates: true });
-
-          // Insert chart event — ignore if already exists
-          const { error: ceError } = await supabase.from("chart_events").insert({
-            game_id: gameId, user_id: authUser.id,
-            event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
-            date: new Date().toISOString().slice(0, 10),
-            week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
-          });
-          if (ceError && ceError.code !== "23505") {
-            console.warn("[psn import] chart_events insert skipped:", ceError.message);
+          try {
+            await supabase.from("user_games").upsert({
+              user_id: authUser.id, game_id: gameId, status,
+            }, { onConflict: "user_id,game_id", ignoreDuplicates: false });
+          } catch {
+            // Try plain insert if upsert fails
+            await supabase.from("user_games").insert({
+              user_id: authUser.id, game_id: gameId, status,
+            });
           }
+
+          // Insert chart event — silently ignore duplicates
+          try {
+            await supabase.from("chart_events").insert({
+              game_id: gameId, user_id: authUser.id,
+              event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
+              date: new Date().toISOString().slice(0, 10),
+              week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
+            });
+          } catch { /* duplicate chart event — ignore */ }
         }
       } catch (err) {
         console.error("[psn import] failed for game:", game.name, err?.message || err);
