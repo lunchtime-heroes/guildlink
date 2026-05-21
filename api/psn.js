@@ -34,15 +34,13 @@ module.exports = async (req, res) => {
       offset += limit;
     }
 
-    // Clean up PSN title quirks
+    // Clean up PSN title quirks — strip trophy suffixes only
     const cleanName = (name) => {
       if (!name) return name;
       return name
         .replace(/\s+Trophies$/i, "")
         .replace(/\s+Trophy\s+set$/i, "")
         .replace(/\s+Trophy\s+Pack$/i, "")
-        .replace(/®/g, "")
-        .replace(/™/g, "")
         .replace(/\s+/g, " ")
         .trim();
     };
