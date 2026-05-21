@@ -116,15 +116,17 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
         const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
 
         try {
-          await supabase.from("user_games").upsert({
+          const { error: ugError } = await supabase.from("user_games").upsert({
             user_id: authUser.id, game_id: gameId, status,
           }, { onConflict: "user_id,game_id", ignoreDuplicates: false });
-        } catch {
-          // Try plain insert if upsert fails
+          if (ugError) console.error("[psn import] user_games upsert error for", game.name, ":", ugError.code, ugError.message, ugError.details);
+        } catch (e) {
+          console.error("[psn import] user_games upsert threw for", game.name, ":", e.message);
           try {
-            await supabase.from("user_games").insert({
+            const { error: ugError2 } = await supabase.from("user_games").insert({
               user_id: authUser.id, game_id: gameId, status,
             });
+            if (ugError2) console.error("[psn import] user_games insert error for", game.name, ":", ugError2.code, ugError2.message);
           } catch { /* already on shelf */ }
         }
 
