@@ -56,13 +56,11 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
     setImporting(true); setImportProgress(0);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setImporting(false); return; }
-    console.log("[psn import] authUser.id =", authUser.id);
 
     const toImport = psnData.games.filter((_, i) => selectedGames.has(i));
     let done = 0;
 
     for (const game of toImport) {
-      console.log("[psn import] processing:", game.name);
       try {
         // Search for matching game in DB
         const { data: existing } = await supabase
@@ -105,13 +103,10 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
         }
 
         if (!gameId) {
-          console.warn("[psn import] no gameId found for:", game.name, "— skipping");
           done++;
           setImportProgress(Math.round((done / toImport.length) * 100));
           continue;
         }
-
-        console.log("[psn import] gameId for", game.name, "=", gameId);
 
         const status = statusOverrides[psnData.games.indexOf(game)] || "have_played";
 
@@ -119,14 +114,13 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           const { error: ugError } = await supabase.from("user_games").upsert({
             user_id: authUser.id, game_id: gameId, status,
           }, { onConflict: "user_id,game_id", ignoreDuplicates: false });
-          if (ugError) console.error("[psn import] user_games upsert error for", game.name, ":", ugError.code, ugError.message, ugError.details);
+          if (ugError)
         } catch (e) {
-          console.error("[psn import] user_games upsert threw for", game.name, ":", e.message);
           try {
             const { error: ugError2 } = await supabase.from("user_games").insert({
               user_id: authUser.id, game_id: gameId, status,
             });
-            if (ugError2) console.error("[psn import] user_games insert error for", game.name, ":", ugError2.code, ugError2.message);
+            if (ugError2)
           } catch { /* already on shelf */ }
         }
 
@@ -141,7 +135,6 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           } catch { /* duplicate chart event — ignore */ }
 
       } catch (err) {
-        console.error("[psn import] failed for game:", game.name, err?.message || err);
       }
 
       done++;
