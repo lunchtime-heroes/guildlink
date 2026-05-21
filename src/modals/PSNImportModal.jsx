@@ -61,6 +61,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
     let done = 0;
 
     for (const game of toImport) {
+      console.log("[psn import] processing:", game.name);
       try {
         // Search for matching game in DB
         const { data: existing } = await supabase
@@ -116,7 +117,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           }).onConflict("user_id,game_id,event_type,week_start").ignore();
         }
       } catch (err) {
-        console.error("[psn import] failed for game:", game.name, err);
+        console.error("[psn import] failed for game:", game.name, err?.message || err);
       }
 
       done++;
