@@ -15,6 +15,7 @@ import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { FoundingBadge, Badge } from "../components/FoundingBadge.jsx";
 import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
+import PSNImportModal from "../modals/PSNImportModal.jsx";
 import { ShareReviewButton, ShareShelfButton } from "../components/ShareButton.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
@@ -108,6 +109,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
   const [showSteamImport, setShowSteamImport] = useState(false);
   const [showXboxImport, setShowXboxImport] = useState(false);
+  const [showPSNImport, setShowPSNImport] = useState(false);
   const [pendingXboxData, setPendingXboxData] = useState(null);
   const [pendingXboxError, setPendingXboxError] = useState(null);
   const [localAvatarConfig, setLocalAvatarConfig] = useState(null);
@@ -936,6 +938,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     </button>
                   )}
                   {/* Future platforms slot in here */}
+                  <button onClick={() => setShowPSNImport(true)}
+                    style={{ background: "#003087" + "22", border: "1px solid #003087" + "66", borderRadius: 8, padding: "4px 12px", color: "#0070cc", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    + PlayStation
+                  </button>
                 </div>
               </div>
 
@@ -1849,6 +1855,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           onClose={() => { setShowXboxImport(false); setPendingXboxData(null); setPendingXboxError(null); onXboxImportConsumed?.(); }}
           onImportComplete={() => { setShowXboxImport(false); setPendingXboxData(null); setPendingXboxError(null); onXboxImportConsumed?.(); loadShelf(); onProfileSaved?.(); }}
           onXboxConnected={(gamertag) => setXboxGamertag(gamertag)}
+        />
+      )}
+
+      {showPSNImport && (
+        <PSNImportModal
+          currentUser={user}
+          onClose={() => setShowPSNImport(false)}
+          onImportComplete={() => { setShowPSNImport(false); loadShelf(); onProfileSaved?.(); }}
         />
       )}
 
