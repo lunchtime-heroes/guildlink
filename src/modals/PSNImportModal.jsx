@@ -114,13 +114,12 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
           const { error: ugError } = await supabase.from("user_games").upsert({
             user_id: authUser.id, game_id: gameId, status,
           }, { onConflict: "user_id,game_id", ignoreDuplicates: false });
-          if (ugError)
-        } catch (e) {
+          if (ugError) throw new Error(ugError.message);
+        } catch {
           try {
-            const { error: ugError2 } = await supabase.from("user_games").insert({
+            await supabase.from("user_games").insert({
               user_id: authUser.id, game_id: gameId, status,
             });
-            if (ugError2)
           } catch { /* already on shelf */ }
         }
 
