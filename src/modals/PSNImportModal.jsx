@@ -113,7 +113,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
             event_type: status === "playing" ? "shelf_playing" : status === "have_played" ? "shelf_played" : "shelf_want",
             date: new Date().toISOString().slice(0, 10),
             week_start: new Date(Date.now() - new Date().getDay() * 86400000).toISOString().slice(0, 10),
-          }, { ignoreDuplicates: true });
+          }).onConflict("user_id,game_id,event_type,week_start").ignore();
         }
       } catch (err) {
         console.error("[psn import] failed for game:", game.name, err);
@@ -134,7 +134,6 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
       );
       onPSNConnected?.();
     }
-    onImportComplete?.();
   };
 
   const statusColors = { playing: C.green, have_played: C.gold, want_to_play: C.accent };
@@ -269,7 +268,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
               <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
               <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 8 }}>PlayStation library imported!</div>
               <div style={{ color: C.textMuted, fontSize: 14, marginBottom: 24 }}>{selectedGames.size} games added to your shelf.</div>
-              <button onClick={onClose} style={{ background: PSN_BLUE, border: "none", borderRadius: 10, padding: "12px 32px", color: "white", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Done</button>
+              <button onClick={() => { onImportComplete?.(); onClose(); }} style={{ background: PSN_BLUE, border: "none", borderRadius: 10, padding: "12px 32px", color: "white", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Done</button>
             </div>
           )}
         </div>
