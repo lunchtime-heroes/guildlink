@@ -56,6 +56,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
     setImporting(true); setImportProgress(0);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setImporting(false); return; }
+    console.log("[psn import] authUser.id =", authUser.id);
 
     const toImport = psnData.games.filter((_, i) => selectedGames.has(i));
     let done = 0;
