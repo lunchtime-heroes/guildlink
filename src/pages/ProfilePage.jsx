@@ -941,7 +941,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   )}
                   {/* Future platforms slot in here */}
                   {psnConnected ? (
-                    <button style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "default" }}>
+                    <button onClick={() => setShowPSNImport(true)}
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       ✓ PlayStation
                     </button>
                   ) : (
