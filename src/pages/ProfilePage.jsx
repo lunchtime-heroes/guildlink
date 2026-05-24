@@ -15,6 +15,7 @@ import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { FoundingBadge, Badge } from "../components/FoundingBadge.jsx";
 import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
+import PSNImportModal from "../modals/PSNImportModal.jsx";
 import { ShareReviewButton, ShareShelfButton } from "../components/ShareButton.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
@@ -108,6 +109,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [showAvatarBuilder, setShowAvatarBuilder] = useState(false);
   const [showSteamImport, setShowSteamImport] = useState(false);
   const [showXboxImport, setShowXboxImport] = useState(false);
+  const [showPSNImport, setShowPSNImport] = useState(false);
   const [pendingXboxData, setPendingXboxData] = useState(null);
   const [pendingXboxError, setPendingXboxError] = useState(null);
   const [localAvatarConfig, setLocalAvatarConfig] = useState(null);
@@ -150,6 +152,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [exportRequested, setExportRequested] = useState(false);
   const [steamId, setSteamId] = useState(null);
   const [xboxGamertag, setXboxGamertag] = useState(null);
+  const [psnConnected, setPsnConnected] = useState(false);
   const [isPrivate, setIsPrivate] = useState(!!user?.is_private);
   const [inviteCode, setInviteCode] = useState(null);
   const [inviteCopied, setInviteCopied] = useState(false);
@@ -228,7 +231,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         .select("*, games(id, name, developer, genre, cover_url)")
         .eq("user_id", authUser.id)
         .order("sort_order", { ascending: true, nullsFirst: false })
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: true });
       if (shelfData) {
         const shelf = { want_to_play: [], playing: [], have_played: [] };
         shelfData.forEach(entry => {
@@ -274,11 +277,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       // Load Steam ID from user_private
       const { data: privateData } = await supabase
         .from("user_private")
-        .select("steam_id, xbox_gamertag")
+        .select("steam_id, xbox_gamertag, psn_connected")
         .eq("id", authUser.id)
         .maybeSingle();
       if (privateData?.steam_id) setSteamId(privateData.steam_id);
       if (privateData?.xbox_gamertag) setXboxGamertag(privateData.xbox_gamertag);
+      if (privateData?.psn_connected) setPsnConnected(true);
 
       // Load privacy setting from profiles
       const { data: privacyData } = await supabase
@@ -348,7 +352,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       .select("*, games(id, name, developer, genre, cover_url)")
       .eq("user_id", authUser.id)
       .order("sort_order", { ascending: true, nullsFirst: false })
-        .order("updated_at", { ascending: false });
+      .order("updated_at", { ascending: true });
     if (shelfData) {
       const shelf = { want_to_play: [], playing: [], have_played: [] };
       shelfData.forEach(entry => {
@@ -938,6 +942,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     </button>
                   )}
                   {/* Future platforms slot in here */}
+                  {psnConnected ? (
+                    <button onClick={() => setShowPSNImport(true)}
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      ✓ PlayStation
+                    </button>
+                  ) : (
+                    <button onClick={() => setShowPSNImport(true)}
+                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      + PlayStation
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1851,6 +1866,15 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           onClose={() => { setShowXboxImport(false); setPendingXboxData(null); setPendingXboxError(null); onXboxImportConsumed?.(); }}
           onImportComplete={() => { setShowXboxImport(false); setPendingXboxData(null); setPendingXboxError(null); onXboxImportConsumed?.(); loadShelf(); onProfileSaved?.(); }}
           onXboxConnected={(gamertag) => setXboxGamertag(gamertag)}
+        />
+      )}
+
+      {showPSNImport && (
+        <PSNImportModal
+          currentUser={user}
+          onClose={() => setShowPSNImport(false)}
+          onImportComplete={() => { setShowPSNImport(false); loadShelf(); onProfileSaved?.(); }}
+          onPSNConnected={() => setPsnConnected(true)}
         />
       )}
 
