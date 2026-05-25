@@ -150,10 +150,13 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
         { onConflict: "id" }
       );
       onPSNConnected?.();
-      // Fire shelf quest progress for all imported games in one call
-      if (done > 0) {
-        await supabase.rpc("increment_quest_progress", { p_user_id: authUser2.id, p_trigger: "shelf_add", p_amount: done });
-      }
+      // Fire quest progress based on actual status counts
+      const havePlayed = toImport.filter((_, i) => (statusOverrides[psnData.games.indexOf(toImport[i])] || "have_played") === "have_played").length;
+      const playing = toImport.filter((_, i) => (statusOverrides[psnData.games.indexOf(toImport[i])] || "have_played") === "playing").length;
+      const wantToPlay = toImport.filter((_, i) => (statusOverrides[psnData.games.indexOf(toImport[i])] || "have_played") === "want_to_play").length;
+      if (done > 0) await supabase.rpc("increment_quest_progress", { p_user_id: authUser2.id, p_trigger: "shelf_add", p_amount: done });
+      if (havePlayed > 0) await supabase.rpc("increment_quest_progress", { p_user_id: authUser2.id, p_trigger: "have_played", p_amount: havePlayed });
+      if (wantToPlay > 0) await supabase.rpc("increment_quest_progress", { p_user_id: authUser2.id, p_trigger: "want_to_play", p_amount: wantToPlay });
       // Recompute similarity so games in common badges update immediately
       await supabase.rpc("compute_user_similarity", { target_user_id: authUser2.id });
     }

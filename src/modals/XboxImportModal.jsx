@@ -116,9 +116,13 @@ function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnect
       setImportProgress(Math.round((done / toImport.length) * 100));
     }
 
-    // Fire shelf quest progress for all imported games
+    // Fire quest progress based on actual status counts
     if (done > 0) {
+      const havePlayed = toImport.filter(g => (statusOverrides[g.id] || "have_played") === "have_played").length;
+      const wantToPlay = toImport.filter(g => (statusOverrides[g.id] || "have_played") === "want_to_play").length;
       await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add", p_amount: done });
+      if (havePlayed > 0) await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "have_played", p_amount: havePlayed });
+      if (wantToPlay > 0) await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "want_to_play", p_amount: wantToPlay });
     }
     // Recompute similarity so games in common badges update immediately
     await supabase.rpc("compute_user_similarity", { target_user_id: authUser.id });
