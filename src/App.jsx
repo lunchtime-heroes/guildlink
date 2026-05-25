@@ -910,6 +910,15 @@ export default function GuildLink() {
       window.history.replaceState({}, "", window.location.pathname);
     }
     window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname + window.location.hash);
+    // Apply parsed path so refresh restores the correct page
+    if (page && page !== "reset") {
+      setActivePage(page);
+      if (gameId) setCurrentGame(gameId);
+      if (playerHandle) {
+        supabase.from("profiles").select("id").eq("handle", `@${playerHandle}`).maybeSingle()
+          .then(({ data }) => { if (data) setCurrentPlayer(data.id); });
+      }
+    }
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
