@@ -142,7 +142,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
 
     setImporting(false);
     setImportDone(true);
-    // Save PSN connected status
+    // Save PSN connected status and fire quest progress
     const { data: { user: authUser2 } } = await supabase.auth.getUser();
     if (authUser2) {
       await supabase.from("user_private").upsert(
@@ -150,6 +150,10 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
         { onConflict: "id" }
       );
       onPSNConnected?.();
+      // Fire shelf quest progress for all imported games in one call
+      if (done > 0) {
+        await supabase.rpc("increment_quest_progress", { p_user_id: authUser2.id, p_trigger: "shelf_add", p_amount: done });
+      }
     }
   };
 
