@@ -131,6 +131,11 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
     setImporting(false);
     setImportDone(true);
 
+    // Fire shelf quest progress for all imported games
+    if (done > 0) {
+      await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add", p_amount: done });
+    }
+
     // Save Steam ID only after successful import
     if (steamData?.steamId) {
       await supabase.from("user_private").upsert(

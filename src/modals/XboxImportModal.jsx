@@ -116,6 +116,11 @@ function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnect
       setImportProgress(Math.round((done / toImport.length) * 100));
     }
 
+    // Fire shelf quest progress for all imported games
+    if (done > 0) {
+      await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add", p_amount: done });
+    }
+
     // Save gamertag
     if (xboxData?.gamertag) {
       await supabase.from("user_private").upsert(
