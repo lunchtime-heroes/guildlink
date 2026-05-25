@@ -418,7 +418,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {shelfPlayers[shelfDrawer].slice(0, 12).map(p => (
-                  <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+                  <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: p.id }, "", `/player/${p.handle?.replace("@", "") || p.id}`); }}
                     style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
                     <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={20} founding={p.is_founding} ring={p.active_ring} />
                     <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600 }}>{p.username}</span>

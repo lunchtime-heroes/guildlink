@@ -345,7 +345,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                     const shelfRank = entryIndex < 25 ? entryIndex + 1 : null;
                     return (
                       <div key={entry.game_id}
-                        onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+                        onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
                         style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, cursor: "pointer", position: "relative", overflow: "hidden", alignSelf: "start", transition: "border-color 0.15s" }}
                         onMouseEnter={e => e.currentTarget.style.borderColor = col.color + "88"}
                         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
@@ -392,7 +392,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       {activeTab === "reviews" && (
         <div>
           {reviews.length > 0 ? reviews.map(review => (
-            <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
+            <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"), window.history.pushState({ page: "game", gameId: review.game_id }, "", `/game/${review.game_id}`))}
               style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
