@@ -20,12 +20,13 @@ function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAd
       } catch { /* non-fatal */ }
     }
     setCurrentGame(card.game.id); setActivePage("game");
+    window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`);
   };
 
   return (
     <div style={{ background: C.surface, border: "1px solid " + (card.hasFollow ? C.accentDim : C.border), borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
       {card.game.cover_url && (
-        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
           style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
           <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 64 }} />
         </div>
@@ -55,7 +56,7 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
       <div style={{ display: "flex", alignItems: "stretch" }}>
         {/* Game cover */}
         {card.game.cover_url && (
-          <div onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); }}
+          <div onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
             style={{ width: 56, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
             <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }} />
           </div>
@@ -64,15 +65,15 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
         <div style={{ flex: 1, minWidth: 0, padding: "12px 14px" }}>
           {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <div onClick={() => { if (card.profile?.id) { setCurrentPlayer(card.review.user_id); setActivePage("player"); } }} style={{ cursor: "pointer", flexShrink: 0 }}>
+            <div onClick={() => { if (card.profile?.id) { setCurrentPlayer(card.review.user_id); setActivePage("player"); window.history.pushState({ page: "player", playerId: card.review.user_id }, "", `/player/${card.profile?.handle?.replace("@","") || card.review.user_id}`); } }} style={{ cursor: "pointer", flexShrink: 0 }}>
               <Avatar initials={initials} size={20} founding={card.profile?.is_founding} ring={card.profile?.active_ring} avatarConfig={card.profile?.avatar_config} />
             </div>
-            <span onClick={() => { setCurrentPlayer(card.review.user_id); setActivePage("player"); }}
+            <span onClick={() => { setCurrentPlayer(card.review.user_id); setActivePage("player"); window.history.pushState({ page: "player", playerId: card.review.user_id }, "", `/player/${card.profile?.handle?.replace("@","") || card.review.user_id}`); }}
               style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               {card.profile?.username || "Guildies Member"}
             </span>
             <span style={{ color: C.textDim, fontSize: 11 }}>reviewed</span>
-            <span onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); }}
+            <span onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
               style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {card.game.name}
             </span>
@@ -96,11 +97,10 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
       {/* Read more */}
       <div style={{ borderTop: "1px solid " + C.border, padding: "8px 14px" }}>
         <button onClick={() => {
-          console.log("[ReviewSpotlight] setGameDefaultTab:", typeof setGameDefaultTab, setGameDefaultTab);
           if (setGameDefaultTab) setGameDefaultTab("reviews");
-          console.log("[ReviewSpotlight] navigating to game:", card.game.id);
           setCurrentGame(card.game.id);
           setActivePage("game");
+          window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`);
         }}
           style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
           Read full review →
@@ -117,7 +117,7 @@ function QACard({ card, setCurrentGame, setActivePage }) {
   return (
     <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
       {card.game.cover_url && (
-        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+        <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
           style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
           <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 64 }} />
         </div>
@@ -127,7 +127,7 @@ function QACard({ card, setCurrentGame, setActivePage }) {
           <Avatar initials={initials} size={18} founding={card.profile?.is_founding} ring={card.profile?.active_ring} avatarConfig={card.profile?.avatar_config} />
           <span style={{ fontWeight: 600, color: C.textMuted, fontSize: 12 }}>{card.profile?.username || "A player"}</span>
           <span style={{ color: C.textDim, fontSize: 11 }}>asked about</span>
-          <span onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+          <span onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
             style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer" }}>
             {card.game.name}
           </span>
@@ -135,7 +135,7 @@ function QACard({ card, setCurrentGame, setActivePage }) {
           {card.hasFollow && <span style={{ color: C.accent, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>● Network</span>}
         </div>
         <p style={{ color: C.text, fontSize: 13, lineHeight: 1.5, margin: "0 0 10px", fontWeight: 500 }}>{card.question.content}</p>
-        <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); }}
+        <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
           style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           Answer Now →
         </button>

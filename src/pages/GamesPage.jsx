@@ -684,7 +684,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 </div>
               )}
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); }}
+                <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: entry.id }, "", `/game/${entry.id}`); }}
                   style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Game →</button>
               </div>
             </div>
@@ -812,8 +812,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       <div key={g.id || g.igdb_id} onMouseDown={async () => {
                         if (g._fromIGDB) {
                           const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
-                          if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
-                        } else { setCurrentGame(g.id); setActivePage("game"); }
+                          if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
+                        } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }
                         setTypeaheadResults([]); setNameSearch("");
                       }}
                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
@@ -882,8 +882,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       if (menuOpen) { setShelfMenuOpen(null); return; }
                       if (g._fromIGDB) {
                         const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
-                        if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); }
-                      } else { setCurrentGame(g.id); setActivePage("game"); }
+                        if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
+                      } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }
                     }}>
                       {g.cover_url
                         ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />

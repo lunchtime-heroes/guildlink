@@ -149,7 +149,7 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
   return (
     <div>
       {shelfGames.map((g, i) => (
-        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
           style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < shelfGames.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
@@ -950,7 +950,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, cursor: "pointer" }}>Add games →</span>
             </div>
           ) : playingGames.map((g, i) => (
-            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); }}
+            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
               style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < playingGames.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -968,7 +968,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Add games to your shelf to find players like you.</div>
           ) : suggestedGamers.map((p, i) => (
             <div key={p.id} style={{ marginBottom: i < suggestedGamers.length - 1 ? 14 : 0 }}>
-              <div onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); }}
+              <div onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: p.id }, "", `/player/${(p.handle || p.id).replace("@","")}`); }}
                 style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -998,7 +998,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
           </div>
           {sidebarNPCs.map((npc, i, arr) => (
-            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
+            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); window.history.pushState({ page: "npc", npcId: npc.id }, "", `/npc/${npc.id}`); }}
               style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? "1px solid " + C.goldBorder : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}

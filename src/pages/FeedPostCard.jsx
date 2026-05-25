@@ -579,19 +579,19 @@ return (
             return (
               <div key={comment.id} style={{ display: "flex", gap: 10, marginBottom: 14 }}>
                 <div style={{ flexShrink: 0, cursor: "pointer" }}
-                  onClick={() => { if (comment.user_id) { setCurrentPlayer(comment.user_id); setActivePage("player"); } }}>
+                  onClick={() => { if (comment.user_id) { setCurrentPlayer(comment.user_id); setActivePage("player"); window.history.pushState({ page: "player", playerId: comment.user_id }, "", `/player/${comment.profiles?.handle?.replace("@","") || comment.user_id}`); } }}>
                   <Avatar initials={authorInitials} size={32} founding={author?.is_founding} ring={author?.active_ring} avatarConfig={author?.avatar_config} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
                     <span style={{ fontWeight: 700, fontSize: 13, color: C.text, cursor: "pointer" }}
-                      onClick={() => { if (comment.user_id) { setCurrentPlayer(comment.user_id); setActivePage("player"); } }}>
+                      onClick={() => { if (comment.user_id) { setCurrentPlayer(comment.user_id); setActivePage("player"); window.history.pushState({ page: "player", playerId: comment.user_id }, "", `/player/${comment.profiles?.handle?.replace("@","") || comment.user_id}`); } }}>
                       {authorName}
                     </span>
                     <span style={{ color: C.textDim, fontSize: 11 }}>{authorHandle}</span>
                     <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(comment.created_at)}</span>
                     {comment.game_tag && commentGameNames[comment.game_tag] && (
-                      <span onClick={() => { setCurrentGame(comment.game_tag); setActivePage("game"); }} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, color: C.accentSoft, fontWeight: 600, cursor: "pointer" }}>
+                      <span onClick={() => { setCurrentGame(comment.game_tag); setActivePage("game"); window.history.pushState({ page: "game", gameId: comment.game_tag }, "", `/game/${comment.game_tag}`); }} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, color: C.accentSoft, fontWeight: 600, cursor: "pointer" }}>
                         {commentGameNames[comment.game_tag]}
                       </span>
                     )}

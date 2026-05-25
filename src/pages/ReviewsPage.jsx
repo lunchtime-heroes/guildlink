@@ -104,7 +104,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     return (
       <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
         <div style={{ display: "flex" }}>
-          <div onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+          <div onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
             style={{ width: coverW, flexShrink: 0, cursor: "pointer", alignSelf: "stretch", overflow: "hidden", position: "relative" }}>
             {game.cover_url
               ? <img src={game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: coverW * 1.4 }} />
@@ -113,7 +113,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
           </div>
           <div style={{ flex: 1, minWidth: 0, padding: isMobile ? "12px 14px" : "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); }}
+              <span onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
                 style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, cursor: "pointer", lineHeight: 1.3 }}>
                 {game.name}
               </span>
@@ -125,7 +125,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               <div onClick={() => profile?.id && (setCurrentPlayer(profile.id), setActivePage("player"))} style={{ cursor: profile?.id ? "pointer" : "default", flexShrink: 0 }}>
                 <Avatar initials={initials} size={20} founding={profile?.is_founding} ring={profile?.active_ring} avatarConfig={profile?.avatar_config} />
               </div>
-              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); } }}
+              <span onClick={() => { if (profile?.id) { setCurrentPlayer(profile.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: profile.id }, "", `/player/${profile.handle?.replace("@","") || profile.id}`); } }}
                 style={{ fontWeight: 600, color: C.textMuted, fontSize: 12, cursor: profile?.id ? "pointer" : "default" }}>
                 {profile?.username || "Guildies Member"}
               </span>
@@ -137,7 +137,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(review.created_at)}</span>
               {review.time_played && <span style={{ color: C.textDim, fontSize: 11 }}>· {review.time_played}h</span>}
               {currentUser && review.user_id === currentUser.id && (
-                <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); }}
+                <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
                   style={{ marginLeft: "auto", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", color: C.textMuted, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>Edit</button>
               )}
             </div>
@@ -212,7 +212,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {gameResults.map(g => (
-                    <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
+                    <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
                       style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
@@ -239,7 +239,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               {topRated.length === 0 ? (
                 <div style={{ padding: 16, color: C.textDim, fontSize: 12 }}>No rated games yet.</div>
               ) : topRated.map((g, i) => (
-                <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); }}
+                <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: i < topRated.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
