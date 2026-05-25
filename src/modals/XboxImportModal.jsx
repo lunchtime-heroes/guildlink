@@ -120,6 +120,8 @@ function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnect
     if (done > 0) {
       await supabase.rpc("increment_quest_progress", { p_user_id: authUser.id, p_trigger: "shelf_add", p_amount: done });
     }
+    // Recompute similarity so games in common badges update immediately
+    await supabase.rpc("compute_user_similarity", { target_user_id: authUser.id });
 
     // Save gamertag
     if (xboxData?.gamertag) {
