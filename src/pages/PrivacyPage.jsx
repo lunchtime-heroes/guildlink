@@ -29,9 +29,9 @@ function PrivacyPage({ isMobile, setActivePage }) {
         <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Privacy Policy</div>
         <h1 style={{ margin: "0 0 12px", fontWeight: 900, fontSize: isMobile ? 28 : 36, color: C.text, lineHeight: 1.2 }}>We built this place.<br />You own your data.</h1>
         <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, maxWidth: 560, marginBottom: 16 }}>
-          Most privacy policies are written by lawyers to protect companies from users. This one is written by a founder to explain — plainly — how GuildLink works, what we collect, and why. If something is unclear, that's our problem to fix.
+          This privacy policy exists to explain how GuildLink works, what we collect, and why. If something is unclear, reach out at <Highlight>privacy@guildlink.gg</Highlight> and we'll answer any questions you have.
         </div>
-        <div style={{ color: C.textDim, fontSize: 12 }}>Last updated: April 2026 · Applies to all GuildLink users worldwide</div>
+        <div style={{ color: C.textDim, fontSize: 12 }}>Last updated: May 2026 · Applies to all GuildLink users worldwide</div>
       </div>
 
       {/* Plain English Summary */}
@@ -43,10 +43,10 @@ function PrivacyPage({ isMobile, setActivePage }) {
             { pill: <GreenPill>We use it to</GreenPill>, text: "run the platform. Your shelf powers game discovery, The Charts, and game recommendations." },
             { pill: <RedPill>We never sell</RedPill>, text: "your data to anyone." },
             { pill: <RedPill>We never profile</RedPill>, text: "you based on browsing history, demographics, or behavior outside GuildLink." },
-            { pill: <GreenPill>If we show ads</GreenPill>, text: "they target games, not people. A developer can reach players who have a specific game on their shelf — no demographic profiling, no off-platform data." },
-            { pill: <GreenPill>You can</GreenPill>, text: "delete your account and all your data at any time from your profile page. No matter where you live." },
+            { pill: <GreenPill>If we show ads</GreenPill>, text: "they target games instead of people. Our goal is for indie game developers to target users that play or liked games similar to their own. We don't collect or position ads against demographic profiling or off-platform data." },
+            { pill: <GreenPill>You can</GreenPill>, text: "delete your account and all your data at any time from your profile page." },
             { pill: <GreenPill>You can</GreenPill>, text: "request a full export of your data before leaving." },
-            { pill: <GreenPill>Analytics</GreenPill>, text: "are handled without cookies and are GDPR compliant by design." },
+            { pill: <GreenPill>Analytics</GreenPill>, text: "are handled without cookies and are GDPR compliant." },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: C.textMuted, lineHeight: 1.6 }}>
               <div style={{ flexShrink: 0, paddingTop: 1 }}>{item.pill}</div>
@@ -64,7 +64,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
       <Section title="2. What we collect and why">
         <div style={{ marginBottom: 12 }}><Highlight>Account credentials.</Highlight> When you sign up, we collect your email address and a hashed password. Your email is used for account authentication, password resets, and occasional platform communications. It is stored separately from your public profile and is never visible to other users.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Profile information.</Highlight> Your username, handle, bio, avatar, and player tags. This is what other users see when they visit your profile. You control all of it and can update or delete it at any time.</div>
-        <div style={{ marginBottom: 12 }}><Highlight>Gaming activity.</Highlight> The games you add to your shelf, your reviews, posts, Q&A, and comments. This is the core of what GuildLink is — your game history is your profile, and it drives discovery for you and others. You choose what you add. If you connect a Steam, Xbox, or PlayStation account to import your library, we store only the game titles — not your platform credentials, purchase history, or playtime data. PlayStation library imports use your PSN trophy history to identify games you've played; your NPSSO token is used only to fetch this data and is never stored. Imported games are treated identically to games you add manually.</div>
+        <div style={{ marginBottom: 12 }}><Highlight>Gaming activity.</Highlight> The games you add to your shelf, your reviews, posts, Q&A, and comments. This is the core of GuildLink: your game history is your profile, and it drives discovery for you and others. You choose what you add. If you connect a Steam, Xbox, or PlayStation account to import your library, we only store the game titles. We do not store any platform credentials, purchase history, or playtime data. PlayStation library imports use your PSN trophy history to identify games you've played; your NPSSO token is used only to fetch this data and is never stored. Imported games are treated identically to games you add manually.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Guild activity.</Highlight> Guild memberships, sessions you create or join, and posts in guild threads. This is visible to your fellow guild members.</div>
         <div><Highlight>Usage analytics.</Highlight> We use Vercel Analytics to understand how people navigate GuildLink. GuildLink doesn't collect cookies, perform fingerprinting, or track you across other websites. GuildLink collects aggregate data like page views and session counts in a way that isn't connected to your identity.</div>
       </Section>
@@ -82,12 +82,12 @@ function PrivacyPage({ isMobile, setActivePage }) {
       </Section>
 
       <Section title="5. Advertising">
-        GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads are targeted to games, not to people.</Highlight> A developer can choose to reach players who have a specific game on their shelf — that's it. GuildLink does not build user profiles for advertising purposes.
+        GuildLink does not currently show ads. If and when we introduce advertising, here is our commitment: <Highlight>ads are targeted to games, not to people.</Highlight> A developer can choose to reach players who have a specific game on their shelf. GuildLink does not build user profiles for advertising purposes.
         <div style={{ marginTop: 12 }}>
-          The distinction matters. Traditional ad targeting asks "who is this person and what are they likely to buy?" GuildLink advertising asks "which players have already shown interest in games like this one?" No demographic data. No behavioral profiling. No data from outside GuildLink. The game is the target, not you.
+          This is an important distinction to make. Traditional ad targeting asks "who is this person and what are they likely to buy?" GuildLink advertising asks "which players have already shown interest in games like this one?" This means no demographic data, behavioral profiling or data from outside GuildLink is involved in advertising.
         </div>
         <div style={{ marginTop: 12 }}>
-          We see this as a genuine part of game discovery — a way for independent studios and smaller developers to reach players who are already predisposed to love their game. We will never sell your data to advertisers, and we will never use browsing history, demographics, or off-platform behavior to target ads.
+          We see this as a genuine part of game discovery. GuildLink's approach advertising provides a way for independent studios and smaller developers to reach players who are already predisposed to love their game. We will never sell your data to advertisers, and we will never use browsing history, demographics, or off-platform behavior to target ads.
         </div>
         <div style={{ marginTop: 12 }}>
           When ads are introduced, this policy will be updated and users will be notified.
@@ -114,7 +114,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
       </Section>
 
       <Section title="9. Security">
-        Your password is hashed — we cannot see it. Your email is stored in a separate, access-controlled table not visible to other users or accessible via our public API. We use Row Level Security on our database, which means every data query is scoped to the authenticated user by policy.
+        Your password is hashed which means we cannot see it. Your email is stored in a separate, access-controlled table not visible to other users or accessible via our public API. We use Row Level Security on our database, which means every data query is scoped to the authenticated user by policy.
       </Section>
 
       <Section title="10. Children">
@@ -122,7 +122,7 @@ function PrivacyPage({ isMobile, setActivePage }) {
       </Section>
 
       <Section title="11. Changes to this policy">
-        If we make material changes to this policy — particularly anything that affects how we use your data or introduces advertising — we will notify users via the platform before the changes take effect. The "last updated" date at the top of this page will always reflect the most recent version.
+        If we make material changes to this policy we will notify users via the platform before the changes take effect. The "last updated" date at the top of this page will always reflect the most recent version.
       </Section>
 
       <Section title="12. Contact">
