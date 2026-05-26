@@ -49,7 +49,7 @@ function isAllowed(url) {
   );
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: "No URL provided" });
@@ -85,7 +85,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json(preview);
   } catch (err) {
-    // Still allowed, just couldn't fetch preview
     return res.status(200).json({ allowed: true, url, domain: getDomain(url), title: null, description: null, image: null });
   }
-}
+};
