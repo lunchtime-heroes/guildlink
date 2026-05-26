@@ -1033,7 +1033,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user?.avatar || "GL"} size={isMobile ? 48 : 56} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game... (@ to tag a game, player, or NPC)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
                 {mentionResults.length > 0 && (
