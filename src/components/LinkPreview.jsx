@@ -32,11 +32,11 @@ function LinkPreviewCard({ preview, onExit }) {
   const displayTitle = decodeHtml(preview.title) || preview.url;
   return (
     <div onClick={e => { e.stopPropagation(); if (onExit) { onExit(preview.url); } else { window.open(preview.url, "_blank", "noopener,noreferrer"); } }}
-      style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none" }}
+      style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
       {preview.image && <img src={preview.image} alt="" style={{ width: 80, height: 80, objectFit: "cover", flexShrink: 0, display: "block" }} onError={e => e.target.style.display = "none"} />}
-      <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
+      <div style={{ padding: "10px 12px", flex: 1, minWidth: 0, overflow: "hidden" }}>
         <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{displayDomain} ↗</div>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayTitle}</div>
         {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(preview.description)}</div>}
