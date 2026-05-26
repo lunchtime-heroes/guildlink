@@ -1151,10 +1151,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.textDim, fontSize: 12 }}>Fetching preview…</div>
               )}
               {linkPreview && !linkPreviewLoading && (
-                <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, overflow: "hidden", display: "flex", gap: 0 }}>
-                  {linkPreview.image && <img src={linkPreview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} />}
-                  <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
-                    <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{linkPreview.domain}</div>
+                <div style={{ marginTop: 8, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 10, overflow: "hidden", display: "flex", gap: 0, maxWidth: "100%", boxSizing: "border-box" }}>
+                  {linkPreview.image && <img src={linkPreview.image} alt="" style={{ width: 80, minWidth: 80, height: 80, objectFit: "cover", flexShrink: 0 }} />}
+                  <div style={{ padding: "10px 12px", flex: 1, minWidth: 0, overflow: "hidden" }}>
+                    <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{linkPreview.domain}</div>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{decodeHtml(linkPreview.title) || linkPreview.url}</div>
                     {linkPreview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(linkPreview.description)}</div>}
                   </div>
