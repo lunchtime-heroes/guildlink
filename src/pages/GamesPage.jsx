@@ -190,40 +190,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const { data: prevScores } = await supabase.from("daily_chart_scores").select("game_id, score").eq("date", d2Str).order("score", { ascending: false });
       if (prevScores) { const pRanks = {}; prevScores.forEach((s, i) => { pRanks[s.game_id] = i + 1; }); setPrevRanks(pRanks); }
       if (top10.length === 0) return;
-      const allRankedIds = [...new Set([...top10.map(g => g.id), ...Object.values(genresFull).flat().map(g => g.id)])];
-      const sparkDates = [];
-      for (let i = 8; i >= 1; i--) { sparkDates.push(getPacificDate(i)); }
-      const { data: sparkScores } = await supabase.from("daily_chart_scores").select("game_id, score, date").in("game_id", allRankedIds).in("date", sparkDates);
-      const scoresByGame = {};
-      (sparkScores || []).forEach(s => { if (!scoresByGame[s.game_id]) scoresByGame[s.game_id] = {}; scoresByGame[s.game_id][s.date] = s.score; });
-      const buildPoints = (gameId) => {
-        // Use zero for missing days — no interpolation
-        return sparkDates.map(d => scoresByGame[gameId]?.[d] ?? 0);
-      };
-      const buildLabels = () => sparkDates.map(d => { const dt = new Date(d + "T12:00:00"); return (dt.getMonth() + 1) + "/" + dt.getDate(); });
-      const globalMax = Math.max(...top10.map(g => Math.max(...buildPoints(g.id))), 0.1);
-      const overallRef = buildPoints(top10[0].id);
-      const labels = buildLabels();
-      const gLeaders = {}, genreRefPoints = {}, genreMaxes = {};
-      Object.entries(genresFull).forEach(([genre, games]) => {
-        if (games.length === 0) return;
-        gLeaders[genre] = games[0].id;
-        genreRefPoints[genre] = buildPoints(games[0].id);
-        genreMaxes[genre] = Math.max(...games.map(g => Math.max(...buildPoints(g.id))), 0.1);
-      });
-      setGenreLeaders(gLeaders);
-      const newSparklines = {}, newGenreContext = {};
-      allRankedIds.forEach(id => {
-        const game = [...top10, ...Object.values(genresFull).flat()].find(g => g.id === id);
-        const genre = game ? (Array.isArray(game.genre) ? game.genre[0] : (game.genre || "Other")) : "Other";
-        const isOverallLeader = id === top10[0].id;
-        const isGenreLeader = gLeaders[genre] === id;
-        const points = buildPoints(id);
-        newSparklines[id] = { points, labels, globalMax, referencePoints: isOverallLeader ? null : overallRef, genreGlobalMax: genreMaxes[genre] || globalMax, genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null) };
-        newGenreContext[id] = { genreGlobalMax: genreMaxes[genre] || globalMax, genreRefPoints: isGenreLeader ? null : (genreRefPoints[genre] || null) };
-      });
-      setSparklines(newSparklines);
-      setGenreContext(newGenreContext);
       const last7Dates = Array.from({ length: 7 }, (_, i) => getPacificDate(i));
       const prev7Dates = Array.from({ length: 7 }, (_, i) => getPacificDate(i + 7));
       const [recentEventsRes, prevEventsRes] = await Promise.all([
