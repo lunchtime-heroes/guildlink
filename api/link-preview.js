@@ -49,6 +49,19 @@ function isAllowed(url) {
   );
 }
 
+// Extract a readable title from a URL slug as a last-resort fallback
+function slugToTitle(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    const slug = pathname.split("/").filter(Boolean).pop() || "";
+    // Strip trailing file extensions and numeric IDs
+    const cleaned = slug.replace(/\.[a-z]{2,4}$/, "").replace(/-\d+$/, "");
+    return cleaned.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase()).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const { url } = req.body;
@@ -56,6 +69,31 @@ module.exports = async function handler(req, res) {
 
   if (!isAllowed(url)) {
     return res.status(200).json({ allowed: false, domain: getDomain(url) });
+  }
+
+  const domain = getDomain(url);
+
+  // X/Twitter: scraping is blocked by Cloudflare — use the public oEmbed API instead
+  if (domain === "x.com" || domain === "twitter.com") {
+    try {
+      const oembedUrl = "https://publish.twitter.com/oembed?url=" + encodeURIComponent(url) + "&omit_script=true";
+      const oRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(5000) });
+      if (oRes.ok) {
+        const oData = await oRes.json();
+        // Strip HTML tags from the embed HTML to get plain tweet text
+        const tweetText = oData.html
+          ? oData.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim().slice(0, 200)
+          : null;
+        return res.status(200).json({
+          allowed: true, url, domain,
+          title: oData.author_name ? oData.author_name + " on X" : "Post on X",
+          description: tweetText,
+          image: null,
+        });
+      }
+    } catch {}
+    // oEmbed failed — return a minimal branded fallback
+    return res.status(200).json({ allowed: true, url, domain, title: "Post on X", description: null, image: null });
   }
 
   try {
@@ -66,6 +104,9 @@ module.exports = async function handler(req, res) {
     });
     const html = await response.text();
 
+    // Cloudflare challenge page — no useful OG data, fall back to slug title
+    const isChallenge = html.includes("Just a moment") || html.includes("cf-browser-verification") || html.includes("_cf_chl_");
+
     const getMeta = (property) => {
       const match = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${property}["'][^>]*content=["']([^"']+)["']`, "i"))
         || html.match(new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["']${property}["']`, "i"));
@@ -74,17 +115,19 @@ module.exports = async function handler(req, res) {
 
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
 
-    const preview = {
+    const ogTitle = !isChallenge ? (getMeta("og:title") || getMeta("twitter:title") || (titleMatch ? titleMatch[1].trim() : null)) : null;
+    const ogDesc = !isChallenge ? (getMeta("og:description") || getMeta("twitter:description") || null) : null;
+    const ogImage = !isChallenge ? (getMeta("og:image") || getMeta("twitter:image") || null) : null;
+
+    return res.status(200).json({
       allowed: true,
       url,
-      title: getMeta("og:title") || getMeta("twitter:title") || (titleMatch ? titleMatch[1].trim() : null),
-      description: getMeta("og:description") || getMeta("twitter:description") || null,
-      image: getMeta("og:image") || getMeta("twitter:image") || null,
-      domain: getDomain(url),
-    };
-
-    return res.status(200).json(preview);
+      title: ogTitle || slugToTitle(url),
+      description: ogDesc,
+      image: ogImage,
+      domain,
+    });
   } catch (err) {
-    return res.status(200).json({ allowed: true, url, domain: getDomain(url), title: null, description: null, image: null });
+    return res.status(200).json({ allowed: true, url, domain, title: slugToTitle(url), description: null, image: null });
   }
 };

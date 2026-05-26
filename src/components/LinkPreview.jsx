@@ -35,7 +35,7 @@ function LinkPreviewCard({ preview, onExit }) {
       style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none" }}
       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-      {preview.image && <img src={preview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />}
+      {preview.image && <img src={preview.image} alt="" style={{ width: 80, height: 80, objectFit: "cover", flexShrink: 0, display: "block" }} onError={e => e.target.style.display = "none"} />}
       <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
         <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{displayDomain} ↗</div>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayTitle}</div>
