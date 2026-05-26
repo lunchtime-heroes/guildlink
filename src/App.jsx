@@ -857,6 +857,10 @@ export default function GuildLink() {
     if (p === "reset-password") return { page: "reset" };
     if (p === "profile") return { page: "profile" };
     if (p === "npcs") return { page: "npcs" };
+    if (p === "privacy") return { page: "privacy" };
+    if (p === "culture") return { page: "culture" };
+    if (p === "feedback") return { page: "feedback" };
+    if (p === "founding") return { page: "founding" };
     if (p.startsWith("game/")) return { page: "game", gameId: p.slice(5) };
     if (p.startsWith("player/")) return { page: "player", playerHandle: p.slice(7) };
     if (p.startsWith("npc/")) return { page: "npc", npcId: p.slice(4) };

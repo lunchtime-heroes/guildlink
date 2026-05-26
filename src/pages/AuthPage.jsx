@@ -212,9 +212,9 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
             {mode === "signup" && (
               <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 16, textAlign: "center" }}>
                 By creating an account you agree to our{" "}
-                <span onClick={() => { setActivePage?.("culture"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Culture Agreement</span>
+                <span onClick={() => { setActivePage?.("culture"); window.history.pushState({ page: "culture" }, "", "/culture"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Culture Agreement</span>
                 {" "}and{" "}
-                <span onClick={() => { setActivePage?.("privacy"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Privacy Policy</span>.
+                <span onClick={() => { setActivePage?.("privacy"); window.history.pushState({ page: "privacy" }, "", "/privacy"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Privacy Policy</span>.
               </div>
             )}
 
