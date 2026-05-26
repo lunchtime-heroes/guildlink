@@ -548,7 +548,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       shelf_size: userShelf.size,
       result_count: results === "__empty_shelf__" ? 0 : (results?.length || 0),
     };
-    supabase.from("discovery_events").insert(insertPayload);
+    supabase.from("discovery_events").insert(insertPayload).then(({ error }) => {
+      if (error) console.error("[discovery] insert failed:", error.code, error.message, JSON.stringify(insertPayload));
+    });
   };
 
   const runNameSearch = async (q) => {
