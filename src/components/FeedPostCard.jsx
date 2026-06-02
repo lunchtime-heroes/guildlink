@@ -126,7 +126,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setLiveComments(prev => (prev || []).filter(c => c.id !== commentId));
   };
 
-  const [editingComment, setEditingComment] = useState(null); // { id, text, game_tag }
+  const [editingComment, setEditingComment] = useState(null);
   const [editTaggedGame, setEditTaggedGame] = useState(null);
   const [editTaggedGameName, setEditTaggedGameName] = useState(null);
   const [editMentionResults, setEditMentionResults] = useState([]);
@@ -314,7 +314,6 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     return data;
   };
 
-  // Find the current @mention being typed — works anywhere in the string
   const getActiveMention = (val, cursorPos) => {
     const textToCursor = val.slice(0, cursorPos);
     const match = textToCursor.match(/@([^@]*)$/);
@@ -386,7 +385,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setCommentText(beforeAt + insertion + afterCursor);
     setCommentTaggedUsers(prev => {
       if (prev.find(u => u.id === item.id)) return prev;
-      return [...prev, { id: item.id, handle: item.handle || `@${displayName}`, name: item.name || item.username, type: item._type === "npc" ? "npc" : "user" }];
+      return [...prev, { id: item.id, handle: item.handle || "@" + displayName, name: item.name || item.username, type: item._type === "npc" ? "npc" : "user" }];
     });
     setCommentMentionResults([]);
     setCommentDropdownPos(null);
@@ -453,7 +452,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   };
 
   if (localPost.deleted) return null;
-return (
+  return (
     <div style={{
       background: C.surface,
       border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
@@ -477,24 +476,41 @@ return (
 
         {/* Content column */}
         <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
-          {/* Name + handle + timestamp row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-            <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
-              onClick={() => {
-                if (localPost.user.isNPC) {
-                  if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
-                  else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
-                } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
-              }}
-            >{localPost.user.name}</span>
-            {localPost.user.isNPC && <NPCBadge />}
-            {!localPost.user.isNPC && currentUser && post.user_id !== currentUser.id && similarity !== null && (
-              <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
-                {similarity > 0 ? similarity + " games in common" : "no games in common"}
-              </span>
-            )}
-            <span style={{ color: C.textDim, fontSize: 12 }}>·</span>
-            <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.time}</span>
+          {/* Name + timestamp row, with game tag on its own line below */}
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 700, fontSize: 14, cursor: "pointer", color: localPost.user.isNPC ? C.gold : C.text }}
+                onClick={() => {
+                  if (localPost.user.isNPC) {
+                    if (localPost.npc_id) { setCurrentNPC(localPost.npc_id); setActivePage("npc"); }
+                    else { const npc = Object.values(NPCS).find(n => n.handle === localPost.user.handle); if (npc) { setCurrentNPC(npc.id); setActivePage("npc"); } }
+                  } else if (localPost.user_id) { setCurrentPlayer(localPost.user_id); setActivePage("player"); }
+                }}
+              >{localPost.user.name}</span>
+              {localPost.user.isNPC && <NPCBadge />}
+              {!localPost.user.isNPC && currentUser && post.user_id !== currentUser.id && similarity !== null && (
+                <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
+                  {similarity > 0 ? similarity + " games in common" : "no games in common"}
+                </span>
+              )}
+              <span style={{ color: C.textDim, fontSize: 12 }}>·</span>
+              <span style={{ color: C.textDim, fontSize: 12 }}>{localPost.time}</span>
+              {/* Post menu */}
+              {currentUser && (localPost.user_id === currentUser.id || currentUser.is_admin) && (
+                <div style={{ marginLeft: "auto", position: "relative" }}>
+                  <button onClick={() => setShowPostMenu(v => !v)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>⋯</button>
+                  {showPostMenu && (
+                    <div style={{ position: "absolute", right: 0, top: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                      {localPost.user_id === currentUser.id && (
+                        <button onClick={() => { setEditing(true); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}>Edit</button>
+                      )}
+                      <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: "#ef4444", fontSize: 13, cursor: "pointer", textAlign: "left" }}>Delete</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Game tag — always on its own line below the header row */}
             {(localPost.game || localPost.game_tag) && (() => {
               const gameId = localPost.gameId || localPost.game_tag;
               const displayName = taggedGameName || localPost.game;
@@ -502,25 +518,11 @@ return (
               return (
                 <span
                   onClick={e => { e.stopPropagation(); if (gameId) { setCurrentGame(gameId); setActivePage("game"); } }}
-                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.accentSoft, fontWeight: 600, cursor: gameId ? "pointer" : "default" }}>
+                  style={{ display: "inline-block", marginTop: 4, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.accentSoft, fontWeight: 600, cursor: gameId ? "pointer" : "default" }}>
                   {displayName || "Game"}
                 </span>
               );
             })()}
-            {/* Post menu */}
-            {currentUser && (localPost.user_id === currentUser.id || currentUser.is_admin) && (
-              <div style={{ marginLeft: "auto", position: "relative" }}>
-                <button onClick={() => setShowPostMenu(v => !v)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>⋯</button>
-                {showPostMenu && (
-                  <div style={{ position: "absolute", right: 0, top: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {localPost.user_id === currentUser.id && (
-                      <button onClick={() => { setEditing(true); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}>Edit</button>
-                    )}
-                    <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: "#ef4444", fontSize: 13, cursor: "pointer", textAlign: "left" }}>Delete</button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Post content */}
@@ -750,7 +752,7 @@ return (
                         }
                         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
                       }}
-                      placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment… (@ to mention a player or game)"}
+                      placeholder={replyTo ? "Reply to " + replyTo.name + "…" : "Write a comment… (@ to mention a player or game)"}
                       rows={1}
                       style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
                     />

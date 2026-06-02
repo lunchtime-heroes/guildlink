@@ -176,11 +176,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [loadingMore, setLoadingMore] = useState(false);
   const [pulseCards, setPulseCards] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
-  const [linkPreview, setLinkPreview] = useState(null); // { allowed, url, title, description, image, domain } | null
+  const [linkPreview, setLinkPreview] = useState(null);
   const [linkPreviewLoading, setLinkPreviewLoading] = useState(false);
-  const [linkWarning, setLinkWarning] = useState(null); // domain string if not allowed
-  const [exitUrl, setExitUrl] = useState(null); // url for interstitial modal
-  const [following, setFollowing] = useState([]); // combined users + NPCs
+  const [linkWarning, setLinkWarning] = useState(null);
+  const [exitUrl, setExitUrl] = useState(null);
+  const [following, setFollowing] = useState([]);
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
@@ -189,10 +189,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
+  const [mentionDropdownPos, setMentionDropdownPos] = useState(null);
   const [taggedGames, setTaggedGames] = useState([]);
-  const [taggedUsers, setTaggedUsers] = useState([]); // {id, handle, name, type: 'user'|'npc'}
+  const [taggedUsers, setTaggedUsers] = useState([]);
   const [mentionIndex, setMentionIndex] = useState(0);
-  const [dbGames, setDbGames] = useState({}); // id -> game object cache
+  const [dbGames, setDbGames] = useState({});
   const [dailyPrompt, setDailyPrompt] = useState(null);
   const [sidebarNPCs, setSidebarNPCs] = useState([]);
   const [showTagNudge, setShowTagNudge] = useState(false);
@@ -200,7 +201,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [nudgeResults, setNudgeResults] = useState([]);
   const [nudgeDropdownPos, setNudgeDropdownPos] = useState(null);
   const nudgeInputRef = useRef(null);
-  const textareaRef = useRef(null); // array of game ids, max 3
+  const textareaRef = useRef(null);
 
   const URL_REGEX = /https?:\/\/[^\s<>"]+/gi;
   let linkPreviewDebounce = null;
@@ -231,7 +232,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const val = e.target.value;
     setPostText(val);
 
-    // URL detection
     const urls = val.match(URL_REGEX);
     const firstUrl = urls?.[0];
     if (firstUrl) {
@@ -247,10 +247,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const query = atMatch[1].trim();
       if (query.length < 2) {
         setMentionResults([]);
+        setMentionDropdownPos(null);
         setMentionQuery(query);
         setMentionIndex(0);
       } else {
-        // Search games, players, and NPCs in parallel
         const [localRes, igdbRes, playersRes, npcsRes] = await Promise.allSettled([
           supabase.from("games").select("id, name, followers, igdb_id, cover_url, genre").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(4),
           fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) }).then(r => r.json()).catch(() => ({ games: [] })),
@@ -266,16 +266,20 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         setMentionResults([...players, ...npcs, ...localGames, ...newFromIGDB].slice(0, 10));
         setMentionQuery(query);
         setMentionIndex(0);
+        if (textareaRef.current) {
+          const rect = textareaRef.current.getBoundingClientRect();
+          setMentionDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: Math.max(rect.width, 260) });
+        }
       }
     } else {
       setMentionQuery(null);
       setMentionResults([]);
+      setMentionDropdownPos(null);
       setMentionIndex(0);
     }
   };
 
   const addGameFromIGDB = async (game) => {
-    // Insert IGDB game into our games table
     const { data, error } = await supabase.from("games").insert({
       name: game.name,
       genre: game.genre,
@@ -294,7 +298,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionResults.length - 1)); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); }
     else if (e.key === "Enter" && mentionResults.length > 0) { e.preventDefault(); selectMention(mentionResults[mentionIndex]); }
-    else if (e.key === "Escape") { setMentionResults([]); setMentionQuery(null); }
+    else if (e.key === "Escape") { setMentionResults([]); setMentionDropdownPos(null); setMentionQuery(null); }
   };
 
   const selectMention = async (item) => {
@@ -306,7 +310,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         if (prev.find(u => u.id === item.id)) return prev;
         return [...prev, { id: item.id, handle: item.handle, name: item.username, type: "user" }];
       });
-      setMentionQuery(null); setMentionResults([]); setMentionIndex(0);
+      setMentionQuery(null); setMentionResults([]); setMentionDropdownPos(null); setMentionIndex(0);
       setTimeout(() => textareaRef.current?.focus(), 0);
       return;
     }
@@ -318,11 +322,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         if (prev.find(u => u.id === item.id)) return prev;
         return [...prev, { id: item.id, handle: item.handle, name: item.name, type: "npc" }];
       });
-      setMentionQuery(null); setMentionResults([]); setMentionIndex(0);
+      setMentionQuery(null); setMentionResults([]); setMentionDropdownPos(null); setMentionIndex(0);
       setTimeout(() => textareaRef.current?.focus(), 0);
       return;
     }
-    // Game
     let resolvedGame = item;
     if (item._fromIGDB) {
       const inserted = await addGameFromIGDB(item);
@@ -336,7 +339,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       return [...prev, resolvedGame.id];
     });
     setDbGames(prev => ({ ...prev, [resolvedGame.id]: resolvedGame }));
-    setMentionQuery(null); setMentionResults([]); setMentionIndex(0);
+    setMentionQuery(null); setMentionResults([]); setMentionDropdownPos(null); setMentionIndex(0);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
@@ -374,9 +377,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     setNudgeQuery("");
     setNudgeResults([]);
     setNudgeDropdownPos(null);
-    // Pass the resolved game id directly to avoid React state timing issue
     doSubmitPost(resolvedGame.id);
   };
+
   const topPad = isMobile ? "60px 16px 0" : "80px 20px 0";
   const mainPad = isMobile ? "14px 16px 80px" : "14px 20px 40px";
 
@@ -403,12 +406,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadSidebarNPCs = async () => {
     const { data } = await supabase.from("npcs").select("id, name, handle, avatar_initials, status, role").eq("is_active", true);
     if (!data || data.length === 0) return;
-    // Pick 4 random NPCs
     const shuffled = [...data].sort(() => Math.random() - 0.5);
     setSidebarNPCs(shuffled.slice(0, 4));
   };
 
-  // Re-sync liked state and counts when returning to feed
   useEffect(() => {
     if (activePage !== "feed" || isGuest || livePosts.length === 0) return;
     const syncCounts = async () => {
@@ -435,20 +436,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadSuggestedGamers = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    // Get current user's shelf
     const { data: myShelf } = await supabase
       .from("user_games").select("game_id, status").eq("user_id", user.id);
     if (!myShelf || myShelf.length === 0) return;
     const myGameIds = myShelf.map(g => g.game_id);
     const statusWeight = { playing: 3, want_to_play: 2, have_played: 1 };
-    // Find other users who share shelf games
     const { data: others } = await supabase
       .from("user_games")
       .select("user_id, game_id, status, profiles(id, username, handle, avatar_initials)")
       .in("game_id", myGameIds)
       .neq("user_id", user.id);
     if (!others) return;
-    // Score each user by shelf overlap weight
     const scores = {};
     others.forEach(row => {
       if (!row.profiles) return;
@@ -461,7 +459,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       }
       scores[uid].score += w;
     });
-    // Sort by score, exclude already-followed users
     const { data: followData } = await supabase
       .from("follows").select("followed_user_id").eq("follower_id", user.id);
     const followedIds = new Set((followData || []).map(f => f.followed_user_id));
@@ -469,7 +466,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .filter(s => !followedIds.has(s.profile.id))
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
-    // Resolve shared game names
     const sharedGameIds = [...new Set(sorted.map(s => s.sharedGame).filter(Boolean))];
     const { data: gameNames } = await supabase.from("games").select("id, name").in("id", sharedGameIds);
     const gameMap = {};
@@ -522,7 +518,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadFollowingPosts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    // Get all user IDs the current user follows
     const { data: followData } = await supabase
       .from("follows")
       .select("followed_user_id")
@@ -621,7 +616,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       });
     }
 
-    // 1. want_to_play → playing transitions from history
     const { data: transitions } = await supabase
       .from("user_games_history")
       .select("user_id, game_id, changed_at, games(id, name, cover_url), profiles(id, username)")
@@ -644,7 +638,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       });
     }
 
-    // 2. Shelf activity by game + status
     const { data: shelfActivity } = await supabase
       .from("user_games")
       .select("game_id, status, user_id, created_at, games(id, name, cover_url), profiles(id, username)")
@@ -679,7 +672,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         });
     }
 
-    // 3. Games with shelves but no reviews (min 3 shelf entries)
     const { data: shelfCounts } = await supabase.from("user_games").select("game_id, games(id, name, cover_url)").in("status", ["have_played", "playing"]).limit(200);
     if (shelfCounts?.length) {
       const counts = {};
@@ -691,7 +683,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       });
     }
 
-    // 4. Recent reviews
     const { data: recentReviews } = await supabase.from("reviews")
       .select("id, rating, headline, content, game_id, user_id, created_at, games(id, name, cover_url), profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .gte("created_at", since).order("created_at", { ascending: false }).limit(8);
@@ -713,7 +704,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       });
     }
 
-    // 5. Recent Q&A questions
     const { data: recentQuestions } = await supabase
       .from("posts")
       .select("id, content, created_at, game_tag, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
@@ -723,7 +713,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .order("created_at", { ascending: false })
       .limit(6);
     if (recentQuestions?.length) {
-      // Fetch game data separately to avoid uuid/text type mismatch on join
       const gameIds = [...new Set(recentQuestions.map(q => q.game_tag).filter(Boolean))];
       const { data: qaGames } = await supabase.from("games").select("id, name, cover_url").in("id", gameIds);
       const qaGameMap = {};
@@ -737,9 +726,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     }
 
     cards.sort((a, b) => {
-      // Follow network cards always float up
       if (b.priority !== a.priority && (a.priority >= 2 || b.priority >= 2)) return b.priority - a.priority;
-      // Otherwise sort by recency
       const aTime = a.timestamp || 0;
       const bTime = b.timestamp || 0;
       return bTime - aTime;
@@ -750,7 +737,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadPosts = async () => {
     setFeedLoading(true);
     if (isGuest) {
-      // Fetch top 2 NPC posts and top real posts separately
       const [npcResult, realResult] = await Promise.all([
         supabase.from("posts")
           .select("*, npcs(name, handle, avatar_initials, universe, role), comments(id)")
@@ -766,7 +752,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
       const npcPosts = (npcResult.data || []).map(p => ({ ...p, comment_count: p.comments?.length || 0 }));
 
-      // Score real posts — keep all even if profiles join is null (RLS may block for guests)
       const now = Date.now();
       const weekMs = 7 * 24 * 60 * 60 * 1000;
       const scoredReal = (realResult.data || [])
@@ -778,7 +763,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         .sort((a, b) => b._score - a._score)
         .slice(0, 18);
 
-      // Place NPC posts at positions 1 and 6 (index 0 and 5)
       const feed = [...scoredReal];
       if (npcPosts[0]) feed.splice(0, 0, npcPosts[0]);
       if (npcPosts[1]) feed.splice(5, 0, npcPosts[1]);
@@ -899,12 +883,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       {/* Left sidebar — desktop only */}
       {!isMobile && (
       <div style={{ width: 230, flexShrink: 0 }}>
-        {/* User block — real profile or guest "unclaimed" card */}
         {isGuest ? (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "22, " + C.teal + "22)" }} />
             <div style={{ padding: "0 16px 18px", marginTop: -22 }}>
-              {/* Question mark avatar */}
               <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: "2px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
               <div style={{ marginTop: 10, marginBottom: 14 }}>
                 <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6 }}>This profile grid is waiting to be claimed. Will you be the proud new owner?</div>
@@ -925,7 +907,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <div style={{ color: C.textMuted, fontSize: 12 }}>{user.handle}</div>
                 <div style={{ color: C.textDim, fontSize: 11, marginTop: 3 }}>{user.title}</div>
               </div>
-              {/* XP + Level */}
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid " + C.border }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontWeight: 700, color: C.gold, fontSize: 13 }}>Lv.{user.level}</div>
@@ -961,7 +942,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           ))}
         </div>
 
-        {/* Gamers — shelf-based suggestions */}
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Gamers</div>
           {suggestedGamers.length === 0 ? (
@@ -990,7 +970,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           ))}
         </div>
 
-        {/* NPCs */}
         {sidebarNPCs.length > 0 && (
         <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -1018,7 +997,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Feed tabs — members only */}
         {!isGuest && (
           <div style={{ display: "flex", gap: 4, marginBottom: 14, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4 }}>
             {[{ id: "forYou", label: "For You" }, { id: "following", label: "Following" }].map(tab => (
@@ -1033,11 +1011,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user?.avatar || "GL"} size={isMobile ? 48 : 56} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+            {/* Composer content — no overflow:hidden so mention portal can escape */}
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ position: "relative" }}>
                 <textarea ref={textareaRef} value={postText} onChange={handlePostTextChange} onKeyDown={handlePostKeyDown} placeholder={dailyPrompt ? dailyPrompt.question : "Share a win, review a game... (@ to tag a game, player, or NPC)"} style={{ width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: isMobile ? 56 : 68, boxSizing: "border-box" }} />
-                {mentionResults.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 260, maxWidth: 400, maxHeight: 320, overflowY: "auto", marginTop: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                {/* @mention dropdown — portalled to body to escape any overflow clipping */}
+                {mentionResults.length > 0 && mentionDropdownPos && ReactDOM.createPortal(
+                  <div style={{ position: "absolute", top: mentionDropdownPos.top, left: mentionDropdownPos.left, width: mentionDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 9999, maxWidth: 400, maxHeight: 320, overflowY: "auto", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {mentionResults.map((item, i) => (
                       <div key={item.id || item.igdb_id} onClick={() => selectMention(item)}
                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent", borderBottom: i < mentionResults.length - 1 ? "1px solid " + C.border : "none" }}
@@ -1075,7 +1055,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                         )}
                       </div>
                     ))}
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
               {/* Bottom row — toggles between normal state and tag nudge */}
@@ -1200,7 +1181,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           };
 
           livePosts.forEach((post, i) => {
-            // Insert pulse card every 3 posts
             if (i > 0 && i % PULSE_FREQUENCY === 0 && pulseIdx < pulseCards.length) {
               const el = renderPulseCard(pulseCards[pulseIdx++]);
               if (el) items.push(el);
@@ -1213,7 +1193,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               : null;
             const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
             const displayAuthor = author || npcFallback || realFallback;
-            // Skip questions — they live on the game page only
             if (post.post_type === "question") return;
 
             items.push(
@@ -1262,7 +1241,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           </div>
         ))}
 
-        {/* Empty state once loaded */}
         {(isGuest || feedTab === "forYou") && !feedLoading && livePosts.length === 0 && (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
             <div style={{ fontSize: 36, marginBottom: 14 }}>🎮</div>
@@ -1319,7 +1297,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           })
         )}
 
-        {/* Load more posts for logged-in users */}
         {!isGuest && !feedLoading && hasMorePosts && (
           <div style={{ textAlign: "center", padding: "16px 0 24px" }}>
             <button onClick={loadMorePosts} disabled={loadingMore}
@@ -1329,7 +1306,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           </div>
         )}
 
-        {/* Guest sign-up wall after feed */}
         {isGuest && guestFeedDone && (
           <div style={{ background: "linear-gradient(180deg, transparent 0%, " + C.bg + " 40%)", borderRadius: 14, padding: "40px 24px 32px", textAlign: "center", marginTop: -40, position: "relative" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>⚔️</div>
