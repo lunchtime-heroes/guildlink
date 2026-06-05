@@ -12,17 +12,11 @@ module.exports = async function handler(req, res) {
   }
 
   const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Fetch all real emails from auth.users (skip fake @guildlink.gg addresses)
-  const { data: users, error } = await supabase
-    .from("auth.users")
-    .select("id, email, raw_user_meta_data")
-    .not("email", "ilike", "%@guildlink.gg");
-
-  // auth.users isn't accessible via the JS client directly — use the admin API
+  // Use the admin API to access auth.users
   const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers({
     perPage: 1000,
   });
