@@ -1143,7 +1143,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} onSignupOptIn={async (email) => { try { await fetch("/api/resend-add-contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }); } catch (err) { console.error("[onSignupOptIn]", err); } }} />;
 
   const isGuest = !session;
 

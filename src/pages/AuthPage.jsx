@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 
-function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
+function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -12,6 +12,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [confirmedEmail, setConfirmedEmail] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [patchNotesOptIn, setPatchNotesOptIn] = useState(false);
 
   // Detect password reset redirect from Supabase email link
   useEffect(() => {
@@ -47,6 +48,10 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
           id: data.user.id,
           contact_email: contactEmail.trim(),
         });
+        // If user opted in to Patch Notes, notify parent to add to Resend audience
+        if (patchNotesOptIn) {
+          onSignupOptIn?.(contactEmail.trim());
+        }
         setConfirmedEmail(contactEmail.trim());
         setSignupSuccess(true);
       }
@@ -131,26 +136,25 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
             <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 24 }}>Choose something you'll remember.</div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>New Password</div>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handle()} placeholder="at least 6 characters"
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="new password"
+                onKeyDown={e => e.key === "Enter" && handle()}
                 style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
             </div>
             {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
             <button onClick={handle} disabled={loading}
               style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-              {loading ? "..." : "Update Password"}
+              {loading ? "..." : "Set Password"}
             </button>
           </div>
 
-        /* Login / Signup / Forgot forms */
         ) : (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 32 }}>
-
+            {/* Tab switcher */}
             {mode !== "forgot" && (
-              <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+              <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C.surfaceRaised, borderRadius: 10, padding: 4 }}>
                 {["login", "signup"].map(m => (
                   <button key={m} onClick={() => { setMode(m); setError(""); }}
-                    style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: mode === m ? C.accent : C.surfaceRaised, color: mode === m ? "#fff" : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    style={{ flex: 1, padding: "8px", borderRadius: 7, border: "none", background: mode === m ? C.accent : "transparent", color: mode === m ? C.accentText : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                     {m === "login" ? "Log In" : "Sign Up"}
                   </button>
                 ))}
@@ -162,6 +166,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
                   <input value={username} onChange={e => setUsername(e.target.value)} placeholder="you@email.com"
+                    onKeyDown={e => e.key === "Enter" && handle()}
                     style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                   <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>Existing member? You can still log in with your username.</div>
                 </div>
@@ -187,11 +192,21 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
                   <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@email.com"
                     style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                 </div>
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 16 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password"
                     onKeyDown={e => e.key === "Enter" && handle()}
                     style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                </div>
+                {/* Patch Notes opt-in */}
+                <div onClick={() => setPatchNotesOptIn(v => !v)}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 20, cursor: "pointer", userSelect: "none" }}>
+                  <div style={{ width: 18, height: 18, borderRadius: 4, border: "2px solid " + (patchNotesOptIn ? C.accent : C.border), background: patchNotesOptIn ? C.accent : "transparent", flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                    {patchNotesOptIn && <span style={{ color: "#fff", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                  </div>
+                  <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5 }}>
+                    Send me <strong style={{ color: C.text }}>Patch Notes</strong> — occasional updates about new GuildLink features. Unsubscribe anytime.
+                  </div>
                 </div>
               </>
             )}
