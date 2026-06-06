@@ -47,8 +47,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [usersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes] = await Promise.all([
+    const [usersRes, totalUsersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
       supabase.from("reviews").select("*, profiles(username, avatar_initials, active_ring, is_founding, avatar_config), games(name)").order("created_at", { ascending: false }).limit(20),
       supabase.from("chart_events").select("game_id, event_type, games(name)").gte("created_at", oneWeekAgo),
@@ -134,7 +135,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
     const newUsersWeek = usersRes.data?.filter(u => new Date(u.created_at) > new Date(oneWeekAgo)).length || 0;
     setStats({
-      totalUsers: usersRes.data?.length || 0,
+      totalUsers: totalUsersRes.count || 0,
       newUsersWeek,
       postsWeek: weekPostsRes.count || 0,
       postsToday: dayPostsRes.count || 0,
@@ -591,7 +592,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
       {tab === "users" && (
         <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>{users.length} users (most recent first)</div>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>{stats?.totalUsers || users.length} users (most recent 50)</div>
           {users.map((u, i) => (
             <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
               style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: i < users.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
