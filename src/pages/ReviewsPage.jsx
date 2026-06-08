@@ -148,7 +148,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
         </div>
         {review.content && (
           <div style={{ padding: isMobile ? "10px 14px 12px" : "10px 16px 14px", borderTop: "1px solid " + C.border }}>
-            <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0 }}>{review.content}</p>
+            <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{review.content}</p>
           </div>
         )}
       </div>
