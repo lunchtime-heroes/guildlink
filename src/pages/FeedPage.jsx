@@ -6,6 +6,7 @@ import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard, renderPostContent } from "../components/FeedPostCard.jsx";
 import { ShelfPulseCard, ReviewSpotlightCard, QACard } from "../components/PulseCards.jsx";
+import { DiscoveryCard } from "../components/DiscoveryCard.jsx";
 import { ChartsWidget } from "../components/Charts.jsx";
 
 function decodeHtml(str) {
@@ -175,6 +176,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [hasMorePosts, setHasMorePosts] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pulseCards, setPulseCards] = useState([]);
+  const [discoveryCards, setDiscoveryCards] = useState([]);
   const [guestFeedDone, setGuestFeedDone] = useState(false);
   const [linkPreview, setLinkPreview] = useState(null);
   const [linkPreviewLoading, setLinkPreviewLoading] = useState(false);
@@ -393,8 +395,22 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       loadPlayingGames();
       loadFollowedGames();
       loadSuggestedGamers();
+      loadDiscoveryCards();
     }
   }, []);
+
+  const loadDiscoveryCards = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { data } = await supabase
+      .from("discovery_cards")
+      .select("*")
+      .eq("target_user_id", authUser.id)
+      .order("seen", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (data) setDiscoveryCards(data);
+  };
 
   const loadDailyPrompt = async () => {
     const { data } = await supabase.from("daily_prompts").select("id, question, sort_order").order("sort_order", { ascending: true });
@@ -1147,11 +1163,82 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </div>
         )}
 
-        {/* For You feed — interspersed with pulse cards every 3 posts */}
+        {/* For You feed — discovery cards primary, posts interleaved */}
         {(isGuest || feedTab === "forYou") && !feedLoading && (() => {
           const items = [];
           let pulseIdx = 0;
+          let discoveryIdx = 0;
+          let postIdx = 0;
 
+          const renderPost = (post) => {
+            const isNPC = !!post.npc_id;
+            const author = isNPC ? post.npcs : post.profiles;
+            const npcFallback = isNPC && !author
+              ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
+              : null;
+            const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
+            const displayAuthor = author || npcFallback || realFallback;
+            if (post.post_type === "question") return null;
+            return (
+              <FeedPostCard key={post.id} post={{
+                id: post.id, npc_id: post.npc_id, game_tag: post.game_tag, user_id: post.user_id,
+                user: {
+                  name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
+                  handle: displayAuthor?.handle || "",
+                  avatar: displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL",
+                  status: "online", isNPC,
+                  isFounding: !isNPC && (displayAuthor?.is_founding || false),
+                  activeRing: !isNPC ? (displayAuthor?.active_ring || "none") : "none",
+                  avatarConfig: !isNPC ? (displayAuthor?.avatar_config || null) : null,
+                },
+                content: post.content, gameId: post.game_tag,
+                tagged_users: post.tagged_users || [],
+                time: timeAgo(post.created_at),
+                likes: post.likes || 0, liked: post.liked || false,
+                comment_count: post.comment_count || 0, commentList: [],
+                link_url: post.link_url || null,
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame}
+                setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer}
+                isMobile={isMobile} currentUser={user} isGuest={isGuest}
+                onSignIn={onSignIn} onExit={onExit} />
+            );
+          };
+
+          // Discovery-first feed: 2 discovery cards, 1 post, repeat
+          // Falls back to pulse-card behavior if no discovery cards
+          if (!isGuest && discoveryCards.length > 0) {
+            const totalItems = discoveryCards.length + livePosts.length;
+            let slot = 0;
+            while (discoveryIdx < discoveryCards.length || postIdx < livePosts.length) {
+              if (slot % 3 !== 2 && discoveryIdx < discoveryCards.length) {
+                const dc = discoveryCards[discoveryIdx++];
+                items.push(
+                  <DiscoveryCard key={"dc_" + dc.id} card={dc}
+                    currentUser={user} setActivePage={setActivePage}
+                    setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                    isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
+                  />
+                );
+              } else if (postIdx < livePosts.length) {
+                const post = livePosts[postIdx++];
+                const el = renderPost(post);
+                if (el) items.push(el);
+              } else if (discoveryIdx < discoveryCards.length) {
+                const dc = discoveryCards[discoveryIdx++];
+                items.push(
+                  <DiscoveryCard key={"dc_" + dc.id} card={dc}
+                    currentUser={user} setActivePage={setActivePage}
+                    setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                    isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
+                  />
+                );
+              }
+              slot++;
+            }
+            return items;
+          }
+
+          // Legacy pulse card path (guests + users with no discovery cards yet)
           const renderPulseCard = (card) => {
             if (card.type === "shelf_pulse") {
               return <ShelfPulseCard key={card.id} card={card}
@@ -1185,43 +1272,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               const el = renderPulseCard(pulseCards[pulseIdx++]);
               if (el) items.push(el);
             }
-
-            const isNPC = !!post.npc_id;
-            const author = isNPC ? post.npcs : post.profiles;
-            const npcFallback = isNPC && !author
-              ? (Object.values(NPCS).find(n => n.id === post.npc_id) || { name: "NPC", handle: "@npc", avatar: "NP" })
-              : null;
-            const realFallback = !isNPC && !author ? { username: "Guildies Member", handle: "@member", avatar_initials: "GM", is_founding: false } : null;
-            const displayAuthor = author || npcFallback || realFallback;
-            if (post.post_type === "question") return;
-
-            items.push(
-              <FeedPostCard key={post.id} post={{
-                id: post.id,
-                npc_id: post.npc_id,
-                game_tag: post.game_tag,
-                user_id: post.user_id,
-                user: {
-                  name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
-                  handle: displayAuthor?.handle || "",
-                  avatar: displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL",
-                  status: "online",
-                  isNPC,
-                  isFounding: !isNPC && (displayAuthor?.is_founding || false),
-                  activeRing: !isNPC ? (displayAuthor?.active_ring || "none") : "none",
-                  avatarConfig: !isNPC ? (displayAuthor?.avatar_config || null) : null,
-                },
-                content: post.content,
-                gameId: post.game_tag,
-                tagged_users: post.tagged_users || [],
-                time: timeAgo(post.created_at),
-                likes: post.likes || 0,
-                liked: post.liked || false,
-                comment_count: post.comment_count || 0,
-                commentList: [],
-                link_url: post.link_url || null,
-              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
-            );
+            const el = renderPost(post);
+            if (el) items.push(el);
           });
           return items;
         })()}
