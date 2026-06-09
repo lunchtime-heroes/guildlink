@@ -729,7 +729,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
   const handleDndDragStart = (event) => {
     setActiveId(event.active.id);
-    for (const col of ["want_to_play", "playing", "have_played"]) {
+    for (const col of ["want_to_play", "playing", "have_played", "not_for_me"]) {
       if (userShelf[col].find(e => e.game_id === event.active.id)) {
         setActiveStatus(col); break;
       }
@@ -742,12 +742,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
     // Find which column the over target belongs to
     let overCol = null;
-    for (const col of ["want_to_play", "playing", "have_played"]) {
+    for (const col of ["want_to_play", "playing", "have_played", "not_for_me"]) {
       if (over.id === col) { overCol = col; break; }
       if (userShelf[col].find(e => e.game_id === over.id)) { overCol = col; break; }
     }
     let fromCol = null;
-    for (const col of ["want_to_play", "playing", "have_played"]) {
+    for (const col of ["want_to_play", "playing", "have_played", "not_for_me"]) {
       if (userShelf[col].find(e => e.game_id === active.id)) { fromCol = col; break; }
     }
 
@@ -770,12 +770,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     if (!active || !over || active.id === over.id) return;
 
     let fromCol = null;
-    for (const col of ["want_to_play", "playing", "have_played"]) {
+    for (const col of ["want_to_play", "playing", "have_played", "not_for_me"]) {
       if (userShelf[col].find(e => e.game_id === active.id)) { fromCol = col; break; }
     }
     let toCol = null;
     let insertIdx = null;
-    for (const col of ["want_to_play", "playing", "have_played"]) {
+    for (const col of ["want_to_play", "playing", "have_played", "not_for_me"]) {
       if (userShelf[col].find(e => e.game_id === over.id)) {
         toCol = col;
         insertIdx = userShelf[col].findIndex(e => e.game_id === over.id);
@@ -837,6 +837,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     { id: "want_to_play", label: "Want to Play", color: C.accent, emptyText: "Games you're eyeing" },
     { id: "playing", label: "Playing Now", color: C.green, emptyText: "What are you playing?" },
     { id: "have_played", label: "Have Played", color: C.gold, emptyText: "Your completed games" },
+    { id: "not_for_me", label: "Not Interested", color: C.red, emptyText: "Games you've passed on" },
   ];
 
   const shelfCount = userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length;
@@ -1459,7 +1460,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               {/* Drag overlay — shows ghost while dragging */}
               <DragOverlay>
                 {activeId && (() => {
-                  const allEntries = [...userShelf.want_to_play, ...userShelf.playing, ...userShelf.have_played];
+                  const allEntries = [...userShelf.want_to_play, ...userShelf.playing, ...userShelf.have_played, ...userShelf.not_for_me];
                   const entry = allEntries.find(e => e.game_id === activeId);
                   const game = entry?.games;
                   if (!game) return null;
@@ -1481,49 +1482,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
                 <div style={{ fontSize: 14 }}>Your shelf is empty. Add some games to get started.</div>
-              </div>
-            )}
-
-            {/* Not Interested section — outside DndContext, no drag */}
-            {userShelf.not_for_me.length > 0 && (
-              <div style={{ marginTop: 8, marginBottom: 28 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <div style={{ fontWeight: 800, color: C.textDim, fontSize: 14 }}>Not Interested</div>
-                  <div style={{ background: C.border + "44", color: C.textDim, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf.not_for_me.length}</div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
-                  {userShelf.not_for_me.map(entry => {
-                    const game = entry.games;
-                    if (!game) return null;
-                    return (
-                      <div key={entry.game_id}
-                        style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden", opacity: 0.6, position: "relative" }}
-                        onMouseEnter={e => { e.currentTarget.style.opacity = "1"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; }}
-                        onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; }}>
-                        <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
-                          onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id); }}>
-                          {game.cover_url
-                            ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: "pointer" }} />
-                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
-                          }
-                          {/* Remove button */}
-                          <button className="remove-btn"
-                            onClick={async e => {
-                              e.stopPropagation();
-                              const { data: { user: authUser } } = await supabase.auth.getUser();
-                              if (!authUser) return;
-                              await supabase.from("user_games").delete().eq("user_id", authUser.id).eq("game_id", entry.game_id);
-                              setUserShelf(prev => ({ ...prev, not_for_me: prev.not_for_me.filter(e => e.game_id !== entry.game_id) }));
-                            }}
-                            style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.15s" }}>
-                            ×
-                          </button>
-                        </div>
-                        <div style={{ padding: "6px 8px", fontSize: 10, fontWeight: 600, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
           </div>
