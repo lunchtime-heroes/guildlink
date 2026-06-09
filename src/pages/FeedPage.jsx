@@ -410,7 +410,24 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .order("actor_count", { ascending: false })
       .order("overlap_count", { ascending: false })
       .limit(100);
-    if (data) setDiscoveryCards(data);
+if (data) {
+      // Enforce feed diversity — interleave shelf_add with other types
+      const shelfAdds = data.filter(c => c.discovery_type === "shelf_add");
+      const others = data.filter(c => c.discovery_type !== "shelf_add");
+      const mixed = [];
+      let shelfIdx = 0;
+      let otherIdx = 0;
+      while (shelfIdx < shelfAdds.length || otherIdx < others.length) {
+        // 2 shelf_add cards then 1 other type, repeat
+        for (let i = 0; i < 2 && shelfIdx < shelfAdds.length; i++) {
+          mixed.push(shelfAdds[shelfIdx++]);
+        }
+        if (otherIdx < others.length) {
+          mixed.push(others[otherIdx++]);
+        }
+      }
+      setDiscoveryCards(mixed);
+    }
   };
 
   const loadDailyPrompt = async () => {
