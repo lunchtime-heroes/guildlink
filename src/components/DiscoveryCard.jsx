@@ -3,7 +3,6 @@ import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { Avatar } from "./Avatar.jsx";
 
-// ─── Copy generation ───────────────────────────────────────────────────────
 function getCardCopy(card, actorName) {
   switch (card.discovery_type) {
 
@@ -97,12 +96,18 @@ function getCardCopy(card, actorName) {
         cta_charts: true,
       };
 
+    case "multi_review_prompt":
+      return {
+        phrase: card.actor_count + " players reviewed:",
+        sub: "You've played it — what did you think?",
+        cta_review: true,
+      };
+
     default:
       return { phrase: null, sub: null };
   }
 }
 
-// ─── Discovery type label ───────────────────────────────────────────────────
 function getTypeLabel(discovery_type) {
   switch (discovery_type) {
     case "shelf_add": return null;
@@ -113,19 +118,18 @@ function getTypeLabel(discovery_type) {
     case "thumbs_down": return { label: "Skip Signal", color: C.red };
     case "new_similarity_match": return null;
     case "chart_climber": return { label: "Chart Climber", color: C.gold };
+    case "multi_review_prompt": return { label: "Write a Review", color: C.gold };
     default: return null;
   }
 }
 
-// ─── Shelf buttons ──────────────────────────────────────────────────────────
 const SHELF_BUTTONS = [
   { status: "want_to_play", label: "Want to Play" },
   { status: "playing", label: "Playing Now" },
   { status: "have_played", label: "Have Played" },
 ];
 
-// ─── Main component ─────────────────────────────────────────────────────────
-function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn }) {
+function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn, setGameDefaultTab }) {
   const [actor, setActor] = useState(null);
   const [game, setGame] = useState(null);
   const [addedToShelf, setAddedToShelf] = useState(null);
@@ -176,6 +180,14 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
   const navigateToGame = () => {
     if (!game) return;
+    setCurrentGame(game.id);
+    setActivePage("game");
+    window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id);
+  };
+
+  const navigateToReviews = () => {
+    if (!game) return;
+    if (setGameDefaultTab) setGameDefaultTab("reviews");
     setCurrentGame(game.id);
     setActivePage("game");
     window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id);
@@ -289,12 +301,12 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
           {/* Sub */}
           {copy.sub && (
-            <div style={{ color: isNegative ? C.textMuted : C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10, marginTop: copy.no_game_tag ? 0 : 6 }}>
+            <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10, marginTop: copy.no_game_tag ? 0 : 6 }}>
               {copy.sub}
             </div>
           )}
 
-          {/* Actor row — single named actor only, not shelf_add, not similarity */}
+          {/* Actor row */}
           {actor && card.actor_is_public && card.actor_count === 1 && card.discovery_type !== "shelf_add" && !isSimilarityCard && (
             <div
               onClick={() => { setCurrentPlayer(actor.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", "")); }}
@@ -315,14 +327,22 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               <button
                 onClick={() => {
                   if (isGuest) { onSignIn?.("Sign in to start a conversation."); return; }
-                  if (actor && game) {
-                    setCurrentGame(game.id);
-                    setActivePage("game");
-                    window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id);
-                  }
+                  navigateToReviews();
                 }}
                 style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {copy.cta_ask} →
+              </button>
+            )}
+
+            {/* Write a review CTA */}
+            {copy.cta_review && game && (
+              <button
+                onClick={() => {
+                  if (isGuest) { onSignIn?.("Sign in to write a review."); return; }
+                  navigateToReviews();
+                }}
+                style={{ background: C.goldDim || C.accentGlow, border: "1px solid " + C.gold + "44", borderRadius: 7, padding: "4px 12px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Write a Review →
               </button>
             )}
 

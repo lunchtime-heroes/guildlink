@@ -402,19 +402,22 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadDiscoveryCards = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    const { data } = await supabase
-      .from("discovery_cards")
-      .select("*")
-      .eq("target_user_id", authUser.id)
-      .limit(100);
+    const [{ data }, { data: followData }] = await Promise.all([
+      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).limit(100),
+      supabase.from("follows").select("followed_user_id").eq("follower_id", authUser.id),
+    ]);
     if (data) {
-      // Sort: unseen first, then highest actor_count, then overlap_count
-      const sorted = [...data].sort((a, b) => {
-        if (a.seen !== b.seen) return a.seen ? 1 : -1;
-        if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
-        return b.overlap_count - a.overlap_count;
-      });
-      // Enforce feed diversity — 2 shelf_add then 1 other type, repeat
+      const followedIds = new Set((followData || []).map(f => f.followed_user_id));
+      const sorted = [...data]
+        .filter(c => {
+          if (c.discovery_type === "new_similarity_match" && followedIds.has(c.actor_user_id)) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          if (a.seen !== b.seen) return a.seen ? 1 : -1;
+          if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
+          return (b.overlap_count || 0) - (a.overlap_count || 0);
+        });
       const shelfAdds = sorted.filter(c => c.discovery_type === "shelf_add");
       const others = sorted.filter(c => c.discovery_type !== "shelf_add");
       const mixed = [];
