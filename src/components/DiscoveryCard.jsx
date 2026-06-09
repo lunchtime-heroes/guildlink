@@ -164,6 +164,18 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     if (!card.seen) {
       supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id);
     }
+    // Check if already following actor
+    if (card.actor_user_id && card.discovery_type === "new_similarity_match") {
+      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+        if (!authUser) return;
+        supabase.from("follows")
+          .select("follower_id")
+          .eq("follower_id", authUser.id)
+          .eq("followed_user_id", card.actor_user_id)
+          .maybeSingle()
+          .then(({ data }) => { if (data) setFollowed(true); });
+      });
+    }
   }, [card.id]);
 
   const actorName = actor?.username || (card.actor_count > 1 ? card.actor_count + " players" : "A player");
@@ -259,6 +271,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
   };
 
   if (markedNotInterested) return null;
+  if (isSimilarityCard && followed) return null;
 
   const isSimilarityCard = card.discovery_type === "new_similarity_match";
 
@@ -283,12 +296,10 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
         {/* Left column — actor avatar for similarity cards, game art for everything else */}
         {isSimilarityCard ? (
-          <div style={{ width: 92, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0 16px 16px" }}>
+          <div style={{ padding: "16px 0 16px 16px", flexShrink: 0, cursor: "pointer" }}
+            onClick={() => { if (actor) { setCurrentPlayer(actor.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", "")); } }}>
             {actor ? (
-              <div onClick={() => { setCurrentPlayer(actor.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", "")); }}
-                style={{ cursor: "pointer" }}>
-                <Avatar initials={actor.avatar_initials || "?"} size={64} founding={actor.is_founding} ring={actor.active_ring} avatarConfig={actor.avatar_config} />
-              </div>
+              <Avatar initials={actor.avatar_initials || "?"} size={64} founding={actor.is_founding} ring={actor.active_ring} avatarConfig={actor.avatar_config} />
             ) : (
               <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>👤</div>
             )}
