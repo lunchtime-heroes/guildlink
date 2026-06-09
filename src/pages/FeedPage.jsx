@@ -406,11 +406,25 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .from("discovery_cards")
       .select("*")
       .eq("target_user_id", authUser.id)
-      .order("seen", { ascending: true })
-      .order("overlap_count", { ascending: false })
-      .order("created_at", { ascending: false })
       .limit(100);
-    if (data) setDiscoveryCards(data);
+    if (data) {
+      // Sort: unseen first, then highest actor_count, then overlap_count
+      const sorted = [...data].sort((a, b) => {
+        if (a.seen !== b.seen) return a.seen ? 1 : -1;
+        if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
+        return b.overlap_count - a.overlap_count;
+      });
+      // Enforce feed diversity — 2 shelf_add then 1 other type, repeat
+      const shelfAdds = sorted.filter(c => c.discovery_type === "shelf_add");
+      const others = sorted.filter(c => c.discovery_type !== "shelf_add");
+      const mixed = [];
+      let si = 0; let oi = 0;
+      while (si < shelfAdds.length || oi < others.length) {
+        for (let i = 0; i < 2 && si < shelfAdds.length; i++) mixed.push(shelfAdds[si++]);
+        if (oi < others.length) mixed.push(others[oi++]);
+      }
+      setDiscoveryCards(mixed);
+    }
   };
 
   const loadDailyPrompt = async () => {
