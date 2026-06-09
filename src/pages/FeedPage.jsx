@@ -407,8 +407,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .select("*")
       .eq("target_user_id", authUser.id)
       .order("seen", { ascending: true })
+      .order("actor_count", { ascending: false })
       .order("overlap_count", { ascending: false })
-      .order("created_at", { ascending: false })
       .limit(100);
     if (data) setDiscoveryCards(data);
   };
