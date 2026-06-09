@@ -306,17 +306,17 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             )}
           </div>
         ) : game?.cover_url ? (
-          <div onClick={navigateToGame} style={{ width: 92, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+          <div onClick={navigateToGame} style={{ width: 80, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
             <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 120 }} />
           </div>
         ) : (
-          <div style={{ width: 92, flexShrink: 0, background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
+          <div style={{ width: 80, flexShrink: 0, background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
             <span style={{ fontSize: 28 }}>🎮</span>
           </div>
         )}
 
         {/* Content column */}
-        <div style={{ flex: 1, padding: "16px 16px 0 28px", minWidth: 0 }}>
+        <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
 
           {/* Header row — GUILDLINK DISCOVERY only, no redundant badges */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
