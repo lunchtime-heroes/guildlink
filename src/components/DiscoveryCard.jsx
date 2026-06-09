@@ -260,6 +260,8 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
   if (markedNotInterested) return null;
 
+  const isSimilarityCard = card.discovery_type === "new_similarity_match";
+
   // Game tag pill — clickable, matches post game tag style
   const GameTag = game ? (
     <span
@@ -279,27 +281,35 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     }}>
       <div style={{ display: "flex", gap: 0 }}>
 
-        {/* Game art column — 92px to align with post avatar column */}
-        {game?.cover_url ? (
-          <div
-            onClick={navigateToGame}
-            style={{ width: 92, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+        {/* Left column — actor avatar for similarity cards, game art for everything else */}
+        {isSimilarityCard ? (
+          <div style={{ width: 92, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0 16px 16px" }}>
+            {actor ? (
+              <div onClick={() => { setCurrentPlayer(actor.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", "")); }}
+                style={{ cursor: "pointer" }}>
+                <Avatar initials={actor.avatar_initials || "?"} size={64} founding={actor.is_founding} ring={actor.active_ring} avatarConfig={actor.avatar_config} />
+              </div>
+            ) : (
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>👤</div>
+            )}
+          </div>
+        ) : game?.cover_url ? (
+          <div onClick={navigateToGame} style={{ width: 92, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
             <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 120 }} />
           </div>
         ) : (
-          /* No art — placeholder same width to keep alignment */
           <div style={{ width: 92, flexShrink: 0, background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
             <span style={{ fontSize: 28 }}>🎮</span>
           </div>
         )}
 
-        {/* Content column — padding matches FeedPostCard content column */}
+        {/* Content column */}
         <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
 
-          {/* Header row — GUILDLINK DISCOVERY + type label + games in common */}
+          {/* Header row — GUILDLINK DISCOVERY only, no redundant badges */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.6px" }}>GuildLink Discovery</span>
-            {typeLabel && (
+            {typeLabel && !isSimilarityCard && (
               <>
                 <span style={{ color: C.border, fontSize: 10 }}>·</span>
                 <span style={{
@@ -310,8 +320,8 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
                 }}>{typeLabel.label}</span>
               </>
             )}
-            {/* Games in common — only on single-actor named cards */}
-            {card.overlap_count && card.actor_count === 1 ? (
+            {/* Games in common badge — only on single-actor non-similarity cards */}
+            {card.overlap_count && card.actor_count === 1 && !isSimilarityCard ? (
               <>
                 <span style={{ color: C.border, fontSize: 10 }}>·</span>
                 <span style={{
@@ -340,8 +350,8 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             </div>
           )}
 
-          {/* Actor avatar row — only for single named actor */}
-          {actor && card.actor_is_public && card.actor_count === 1 && card.discovery_type !== "shelf_add" && (
+          {/* Actor avatar row — only for single named actor, not shelf_add, not similarity */}
+          {actor && card.actor_is_public && card.actor_count === 1 && card.discovery_type !== "shelf_add" && !isSimilarityCard && (
             <div
               onClick={() => { setCurrentPlayer(actor.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", "")); }}
               style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, cursor: "pointer" }}
