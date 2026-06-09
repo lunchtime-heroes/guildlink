@@ -1229,10 +1229,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             );
           };
 
-          // Discovery-first feed: 2 discovery cards, 1 post, repeat
-          // Falls back to pulse-card behavior if no discovery cards
+          // Discovery-first feed: discoveryCards already mixed by loadDiscoveryCards
+          // Render sequentially, interleave a post every 3rd item
           if (!isGuest && discoveryCards.length > 0) {
-            const totalItems = discoveryCards.length + livePosts.length;
             let slot = 0;
             while (discoveryIdx < discoveryCards.length || postIdx < livePosts.length) {
               if (slot % 3 !== 2 && discoveryIdx < discoveryCards.length) {
@@ -1241,6 +1240,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   <DiscoveryCard key={"dc_" + dc.id} card={dc}
                     currentUser={user} setActivePage={setActivePage}
                     setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                    setGameDefaultTab={setGameDefaultTab}
                     isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
                   />
                 );
@@ -1254,6 +1254,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   <DiscoveryCard key={"dc_" + dc.id} card={dc}
                     currentUser={user} setActivePage={setActivePage}
                     setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                    setGameDefaultTab={setGameDefaultTab}
                     isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
                   />
                 );
