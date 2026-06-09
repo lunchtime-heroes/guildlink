@@ -271,9 +271,10 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
   };
 
   if (markedNotInterested) return null;
-  if (isSimilarityCard && followed) return null;
 
   const isSimilarityCard = card.discovery_type === "new_similarity_match";
+
+  if (isSimilarityCard && followed) return null;
 
   // Game tag pill — clickable, matches post game tag style
   const GameTag = game ? (
