@@ -90,10 +90,17 @@ function getCardCopy(card, actorName) {
       };
 
     case "chart_climber":
+      if (card.chart_movement >= 2) {
+        return {
+          phrase: "jumped " + card.chart_movement + " spots into the top 10 this week:",
+          sub: null,
+          cta_charts: true,
+        };
+      }
       return {
-        phrase: "is climbing The Charts this week" + (card.chart_movement ? " — up " + card.chart_movement + " positions:" : ":"),
-        sub: "It's on your shelf.",
-        cta_game: true,
+        phrase: "moved up " + (card.chart_movement || 1) + " spot on The Charts:",
+        sub: null,
+        cta_charts: true,
       };
 
     case "multi_review_prompt":
@@ -378,12 +385,21 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               <span style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>✓ Following</span>
             )}
 
-            {/* Game link for chart climber */}
+            {/* Charts link — navigates to Games page */}
+            {copy.cta_charts && (
+              <button
+                onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
+                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                See The Charts →
+              </button>
+            )}
+
+            {/* Game link — navigates to game page */}
             {copy.cta_game && game && (
               <button
                 onClick={navigateToGame}
                 style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                See The Charts →
+                See Game →
               </button>
             )}
 
