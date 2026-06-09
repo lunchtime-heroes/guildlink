@@ -5,16 +5,12 @@ import { timeAgo } from "../utils.js";
 import { Avatar } from "./Avatar.jsx";
 
 // ─── Copy generation ───────────────────────────────────────────────────────
-function getCardCopy(card, actorName, gameName) {
-  const n = card.overlap_count;
-  const overlap = n ? n + " games in common" : null;
-
+function getCardCopy(card, actorName) {
   switch (card.discovery_type) {
 
     case "shelf_add":
-      // Always aggregate — never named
       return {
-        headline: card.actor_count + " players with similar libraries have " + gameName,
+        phrase: card.actor_count + " players with similar libraries have:",
         sub: "Not on your shelf yet.",
         cta_ask: null,
         cta_shelf: true,
@@ -23,15 +19,15 @@ function getCardCopy(card, actorName, gameName) {
     case "now_playing":
       if (card.actor_count > 1) {
         return {
-          headline: card.actor_count + " players with similar libraries just started playing " + gameName,
+          phrase: card.actor_count + " players with similar libraries just started playing:",
           sub: "It's already on your Want to Play list.",
           cta_ask: "Ask how they're enjoying it",
           cta_shelf: false,
         };
       }
       return {
-        headline: actorName + " just started playing " + gameName,
-        sub: overlap ? actorName + " has " + overlap + " with you — and it's on your Want to Play list." : "It's on your Want to Play list.",
+        phrase: actorName + " just started playing:",
+        sub: "It's on your Want to Play list.",
         cta_ask: "Ask how they're enjoying it",
         cta_shelf: false,
       };
@@ -39,15 +35,15 @@ function getCardCopy(card, actorName, gameName) {
     case "just_finished":
       if (card.actor_count > 1) {
         return {
-          headline: card.actor_count + " players with similar libraries just finished " + gameName,
+          phrase: card.actor_count + " players with similar libraries just finished:",
           sub: "You're currently playing it.",
           cta_ask: "Ask what they thought",
           cta_shelf: false,
         };
       }
       return {
-        headline: actorName + " just finished " + gameName,
-        sub: overlap ? actorName + " has " + overlap + " with you. You're currently playing it." : "You're currently playing it.",
+        phrase: actorName + " just finished:",
+        sub: "You're currently playing it.",
         cta_ask: "Ask what they thought",
         cta_shelf: false,
       };
@@ -55,15 +51,15 @@ function getCardCopy(card, actorName, gameName) {
     case "review_positive":
       if (card.actor_count > 1) {
         return {
-          headline: card.actor_count + " players with similar libraries loved " + gameName,
+          phrase: card.actor_count + " players with similar libraries loved:",
           sub: "It's already on your shelf.",
           cta_ask: "See their reviews",
           cta_shelf: false,
         };
       }
       return {
-        headline: actorName + " loved " + gameName,
-        sub: overlap ? actorName + " has " + overlap + " with you. See what they thought." : "See what they thought.",
+        phrase: actorName + " loved:",
+        sub: null,
         cta_ask: "See the review",
         cta_shelf: false,
       };
@@ -71,7 +67,7 @@ function getCardCopy(card, actorName, gameName) {
     case "review_negative":
       if (card.actor_count > 1) {
         return {
-          headline: card.actor_count + " players with similar libraries gave " + gameName + " a low score",
+          phrase: card.actor_count + " players with similar libraries gave a low score to:",
           sub: "It's on your Want to Play list.",
           cta_ask: "See their reviews",
           cta_shelf: false,
@@ -79,8 +75,8 @@ function getCardCopy(card, actorName, gameName) {
         };
       }
       return {
-        headline: actorName + " gave " + gameName + " a low score",
-        sub: overlap ? actorName + " has " + overlap + " with you. It's on your Want to Play list." : "It's on your Want to Play list.",
+        phrase: actorName + " gave a low score to:",
+        sub: "It's on your Want to Play list.",
         cta_ask: "See the review",
         cta_shelf: false,
         cta_negative: true,
@@ -88,8 +84,8 @@ function getCardCopy(card, actorName, gameName) {
 
     case "thumbs_down":
       return {
-        headline: actorName + " thumbs-downed " + gameName,
-        sub: overlap ? actorName + " has " + overlap + " with you. It's on your Want to Play list." : "It's on your Want to Play list.",
+        phrase: actorName + " isn't interested in:",
+        sub: "It's on your Want to Play list.",
         cta_ask: null,
         cta_shelf: false,
         cta_negative: true,
@@ -98,23 +94,25 @@ function getCardCopy(card, actorName, gameName) {
 
     case "new_similarity_match":
       return {
-        headline: actorName + " has " + (n || "several") + " games in common with you",
+        phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with you",
         sub: "You might want to follow them.",
         cta_ask: null,
         cta_shelf: false,
         cta_follow: true,
+        no_game_tag: true,
       };
 
     case "chart_climber":
       return {
-        headline: gameName + " is climbing The Charts this week",
-        sub: card.chart_movement ? "Up " + card.chart_movement + " positions." : "It's on your shelf.",
+        phrase: "is climbing The Charts this week" + (card.chart_movement ? " — up " + card.chart_movement + " positions:" : ":"),
+        sub: "It's on your shelf.",
         cta_ask: null,
         cta_shelf: false,
+        phrase_game_first: true,
       };
 
     default:
-      return { headline: gameName, sub: null, cta_ask: null, cta_shelf: false };
+      return { phrase: null, sub: null, cta_ask: null, cta_shelf: false };
   }
 }
 
@@ -145,7 +143,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
   const [submitting, setSubmitting] = useState(false);
   const [addedToShelf, setAddedToShelf] = useState(null);
   const [followed, setFollowed] = useState(false);
-  const [markedNotForMe, setMarkedNotForMe] = useState(false);
+  const [markedNotInterested, setMarkedNotInterested] = useState(false);
   const commentInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -169,9 +167,9 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
   }, [card.id]);
 
   const actorName = actor?.username || (card.actor_count > 1 ? card.actor_count + " players" : "A player");
-  const gameName = game?.name || "a game";
-  const copy = getCardCopy(card, actorName, gameName);
+  const copy = getCardCopy(card, actorName);
   const typeLabel = getTypeLabel(card.discovery_type);
+  const isNegative = card.discovery_type === "review_negative" || card.discovery_type === "thumbs_down";
 
   const toggleLike = async () => {
     if (isGuest) { onSignIn?.("Sign in to like discoveries."); return; }
@@ -227,7 +225,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     setAddedToShelf(status);
   };
 
-  const markNotForMe = async () => {
+  const markNotInterested = async () => {
     if (isGuest) { onSignIn?.("Sign in to manage your shelf."); return; }
     if (!game) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -235,7 +233,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
       { user_id: authUser.id, game_id: game.id, status: "not_for_me" },
       { onConflict: "user_id,game_id" }
     );
-    setMarkedNotForMe(true);
+    setMarkedNotInterested(true);
   };
 
   const followActor = async () => {
@@ -253,9 +251,23 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     setTimeout(() => commentInputRef.current?.focus(), 100);
   };
 
-  if (markedNotForMe) return null;
+  const navigateToGame = () => {
+    if (!game) return;
+    setCurrentGame(game.id);
+    setActivePage("game");
+    window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id);
+  };
 
-  const isNegative = card.discovery_type === "review_negative" || card.discovery_type === "thumbs_down";
+  if (markedNotInterested) return null;
+
+  // Game tag pill — clickable, matches post game tag style
+  const GameTag = game ? (
+    <span
+      onClick={e => { e.stopPropagation(); navigateToGame(); }}
+      style={{ display: "inline-block", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 10px", fontSize: 13, color: C.accentSoft, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
+      {game.name}
+    </span>
+  ) : null;
 
   return (
     <div style={{
@@ -265,29 +277,28 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
       marginBottom: 12,
       overflow: "hidden",
     }}>
-      {/* Card body */}
       <div style={{ display: "flex", gap: 0 }}>
 
-        {/* Game art column */}
-        {game?.cover_url && (
+        {/* Game art column — 92px to align with post avatar column */}
+        {game?.cover_url ? (
           <div
-            onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id); }}
-            style={{ width: 72, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
-            <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 100 }} />
+            onClick={navigateToGame}
+            style={{ width: 92, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
+            <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 120 }} />
+          </div>
+        ) : (
+          /* No art — placeholder same width to keep alignment */
+          <div style={{ width: 92, flexShrink: 0, background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 120 }}>
+            <span style={{ fontSize: 28 }}>🎮</span>
           </div>
         )}
 
-        {/* Content column */}
-        <div style={{ flex: 1, padding: "14px 16px", minWidth: 0 }}>
+        {/* Content column — padding matches FeedPostCard content column */}
+        <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
 
-          {/* Header row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <div style={{ width: 18, height: 18, borderRadius: 4, background: C.accentGlow, border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 10, fontWeight: 900, color: C.accentSoft }}>G</span>
-              </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.5px" }}>GuildLink</span>
-            </div>
+          {/* Header row — GUILDLINK DISCOVERY + type label + games in common */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.6px" }}>GuildLink Discovery</span>
             <span style={{ color: C.border, fontSize: 10 }}>·</span>
             <span style={{
               background: typeLabel.color + "18",
@@ -295,8 +306,8 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               borderRadius: 5, padding: "1px 7px",
               fontSize: 10, fontWeight: 700, color: typeLabel.color,
             }}>{typeLabel.label}</span>
-            {/* Games in common badge — blue, always shown when available */}
-            {card.overlap_count ? (
+            {/* Games in common — only on single-actor named cards */}
+            {card.overlap_count && card.actor_count === 1 ? (
               <>
                 <span style={{ color: C.border, fontSize: 10 }}>·</span>
                 <span style={{
@@ -309,33 +320,54 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             ) : null}
           </div>
 
-          {/* Headline */}
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 14, lineHeight: 1.4, marginBottom: 4 }}>
-            {copy.headline}
+          {/* Phrase + game tag on its own line */}
+          <div style={{ marginBottom: copy.sub ? 4 : 10 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 14, lineHeight: 1.4 }}>
+              {copy.phrase}
+            </div>
+            {/* Game tag below phrase — matches post game tag pattern */}
+            {!copy.no_game_tag && GameTag}
           </div>
 
           {/* Sub */}
           {copy.sub && (
-            <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+            <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10, marginTop: copy.no_game_tag ? 0 : 6 }}>
               {copy.sub}
             </div>
           )}
 
-          {/* Actor avatar row — only for single named actor, not shelf_add */}
+          {/* Actor avatar row — only for single named actor */}
           {actor && card.actor_is_public && card.actor_count === 1 && card.discovery_type !== "shelf_add" && (
             <div
               onClick={() => { setCurrentPlayer(actor.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", "")); }}
               style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-              <Avatar initials={actor.avatar_initials || "?"} size={24} founding={actor.is_founding} ring={actor.active_ring} avatarConfig={actor.avatar_config} />
+              <Avatar initials={actor.avatar_initials || "?"} size={22} founding={actor.is_founding} ring={actor.active_ring} avatarConfig={actor.avatar_config} />
               <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>{actor.username}</span>
               <span style={{ color: C.textDim, fontSize: 11 }}>{actor.handle}</span>
             </div>
           )}
 
           {/* Action row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", paddingBottom: 12 }}>
+
+            {/* Like */}
+            <button onClick={toggleLike}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: liked ? "#ef4444" : C.textDim, fontSize: 13, padding: 0 }}>
+              <span style={{ fontSize: 15 }}>{liked ? "❤️" : "🤍"}</span>
+              <span style={{ fontSize: 12 }}>{likes || 0}</span>
+            </button>
+
+            {/* Comment */}
+            <button onClick={toggleComments}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: C.textDim, fontSize: 13, padding: 0 }}>
+              <span style={{ fontSize: 15 }}>💬</span>
+              <span style={{ fontSize: 12 }}>{card.comment_count || 0}</span>
+            </button>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
 
             {/* Ask / conversation starter */}
             {copy.cta_ask && (
@@ -345,42 +377,42 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               </button>
             )}
 
-            {/* Add to shelf — positive */}
-            {copy.cta_shelf && !addedToShelf && !markedNotForMe && game && !isNegative && (
-              <div style={{ display: "flex", gap: 4 }}>
+            {/* Shelf buttons — positive cards */}
+            {copy.cta_shelf && !addedToShelf && !markedNotInterested && game && (
+              <>
                 {[
                   { status: "want_to_play", label: "Want to Play" },
-                  { status: "playing", label: "Playing" },
-                  { status: "have_played", label: "Played" },
+                  { status: "playing", label: "Playing Now" },
+                  { status: "have_played", label: "Have Played" },
                 ].map(({ status, label }) => (
                   <button key={status} onClick={() => addToShelf(status)}
                     style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                     {label}
                   </button>
                 ))}
-              </div>
-            )}
-
-            {/* Thumbs CTA for negative cards */}
-            {copy.cta_thumbs && !addedToShelf && !markedNotForMe && game && (
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ color: C.textDim, fontSize: 12 }}>Still interested?</span>
-                <button onClick={() => addToShelf("want_to_play")}
-                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", fontSize: 14, cursor: "pointer" }}>
-                  👍
+                <button onClick={markNotInterested}
+                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  Not Interested
                 </button>
-                <button onClick={markNotForMe}
-                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", fontSize: 14, cursor: "pointer" }}>
-                  👎
-                </button>
-              </div>
+              </>
             )}
 
             {addedToShelf && (
               <span style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>✓ Added to shelf</span>
             )}
 
-            {markedNotForMe && (
+            {/* Thumbs CTA for negative cards */}
+            {copy.cta_thumbs && !addedToShelf && !markedNotInterested && game && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ color: C.textDim, fontSize: 12 }}>Still interested?</span>
+                <button onClick={() => addToShelf("want_to_play")}
+                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", fontSize: 14, cursor: "pointer" }}>👍</button>
+                <button onClick={markNotInterested}
+                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", fontSize: 14, cursor: "pointer" }}>👎</button>
+              </div>
+            )}
+
+            {markedNotInterested && (
               <span style={{ color: C.textDim, fontSize: 12, fontWeight: 600 }}>Noted — won't show again</span>
             )}
 
@@ -395,31 +427,6 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             {followed && (
               <span style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>✓ Following</span>
             )}
-
-            {/* Spacer */}
-            <div style={{ flex: 1 }} />
-
-            {/* Not for me — only on positive/neutral cards */}
-            {game && !isNegative && !addedToShelf && !markedNotForMe && (
-              <button onClick={markNotForMe}
-                style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", padding: "4px 2px" }}>
-                Not for me
-              </button>
-            )}
-
-            {/* Like */}
-            <button onClick={toggleLike}
-              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: liked ? "#ef4444" : C.textDim, fontSize: 13, padding: 0 }}>
-              <span style={{ fontSize: 14 }}>{liked ? "❤️" : "🤍"}</span>
-              <span style={{ fontSize: 12 }}>{likes || 0}</span>
-            </button>
-
-            {/* Comment */}
-            <button onClick={toggleComments}
-              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: C.textDim, fontSize: 13, padding: 0 }}>
-              <span style={{ fontSize: 14 }}>💬</span>
-              <span style={{ fontSize: 12 }}>{card.comment_count || 0}</span>
-            </button>
 
           </div>
         </div>
@@ -452,7 +459,6 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             );
           })}
 
-          {/* Comment composer */}
           {!isGuest && currentUser ? (
             <div style={{ display: "flex", gap: 10, marginTop: 10, paddingTop: 10, borderTop: comments?.length ? "1px solid " + C.border : "none" }}>
               <Avatar initials={currentUser?.avatar || "GL"} size={28} founding={currentUser?.isFounding} ring={currentUser?.activeRing} avatarConfig={currentUser?.avatarConfig} />
