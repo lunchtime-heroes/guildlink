@@ -407,27 +407,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .select("*")
       .eq("target_user_id", authUser.id)
       .order("seen", { ascending: true })
-      .order("actor_count", { ascending: false })
       .order("overlap_count", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(100);
-if (data) {
-      // Enforce feed diversity — interleave shelf_add with other types
-      const shelfAdds = data.filter(c => c.discovery_type === "shelf_add");
-      const others = data.filter(c => c.discovery_type !== "shelf_add");
-      const mixed = [];
-      let shelfIdx = 0;
-      let otherIdx = 0;
-      while (shelfIdx < shelfAdds.length || otherIdx < others.length) {
-        // 2 shelf_add cards then 1 other type, repeat
-        for (let i = 0; i < 2 && shelfIdx < shelfAdds.length; i++) {
-          mixed.push(shelfAdds[shelfIdx++]);
-        }
-        if (otherIdx < others.length) {
-          mixed.push(others[otherIdx++]);
-        }
-      }
-      setDiscoveryCards(mixed);
-    }
+    if (data) setDiscoveryCards(data);
   };
 
   const loadDailyPrompt = async () => {
@@ -481,17 +464,20 @@ if (data) {
       .in("game_id", myGameIds)
       .neq("user_id", user.id);
     if (!others) return;
+    const myGameStatusMap = {};
+    myShelf.forEach(g => { myGameStatusMap[g.game_id] = g.status; });
     const scores = {};
     others.forEach(row => {
       if (!row.profiles) return;
       const uid = row.user_id;
-      if (!scores[uid]) scores[uid] = { profile: row.profiles, score: 0, sharedGame: null };
-      const w = statusWeight[row.status] || 1;
-      if (w > (scores[uid].topWeight || 0)) {
-        scores[uid].topWeight = w;
-        scores[uid].sharedGame = row.game_id;
+      if (!scores[uid]) scores[uid] = { profile: row.profiles, score: 0 };
+      const theirWeight = statusWeight[row.status] || 1;
+      const myWeight = statusWeight[myGameStatusMap[row.game_id]] || 0;
+      const combinedWeight = theirWeight + myWeight;
+      if (combinedWeight > (scores[uid].topWeight || 0)) {
+        scores[uid].topWeight = combinedWeight;
       }
-      scores[uid].score += w;
+      scores[uid].score += theirWeight;
     });
     const { data: followData } = await supabase
       .from("follows").select("followed_user_id").eq("follower_id", user.id);
@@ -500,11 +486,15 @@ if (data) {
       .filter(s => !followedIds.has(s.profile.id))
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
-    const sharedGameIds = [...new Set(sorted.map(s => s.sharedGame).filter(Boolean))];
-    const { data: gameNames } = await supabase.from("games").select("id, name").in("id", sharedGameIds);
-    const gameMap = {};
-    (gameNames || []).forEach(g => gameMap[g.id] = g.name);
-    setSuggestedGamers(sorted.map(s => ({ ...s.profile, sharedGame: gameMap[s.sharedGame] || null })));
+    const targetIds = sorted.map(s => s.profile.id);
+    const { data: simData } = await supabase
+      .from("user_similarity")
+      .select("similar_user_id, overlap_count")
+      .eq("user_id", user.id)
+      .in("similar_user_id", targetIds);
+    const simMap = {};
+    (simData || []).forEach(s => { simMap[s.similar_user_id] = s.overlap_count; });
+    setSuggestedGamers(sorted.map(s => ({ ...s.profile, overlapCount: simMap[s.profile.id] || null })));
   };
 
   const loadPlayingGames = async () => {
@@ -990,7 +980,7 @@ if (data) {
                 <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
-                  {p.sharedGame && <div style={{ color: C.textDim, fontSize: 11 }}>Also plays {p.sharedGame}</div>}
+                  {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
                 </div>
               </div>
               <button onClick={async () => {
