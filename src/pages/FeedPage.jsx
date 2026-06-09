@@ -402,41 +402,32 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadDiscoveryCards = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    const [{ data: shelfData }, { data: otherData }, { data: followData }] = await Promise.all([
-      supabase.from('discovery_cards').select('*')
-        .eq('target_user_id', authUser.id)
-        .eq('discovery_type', 'shelf_add')
-        .eq('seen', false)
-        .order('actor_count', { ascending: false })
-        .order('overlap_count', { ascending: false })
-        .limit(60),
-      supabase.from('discovery_cards').select('*')
-        .eq('target_user_id', authUser.id)
-        .neq('discovery_type', 'shelf_add')
-        .eq('seen', false)
-        .limit(40),
-      supabase.from('follows').select('followed_user_id').eq('follower_id', authUser.id),
+    const [{ data }, { data: followData }] = await Promise.all([
+      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).limit(100),
+      supabase.from("follows").select("followed_user_id").eq("follower_id", authUser.id),
     ]);
-    const followedIds = new Set((followData || []).map(f => f.followed_user_id));
-    const shelfAdds = (shelfData || []);
-    const PRIORITY_TYPES = ["chart_climber", "multi_review_prompt", "review_positive", "review_negative", "thumbs_down", "now_playing", "just_finished"];
-    const others = (otherData || [])
-      .filter(c => {
-        if (c.discovery_type === 'new_similarity_match' && followedIds.has(c.actor_user_id)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const ai = PRIORITY_TYPES.indexOf(a.discovery_type);
-        const bi = PRIORITY_TYPES.indexOf(b.discovery_type);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
-    const mixed = [];
-    let si = 0; let oi = 0;
-    while (si < shelfAdds.length || oi < others.length) {
-      for (let i = 0; i < 2 && si < shelfAdds.length; i++) mixed.push(shelfAdds[si++]);
-      if (oi < others.length) mixed.push(others[oi++]);
+    if (data) {
+      const followedIds = new Set((followData || []).map(f => f.followed_user_id));
+      const sorted = [...data]
+        .filter(c => {
+          if (c.discovery_type === "new_similarity_match" && followedIds.has(c.actor_user_id)) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          if (a.seen !== b.seen) return a.seen ? 1 : -1;
+          if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
+          return (b.overlap_count || 0) - (a.overlap_count || 0);
+        });
+      const shelfAdds = sorted.filter(c => c.discovery_type === "shelf_add");
+      const others = sorted.filter(c => c.discovery_type !== "shelf_add");
+      const mixed = [];
+      let si = 0; let oi = 0;
+      while (si < shelfAdds.length || oi < others.length) {
+        for (let i = 0; i < 2 && si < shelfAdds.length; i++) mixed.push(shelfAdds[si++]);
+        if (oi < others.length) mixed.push(others[oi++]);
+      }
+      setDiscoveryCards(mixed);
     }
-    setDiscoveryCards(mixed);
   };
 
   const loadDailyPrompt = async () => {
@@ -917,7 +908,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       )}
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
-          <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
           {isGuest ? (
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 14, marginBottom: 14 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Shelf</div>
