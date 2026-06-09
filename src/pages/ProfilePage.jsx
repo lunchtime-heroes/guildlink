@@ -130,7 +130,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [gameLibrary, setGameLibrary] = useState([]);
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
-  const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
+  const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [], not_for_me: [] });
   const [activeId, setActiveId] = useState(null); // dnd-kit active drag id
   const [activeStatus, setActiveStatus] = useState(null); // which column is being dragged from
   const [dragOverCol, setDragOverCol] = useState(null); // column highlighted during cross-column drag
@@ -233,7 +233,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         .order("sort_order", { ascending: true, nullsFirst: false })
         .order("updated_at", { ascending: true });
       if (shelfData) {
-        const shelf = { want_to_play: [], playing: [], have_played: [] };
+        const shelf = { want_to_play: [], playing: [], have_played: [], not_for_me: [] };
         shelfData.forEach(entry => {
           if (shelf[entry.status]) shelf[entry.status].push(entry);
         });
@@ -354,7 +354,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("updated_at", { ascending: true });
     if (shelfData) {
-      const shelf = { want_to_play: [], playing: [], have_played: [] };
+      const shelf = { want_to_play: [], playing: [], have_played: [], not_for_me: [] };
       shelfData.forEach(entry => {
         if (shelf[entry.status]) shelf[entry.status].push(entry);
       });
@@ -563,6 +563,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           want_to_play: prev.want_to_play.filter(e => e.game_id !== game.id),
           playing: prev.playing.filter(e => e.game_id !== game.id),
           have_played: prev.have_played.filter(e => e.game_id !== game.id),
+          not_for_me: prev.not_for_me.filter(e => e.game_id !== game.id),
         };
         return { ...cleaned, [status]: [...cleaned[status], { game_id: game.id, status, games: game }] };
       });
@@ -1482,11 +1483,54 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ fontSize: 14 }}>Your shelf is empty. Add some games to get started.</div>
               </div>
             )}
+
+            {/* Not Interested section — outside DndContext, no drag */}
+            {userShelf.not_for_me.length > 0 && (
+              <div style={{ marginTop: 8, marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ fontWeight: 800, color: C.textDim, fontSize: 14 }}>Not Interested</div>
+                  <div style={{ background: C.border + "44", color: C.textDim, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{userShelf.not_for_me.length}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
+                  {userShelf.not_for_me.map(entry => {
+                    const game = entry.games;
+                    if (!game) return null;
+                    return (
+                      <div key={entry.game_id}
+                        style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden", opacity: 0.6, position: "relative" }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = "1"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "1"; }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; const btn = e.currentTarget.querySelector(".remove-btn"); if (btn) btn.style.opacity = "0"; }}>
+                        <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", position: "relative" }}
+                          onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id); }}>
+                          {game.cover_url
+                            ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: "pointer" }} />
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎮</div>
+                          }
+                          {/* Remove button */}
+                          <button className="remove-btn"
+                            onClick={async e => {
+                              e.stopPropagation();
+                              const { data: { user: authUser } } = await supabase.auth.getUser();
+                              if (!authUser) return;
+                              await supabase.from("user_games").delete().eq("user_id", authUser.id).eq("game_id", entry.game_id);
+                              setUserShelf(prev => ({ ...prev, not_for_me: prev.not_for_me.filter(e => e.game_id !== entry.game_id) }));
+                            }}
+                            style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: 6, width: 22, height: 22, color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.15s" }}>
+                            ×
+                          </button>
+                        </div>
+                        <div style={{ padding: "6px 8px", fontSize: 10, fontWeight: 600, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobile shelf action bottom sheet */}
           {isMobile && shelfMenuOpen && (() => {
-            const allEntries = [...userShelf.want_to_play, ...userShelf.playing, ...userShelf.have_played];
+            const allEntries = [...userShelf.want_to_play, ...userShelf.playing, ...userShelf.have_played, ...userShelf.not_for_me];
             const menuEntry = allEntries.find(e => e.game_id === shelfMenuOpen);
             if (!menuEntry) return null;
             const menuGame = menuEntry.games;
