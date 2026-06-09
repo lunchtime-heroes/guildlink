@@ -93,7 +93,7 @@ function getCardCopy(card, actorName) {
       return {
         phrase: "is climbing The Charts this week" + (card.chart_movement ? " — up " + card.chart_movement + " positions:" : ":"),
         sub: "It's on your shelf.",
-        cta_charts: true,
+        cta_game: true,
       };
 
     case "multi_review_prompt":
@@ -378,12 +378,12 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               <span style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>✓ Following</span>
             )}
 
-            {/* Charts link */}
-            {copy.cta_charts && game && (
+            {/* Game link for chart climber */}
+            {copy.cta_game && game && (
               <button
-                onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
+                onClick={navigateToGame}
                 style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                See on Charts →
+                See The Charts →
               </button>
             )}
 
