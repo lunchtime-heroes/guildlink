@@ -402,32 +402,34 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadDiscoveryCards = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    const [{ data }, { data: followData }] = await Promise.all([
-      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).limit(100),
-      supabase.from("follows").select("followed_user_id").eq("follower_id", authUser.id),
+    const [{ data: shelfData }, { data: otherData }, { data: followData }] = await Promise.all([
+      supabase.from('discovery_cards').select('*')
+        .eq('target_user_id', authUser.id)
+        .eq('discovery_type', 'shelf_add')
+        .eq('seen', false)
+        .order('actor_count', { ascending: false })
+        .order('overlap_count', { ascending: false })
+        .limit(60),
+      supabase.from('discovery_cards').select('*')
+        .eq('target_user_id', authUser.id)
+        .neq('discovery_type', 'shelf_add')
+        .eq('seen', false)
+        .limit(40),
+      supabase.from('follows').select('followed_user_id').eq('follower_id', authUser.id),
     ]);
-    if (data) {
-      const followedIds = new Set((followData || []).map(f => f.followed_user_id));
-      const sorted = [...data]
-        .filter(c => {
-          if (c.discovery_type === "new_similarity_match" && followedIds.has(c.actor_user_id)) return false;
-          return true;
-        })
-        .sort((a, b) => {
-          if (a.seen !== b.seen) return a.seen ? 1 : -1;
-          if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
-          return (b.overlap_count || 0) - (a.overlap_count || 0);
-        });
-      const shelfAdds = sorted.filter(c => c.discovery_type === "shelf_add");
-      const others = sorted.filter(c => c.discovery_type !== "shelf_add");
-      const mixed = [];
-      let si = 0; let oi = 0;
-      while (si < shelfAdds.length || oi < others.length) {
-        for (let i = 0; i < 2 && si < shelfAdds.length; i++) mixed.push(shelfAdds[si++]);
-        if (oi < others.length) mixed.push(others[oi++]);
-      }
-      setDiscoveryCards(mixed);
+    const followedIds = new Set((followData || []).map(f => f.followed_user_id));
+    const shelfAdds = (shelfData || []);
+    const others = (otherData || []).filter(c => {
+      if (c.discovery_type === 'new_similarity_match' && followedIds.has(c.actor_user_id)) return false;
+      return true;
+    });
+    const mixed = [];
+    let si = 0; let oi = 0;
+    while (si < shelfAdds.length || oi < others.length) {
+      for (let i = 0; i < 2 && si < shelfAdds.length; i++) mixed.push(shelfAdds[si++]);
+      if (oi < others.length) mixed.push(others[oi++]);
     }
+    setDiscoveryCards(mixed);
   };
 
   const loadDailyPrompt = async () => {
@@ -1229,9 +1231,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             );
           };
 
-          // Discovery-first feed: discoveryCards already mixed by loadDiscoveryCards
-          // Render sequentially, interleave a post every 3rd item
+          // Discovery-first feed: 2 discovery cards, 1 post, repeat
+          // Falls back to pulse-card behavior if no discovery cards
           if (!isGuest && discoveryCards.length > 0) {
+            const totalItems = discoveryCards.length + livePosts.length;
             let slot = 0;
             while (discoveryIdx < discoveryCards.length || postIdx < livePosts.length) {
               if (slot % 3 !== 2 && discoveryIdx < discoveryCards.length) {
@@ -1240,7 +1243,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   <DiscoveryCard key={"dc_" + dc.id} card={dc}
                     currentUser={user} setActivePage={setActivePage}
                     setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
-                    setGameDefaultTab={setGameDefaultTab}
                     isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
                   />
                 );
@@ -1254,7 +1256,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   <DiscoveryCard key={"dc_" + dc.id} card={dc}
                     currentUser={user} setActivePage={setActivePage}
                     setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
-                    setGameDefaultTab={setGameDefaultTab}
                     isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
                   />
                 );
