@@ -419,10 +419,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     ]);
     const followedIds = new Set((followData || []).map(f => f.followed_user_id));
     const shelfAdds = (shelfData || []);
-    const others = (otherData || []).filter(c => {
-      if (c.discovery_type === 'new_similarity_match' && followedIds.has(c.actor_user_id)) return false;
-      return true;
-    });
+    const PRIORITY_TYPES = ["chart_climber", "multi_review_prompt", "review_positive", "review_negative", "thumbs_down", "now_playing", "just_finished"];
+    const others = (otherData || [])
+      .filter(c => {
+        if (c.discovery_type === 'new_similarity_match' && followedIds.has(c.actor_user_id)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const ai = PRIORITY_TYPES.indexOf(a.discovery_type);
+        const bi = PRIORITY_TYPES.indexOf(b.discovery_type);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
     const mixed = [];
     let si = 0; let oi = 0;
     while (si < shelfAdds.length || oi < others.length) {
