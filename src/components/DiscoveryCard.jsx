@@ -316,7 +316,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
         )}
 
         {/* Content column */}
-        <div style={{ flex: 1, padding: "16px 16px 0 12px", minWidth: 0 }}>
+        <div style={{ flex: 1, padding: "16px 16px 0 28px", minWidth: 0 }}>
 
           {/* Header row — GUILDLINK DISCOVERY only, no redundant badges */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
