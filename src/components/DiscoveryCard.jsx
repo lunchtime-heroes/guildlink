@@ -119,7 +119,7 @@ function getCardCopy(card, actorName) {
 // ─── Discovery type label ───────────────────────────────────────────────────
 function getTypeLabel(discovery_type) {
   switch (discovery_type) {
-    case "shelf_add": return { label: "New Discovery", color: C.accentSoft };
+    case "shelf_add": return null;
     case "now_playing": return { label: "Now Playing", color: C.green };
     case "just_finished": return { label: "Just Finished", color: C.teal };
     case "review_positive": return { label: "Loved It", color: C.gold };
@@ -127,7 +127,7 @@ function getTypeLabel(discovery_type) {
     case "thumbs_down": return { label: "Skip Signal", color: C.red };
     case "new_similarity_match": return { label: "Similar Taste", color: C.accent };
     case "chart_climber": return { label: "Chart Climber", color: C.gold };
-    default: return { label: "Discovery", color: C.accentSoft };
+    default: return null;
   }
 }
 
@@ -299,13 +299,17 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
           {/* Header row — GUILDLINK DISCOVERY + type label + games in common */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.6px" }}>GuildLink Discovery</span>
-            <span style={{ color: C.border, fontSize: 10 }}>·</span>
-            <span style={{
-              background: typeLabel.color + "18",
-              border: "1px solid " + typeLabel.color + "44",
-              borderRadius: 5, padding: "1px 7px",
-              fontSize: 10, fontWeight: 700, color: typeLabel.color,
-            }}>{typeLabel.label}</span>
+            {typeLabel && (
+              <>
+                <span style={{ color: C.border, fontSize: 10 }}>·</span>
+                <span style={{
+                  background: typeLabel.color + "18",
+                  border: "1px solid " + typeLabel.color + "44",
+                  borderRadius: 5, padding: "1px 7px",
+                  fontSize: 10, fontWeight: 700, color: typeLabel.color,
+                }}>{typeLabel.label}</span>
+              </>
+            )}
             {/* Games in common — only on single-actor named cards */}
             {card.overlap_count && card.actor_count === 1 ? (
               <>
@@ -386,12 +390,12 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
                   { status: "have_played", label: "Have Played" },
                 ].map(({ status, label }) => (
                   <button key={status} onClick={() => addToShelf(status)}
-                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "4px 8px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                     {label}
                   </button>
                 ))}
                 <button onClick={markNotInterested}
-                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "5px 10px", color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "4px 8px", color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                   Not Interested
                 </button>
               </>
