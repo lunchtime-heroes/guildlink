@@ -90,9 +90,45 @@ export const QUEST_THEMES = [
 
 export const C = { ...THEMES["deep-space"] };
 
+// ─── Design tokens — change these to retheme the entire platform ───────────
+// Radius scale
+C.radius = {
+  card: 6,       // main cards, panels, modals
+  button: 4,     // buttons
+  badge: 4,      // pills, badges, tags
+  input: 4,      // text inputs, textareas
+  avatar: 6,     // avatar containers and rings
+  sm: 2,         // small accents, indicators
+};
+
+// Typography scale
+C.type = {
+  xs: 10,        // metadata, timestamps, labels
+  sm: 12,        // secondary text, captions
+  base: 13,      // body text
+  md: 14,        // emphasized body, card headlines
+  lg: 16,        // section headers
+  xl: 20,        // page titles
+  xxl: 28,       // hero text
+};
+
+// Spacing scale
+C.space = {
+  cardPad: 16,   // standard card padding
+  cardPadSm: 12, // compact card padding
+  gap: 12,       // standard gap between elements
+  gapSm: 8,      // compact gap
+  gapLg: 20,     // loose gap
+};
+
 export function applyTheme(themeId) {
   const palette = THEMES[themeId] || THEMES["deep-space"];
+  // Preserve design tokens — only overwrite color palette keys
+  const { radius, type, space, ...rest } = C;
   Object.assign(C, palette);
+  C.radius = radius;
+  C.type = type;
+  C.space = space;
   document.body.style.background = palette.bg;
   document.documentElement.style.background = palette.bg;
 }

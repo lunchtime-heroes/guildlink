@@ -232,7 +232,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
   const GameTag = game ? (
     <span
       onClick={e => { e.stopPropagation(); navigateToGame(); }}
-      style={{ display: "inline-block", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 10px", fontSize: 13, color: C.accentSoft, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
+      style={{ display: "inline-block", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.badge, padding: "2px 10px", fontSize: 13, color: C.accentSoft, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
       {game.name}
     </span>
   ) : null;
@@ -241,7 +241,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     <div style={{
       background: C.surface,
       border: "1px solid " + (isNegative ? C.red + "33" : C.border),
-      borderRadius: 14,
+      borderRadius: C.radius.card,
       marginBottom: 12,
       overflow: "hidden",
     }}>
@@ -279,7 +279,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
                 <span style={{
                   background: typeLabel.color + "18",
                   border: "1px solid " + typeLabel.color + "44",
-                  borderRadius: 5, padding: "1px 7px",
+                  borderRadius: C.radius.sm, padding: "1px 7px",
                   fontSize: 10, fontWeight: 700, color: typeLabel.color,
                 }}>{typeLabel.label}</span>
               </>
@@ -290,7 +290,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
                 <span style={{
                   background: C.accentGlow,
                   border: "1px solid " + C.accentDim,
-                  borderRadius: 5, padding: "1px 7px",
+                  borderRadius: C.radius.sm, padding: "1px 7px",
                   fontSize: 10, fontWeight: 700, color: C.accentSoft,
                 }}>{card.overlap_count} games in common</span>
               </>
@@ -335,7 +335,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
                   if (isGuest) { onSignIn?.("Sign in to start a conversation."); return; }
                   navigateToReviews();
                 }}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {copy.cta_ask} →
               </button>
             )}
@@ -347,7 +347,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
                   if (isGuest) { onSignIn?.("Sign in to write a review."); return; }
                   navigateToReviews();
                 }}
-                style={{ background: C.goldDim || C.accentGlow, border: "1px solid " + C.gold + "44", borderRadius: 7, padding: "4px 12px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: C.goldDim || C.accentGlow, border: "1px solid " + C.gold + "44", borderRadius: C.radius.button, padding: "4px 12px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Write a Review →
               </button>
             )}
@@ -357,12 +357,12 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               <>
                 {SHELF_BUTTONS.map(({ status, label }) => (
                   <button key={status} onClick={() => addToShelf(status)}
-                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "4px 8px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "4px 8px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                     {label}
                   </button>
                 ))}
                 <button onClick={markNotInterested}
-                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 7, padding: "4px 8px", color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "4px 8px", color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                   Not Interested
                 </button>
               </>
@@ -375,7 +375,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             {/* Follow */}
             {copy.cta_follow && actor && !followed && (
               <button onClick={followActor}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "5px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "5px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Follow {actor.username}
               </button>
             )}
@@ -388,7 +388,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             {copy.cta_charts && game && (
               <button
                 onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 See on Charts →
               </button>
             )}
