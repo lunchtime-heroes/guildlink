@@ -7,6 +7,7 @@ import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard, renderPostContent } from "../components/FeedPostCard.jsx";
 import { ShelfPulseCard, ReviewSpotlightCard, QACard } from "../components/PulseCards.jsx";
 import { DiscoveryCard } from "../components/DiscoveryCard.jsx";
+import { DiscoveryCardVertical } from "../components/DiscoveryCardVertical.jsx";
 import { ChartsWidget } from "../components/Charts.jsx";
 
 function decodeHtml(str) {
@@ -908,6 +909,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       )}
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
+          <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
           {isGuest ? (
             <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 14, marginBottom: 14 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Shelf</div>
@@ -1228,36 +1230,44 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             );
           };
 
-          // Discovery-first feed: 2 discovery cards, 1 post, repeat
-          // Falls back to pulse-card behavior if no discovery cards
+          // Discovery feed: vertical game cards in 3-col grid, posts full-width
           if (!isGuest && discoveryCards.length > 0) {
-            const totalItems = discoveryCards.length + livePosts.length;
-            let slot = 0;
-            while (discoveryIdx < discoveryCards.length || postIdx < livePosts.length) {
-              if (slot % 3 !== 2 && discoveryIdx < discoveryCards.length) {
-                const dc = discoveryCards[discoveryIdx++];
+            const VERTICAL_TYPES = ['shelf_add', 'now_playing', 'just_finished', 'review_positive', 'review_negative', 'thumbs_down', 'chart_climber', 'multi_review_prompt'];
+            const verticalCards = discoveryCards.filter(c => VERTICAL_TYPES.includes(c.discovery_type));
+            const horizontalCards = discoveryCards.filter(c => !VERTICAL_TYPES.includes(c.discovery_type));
+            const horizontalStream = [];
+            let hci2 = 0; let pi2 = 0;
+            while (hci2 < horizontalCards.length || pi2 < livePosts.length) {
+              if (hci2 < horizontalCards.length) horizontalStream.push({ type: 'discovery', card: horizontalCards[hci2++] });
+              if (pi2 < livePosts.length) horizontalStream.push({ type: 'post', post: livePosts[pi2++] });
+            }
+            let vi = 0; let hi = 0;
+            while (vi < verticalCards.length || hi < horizontalStream.length) {
+              const rowCards = [];
+              for (let i = 0; i < 3 && vi < verticalCards.length; i++) rowCards.push(verticalCards[vi++]);
+              if (rowCards.length > 0) {
                 items.push(
-                  <DiscoveryCard key={"dc_" + dc.id} card={dc}
-                    currentUser={user} setActivePage={setActivePage}
-                    setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
-                    isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
-                  />
-                );
-              } else if (postIdx < livePosts.length) {
-                const post = livePosts[postIdx++];
-                const el = renderPost(post);
-                if (el) items.push(el);
-              } else if (discoveryIdx < discoveryCards.length) {
-                const dc = discoveryCards[discoveryIdx++];
-                items.push(
-                  <DiscoveryCard key={"dc_" + dc.id} card={dc}
-                    currentUser={user} setActivePage={setActivePage}
-                    setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
-                    isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
-                  />
+                  <div key={'vrow_' + vi} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
+                    {rowCards.map(dc => (
+                      <DiscoveryCardVertical key={'dcv_' + dc.id} card={dc}
+                        currentUser={user} setActivePage={setActivePage}
+                        setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                        setGameDefaultTab={setGameDefaultTab}
+                        isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
+                      />
+                    ))}
+                  </div>
                 );
               }
-              slot++;
+              if (hi < horizontalStream.length) {
+                const item = horizontalStream[hi++];
+                if (item.type === 'discovery') {
+                  items.push(<DiscoveryCard key={'dc_' + item.card.id} card={item.card} currentUser={user} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} setGameDefaultTab={setGameDefaultTab} isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn} />);
+                } else {
+                  const el = renderPost(item.post);
+                  if (el) items.push(el);
+                }
+              }
             }
             return items;
           }
