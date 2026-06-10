@@ -93,12 +93,12 @@ export const C = { ...THEMES["deep-space"] };
 // ─── Design tokens — change these to retheme the entire platform ───────────
 // Radius scale
 C.radius = {
-  card: 0,       // main cards, panels, modals
-  button: 2,     // buttons
-  badge: 2,      // pills, badges, tags
-  input: 2,      // text inputs, textareas
+  card: 4,       // main cards, panels, modals
+  button: 3,     // buttons
+  badge: 3,      // pills, badges, tags
+  input: 3,      // text inputs, textareas
   avatar: 4,     // avatar containers and rings
-  sm: 1,         // small accents, indicators
+  sm: 2,         // small accents, indicators
 };
 
 // Typography scale
