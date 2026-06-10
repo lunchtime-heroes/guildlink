@@ -84,7 +84,7 @@ function PixelCard({ children, borderColor }) {
   const clip = buildClip(S);
   const bc = borderColor || C.border;
   return (
-    <div style={{ position: "relative", height: "100%" }}>
+    <div style={{ position: "relative", height: "100%", minWidth: 0, overflow: "hidden" }}>
       {/* Border layer */}
       <div style={{
         position: "absolute",
