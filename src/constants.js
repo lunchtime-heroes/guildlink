@@ -1,6 +1,6 @@
 export const THEMES = {
   "deep-space": {
-    bg: "#080e1a", surface: "#0d1424", surfaceHover: "#111c30", surfaceRaised: "#162035",
+    bg: "#080e1a", surface: "#121e35", surfaceHover: "#162440", surfaceRaised: "#1a2840",
     border: "#1e2d45", borderHover: "#2a3f5f",
     accent: "#0ea5e9", accentGlow: "#0ea5e922", accentSoft: "#38bdf8", accentDim: "#0ea5e944",
     accentText: "#ffffff",
@@ -93,12 +93,12 @@ export const C = { ...THEMES["deep-space"] };
 // ─── Design tokens — change these to retheme the entire platform ───────────
 // Radius scale
 C.radius = {
-  card: 6,       // main cards, panels, modals
-  button: 4,     // buttons
-  badge: 4,      // pills, badges, tags
-  input: 4,      // text inputs, textareas
-  avatar: 6,     // avatar containers and rings
-  sm: 2,         // small accents, indicators
+  card: 0,       // main cards, panels, modals
+  button: 2,     // buttons
+  badge: 2,      // pills, badges, tags
+  input: 2,      // text inputs, textareas
+  avatar: 4,     // avatar containers and rings
+  sm: 1,         // small accents, indicators
 };
 
 // Typography scale
