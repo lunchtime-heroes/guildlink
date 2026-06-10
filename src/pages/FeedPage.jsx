@@ -1247,7 +1247,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               for (let i = 0; i < 3 && vi < verticalCards.length; i++) rowCards.push(verticalCards[vi++]);
               if (rowCards.length > 0) {
                 items.push(
-                  <div key={'vrow_' + vi} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gridAutoRows: isMobile ? '320px' : '380px', gap: 10, marginBottom: 10 }}>
+                  <div key={'vrow_' + vi} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 166px)' : 'repeat(3, 213px)', gridAutoRows: isMobile ? '320px' : '380px', gap: 10, marginBottom: 10 }}>
                     {rowCards.map(dc => (
                       <DiscoveryCardVertical key={'dcv_' + dc.id} card={dc}
                         currentUser={user} setActivePage={setActivePage}
