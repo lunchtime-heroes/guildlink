@@ -264,14 +264,18 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {game && (
-          <span onClick={e => { e.stopPropagation(); navigateToGame(); }}
-            style={{
-              background: C.accentGlow, border: "1px solid " + C.accentDim,
-              borderRadius: C.radius.badge, padding: "2px 10px",
-              fontSize: 11, color: C.accentSoft, fontWeight: 700,
-              cursor: "pointer", maxWidth: "100%",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>{game.name}</span>
+          <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <span onClick={e => { e.stopPropagation(); navigateToGame(); }}
+              style={{
+                display: "block",
+                background: C.accentGlow, border: "1px solid " + C.accentDim,
+                borderRadius: C.radius.badge, padding: "2px 10px",
+                fontSize: 11, color: C.accentSoft, fontWeight: 700,
+                cursor: "pointer",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                maxWidth: "100%",
+              }}>{game.name}</span>
+          </div>
         )}
 
         {/* Add to Shelf — gold button */}
