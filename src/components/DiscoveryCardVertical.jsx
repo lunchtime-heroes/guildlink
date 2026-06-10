@@ -84,8 +84,8 @@ function PixelCard({ children, borderColor }) {
   const clip = buildClip(S);
   const bc = borderColor || C.border;
   return (
-    <div style={{ position: "relative" }}>
-      {/* Border layer — 1px larger on each side, same clip-path */}
+    <div style={{ position: "relative", height: "100%" }}>
+      {/* Border layer */}
       <div style={{
         position: "absolute",
         inset: -1,
@@ -100,6 +100,9 @@ function PixelCard({ children, borderColor }) {
         clipPath: "polygon(" + clip + ")",
         zIndex: 1,
         overflow: "hidden",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       }}>
         <PixelCorners color={bc} />
         {children}
@@ -235,9 +238,9 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         </div>
       )}
 
-      {/* Game art with padding matching SVG spec */}
-      <div style={{ padding: artPad + " " + artPad + " 0", cursor: "pointer" }} onClick={navigateToGame}>
-        <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", overflow: "hidden" }}>
+      {/* Game art with padding — flex-grow fills remaining space */}
+      <div style={{ padding: artPad + " " + artPad + " 0", cursor: "pointer", flex: 1, minHeight: 0 }} onClick={navigateToGame}>
+        <div style={{ width: "100%", height: "100%", background: "#0a0f1a", overflow: "hidden" }}>
           {game?.cover_url
             ? <img src={game.cover_url} alt={game?.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🎮</div>
