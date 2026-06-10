@@ -90,16 +90,9 @@ function getCardCopy(card, actorName) {
       };
 
     case "chart_climber":
-      if (card.chart_movement >= 2) {
-        return {
-          phrase: "jumped " + card.chart_movement + " spots into the top 10 this week:",
-          sub: null,
-          cta_charts: true,
-        };
-      }
       return {
-        phrase: "moved up " + (card.chart_movement || 1) + " spot on The Charts:",
-        sub: null,
+        phrase: "is climbing The Charts this week" + (card.chart_movement ? " — up " + card.chart_movement + " positions:" : ":"),
+        sub: "It's on your shelf.",
         cta_charts: true,
       };
 
@@ -204,10 +197,13 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     if (isGuest) { onSignIn?.("Sign in to add games to your shelf."); return; }
     if (!game) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    await supabase.from("user_games").upsert(
-      { user_id: authUser.id, game_id: game.id, status },
-      { onConflict: "user_id,game_id" }
-    );
+    await Promise.all([
+      supabase.from("user_games").upsert(
+        { user_id: authUser.id, game_id: game.id, status },
+        { onConflict: "user_id,game_id" }
+      ),
+      supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id),
+    ]);
     setAddedToShelf(status);
   };
 
@@ -215,10 +211,13 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     if (isGuest) { onSignIn?.("Sign in to manage your shelf."); return; }
     if (!game) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    await supabase.from("user_games").upsert(
-      { user_id: authUser.id, game_id: game.id, status: "not_for_me" },
-      { onConflict: "user_id,game_id" }
-    );
+    await Promise.all([
+      supabase.from("user_games").upsert(
+        { user_id: authUser.id, game_id: game.id, status: "not_for_me" },
+        { onConflict: "user_id,game_id" }
+      ),
+      supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id),
+    ]);
     setDismissed(true);
   };
 
@@ -385,21 +384,12 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
               <span style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>✓ Following</span>
             )}
 
-            {/* Charts link — navigates to Games page */}
-            {copy.cta_charts && (
+            {/* Charts link */}
+            {copy.cta_charts && game && (
               <button
                 onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
                 style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                See The Charts →
-              </button>
-            )}
-
-            {/* Game link — navigates to game page */}
-            {copy.cta_game && game && (
-              <button
-                onClick={navigateToGame}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                See Game →
+                See on Charts →
               </button>
             )}
 
