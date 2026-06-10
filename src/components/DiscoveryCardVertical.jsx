@@ -267,16 +267,18 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {game && (
-          <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
             <span onClick={e => { e.stopPropagation(); navigateToGame(); }}
               style={{
                 display: "block",
+                width: "100%",
+                boxSizing: "border-box",
                 background: C.accentGlow, border: "1px solid " + C.accentDim,
                 borderRadius: C.radius.badge, padding: "2px 10px",
                 fontSize: 11, color: C.accentSoft, fontWeight: 700,
                 cursor: "pointer",
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                maxWidth: "100%",
+                textAlign: "center",
               }}>{game.name}</span>
           </div>
         )}
