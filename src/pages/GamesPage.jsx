@@ -810,7 +810,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               </div>
             </div>
           )}
-        </div>
+        </PixelCornerBox>
       )}
 
       {/* ── Discovery Results ── */}
@@ -902,7 +902,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               })}
             </div>
           )}
-        </PixelCornerBox>
+        </div>
       )}
 
       {/* ── The Charts ── */}
@@ -996,7 +996,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           })()}
         </>
       )}
-    </PixelCornerBox>
+    </div>
   );
 }
 
