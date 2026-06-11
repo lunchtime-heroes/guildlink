@@ -123,8 +123,14 @@ function PixelCornerBox({
   const background = bgStyle || bg || C.surface;
   const clip = buildClip(steps, s);
 
+  // Split style: layout props stay on outer wrapper, padding goes inside card body
+  const { padding, paddingTop, paddingRight, paddingBottom, paddingLeft, ...outerStyle } = style;
+  const innerPadding = { padding, paddingTop, paddingRight, paddingBottom, paddingLeft };
+  // Remove undefined keys
+  Object.keys(innerPadding).forEach(k => innerPadding[k] === undefined && delete innerPadding[k]);
+
   return (
-    <div style={{ position: "relative", minWidth: 0, ...style }} className={className} onClick={onClick}>
+    <div style={{ position: "relative", minWidth: 0, ...outerStyle }} className={className} onClick={onClick}>
       {/* Border layer — slightly larger, same clip */}
       <div style={{
         position: "absolute",
@@ -141,6 +147,7 @@ function PixelCornerBox({
         clipPath: "polygon(" + clip + ")",
         zIndex: 1,
         overflow: "hidden",
+        ...innerPadding,
       }}>
         <PixelCorners steps={steps} s={s} color={bc} />
         {children}
