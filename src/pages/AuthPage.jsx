@@ -102,7 +102,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
 
         {/* Signup success */}
         {signupSuccess ? (
-          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, textAlign: "center" >
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Check your email</div>
             <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
@@ -132,7 +132,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
 
         /* Reset password form (after clicking email link) */
         ) : mode === "reset" ? (
-          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32 >
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 6 }}>Set a new password</div>
             <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 24 }}>Choose something you'll remember.</div>
             <div style={{ marginBottom: 24 }}>

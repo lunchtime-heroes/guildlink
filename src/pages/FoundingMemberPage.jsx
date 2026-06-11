@@ -109,7 +109,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
               </div>
             ))}
           </div>
-        </div>
+        </PixelCornerBox>
 
         {/* Algorithm section */}
         <div style={{ marginBottom: 0 }}>
@@ -174,7 +174,8 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
             ))}
             <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
               That's it. The Charts reflect the conversation happening across the platform over the last seven days. The power of capturing this movement is in how it reveals games you didn't know about.
-            </PixelCornerBox>
+            </p>
+          </PixelCornerBox>
 
           {/* Your profile */}
           <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: isMobile ? 20 : 32, marginBottom: 48 }}>
@@ -183,8 +184,8 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
               Every time you add a game to your shelf, write a review, post or comment, or join a guild, you're building a clear picture of who you are as a gamer. The more you share, the more tailored your discovery recommendations become. The goal is to help you find your next favorite game. Your data stays on GuildLink, works for you, and you can export or delete it at any time.
             </p>
           </PixelCornerBox>
-        </PixelCornerBox>
-      </PixelCornerBox>
+        </div>
+      </div>
 
       {/* What We Don't Do — full width gold hero */}
       <div style={{
