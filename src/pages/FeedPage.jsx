@@ -1003,8 +1003,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))", padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
                 </div>
               </div>
-              <div style={{ width: "100%" }}>
-                <PixelButton size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ width: "100%", justifyContent: "center" }} onClick={async () => {
+              <PixelButton fullWidth size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={async () => {
                   const { data: { user: au } } = await supabase.auth.getUser();
                   if (!au) return;
                   await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
@@ -1017,7 +1016,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle="linear-gradient(135deg, rgba(180,120,0,0.12), rgba(140,90,0,0.08))" style={{ padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
