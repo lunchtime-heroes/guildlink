@@ -194,7 +194,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
-  const [followedGames, setFollowedGames] = useState([]);
   const [suggestedGamers, setSuggestedGamers] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
@@ -401,7 +400,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!isGuest) {
       loadFollowing();
       loadPlayingGames();
-      loadFollowedGames();
       loadSuggestedGamers();
       loadDiscoveryCards();
     }
@@ -533,16 +531,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (data) setPlayingGames(data.map(d => d.games).filter(Boolean));
   };
 
-  const loadFollowedGames = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("follows")
-      .select("games(id, name, genre, cover_url)")
-      .eq("follower_id", user.id)
-      .not("followed_game_id", "is", null);
-    if (data) setFollowedGames(data.map(d => d.games).filter(Boolean));
-  };
 
   const loadFollowing = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1026,7 +1014,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")"} style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>

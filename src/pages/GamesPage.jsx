@@ -5,7 +5,6 @@ import { logChartEvent } from "../utils.js";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
-const GAMES = {};
 
 function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSignIn }) {
   // ── Games data ──
@@ -36,7 +35,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [expandedOverall, setExpandedOverall] = useState(null);
   const [expandedGenre, setExpandedGenre] = useState({});
   const [prevRanks, setPrevRanks] = useState({});
-  const [genreLeaders, setGenreLeaders] = useState({});
   const [genreContext, setGenreContext] = useState({});
   const [sparklines, setSparklines] = useState({});
   const [loadingSparkline, setLoadingSparkline] = useState({});
@@ -45,8 +43,6 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const COLORS = ['#0ea5e9','#f59e0b','#10b981','#ef4444','#3b82f6','#0d9488','#f97316','#38bdf8'];
 
   const gameVisuals = (g) => {
-    const hard = Object.values(GAMES).find(h => h.name.toLowerCase() === g.name?.toLowerCase());
-    if (hard) return { color: hard.color };
     const colorIndex = (g.name || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % COLORS.length;
     return { color: COLORS[colorIndex] };
   };
@@ -681,7 +677,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       {/* ── Game Discovery Card ── */}
       {!currentUser ? (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={C.goldGlow} style={{ marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")"} style={{ marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: C.gold, marginBottom: 4, letterSpacing: "-0.3px" }}>Game Discovery</div>
             <div style={{ color: C.textMuted, fontSize: 13 }}>Game discovery works when you build your game shelf.</div>
@@ -692,7 +688,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           </button>
         </PixelCornerBox>
       ) : (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={C.goldGlow} style={{ marginBottom: 32 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")"} style={{ marginBottom: 32 }}>
           {/* Card header */}
           <div onClick={() => setDiscoveryOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
