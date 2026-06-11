@@ -152,9 +152,11 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
 
   return (
     <div>
-      {shelfGames.map((g, i) => (
-        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: i < shelfGames.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
+      {shelfGames.map((g, i) => {
+        const notLast = i < shelfGames.length - 1;
+        return (
+        <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", "/game/" + g.id); }}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: notLast ? "1px solid " + C.border : "none", cursor: "pointer" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -163,10 +165,13 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
           </div>
           <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+
+const BADGE_CLIP = "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))";
 
 function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit, setGameDefaultTab }) {
   const user = currentUser;
@@ -974,25 +979,30 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               Nothing on your shelf yet.{" "}
               <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, cursor: "pointer" }}>Add games →</span>
             </div>
-          ) : playingGames.map((g, i) => (
-            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < playingGames.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}
+          ) : playingGames.map((g, i) => {
+            const notLast = i < playingGames.length - 1;
+            return (
+            <div key={g.id} onClick={() => { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", "/game/" + g.id); }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: notLast ? "1px solid " + C.border : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
             >
               <span style={{ color: C.textMuted, fontSize: 13, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
               <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
-          ))}
+            );
+          })}
         </PixelCornerBox>
 
         <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Gamers</div>
           {suggestedGamers.length === 0 ? (
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Add games to your shelf to find players like you.</div>
-          ) : suggestedGamers.map((p, i) => (
-            <div key={p.id} style={{ marginBottom: i < suggestedGamers.length - 1 ? 14 : 0 }}>
-              <div onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: p.id }, "", `/player/${(p.handle || p.id).replace("@","")}`); }}
+          ) : suggestedGamers.map((p, i) => {
+            const isLast = i === suggestedGamers.length - 1;
+            return (
+            <div key={p.id} style={{ marginBottom: isLast ? 0 : 14 }}>
+              <div onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: p.id }, "", "/player/" + (p.handle || p.id).replace("@","")); }}
                 style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -1000,7 +1010,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
-                  {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))", padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
+                  {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: BADGE_CLIP, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
                 </div>
               </div>
               <PixelButton fullWidth size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={async () => {
@@ -1009,10 +1019,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
                   setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
                   loadFollowing();
-                }}>+ Follow</PixelButton>
-              </div>
+                }}><span>{"+ Follow"}</span></PixelButton>
             </div>
-          ))}
+            );
+          })}
         </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
@@ -1021,9 +1031,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
           </div>
-          {sidebarNPCs.map((npc, i, arr) => (
-            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); window.history.pushState({ page: "npc", npcId: npc.id }, "", `/npc/${npc.id}`); }}
-              style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? "1px solid " + C.goldBorder : "none", cursor: "pointer" }}
+          {sidebarNPCs.map((npc, i, arr) => {
+            const notLast = i < arr.length - 1;
+            return (
+            <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); window.history.pushState({ page: "npc", npcId: npc.id }, "", "/npc/" + npc.id); }}
+              style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: notLast ? 10 : 0, marginBottom: notLast ? 10 : 0, borderBottom: notLast ? "1px solid " + C.goldBorder : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
             >
@@ -1034,7 +1046,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               </div>
               <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
-          ))}
+            );
+          })}
         </PixelCornerBox>
         )}
       </div>
@@ -1063,9 +1076,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 {/* @mention dropdown — portalled to body to escape any overflow clipping */}
                 {mentionResults.length > 0 && mentionDropdownPos && ReactDOM.createPortal(
                   <div style={{ position: "absolute", top: mentionDropdownPos.top, left: mentionDropdownPos.left, width: mentionDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 9999, maxWidth: 400, maxHeight: 320, overflowY: "auto", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {mentionResults.map((item, i) => (
+                    {mentionResults.map((item, i) => {
+                      const notLast = i < mentionResults.length - 1;
+                      return (
                       <div key={item.id || item.igdb_id} onClick={() => selectMention(item)}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent", borderBottom: i < mentionResults.length - 1 ? "1px solid " + C.border : "none" }}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", background: i === mentionIndex ? C.surfaceHover : "transparent", borderBottom: notLast ? "1px solid " + C.border : "none" }}
                         onMouseEnter={() => setMentionIndex(i)}>
                         {item._type === "player" ? (
                           <>
@@ -1099,7 +1114,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                           </>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>,
                   document.body
                 )}
@@ -1120,9 +1136,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                       />
                       {nudgeResults.length > 0 && nudgeDropdownPos && ReactDOM.createPortal(
                         <div style={{ position: "absolute", top: nudgeDropdownPos.top, left: nudgeDropdownPos.left, width: nudgeDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", maxHeight: 260, overflowY: "auto" }}>
-                          {nudgeResults.map((item, i) => (
+                          {nudgeResults.map((item, i) => {
+                            const notLast = i < nudgeResults.length - 1;
+                            return (
                             <div key={item.id || item.igdb_id} onMouseDown={() => selectNudgeGame(item)}
-                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", borderBottom: i < nudgeResults.length - 1 ? "1px solid " + C.border : "none", background: "transparent" }}
+                              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer", borderBottom: notLast ? "1px solid " + C.border : "none", background: "transparent" }}
                               onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                               {item.cover_url
@@ -1135,7 +1153,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                               </div>
                               {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>,
                         document.body
                       )}
@@ -1151,7 +1170,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                       {taggedGames.map(gameId => {
                         const game = dbGames[gameId];
                         return (
-                          <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))", padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                          <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: BADGE_CLIP, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
                             {game?.name || gameId}
                             <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
                           </span>
