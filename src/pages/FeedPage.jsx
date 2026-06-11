@@ -928,8 +928,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       {!isMobile && (
       <div style={{ width: 230, flexShrink: 0 }}>
         {isGuest ? (
-          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "22, " + C.teal + "22)" }} />
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ marginBottom: 14 }}>
+            <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "22, " + C.teal + "22)", marginTop: -1, marginLeft: -1, marginRight: -1 }} />
             <div style={{ padding: "0 16px 18px", marginTop: -22 }}>
               <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: "2px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
               <div style={{ marginTop: 10, marginBottom: 14 }}>
@@ -942,8 +942,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             </div>
           </PixelCornerBox>
         ) : user ? (
-          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "44, " + C.teal + "44)" }} />
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ marginBottom: 14 }}>
+            <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "44, " + C.teal + "44)", marginTop: -1, marginLeft: -1, marginRight: -1, borderRadius: 0 }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22, overflow: "visible" }}>
               <Avatar initials={user.avatar} size={64} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
               <div style={{ marginTop: 8 }}>
@@ -1000,22 +1000,24 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
-                  {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
+                  {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))", padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
                 </div>
               </div>
-              <button onClick={async () => {
-                const { data: { user: au } } = await supabase.auth.getUser();
-                if (!au) return;
-                await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
-                setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
-                loadFollowing();
-              }} style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Follow</button>
+              <div style={{ width: "100%" }}>
+                <PixelButton size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ width: "100%", justifyContent: "center" }} onClick={async () => {
+                  const { data: { user: au } } = await supabase.auth.getUser();
+                  if (!au) return;
+                  await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
+                  setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
+                  loadFollowing();
+                }}>+ Follow</PixelButton>
+              </div>
             </div>
           ))}
         </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle="linear-gradient(135deg, rgba(180,120,0,0.12), rgba(140,90,0,0.08))" style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
@@ -1029,7 +1031,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <Avatar initials={npc.avatar_initials || "?"} size={30} isNPC={true} status={npc.status} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: C.gold, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.name}</div>
-                <div style={{ color: C.textDim, fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.role}</div>
+                <div style={{ color: C.gold + "88", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{npc.role}</div>
               </div>
               <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
@@ -1150,7 +1152,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                       {taggedGames.map(gameId => {
                         const game = dbGames[gameId];
                         return (
-                          <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                          <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))", padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
                             {game?.name || gameId}
                             <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
                           </span>
