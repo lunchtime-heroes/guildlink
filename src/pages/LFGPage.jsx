@@ -3,6 +3,7 @@ import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import GuildCard from "../components/GuildCard.jsx";
 import { isUsernameRestricted } from "../utils.js";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCurrentGuild }) {
   const [activeTab, setActiveTab] = useState("find-guilds");
@@ -118,7 +119,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     }
   };
 
-  const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
+  const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 2, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
 
   const tabs = [
     { id: "find-guilds", label: "Find Guilds" },
@@ -142,10 +143,10 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
         <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Guilds are the people you play games with. Join a guild to coordinate play schedules and find new games.</p>
       </div>
 
-      <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4, marginBottom: 24, gap: 2 }}>
+      <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 4, marginBottom: 24, gap: 2 }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ flex: 1, padding: "8px 16px", background: activeTab === t.id ? C.accentGlow : "transparent", border: activeTab === t.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 9, color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ flex: 1, padding: "8px 16px", background: activeTab === t.id ? C.accentGlow : "transparent", border: activeTab === t.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 2, color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             {t.label}
           </button>
         ))}
@@ -154,7 +155,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
       {activeTab === "find-guilds" && (
         <div>
           {showCreateForm ? (
-            <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+            <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Create a Guild</div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ color: C.textDim, fontSize: 12, marginBottom: 6 }}>Name *</div>
@@ -185,22 +186,22 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
                 </label>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => setShowCreateForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={() => setShowCreateForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 2, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                 <button onClick={createGuild} disabled={!createForm.name.trim() || creating}
-                  style={{ background: createForm.name.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: createForm.name.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: createForm.name.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 2, padding: "8px 24px", color: createForm.name.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                   {creating ? "Creating..." : "Create Guild"}
                 </button>
               </div>
-            </div>
+            </PixelCornerBox>
           ) : (
             <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-              <input value={guildSearch} onChange={e => setGuildSearch(e.target.value)} placeholder="Search for guilds by name" style={{ flex: 1, minWidth: 160, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+              <input value={guildSearch} onChange={e => setGuildSearch(e.target.value)} placeholder="Search for guilds by name" style={{ flex: 1, minWidth: 160, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 2, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
               <button onClick={() => setLfmFilter(f => !f)}
-                style={{ background: lfmFilter ? "#22c55e22" : C.surface, border: "1px solid " + (lfmFilter ? "#22c55e44" : C.border), borderRadius: 8, padding: "8px 16px", color: lfmFilter ? "#22c55e" : C.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: lfmFilter ? "#22c55e22" : C.surface, border: "1px solid " + (lfmFilter ? "#22c55e44" : C.border), borderRadius: 2, padding: "8px 16px", color: lfmFilter ? "#22c55e" : C.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 Looking for Members
               </button>
               {currentUser && (
-                <button onClick={() => setShowCreateForm(true)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={() => setShowCreateForm(true)} style={{ background: C.accent, border: "none", borderRadius: 2, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                   + Create a Guild
                 </button>
               )}
@@ -237,17 +238,16 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontSize: 13, color: C.textMuted, maxWidth: 360, margin: "0 auto" }}>Find one above or create your own.</div>
             </div>
           ) : myGuilds.map(g => (
-            <div key={g.id} onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }}
-              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
-              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+            <PixelCornerBox key={g.id} size="lg" borderColor={C.border} bg={C.surface}
+              style={{ padding: 20, marginBottom: 12, cursor: "pointer" }}
+              onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 6 }}>{g.name}</div>
               {g.description && <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{g.description}</div>}
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                {g.looking_for_members && <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>LFM</span>}
+                {g.looking_for_members && <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 2, padding: "3px 8px" }}>LFM</span>}
                 <span style={{ color: C.textDim, fontSize: 12 }}>{g.is_public ? "Public" : "Private"}</span>
               </div>
-            </div>
+            </PixelCornerBox>
           ))}
         </div>
       )}

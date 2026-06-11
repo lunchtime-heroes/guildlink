@@ -4,6 +4,7 @@ import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { NPCBadge } from "../components/FoundingBadge.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, setCurrentPlayer, isMobile, currentUser, onQuestTrigger }) {
   const [activeTab, setActiveTab] = useState("posts");
@@ -128,7 +129,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                 <h1 style={{ margin: 0, fontWeight: 900, fontSize: isMobile ? 20 : 26, color: C.gold, letterSpacing: "-0.5px" }}>{displayNPC.name}</h1>
                 <NPCBadge />
                 {displayNPC.universe && (
-                  <span style={{ background: C.gold + "18", color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                  <span style={{ background: C.gold + "18", color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 2, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
                     {displayNPC.universe_icon || "⚔️"} {displayNPC.universe}
                   </span>
                 )}
@@ -143,7 +144,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
               )}
               {currentUser && (
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.goldGlow : C.gold, border: "1px solid " + C.gold, borderRadius: 8, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.goldGlow : C.gold, border: "1px solid " + C.gold, borderRadius: 2, padding: "7px 18px", color: followed ? C.gold : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     {followLoading ? "..." : followed ? "✓ Following" : "+ Follow"}
                   </button>
                 </div>
@@ -156,7 +157,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                 { label: "Yrs Service", value: displayNPC.years_of_service || "—", color: "#e8d5a0" },
                 { label: "Associates", value: displayNPC.connections || "—", color: C.textMuted },
               ].map(s => (
-                <div key={s.label} style={{ background: "rgba(0,0,0,0.4)", border: "1px solid " + C.goldBorder, borderRadius: 10, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 90 }}>
+                <div key={s.label} style={{ background: "rgba(0,0,0,0.4)", border: "1px solid " + C.goldBorder, borderRadius: 4, padding: isMobile ? "8px 12px" : "12px 16px", textAlign: "center", flex: isMobile ? 1 : "none", minWidth: isMobile ? 0 : 90 }}>
                   <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 18, color: s.color }}>{s.value}</div>
                   <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 3 }}>{s.label}</div>
                 </div>
@@ -241,15 +242,12 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 14 }}>
                 {(displayNPC.stats || []).map((stat, i) => (
-                  <div key={i} style={{
-                    background: C.surface, border: "1px solid " + C.goldBorder,
-                    borderRadius: 14, padding: 20, position: "relative", overflow: "hidden",
-                  }}>
+                  <PixelCornerBox key={i} size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ padding: 20, position: "relative" }}>
                     <div style={{ position: "absolute", top: 0, right: 0, width: 60, height: 60, background: "radial-gradient(circle, " + C.gold + "08, transparent)" }} />
                     <div style={{ fontWeight: 900, fontSize: 28, color: C.gold, marginBottom: 6, letterSpacing: "-0.5px" }}>{stat.value}</div>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{stat.label}</div>
                     {stat.note && <div style={{ color: C.textDim, fontSize: 12, fontStyle: "italic", lineHeight: 1.5 }}>{stat.note}</div>}
-                  </div>
+                  </PixelCornerBox>
                 ))}
               </div>
             )}
@@ -259,7 +257,7 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
         {activeTab === "lore" && (
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap: 20 }}>
             <div>
-              <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 28, marginBottom: 16 }}>
+              <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ padding: 28, marginBottom: 16 }}>
                 <div style={{ fontWeight: 800, color: C.gold, fontSize: 18, marginBottom: 4 }}>Origin</div>
                 <div style={{ color: C.gold + "66", fontSize: 12, marginBottom: 16 }}>
                   From the official {displayNPC.universe || "GuildLink"} lore archives
@@ -267,18 +265,18 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                 <p style={{ color: C.text, fontSize: 15, lineHeight: 1.8, margin: 0 }}>
                   {displayNPC.lore || displayNPC.bio || "Lore coming soon."}
                 </p>
-              </div>
+              </PixelCornerBox>
               {displayNPC.personality && (
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 24 }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 24 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 10 }}>Personality</div>
                   <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.75, margin: 0 }}>{displayNPC.personality}</p>
-                </div>
+                </PixelCornerBox>
               )}
             </div>
 
             <div>
               {displayNPC.universe && (
-                <div style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, marginBottom: 14 }}>
+                <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ padding: 20, marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 14 }}>Universe</div>
                   <div style={{ textAlign: "center", padding: "20px 0" }}>
                     <div style={{ fontSize: 40, marginBottom: 8 }}>{displayNPC.universe_icon || "⚔️"}</div>
@@ -290,30 +288,30 @@ function NPCProfilePage({ npcId, setActivePage, setCurrentNPC, setCurrentGame, s
                       📍 {displayNPC.location}
                     </div>
                   )}
-                </div>
+                </PixelCornerBox>
               )}
 
               {(displayNPC.games || []).length > 0 && (
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 14 }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 12 }}>Favorite Genres</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {(displayNPC.games || []).map((g, i) => (
-                      <span key={i} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "4px 10px", color: C.textMuted, fontSize: 12 }}>{g}</span>
+                      <span key={i} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 2, padding: "4px 10px", color: C.textMuted, fontSize: 12 }}>{g}</span>
                     ))}
                   </div>
-                </div>
+                </PixelCornerBox>
               )}
 
-              <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 20, textAlign: "center" }}>
+              <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 20, textAlign: "center" }}>
                 <div style={{ fontWeight: 700, color: C.gold, fontSize: 14, marginBottom: 8 }}>Meet all characters</div>
                 <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
                   Browse all GuildLink original characters and the worlds they come from.
                 </div>
                 <button onClick={() => setActivePage("npcs")}
-                  style={{ background: C.gold, border: "none", borderRadius: 8, padding: "8px 18px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: C.gold, border: "none", borderRadius: 2, padding: "8px 18px", color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   See all characters
                 </button>
-              </div>
+              </PixelCornerBox>
             </div>
           </div>
         )}

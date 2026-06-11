@@ -3,6 +3,7 @@ import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, setGameDefaultTab }) {
   const [tab, setTab] = useState("feed");
@@ -102,7 +103,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
     const coverW = isMobile ? 72 : 96;
     return (
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ marginBottom: 10, overflow: "hidden" }}>
         <div style={{ display: "flex" }}>
           <div onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
             style={{ width: coverW, flexShrink: 0, cursor: "pointer", alignSelf: "stretch", overflow: "hidden", position: "relative" }}>
@@ -117,7 +118,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 style={{ fontWeight: 800, color: C.text, fontSize: isMobile ? 14 : 16, cursor: "pointer", lineHeight: 1.3 }}>
                 {game.name}
               </span>
-              <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "3px 10px", color: C.gold, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+              <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 2, padding: "3px 10px", color: C.gold, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
                 {review.rating}/10
               </div>
             </div>
@@ -130,7 +131,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 {profile?.username || "Guildies Member"}
               </span>
               {similarity !== null && currentUser && review.user_id !== currentUser.id && (
-                <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
+                <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 2, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
                   {similarity > 0 ? similarity + " games in common" : "no games in common"}
                 </span>
               )}
@@ -138,7 +139,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
               {review.time_played && <span style={{ color: C.textDim, fontSize: 11 }}>· {review.time_played}h</span>}
               {currentUser && review.user_id === currentUser.id && (
                 <button onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
-                  style={{ marginLeft: "auto", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", color: C.textMuted, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                  style={{ marginLeft: "auto", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 2, padding: "2px 8px", color: C.textMuted, fontSize: 11, cursor: "pointer", flexShrink: 0 }}>Edit</button>
               )}
             </div>
             {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{review.headline}</div>}
@@ -151,7 +152,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
             <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{review.content}</p>
           </div>
         )}
-      </div>
+      </PixelCornerBox>
     );
   };
 
@@ -162,10 +163,10 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
 
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4, marginBottom: 20, gap: 2 }}>
+          <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 4, marginBottom: 20, gap: 2 }}>
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: "1px solid " + (tab === t.id ? C.accentDim : "transparent"), borderRadius: 9, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: "1px solid " + (tab === t.id ? C.accentDim : "transparent"), borderRadius: 2, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {t.label}
               </button>
             ))}
@@ -175,17 +176,17 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
             <>
               {loading ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[1,2,3].map(i => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, height: 120 }} />)}
+                  {[1,2,3].map(i => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 20, height: 120 }} />)}
                 </div>
               ) : reviews.length === 0 ? (
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "60px 24px", textAlign: "center" }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: "60px 24px", textAlign: "center" }}>
                   <div style={{ color: C.text, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
                     {tab === "following" ? "No reviews from people you follow yet." : "No reviews yet."}
                   </div>
                   <div style={{ color: C.textMuted, fontSize: 13 }}>
                     {tab === "following" ? "Follow more gamers to see their reviews here." : "Be the first to review a game."}
                   </div>
-                </div>
+                </PixelCornerBox>
               ) : (
                 reviews.map(r => <ReviewCard key={r.id} review={r} />)
               )}
@@ -200,7 +201,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                   onChange={e => searchGames(e.target.value)}
                   placeholder="Search by name or @game..."
                   autoFocus
-                  style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: "12px 16px", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box" }}
                 />
               </div>
               {gameSearch.length < 2 ? (
@@ -213,7 +214,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {gameResults.map(g => (
                     <div key={g.id} onClick={() => { setGameDefaultTab?.("reviews"); setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }}
-                      style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
+                      style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                       <div style={{ flex: 1 }}>
@@ -231,7 +232,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
 
         {!isMobile && (
           <div style={{ width: 220, flexShrink: 0 }}>
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+            <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
               <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border }}>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 13 }}>Top Rated</div>
                 <div style={{ color: C.textDim, fontSize: 11, marginTop: 2 }}>By avg. community rating</div>
@@ -248,10 +249,10 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                     <div style={{ fontWeight: 600, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
                     <div style={{ color: C.textDim, fontSize: 10, marginTop: 1 }}>{g.count} review{g.count !== 1 ? "s" : ""}</div>
                   </div>
-                  <div style={{ background: C.goldDim, color: C.gold, borderRadius: 5, padding: "2px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{g.avg.toFixed(1)}</div>
+                  <div style={{ background: C.goldDim, color: C.gold, borderRadius: 2, padding: "2px 6px", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{g.avg.toFixed(1)}</div>
                 </div>
               ))}
-            </div>
+            </PixelCornerBox>
           </div>
         )}
       </div>
