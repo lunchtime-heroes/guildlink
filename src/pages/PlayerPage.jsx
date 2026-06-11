@@ -178,13 +178,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             </div>
           </div>
         </div>
-      </div>
+      </PixelCornerBox>
       {/* Private wall */}
       <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: isMobile ? 32 : 48, textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
         <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>This account is private</div>
       </PixelCornerBox>
-    </PixelCornerBox>
+    </div>
   );
 
   return (
@@ -275,7 +275,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
           </div>
 
         </div>
-      </div>
+      </PixelCornerBox>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
@@ -423,7 +423,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
           )}
         </div>
       )}
-    </PixelCornerBox>
+    </div>
   );
 }
 

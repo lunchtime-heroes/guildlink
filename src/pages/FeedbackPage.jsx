@@ -77,7 +77,7 @@ function FeedbackPage({ currentUser, isMobile, setActivePage }) {
       <button onClick={() => setActivePage("feed")} style={{ width: "100%", background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginTop: 10, padding: "8px" }}>
         Cancel
       </button>
-    </PixelCornerBox>
+    </div>
   );
 }
 
