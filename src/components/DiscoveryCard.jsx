@@ -3,6 +3,8 @@ import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
+import { PixelButton } from "./PixelButton.jsx";
+import { GameTag } from "./GameTag.jsx";
 
 function getCardCopy(card, actorName) {
   switch (card.discovery_type) {
@@ -224,12 +226,8 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     setFollowed(true);
   };
 
-  const GameTag = game ? (
-    <span
-      onClick={e => { e.stopPropagation(); navigateToGame(); }}
-      style={{ display: "inline-block", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "2px 10px", fontSize: 13, color: C.accentSoft, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
-      {game.name}
-    </span>
+  const gameTagEl = game ? (
+    <GameTag label={game.name} onClick={() => { navigateToGame(); }} style={{ marginTop: 4 }} />
   ) : null;
 
   return (
@@ -269,23 +267,13 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             {typeLabel && (
               <>
                 <span style={{ color: C.border, fontSize: 10 }}>·</span>
-                <span style={{
-                  background: typeLabel.color + "18",
-                  border: "1px solid " + typeLabel.color + "44",
-                  borderRadius: 3, padding: "1px 7px",
-                  fontSize: 10, fontWeight: 700, color: typeLabel.color,
-                }}>{typeLabel.label}</span>
+                <GameTag label={typeLabel.label} variant="muted" />
               </>
             )}
             {card.overlap_count && card.actor_count === 1 && !isSimilarityCard ? (
               <>
                 <span style={{ color: C.border, fontSize: 10 }}>·</span>
-                <span style={{
-                  background: C.accentGlow,
-                  border: "1px solid " + C.accentDim,
-                  borderRadius: 3, padding: "1px 7px",
-                  fontSize: 10, fontWeight: 700, color: C.accentSoft,
-                }}>{card.overlap_count} games in common</span>
+                <GameTag label={card.overlap_count + " games in common"} />
               </>
             ) : null}
           </div>
@@ -295,7 +283,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, lineHeight: 1.4 }}>
               {copy.phrase}
             </div>
-            {!copy.no_game_tag && GameTag}
+            {!copy.no_game_tag && gameTagEl}
           </div>
 
           {/* Sub */}
@@ -323,41 +311,33 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Ask CTA */}
             {copy.cta_ask && (
-              <button
-                onClick={() => {
-                  if (isGuest) { onSignIn?.("Sign in to start a conversation."); return; }
-                  navigateToReviews();
-                }}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {copy.cta_ask} →
-              </button>
+              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
+                onClick={() => { if (isGuest) { onSignIn?.("Sign in to start a conversation."); return; } navigateToReviews(); }}>
+                {copy.cta_ask + " →"}
+              </PixelButton>
             )}
 
             {/* Write a review CTA */}
             {copy.cta_review && game && (
-              <button
-                onClick={() => {
-                  if (isGuest) { onSignIn?.("Sign in to write a review."); return; }
-                  navigateToReviews();
-                }}
-                style={{ background: C.goldDim || C.accentGlow, border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                Write a Review →
-              </button>
+              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.gold + "44"} color={C.gold}
+                onClick={() => { if (isGuest) { onSignIn?.("Sign in to write a review."); return; } navigateToReviews(); }}>
+                {"Write a Review →"}
+              </PixelButton>
             )}
 
             {/* Shelf buttons */}
             {copy.cta_shelf && !addedToShelf && !dismissed && game && (
               <>
                 {SHELF_BUTTONS.map(({ status, label }) => (
-                  <button key={status} onClick={() => addToShelf(status)}
-                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "4px 8px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  <PixelButton key={status} size="sm" bg={C.surfaceRaised} borderColor={C.border} color={C.textMuted}
+                    onClick={() => addToShelf(status)}>
                     {label}
-                  </button>
+                  </PixelButton>
                 ))}
-                <button onClick={markNotInterested}
-                  style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "4px 8px", color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                  Not Interested
-                </button>
+                <PixelButton size="sm" bg={C.surfaceRaised} borderColor={C.border} color={C.textDim}
+                  onClick={markNotInterested}>
+                  {"Not Interested"}
+                </PixelButton>
               </>
             )}
 
@@ -367,10 +347,10 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Follow */}
             {copy.cta_follow && actor && !followed && (
-              <button onClick={followActor}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                Follow {actor.username}
-              </button>
+              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
+                onClick={followActor}>
+                {"Follow " + actor.username}
+              </PixelButton>
             )}
 
             {followed && (
@@ -379,11 +359,10 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Charts link */}
             {copy.cta_charts && game && (
-              <button
-                onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
-                style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "4px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                See on Charts →
-              </button>
+              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
+                onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
+                {"See on Charts →"}
+              </PixelButton>
             )}
 
           </div>

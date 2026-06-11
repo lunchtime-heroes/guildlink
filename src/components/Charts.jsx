@@ -3,6 +3,8 @@ import { C } from "../constants.js";
 import { useWindowSize } from "../utils.js";
 import supabase from "../supabase.js";
 import { ShareChartsButton } from "./ShareButton.jsx";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
+import { PixelButton } from "./PixelButton.jsx";
 
 function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, limit }) {
   const isMobile = useWindowSize() < 768;
@@ -94,10 +96,10 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
   };
 
   return (
-    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 16, marginBottom: 14 }}>
+    <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16, marginBottom: 14 }}>
       <div onClick={() => isMobile && setCollapsed(c => !c)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: collapsed ? 0 : 12, cursor: isMobile ? "pointer" : "default" }}>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          {category ? `${category} Charts` : "The Charts"}
+          {category ? category + " Charts" : "The Charts"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ color: C.textDim, fontSize: 10 }}>This week</div>
@@ -120,10 +122,11 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
         <div>
           {charts.map((entry, i) => {
             const mv = getMovement(entry.id, entry.rank);
+            const notLast = i < charts.length - 1;
             return (
               <div key={entry.id}
                 onClick={() => { setCurrentGame(entry.id); }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < charts.length - 1 ? "1px solid " + C.border : "none", cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: notLast ? "1px solid " + C.border : "none", cursor: "pointer" }}>
                 <div style={{ width: 18, textAlign: "center", color: i < 3 ? C.gold : C.textDim, fontWeight: 800, fontSize: i < 3 ? 13 : 11, flexShrink: 0 }}>
                   {entry.rank}
                 </div>
@@ -135,14 +138,13 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
             );
           })}
           {limit && (
-            <button onClick={() => setActivePage("games")}
-              style={{ width: "100%", marginTop: 10, background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              See Full Charts →
-            </button>
+            <PixelButton fullWidth size="sm" bg="transparent" borderColor={C.border} color={C.textMuted} style={{ justifyContent: "center", marginTop: 10 }} onClick={() => setActivePage("games")}>
+              {"See Full Charts →"}
+            </PixelButton>
           )}
         </div>
       ))}
-    </div>
+    </PixelCornerBox>
   );
 }
 

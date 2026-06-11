@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
+import { PixelButton } from "./PixelButton.jsx";
+import { GameTag } from "./GameTag.jsx";
 
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
@@ -108,21 +110,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         }}>
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => (
-            <button key={opt.status}
-              onClick={() => handleShelfSelect(opt.status)}
-              style={{
-                background: opt.status === "not_for_me" ? "transparent" : C.surfaceRaised,
-                border: "1px solid " + (opt.status === "not_for_me" ? C.border : C.border),
-                borderRadius: 3,
-                padding: "9px 12px",
-                color: opt.status === "not_for_me" ? C.textDim : C.text,
-                fontSize: 12, fontWeight: 600,
-                cursor: "pointer", width: "100%",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = C.surfaceRaised}
-              onMouseLeave={e => e.currentTarget.style.background = opt.status === "not_for_me" ? "transparent" : C.surfaceRaised}>
+            <PixelButton key={opt.status} fullWidth size="sm"
+              bg={opt.status === "not_for_me" ? "transparent" : C.surfaceRaised}
+              borderColor={C.border}
+              color={opt.status === "not_for_me" ? C.textDim : C.text}
+              style={{ justifyContent: "center" }}
+              onClick={() => handleShelfSelect(opt.status)}>
               {opt.label}
-            </button>
+            </PixelButton>
           ))}
           <button onClick={() => setShelfOpen(false)}
             style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4 }}>
@@ -145,12 +140,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
       <div style={{ padding: "8px 10px 10px", display: "flex", flexDirection: "column", gap: 5, alignItems: "center", textAlign: "center" }}>
 
         {typeLabel && (
-          <span style={{
-            background: typeLabel.color + "18", border: "1px solid " + typeLabel.color + "44",
-            borderRadius: 3, padding: "1px 6px",
-            fontSize: 9, fontWeight: 700, color: typeLabel.color,
-            textTransform: "uppercase", letterSpacing: "0.4px",
-          }}>{typeLabel.label}</span>
+          <GameTag label={typeLabel.label} variant="muted" style={{ alignSelf: "center" }} />
         )}
 
         {phrase && (
@@ -160,38 +150,16 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {game && (
-          <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
-            <span onClick={e => { e.stopPropagation(); navigateToGame(); }}
-              style={{
-                display: "block",
-                width: "100%",
-                boxSizing: "border-box",
-                background: C.accentGlow, border: "1px solid " + C.accentDim,
-                borderRadius: 3, padding: "2px 10px",
-                fontSize: 11, color: C.accentSoft, fontWeight: 700,
-                cursor: "pointer",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                textAlign: "center",
-              }}>{game.name}</span>
+          <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <GameTag label={game.name} onClick={() => { navigateToGame(); }} style={{ width: "100%", justifyContent: "center" }} />
           </div>
         )}
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <button onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: "1px solid " + C.gold + "88",
-              borderRadius: 3,
-              padding: "6px 8px",
-              color: C.gold,
-              fontSize: 11, fontWeight: 700,
-              cursor: "pointer",
-              marginTop: 2,
-            }}>
-            + Add to Shelf
-          </button>
+          <PixelButton fullWidth size="sm" bg="transparent" borderColor={C.gold + "88"} color={C.gold} style={{ justifyContent: "center", marginTop: 2 }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
+            {"+ Add to Shelf"}
+          </PixelButton>
         )}
 
         {addedToShelf && (
@@ -199,17 +167,15 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {card.discovery_type === "chart_climber" && (
-          <button onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
-            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 8px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-            See The Charts →
-          </button>
+          <PixelButton fullWidth size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
+            {"See The Charts →"}
+          </PixelButton>
         )}
 
         {card.discovery_type === "multi_review_prompt" && (
-          <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}
-            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 8px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-            Write a Review →
-          </button>
+          <PixelButton fullWidth size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
+            {"Write a Review →"}
+          </PixelButton>
         )}
 
       </div>
