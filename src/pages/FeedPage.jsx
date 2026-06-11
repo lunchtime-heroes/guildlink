@@ -3,6 +3,8 @@ import ReactDOM from "react-dom";
 import { C, NPCS, FOUNDING } from "../constants.js";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
@@ -85,9 +87,7 @@ function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp 
             <span style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 12 : 13 }}>
               {isGuest ? "Founding membership is free — for now." : "Founding spots are almost gone."}
             </span>
-            <span style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>
-              {spotsLeft.toLocaleString()} left
-            </span>
+            <GameTag label={spotsLeft.toLocaleString() + " left"} variant="gold" />
           </div>
           <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 0, overflow: "hidden", marginBottom: 4, maxWidth: 280 }}>
             <div style={{ height: "100%", width: pct + "%", background: "linear-gradient(90deg, " + C.gold + "88, " + C.gold + ")", borderRadius: 0, transition: "width 0.6s ease" }} />
@@ -171,7 +171,6 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
   );
 }
 
-const BADGE_CLIP = "polygon(0 3px,1px 3px,1px 1px,3px 1px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 1px,calc(100% - 1px) 1px,calc(100% - 1px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 1px) calc(100% - 3px),calc(100% - 1px) calc(100% - 1px),calc(100% - 3px) calc(100% - 1px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 1px),1px calc(100% - 1px),1px calc(100% - 3px),0 calc(100% - 3px))";
 
 function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit, setGameDefaultTab }) {
   const user = currentUser;
@@ -194,6 +193,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
+  const [followedGames, setFollowedGames] = useState([]);
   const [suggestedGamers, setSuggestedGamers] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
@@ -400,6 +400,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (!isGuest) {
       loadFollowing();
       loadPlayingGames();
+      loadFollowedGames();
       loadSuggestedGamers();
       loadDiscoveryCards();
     }
@@ -531,6 +532,16 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     if (data) setPlayingGames(data.map(d => d.games).filter(Boolean));
   };
 
+  const loadFollowedGames = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("follows")
+      .select("games(id, name, genre, cover_url)")
+      .eq("follower_id", user.id)
+      .not("followed_game_id", "is", null);
+    if (data) setFollowedGames(data.map(d => d.games).filter(Boolean));
+  };
 
   const loadFollowing = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -998,7 +1009,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
-                  {p.overlapCount && <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: BADGE_CLIP, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft }}>{p.overlapCount} games in common</span>}
+                  {p.overlapCount && <GameTag label={p.overlapCount + " games in common"} />}
                 </div>
               </div>
               <PixelButton fullWidth size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={async () => {
@@ -1014,7 +1025,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")"} style={{ padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
@@ -1044,14 +1055,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       {/* Main feed */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {!isGuest && (
-          <div style={{ display: "flex", gap: 4, marginBottom: 14, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4 }}>
-            {[{ id: "forYou", label: "For You" }, { id: "following", label: "Following" }].map(tab => (
-              <button key={tab.id} onClick={() => { setFeedTab(tab.id); if (tab.id === "following") loadFollowingPosts(); }}
-                style={{ flex: 1, background: feedTab === tab.id ? C.accentGlow : "transparent", border: "1px solid " + feedTab === tab.id ? C.accentDim : "transparent", borderRadius: 0, padding: "7px", color: feedTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: feedTab === tab.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <PixelTabBar
+            tabs={[{ id: "forYou", label: "For You" }, { id: "following", label: "Following" }]}
+            active={feedTab}
+            onChange={(id) => { setFeedTab(id); if (id === "following") loadFollowingPosts(); }}
+            style={{ marginBottom: 14 }}
+          />
         )}
         {!isGuest && (
         <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: isMobile ? 12 : 16, marginBottom: 14 }}>
@@ -1086,7 +1095,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                               <div style={{ color: C.gold, fontSize: 13, fontWeight: 600 }}>{item.name}</div>
                               <div style={{ color: C.textDim, fontSize: 10 }}>{item.handle}</div>
                             </div>
-                            <span style={{ color: C.gold, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>NPC</span>
+                            <GameTag label="NPC" variant="gold" style={{ flexShrink: 0 }} />
                           </>
                         ) : (
                           <>
@@ -1158,17 +1167,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                       {taggedGames.map(gameId => {
                         const game = dbGames[gameId];
                         return (
-                          <span key={gameId} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, clipPath: BADGE_CLIP, padding: "3px 8px", color: C.accentSoft, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                            {game?.name || gameId}
-                            <span onClick={() => removeTaggedGame(gameId)} style={{ cursor: "pointer", marginLeft: 2, color: C.textDim, fontWeight: 700 }}>×</span>
-                          </span>
+                          <GameTag key={gameId} label={game?.name || gameId} size="md" onRemove={() => removeTaggedGame(gameId)} />
                         );
                       })}
                       {taggedGames.length === 0 && (
                         <span style={{ color: C.textDim, fontSize: 12 }}>@ a game, player, or NPC to tag</span>
                       )}
                     </div>
-                    <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 0, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s", flexShrink: 0 }}>{posting ? "Posting..." : "Post"}</button>
+                    <PixelButton size="md" onClick={submitPost} disabled={posting || !postText.trim()} bg={postText.trim() ? C.accent : C.surfaceRaised} color={postText.trim() ? "#fff" : C.textDim} style={{ flexShrink: 0 }}>{posting ? "Posting..." : "Post"}</PixelButton>
                   </>
                 )}
               </div>
