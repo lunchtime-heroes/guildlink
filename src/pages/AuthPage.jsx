@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
@@ -101,7 +102,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
 
         {/* Signup success */}
         {signupSuccess ? (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 32, textAlign: "center" }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, textAlign: "center" >
             <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Check your email</div>
             <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
@@ -110,11 +111,11 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
               Click the link to activate your account and jump in.
             </div>
             <div style={{ color: C.textDim, fontSize: 12 }}>Didn't get it? Check your spam folder.</div>
-          </div>
+          </PixelCornerBox>
 
         /* Forgot password email sent */
         ) : forgotSuccess ? (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 32, textAlign: "center" }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Check your email</div>
             <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
@@ -131,30 +132,30 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
 
         /* Reset password form (after clicking email link) */
         ) : mode === "reset" ? (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 32 }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32 >
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 6 }}>Set a new password</div>
             <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 24 }}>Choose something you'll remember.</div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>New Password</div>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="new password"
                 onKeyDown={e => e.key === "Enter" && handle()}
-                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
             </div>
             {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
             <button onClick={handle} disabled={loading}
-              style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              style={{ width: "100%", padding: "12px", borderRadius: 3, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               {loading ? "..." : "Set Password"}
             </button>
-          </div>
+          </PixelCornerBox>
 
         ) : (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 32 }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 32 }}>
             {/* Tab switcher */}
             {mode !== "forgot" && (
-              <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C.surfaceRaised, borderRadius: 10, padding: 4 }}>
+              <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C.surfaceRaised, borderRadius: 3, padding: 4 }}>
                 {["login", "signup"].map(m => (
                   <button key={m} onClick={() => { setMode(m); setError(""); }}
-                    style={{ flex: 1, padding: "8px", borderRadius: 7, border: "none", background: mode === m ? C.accent : "transparent", color: mode === m ? C.accentText : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    style={{ flex: 1, padding: "8px", borderRadius: 3, border: "none", background: mode === m ? C.accent : "transparent", color: mode === m ? C.accentText : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                     {m === "login" ? "Log In" : "Sign Up"}
                   </button>
                 ))}
@@ -167,14 +168,14 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
                   <input value={username} onChange={e => setUsername(e.target.value)} placeholder="you@email.com"
                     onKeyDown={e => e.key === "Enter" && handle()}
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                   <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>Existing member? You can still log in with your username.</div>
                 </div>
                 <div style={{ marginBottom: 8 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password"
                     onKeyDown={e => e.key === "Enter" && handle()}
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                 </div>
                 <div style={{ textAlign: "right", marginBottom: 20 }}>
                   <button onClick={() => { setMode("forgot"); setError(""); }}
@@ -190,13 +191,13 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
                   <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@email.com"
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                 </div>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Password</div>
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password"
                     onKeyDown={e => e.key === "Enter" && handle()}
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                 </div>
                 {/* Patch Notes opt-in */}
                 <div onClick={() => setPatchNotesOptIn(v => !v)}
@@ -219,7 +220,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
                   <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@email.com"
                     onKeyDown={e => e.key === "Enter" && handle()}
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
                 </div>
               </>
             )}
@@ -236,20 +237,20 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
             {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
             <button onClick={handle} disabled={loading}
-              style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              style={{ width: "100%", padding: "12px", borderRadius: 3, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               {loading ? "..." : mode === "login" ? "Log In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
             </button>
 
             {mode === "forgot" && (
               <button onClick={() => { setMode("login"); setError(""); }}
-                style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 3, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
                 Back to log in
               </button>
             )}
 
             {onBack && mode !== "forgot" && (
               <button onClick={onBack}
-                style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 3, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
                 Back
               </button>
             )}
