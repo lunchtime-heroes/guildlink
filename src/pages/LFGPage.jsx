@@ -4,6 +4,7 @@ import supabase from "../supabase.js";
 import GuildCard from "../components/GuildCard.jsx";
 import { isUsernameRestricted } from "../utils.js";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
 
 function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCurrentGuild }) {
   const [activeTab, setActiveTab] = useState("find-guilds");
@@ -143,14 +144,12 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
         <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Guilds are the people you play games with. Join a guild to coordinate play schedules and find new games.</p>
       </div>
 
-      <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 4, marginBottom: 24, gap: 2 }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ flex: 1, padding: "8px 16px", background: activeTab === t.id ? C.accentGlow : "transparent", border: activeTab === t.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 2, color: activeTab === t.id ? C.accentSoft : C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PixelTabBar
+        tabs={tabs}
+        active={activeTab}
+        onChange={(id) => setActiveTab(id)}
+        style={{ marginBottom: 24 }}
+      />
 
       {activeTab === "find-guilds" && (
         <div>

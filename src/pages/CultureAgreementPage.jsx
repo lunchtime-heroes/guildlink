@@ -1,6 +1,7 @@
 import React from "react";
 import { C } from "../constants.js";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { GameTag } from "../components/GameTag.jsx";
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: 40 }}>
@@ -15,7 +16,7 @@ const Highlight = ({ children }) => (
 
 const Blip = ({ level, hours, description }) => (
   <PixelCornerBox size="md" borderColor={C.border} bg={C.surfaceRaised} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", marginBottom: 8 }}>
-    <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "4px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>{level}</div>
+    <GameTag label={level} />
     <div>
       <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{hours}</div>
       <div style={{ color: C.textMuted, fontSize: 13 }}>{description}</div>

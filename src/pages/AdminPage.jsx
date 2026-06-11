@@ -5,6 +5,9 @@ import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [section, setSection] = useState("insights");
@@ -246,14 +249,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       </div>
 
       {/* Section switcher */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {sections.map(s => (
-          <button key={s.id} onClick={() => handleSectionChange(s.id)}
-            style={{ background: section === s.id ? C.accentGlow : C.surface, border: "1px solid " + (section === s.id ? C.accentDim : C.border), borderRadius: 4, padding: "8px 18px", color: section === s.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: section === s.id ? 700 : 400, cursor: "pointer" }}>
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <PixelTabBar
+        tabs={sections}
+        active={section}
+        onChange={(id) => handleSectionChange(id)}
+        style={{ marginBottom: 16 }}
+      />
 
       {/* Tab bar */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24, overflowX: "auto", paddingBottom: 4, borderBottom: "1px solid " + C.border }}>
@@ -538,9 +539,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                           <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{r.username || "Unknown"}</span>
-                          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "2px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
-                            {r.request_type === "export" ? "DATA EXPORT" : r.request_type.toUpperCase()}
-                          </span>
+                          <GameTag label={r.request_type === "export" ? "DATA EXPORT" : r.request_type.toUpperCase()} />
                           <span style={{ background: isPending ? C.gold + "22" : C.online + "22", border: "1px solid " + (isPending ? C.gold + "55" : C.online + "55"), borderRadius: 3, padding: "2px 8px", color: isPending ? C.gold : C.online, fontSize: 11, fontWeight: 700 }}>
                             {r.status.toUpperCase()}
                           </span>
@@ -677,10 +676,11 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 <div style={{ fontSize: 11, color: enrichMsg[game.id] ? C.teal : C.textDim, minWidth: 80, textAlign: "right" }}>
                   {enrichMsg[game.id] || (game.cover_url ? "✓ Has art" : "No art")}
                 </div>
-                <button onClick={() => enrichGame(game)} disabled={enriching[game.id]}
-                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 12px", color: C.accentSoft, fontSize: 11, fontWeight: 600, cursor: enriching[game.id] ? "default" : "pointer", flexShrink: 0, opacity: enriching[game.id] ? 0.6 : 1 }}>
-                  {enriching[game.id] ? "…" : "Enrich"}
-                </button>
+                <div style={{ flexShrink: 0 }}>
+                  <PixelButton size="sm" onClick={() => enrichGame(game)} disabled={enriching[game.id]} bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}>
+                    {enriching[game.id] ? "…" : "Enrich"}
+                  </PixelButton>
+                </div>
               </div>
             ))}
           </PixelCornerBox>

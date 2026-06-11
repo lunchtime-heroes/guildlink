@@ -6,6 +6,8 @@ import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, defaultTab, onTabConsumed, onQuestComplete }) {
   const hardcoded = null;
@@ -495,10 +497,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
             {currentUser && !isGuest && (
               <div style={{ marginBottom: 20 }}>
                 {!showAskForm ? (
-                  <button onClick={() => setShowAskForm(true)}
-                    style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 4, padding: "14px 20px", color: C.accentSoft, fontSize: 14, fontWeight: 700, cursor: "pointer", width: "100%", textAlign: "left" }}>
+                  <PixelButton fullWidth onClick={() => setShowAskForm(true)} bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "flex-start" }}>
                     Ask a question about {game.name}…
-                  </button>
+                  </PixelButton>
                 ) : (
                   <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surface} style={{ padding: 16 }}>
                     <textarea
@@ -537,7 +538,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                         <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{author?.username || "Gamer"}</span>
-                        <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "1px 7px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+                        <GameTag label="Q&A" />
                         <span style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(q.created_at)}</span>
                       </div>
                       <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: 0, fontWeight: 500 }}>{q.content}</p>
@@ -576,10 +577,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: answeringId === q.id ? 10 : 0 }}>
                       <span style={{ color: C.textDim, fontSize: 12 }}>{answerCount} {answerCount === 1 ? "answer" : "answers"}</span>
                       {currentUser && !isGuest && answeringId !== q.id && (
-                        <button onClick={() => { setAnsweringId(q.id); setAnswerText(""); }}
-                          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                        <PixelButton size="sm" onClick={() => { setAnsweringId(q.id); setAnswerText(""); }} bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}>
                           Answer →
-                        </button>
+                        </PixelButton>
                       )}
                       {!currentUser && (
                         <button onClick={() => onSignIn?.("Sign in to answer questions.")}

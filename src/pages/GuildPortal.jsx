@@ -6,6 +6,7 @@ import { Avatar } from "../components/Avatar.jsx";
 import SessionCard from "../components/SessionCard.jsx";
 import GuildActivityFeed from "../components/GuildActivityFeed.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [guild, setGuild] = useState(null);
@@ -452,16 +453,14 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 <a href={guild.website_url} target="_blank" rel="noopener noreferrer" style={{ color: C.accent, fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Website</a>
               )}
               {isMember && (
-                <button onClick={() => toggleNotifPref("notify_on_post")}
-                  style={{ background: notifPrefs.notify_on_post ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_post ? C.accentDim : C.border), borderRadius: 3, padding: "3px 10px", color: notifPrefs.notify_on_post ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                <PixelButton size="sm" onClick={() => toggleNotifPref("notify_on_post")} bg={notifPrefs.notify_on_post ? C.accentGlow : C.surfaceRaised} borderColor={notifPrefs.notify_on_post ? C.accentDim : C.border} color={notifPrefs.notify_on_post ? C.accentSoft : C.textDim}>
                   {notifPrefs.notify_on_post ? "🔔 Posts" : "🔕 Posts"}
-                </button>
+                </PixelButton>
               )}
               {isMember && (
-                <button onClick={() => toggleNotifPref("notify_on_session")}
-                  style={{ background: notifPrefs.notify_on_session ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_session ? C.accentDim : C.border), borderRadius: 3, padding: "3px 10px", color: notifPrefs.notify_on_session ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                <PixelButton size="sm" onClick={() => toggleNotifPref("notify_on_session")} bg={notifPrefs.notify_on_session ? C.accentGlow : C.surfaceRaised} borderColor={notifPrefs.notify_on_session ? C.accentDim : C.border} color={notifPrefs.notify_on_session ? C.accentSoft : C.textDim}>
                   {notifPrefs.notify_on_session ? "🔔 Sessions" : "🔕 Sessions"}
-                </button>
+                </PixelButton>
               )}
               {isLeader && pendingRequests.length > 0 && (
                 <button onClick={() => setShowRequests(r => !r)}

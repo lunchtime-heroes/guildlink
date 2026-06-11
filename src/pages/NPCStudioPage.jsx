@@ -5,6 +5,9 @@ import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 function NPCEditorModal({ npc, onClose, onSaved }) {
   const isNew = !npc;
@@ -732,14 +735,12 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         </div>
 
         {/* Studio tabs */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 4 }}>
-          {[{ id: "characters", label: "Characters" }, { id: "prompts", label: "Daily Prompts" }].map(t => (
-            <button key={t.id} onClick={() => setStudioTab(t.id)}
-              style={{ flex: 1, background: studioTab === t.id ? C2.accentGlow : "transparent", border: "1px solid " + (studioTab === t.id ? C2.accentDim : "transparent"), borderRadius: 3, padding: "8px", color: studioTab === t.id ? C2.accentSoft : C2.textMuted, fontSize: 13, fontWeight: studioTab === t.id ? 700 : 500, cursor: "pointer" }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <PixelTabBar
+          tabs={[{ id: "characters", label: "Characters" }, { id: "prompts", label: "Daily Prompts" }]}
+          active={studioTab}
+          onChange={(id) => setStudioTab(id)}
+          style={{ marginBottom: 24 }}
+        />
 
         {/* Prompts tab */}
         {studioTab === "prompts" && (
@@ -817,7 +818,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       )}
                     </div>
                     {isToday && !isEditing && (
-                      <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 3, padding: "2px 8px", color: C2.gold, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TODAY</div>
+                      <GameTag label="TODAY" variant="gold" />
                     )}
                     {!isEditing && (
                       <button onClick={() => { setEditingPromptId(prompt.id); setEditingPromptText(prompt.question); }}
@@ -987,10 +988,9 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                 </div>
                 <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{npc.bio || "No bio yet."}</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => setSelectedNPC(npc.id)}
-                    style={{ flex: 1, background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "6px", color: C2.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  <PixelButton fullWidth size="sm" onClick={() => setSelectedNPC(npc.id)} bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}>
                     Write as
-                  </button>
+                  </PixelButton>
                   <button onClick={() => { setEditingNPC(npc); setShowEditor(true); }}
                     style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "6px 10px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>
                     Edit
@@ -1117,14 +1117,12 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         {/* Main panel */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
-          <div style={{ display: "flex", gap: 4, marginBottom: studioPrompt ? 12 : 20, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 4 }}>
-            {[{ id: "respond", label: "Respond" }, { id: "threads", label: "Threads" }, { id: "post", label: "Post" }].map(m => (
-              <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
-                style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: "1px solid " + mode === m.id ? C2.accentDim : "transparent", borderRadius: 3, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
-                {m.label}
-              </button>
-            ))}
-          </div>
+          <PixelTabBar
+            tabs={[{ id: "respond", label: "Respond" }, { id: "threads", label: "Threads" }, { id: "post", label: "Post" }]}
+            active={mode}
+            onChange={(id) => { setMode(id); setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
+            style={{ marginBottom: studioPrompt ? 12 : 20 }}
+          />
 
           {/* Daily prompt bulletin */}
           {studioPrompt && (
@@ -1203,10 +1201,9 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       {/* Reply as NPC button + composer */}
                       {!isSelected && (
                         <div style={{ marginTop: 6 }}>
-                          <button onClick={() => { setSelectedPost(post); setComposeText(""); setReplyToComment(null); loadPostComments(post.id); }}
-                            style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          <PixelButton size="sm" onClick={() => { setSelectedPost(post); setComposeText(""); setReplyToComment(null); loadPostComments(post.id); }} bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}>
                             Reply as {npc.name.split(" ")[0]}
-                          </button>
+                          </PixelButton>
                         </div>
                       )}
                       {isSelected && (
@@ -1316,10 +1313,9 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                     {/* Reply as NPC button */}
                     <div style={{ marginTop: 6 }}>
                       {!(selectedPost?.id === thread.id) && (
-                        <button onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }}
-                          style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        <PixelButton size="sm" onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }} bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}>
                           Reply as {npc.name.split(" ")[0]}
-                        </button>
+                        </PixelButton>
                       )}
                     </div>
                     {/* NPC compose box */}

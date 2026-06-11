@@ -6,6 +6,9 @@ import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setGameDefaultTab }) {
   const [profile, setProfile] = useState(null);
@@ -163,6 +166,12 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
 
   const isOwnProfile = currentUser?.id === userId;
   const isPrivateAndLocked = profile.is_private && !isOwnProfile;
+  const overlapLabel = overlapCount > 0 ? overlapCount + " games in common" : "no games in common";
+  const overlapVariant = overlapCount > 0 ? "accent" : "muted";
+  const followBg = followed ? C.accentGlow : C.accent;
+  const followBorderColor = followed ? C.accentDim : C.accent;
+  const followColor = followed ? C.accentSoft : "#fff";
+  const followLabel = followLoading ? "..." : followed ? "✓ Following" : "Follow";
 
   if (isPrivateAndLocked) return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
@@ -210,9 +219,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
               {overlapCount !== null && !isOwnProfile && (
-                <div style={{ display: "inline-flex", alignItems: "center", background: overlapCount > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (overlapCount > 0 ? C.accentDim : C.border), borderRadius: 3, padding: "2px 10px", fontSize: 11, fontWeight: 700, color: overlapCount > 0 ? C.accentSoft : C.textDim, marginTop: 4 }}>
-                  {overlapCount > 0 ? overlapCount + " games in common" : "no games in common"}
-                </div>
+                <GameTag label={overlapLabel} variant={overlapVariant} style={{ marginTop: 4 }} />
               )}
               {profile.player_tags && Object.keys(profile.player_tags).length > 0 && !profile.is_private && (
                 <div style={{ marginTop: 10, marginBottom: 4 }}>
@@ -248,9 +255,11 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", alignItems: isMobile ? "center" : "flex-end", gap: 8, width: isMobile ? "100%" : "auto" }}>
               {!isOwnProfile && (
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.accentGlow : C.accent, border: "1px solid " + (followed ? C.accentDim : C.accent), borderRadius: 3, padding: "8px 22px", color: followed ? C.accentSoft : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
-                  {followLoading ? "..." : followed ? "✓ Following" : "Follow"}
-                </button>
+                <div style={{ flex: isMobile ? 1 : undefined }}>
+                  <PixelButton onClick={toggleFollow} disabled={followLoading} bg={followBg} borderColor={followBorderColor} color={followColor} fullWidth={isMobile}>
+                    {followLabel}
+                  </PixelButton>
+                </div>
               )}
               {compatibilityText && (
                 <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : "none", textAlign: "center" }}>
@@ -278,14 +287,12 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       </PixelCornerBox>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 3, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <PixelTabBar
+        tabs={tabs}
+        active={activeTab}
+        onChange={(id) => setActiveTab(id)}
+        style={{ marginBottom: 20 }}
+      />
 
       {/* Posts */}
       {activeTab === "posts" && (

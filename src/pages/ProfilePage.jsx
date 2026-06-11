@@ -17,6 +17,9 @@ import AvatarBuilderModal from "../modals/AvatarBuilderModal.jsx";
 import SteamImportModal from "../modals/SteamImportModal.jsx";
 import PSNImportModal from "../modals/PSNImportModal.jsx";
 import { ShareReviewButton, ShareShelfButton } from "../components/ShareButton.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
 function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, isDropTarget, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
@@ -860,7 +863,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           </div>
           {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
-              <span style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 3, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
+              <GameTag label="⚔️ Founding Member" variant="gold" size="md" />
             </div>
           )}
         </div>
@@ -1021,8 +1024,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             ) : (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
-                  <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
+                  <PixelButton onClick={startEdit} bg={C.accent} color={C.accentText}>Edit Profile</PixelButton>
+                  <PixelButton onClick={() => setShowAvatarBuilder(true)} bg={C.surfaceRaised} borderColor={C.accentDim} color={C.accentSoft}>Character Builder</PixelButton>
                 </div>
                 {deletionPending ? (
                   <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 3, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
@@ -1198,11 +1201,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
-        {tabs.map(tab => (
-          <button key={tab.id} data-tour={tab.id + "-tab"} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 3, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
-        ))}
-      </div>
+      <PixelTabBar
+        tabs={tabs}
+        active={activeTab}
+        onChange={(id) => setActiveTab(id)}
+        style={{ marginBottom: 20 }}
+      />
 
       {/* Posts tab */}
       {activeTab === "posts" && (
@@ -1577,7 +1581,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           {/* Write Review button + form */}
           <div style={{ marginBottom: 16 }}>
             {!showNewReview ? (
-              <button onClick={() => setShowNewReview(true)} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Write a Review</button>
+              <PixelButton onClick={() => setShowNewReview(true)} bg={C.accent} color="#fff">+ Write a Review</PixelButton>
             ) : (
               <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 4, padding: 20, marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 14 }}>New Review</div>
@@ -1776,7 +1780,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 700, color: quest.completed ? C.green : C.text, fontSize: 14 }}>{quest.title}</span>
-                        {quest.is_onboarding && !quest.completed && <span style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 2, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>INTRO</span>}
+                        {quest.is_onboarding && !quest.completed && <GameTag label="INTRO" />}
                         {quest.reward_id && <span style={{ background: rewardColor + "18", color: rewardColor, border: "1px solid " + rewardColor + "33", borderRadius: 2, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{quest.reward_label}</span>}
                       </div>
                       <div style={{ color: C.textMuted, fontSize: 12, marginBottom: quest.completed ? 0 : 8 }}>{quest.description}</div>
@@ -1814,9 +1818,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               {exportRequested ? (
                 <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700 }}>✓ Export requested — we'll be in touch.</div>
               ) : (
-                <button onClick={requestDataExport} style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                <PixelButton size="sm" onClick={requestDataExport} bg={C.surface} borderColor={C.accentDim} color={C.accentSoft}>
                   Request data export
-                </button>
+                </PixelButton>
               )}
             </div>
             <div style={{ color: C.textDim, fontSize: 12, marginBottom: 8 }}>Type DELETE to confirm:</div>

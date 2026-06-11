@@ -4,6 +4,8 @@ import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { GameTag } from "../components/GameTag.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
 
 function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, setGameDefaultTab }) {
   const [tab, setTab] = useState("feed");
@@ -102,6 +104,8 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
     if (!game) return null;
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
     const coverW = isMobile ? 72 : 96;
+    const simLabel = similarity !== null && similarity > 0 ? similarity + " games in common" : "no games in common";
+    const simVariant = similarity !== null && similarity > 0 ? "accent" : "muted";
     return (
       <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ marginBottom: 10, overflow: "hidden" }}>
         <div style={{ display: "flex" }}>
@@ -131,9 +135,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
                 {profile?.username || "Guildies Member"}
               </span>
               {similarity !== null && currentUser && review.user_id !== currentUser.id && (
-                <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 2, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
-                  {similarity > 0 ? similarity + " games in common" : "no games in common"}
-                </span>
+                <GameTag label={simLabel} variant={simVariant} />
               )}
               <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(review.created_at)}</span>
               {review.time_played && <span style={{ color: C.textDim, fontSize: 11 }}>· {review.time_played}h</span>}
@@ -163,14 +165,12 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
 
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 4, marginBottom: 20, gap: 2 }}>
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ flex: 1, background: tab === t.id ? C.accentGlow : "transparent", border: "1px solid " + (tab === t.id ? C.accentDim : "transparent"), borderRadius: 2, padding: "8px 12px", color: tab === t.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <PixelTabBar
+            tabs={TABS}
+            active={tab}
+            onChange={(id) => setTab(id)}
+            style={{ marginBottom: 20 }}
+          />
 
           {(tab === "feed" || tab === "following") && (
             <>
