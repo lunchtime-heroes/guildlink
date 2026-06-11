@@ -1,6 +1,6 @@
 export const THEMES = {
   "deep-space": {
-    bg: "#080e1a", surface: "#121e35", surfaceHover: "#162440", surfaceRaised: "#1a2840",
+    bg: "#080e1a", surface: "#0d1424", surfaceHover: "#111c30", surfaceRaised: "#162035",
     border: "#1e2d45", borderHover: "#2a3f5f",
     accent: "#0ea5e9", accentGlow: "#0ea5e922", accentSoft: "#38bdf8", accentDim: "#0ea5e944",
     accentText: "#ffffff",
@@ -91,7 +91,6 @@ export const QUEST_THEMES = [
 export const C = { ...THEMES["deep-space"] };
 
 // ─── Design tokens — change these to retheme the entire platform ───────────
-// Radius scale
 C.radius = {
   card: 4,       // main cards, panels, modals
   button: 3,     // buttons
@@ -101,30 +100,17 @@ C.radius = {
   sm: 2,         // small accents, indicators
 };
 
-// Typography scale
 C.type = {
-  xs: 10,        // metadata, timestamps, labels
-  sm: 12,        // secondary text, captions
-  base: 13,      // body text
-  md: 14,        // emphasized body, card headlines
-  lg: 16,        // section headers
-  xl: 20,        // page titles
-  xxl: 28,       // hero text
+  xs: 10, sm: 12, base: 13, md: 14, lg: 16, xl: 20, xxl: 28,
 };
 
-// Spacing scale
 C.space = {
-  cardPad: 16,   // standard card padding
-  cardPadSm: 12, // compact card padding
-  gap: 12,       // standard gap between elements
-  gapSm: 8,      // compact gap
-  gapLg: 20,     // loose gap
+  cardPad: 16, cardPadSm: 12, gap: 12, gapSm: 8, gapLg: 20,
 };
 
 export function applyTheme(themeId) {
   const palette = THEMES[themeId] || THEMES["deep-space"];
-  // Preserve design tokens — only overwrite color palette keys
-  const { radius, type, space, ...rest } = C;
+  const { radius, type, space } = C;
   Object.assign(C, palette);
   C.radius = radius;
   C.type = type;
