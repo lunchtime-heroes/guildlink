@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
 
 function LinkPreviewFetcher({ url, onExit }) {
   const [preview, setPreview] = React.useState(null);
@@ -32,11 +33,11 @@ function LinkPreviewCard({ preview, onExit }) {
   const displayTitle = decodeHtml(preview.title) || preview.url;
   return (
     <div onClick={e => { e.stopPropagation(); if (onExit) { onExit(preview.url); } else { window.open(preview.url, "_blank", "noopener,noreferrer"); } }}
-      style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
+      style={{ marginTop: 10, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.card, overflow: "hidden", display: "flex", cursor: "pointer", textDecoration: "none" }}
       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-      {preview.image && <img src={preview.image} alt="" style={{ width: 80, height: 80, objectFit: "cover", flexShrink: 0, display: "block" }} onError={e => e.target.style.display = "none"} />}
-      <div style={{ padding: "10px 12px", flex: 1, minWidth: 0, overflow: "hidden" }}>
+      {preview.image && <img src={preview.image} alt="" style={{ width: 80, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />}
+      <div style={{ padding: "10px 12px", flex: 1, minWidth: 0 }}>
         <div style={{ color: C.textDim, fontSize: 10, marginBottom: 2 }}>{displayDomain} ↗</div>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayTitle}</div>
         {preview.description && <div style={{ color: C.textMuted, fontSize: 11, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{decodeHtml(preview.description)}</div>}
@@ -51,15 +52,15 @@ function ExitModal({ url, onClose }) {
   try { domain = new URL(url).hostname; } catch { domain = url; }
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 28, maxWidth: 400, width: "100%", textAlign: "center" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, padding: 28, maxWidth: 400, width: "100%", textAlign: "center" }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔗</div>
         <div style={{ fontWeight: 800, color: C.text, fontSize: 16, marginBottom: 8 }}>Leaving GuildLink</div>
         <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 6 }}>You're about to visit:</div>
         <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600, marginBottom: 20, wordBreak: "break-all" }}>{domain}</div>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-          <button onClick={onClose} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={onClose} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
           <button onClick={() => { window.open(url, "_blank", "noopener,noreferrer"); onClose(); }}
-            style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Continue →</button>
+            style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Continue →</button>
         </div>
       </div>
     </div>

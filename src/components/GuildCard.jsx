@@ -1,9 +1,10 @@
 import React from "react";
 import { C } from "../constants.js";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
 
 function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest }) {
   return (
-    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+    <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 6 }}>{guild.name}</div>
@@ -14,9 +15,9 @@ function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest }) {
           )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             {guild.looking_for_members && (
-              <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>LFM</span>
+              <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: C.radius.badge, padding: "3px 8px" }}>LFM</span>
             )}
-            <span style={{ background: C.surfaceRaised, border: "1px solid " + C.border, color: C.textDim, fontSize: 11, fontWeight: 600, borderRadius: 6, padding: "3px 8px" }}>
+            <span style={{ background: C.surfaceRaised, border: "1px solid " + C.border, color: C.textDim, fontSize: 11, fontWeight: 600, borderRadius: C.radius.badge, padding: "3px 8px" }}>
               {guild.is_public ? "Public" : "Private"}
             </span>
             {guild.discord_url && (
@@ -31,7 +32,7 @@ function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest }) {
           <button
             onClick={isMember || isRequested ? undefined : onJoin}
             disabled={isMember || isRequested}
-            style={{ background: isMember ? C.surfaceRaised : isRequested ? C.gold + "22" : C.accent, border: isRequested ? "1px solid " + C.gold + "55" : "none", borderRadius: 8, padding: "8px 18px", color: isMember ? C.textDim : isRequested ? C.gold : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember || isRequested ? "default" : "pointer" }}>
+            style={{ background: isMember ? C.surfaceRaised : isRequested ? C.gold + "22" : C.accent, border: isRequested ? "1px solid " + C.gold + "55" : "none", borderRadius: C.radius.button, padding: "8px 18px", color: isMember ? C.textDim : isRequested ? C.gold : "#fff", fontSize: 13, fontWeight: 700, cursor: isMember || isRequested ? "default" : "pointer" }}>
             {isMember ? "Joined" : isRequested ? "Pending" : guild.is_public ? "Join" : "Request to Join"}
           </button>
           {isRequested && onCancelRequest && (
@@ -42,7 +43,7 @@ function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest }) {
           )}
         </div>
       </div>
-    </div>
+    </PixelCornerBox>
   );
 }
 

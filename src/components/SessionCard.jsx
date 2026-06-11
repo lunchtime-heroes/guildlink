@@ -79,11 +79,11 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     setShowRsvp(false);
   };
 
-  const smallInput = { background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "6px 8px", color: C.text, fontSize: 12, outline: "none", width: "100%", boxSizing: "border-box" };
+  const smallInput = { background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.badge, padding: "6px 8px", color: C.text, fontSize: 12, outline: "none", width: "100%", boxSizing: "border-box" };
 
   if (showEdit) {
     return (
-      <div style={{ background: statusGlow(), border: "2px solid " + statusBorder(), borderRadius: 10, padding: "10px 12px", marginBottom: 6, boxShadow: "0 0 8px " + statusBorder() }}>
+      <div style={{ background: statusGlow(), border: "2px solid " + statusBorder(), borderRadius: C.radius.card, padding: "10px 12px", marginBottom: 6, boxShadow: "0 0 8px " + statusBorder() }}>
         <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Edit Session</div>
         <div style={{ marginBottom: 8 }}>
           <div style={{ color: C.textDim, fontSize: 10, marginBottom: 4 }}>Start Time</div>
@@ -104,16 +104,16 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
           </div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={handleSaveEdit} style={{ background: C.accent, border: "none", borderRadius: 6, padding: "5px 12px", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Save</button>
-          <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 6, padding: "5px 10px", color: C.textMuted, fontSize: 11, cursor: "pointer" }}>Cancel</button>
-          <button onClick={() => onDelete(session.id)} style={{ background: "#ef444422", border: "1px solid #ef444444", borderRadius: 6, padding: "5px 10px", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}>Delete</button>
+          <button onClick={handleSaveEdit} style={{ background: C.accent, border: "none", borderRadius: C.radius.badge, padding: "5px 12px", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Save</button>
+          <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.badge, padding: "5px 10px", color: C.textMuted, fontSize: 11, cursor: "pointer" }}>Cancel</button>
+          <button onClick={() => onDelete(session.id)} style={{ background: "#ef444422", border: "1px solid #ef444444", borderRadius: C.radius.badge, padding: "5px 10px", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}>Delete</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ background: statusGlow(), border: "2px solid " + statusBorder(), borderRadius: 10, padding: "8px 10px", marginBottom: 6, boxShadow: "0 0 8px " + statusBorder() }}>
+    <div style={{ background: statusGlow(), border: "2px solid " + statusBorder(), borderRadius: C.radius.card, padding: "8px 10px", marginBottom: 6, boxShadow: "0 0 8px " + statusBorder() }}>
       <div
         onClick={() => {
           if (!currentUserId) return;
@@ -165,7 +165,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                   width: "100%",
                   background: isSelected ? opt.selectedBg : opt.bg,
                   border: "1px solid " + (isSelected ? opt.selectedBorder : opt.border),
-                  borderRadius: 8,
+                  borderRadius: C.radius.button,
                   padding: "6px 10px",
                   color: opt.color,
                   fontSize: 12,
@@ -178,7 +178,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                 <span style={{
                   background: isSelected ? opt.selectedBg : opt.bg,
                   border: "1px solid " + opt.border,
-                  borderRadius: 6,
+                  borderRadius: C.radius.badge,
                   padding: "2px 7px",
                   fontSize: 11,
                   fontWeight: 800,

@@ -1,5 +1,6 @@
 import React from "react";
 import { C } from "../constants.js";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: 40 }}>
@@ -13,13 +14,13 @@ const Highlight = ({ children }) => (
 );
 
 const Blip = ({ level, hours, description }) => (
-  <div style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, marginBottom: 8 }}>
-    <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "4px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>{level}</div>
+  <PixelCornerBox size="md" borderColor={C.border} bg={C.surfaceRaised} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", marginBottom: 8 }}>
+    <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "4px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>{level}</div>
     <div>
       <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{hours}</div>
       <div style={{ color: C.textMuted, fontSize: 13 }}>{description}</div>
     </div>
-  </div>
+  </PixelCornerBox>
 );
 
 const Value = ({ title, children }) => (
@@ -44,7 +45,7 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
       </div>
 
       {/* Preamble */}
-      <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 16, padding: isMobile ? 20 : 32, marginBottom: 48 }}>
+      <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surface} style={{ padding: isMobile ? 20 : 32, marginBottom: 48 }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: C.text, marginBottom: 16 }}>Why this exists</div>
         <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.85, marginBottom: 16 }}>
           GuildLink was built around a simple idea: the internet should help you do things, not trap you in it. This platform exists to help you find your next favorite game, talk about the ones you love, and then go play them. That's it. No engagement traps. No outrage loops. No infinite scroll designed to keep you here longer than you want to be.
@@ -58,7 +59,7 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
         <div style={{ color: C.text, fontSize: 14, lineHeight: 1.85, fontWeight: 600 }}>
           When you create an account, you're agreeing to help build that. We're glad you're here.
         </div>
-      </div>
+      </PixelCornerBox>
 
       {/* What GuildLink is for */}
       <Section title="What GuildLink is for">
@@ -148,7 +149,7 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
       </Section>
 
       {/* Closing */}
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 20 : 32, marginTop: 48 }}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: isMobile ? 20 : 32, marginTop: 48 }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: C.text, marginBottom: 12 }}>A final word</div>
         <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.85, marginBottom: 16 }}>
           Most of the internet has given up on the idea that a comment section can be a good place. We haven't. GuildLink is an ongoing argument that it's possible to build something online that adds genuine value to people's lives without extracting something from them in return.
@@ -156,12 +157,12 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
         <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.85 }}>
           That argument only holds if the people here are willing to make it with us. Thank you for being one of them.
         </div>
-      </div>
+      </PixelCornerBox>
 
       {/* Footer */}
       <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink · guildlink.gg</div>
-        <button onClick={() => { window.scrollTo(0, 0); setActivePage("feed"); }} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
+        <button onClick={() => { window.scrollTo(0, 0); setActivePage("feed"); }} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
       </div>
 
     </div>
