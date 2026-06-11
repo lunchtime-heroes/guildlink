@@ -97,12 +97,12 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
   const artPad = "8%";
 
   return (
-    <PixelCornerBox size="lg" borderColor={borderColor}>
+    <PixelCornerBox size="lg" borderColor={borderColor} bg={C.surface}>
       {/* Shelf overlay — full tile, appears on Add to Shelf click */}
       {shelfOpen && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 10,
-          background: "rgba(8,14,26,0.94)",
+          background: C.bg,
           display: "flex", flexDirection: "column",
           justifyContent: "center", alignItems: "stretch",
           padding: "12px",
@@ -111,7 +111,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => (
             <PixelButton key={opt.status} fullWidth size="xs"
-              bg={opt.status === "not_for_me" ? C.surface : C.surfaceRaised}
+              bg={opt.status === "not_for_me" ? C.bg : C.surfaceRaised}
               borderColor={C.border}
               color={opt.status === "not_for_me" ? C.textDim : C.text}
               style={{ justifyContent: "center" }}
@@ -157,9 +157,11 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <PixelButton fullWidth size="xs" bg={C.surfaceRaised} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center", marginTop: 2 }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
-            {"+ Add to Shelf"}
-          </PixelButton>
+          <div style={{ width: "100%", padding: "1px 0" }}>
+            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
+              {"+ Add to Shelf"}
+            </PixelButton>
+          </div>
         )}
 
         {addedToShelf && (
