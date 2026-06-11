@@ -23,6 +23,7 @@ import CultureAgreementPage from "./pages/CultureAgreementPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
+import supabase from "./supabase.js";
 import { PixelCornerBox } from "./components/PixelCornerBox.jsx";
 
 // Week start helper — Sunday 12:00am Pacific time
