@@ -1,112 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
 
-// ─── Pixel corner card ───────────────────────────────────────────────────────
-const S = 2; // pixel square size — 2px matches SVG proportions at card scale
-
-function buildClip(s) {
-  return [
-    `${s*5}px 0px`,
-    `calc(100% - ${s*5}px) 0px`,
-    `calc(100% - ${s*4}px) 0px`,
-    `calc(100% - ${s*4}px) ${s}px`,
-    `calc(100% - ${s*3}px) ${s}px`,
-    `calc(100% - ${s*3}px) ${s*2}px`,
-    `calc(100% - ${s*2}px) ${s*2}px`,
-    `calc(100% - ${s*2}px) ${s*3}px`,
-    `calc(100% - ${s}px) ${s*3}px`,
-    `calc(100% - ${s}px) ${s*4}px`,
-    `100% ${s*4}px`,
-    `100% calc(100% - ${s*4}px)`,
-    `calc(100% - ${s}px) calc(100% - ${s*4}px)`,
-    `calc(100% - ${s}px) calc(100% - ${s*3}px)`,
-    `calc(100% - ${s*2}px) calc(100% - ${s*3}px)`,
-    `calc(100% - ${s*2}px) calc(100% - ${s*2}px)`,
-    `calc(100% - ${s*3}px) calc(100% - ${s*2}px)`,
-    `calc(100% - ${s*3}px) calc(100% - ${s}px)`,
-    `calc(100% - ${s*4}px) calc(100% - ${s}px)`,
-    `calc(100% - ${s*4}px) 100%`,
-    `calc(100% - ${s*5}px) 100%`,
-    `${s*5}px 100%`,
-    `${s*4}px 100%`,
-    `${s*4}px calc(100% - ${s}px)`,
-    `${s*3}px calc(100% - ${s}px)`,
-    `${s*3}px calc(100% - ${s*2}px)`,
-    `${s*2}px calc(100% - ${s*2}px)`,
-    `${s*2}px calc(100% - ${s*3}px)`,
-    `${s}px calc(100% - ${s*3}px)`,
-    `${s}px calc(100% - ${s*4}px)`,
-    `0px calc(100% - ${s*4}px)`,
-    `0px ${s*4}px`,
-    `${s}px ${s*4}px`,
-    `${s}px ${s*3}px`,
-    `${s*2}px ${s*3}px`,
-    `${s*2}px ${s*2}px`,
-    `${s*3}px ${s*2}px`,
-    `${s*3}px ${s}px`,
-    `${s*4}px ${s}px`,
-    `${s*4}px 0px`,
-  ].join(", ");
-}
-
-function PixelCorners({ color }) {
-  const s = S;
-  // 5 squares stepping diagonally at each corner
-  const squares = [
-    // top-left
-    { l: s*4, t: 0 }, { l: s*3, t: s }, { l: s*2, t: s*2 }, { l: s, t: s*3 }, { l: 0, t: s*4 },
-    // top-right
-    { r: s*4, t: 0 }, { r: s*3, t: s }, { r: s*2, t: s*2 }, { r: s, t: s*3 }, { r: 0, t: s*4 },
-    // bottom-left
-    { l: s*4, b: 0 }, { l: s*3, b: s }, { l: s*2, b: s*2 }, { l: s, b: s*3 }, { l: 0, b: s*4 },
-    // bottom-right
-    { r: s*4, b: 0 }, { r: s*3, b: s }, { r: s*2, b: s*2 }, { r: s, b: s*3 }, { r: 0, b: s*4 },
-  ];
-  return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4 }}>
-      {squares.map((sq, i) => (
-        <div key={i} style={{
-          position: "absolute",
-          width: s, height: s,
-          background: color,
-          left: sq.l !== undefined ? sq.l : "auto",
-          right: sq.r !== undefined ? sq.r : "auto",
-          top: sq.t !== undefined ? sq.t : "auto",
-          bottom: sq.b !== undefined ? sq.b : "auto",
-        }} />
-      ))}
-    </div>
-  );
-}
-
-function PixelCard({ children, borderColor }) {
-  const clip = buildClip(S);
-  const bc = borderColor || C.border;
-  return (
-    <div style={{ position: "relative", minWidth: 0, overflow: "hidden" }}>
-      {/* Border layer */}
-      <div style={{
-        position: "absolute",
-        inset: -1,
-        background: bc,
-        clipPath: "polygon(" + buildClip(S) + ")",
-        zIndex: 0,
-      }} />
-      {/* Card body */}
-      <div style={{
-        position: "relative",
-        background: C.surface,
-        clipPath: "polygon(" + clip + ")",
-        zIndex: 1,
-        overflow: "hidden",
-      }}>
-        <PixelCorners color={bc} />
-        {children}
-      </div>
-    </div>
-  );
-}
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 function getPhrase(card, actorName) {
@@ -199,7 +95,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
   const artPad = "8%";
 
   return (
-    <PixelCard borderColor={borderColor}>
+    <PixelCornerBox size="lg" borderColor={borderColor}>
       {/* Shelf overlay — full tile, appears on Add to Shelf click */}
       {shelfOpen && (
         <div style={{
@@ -317,7 +213,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
       </div>
-    </PixelCard>
+    </PixelCornerBox>
   );
 }
 

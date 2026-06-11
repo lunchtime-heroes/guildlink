@@ -6,7 +6,7 @@ import { timeAgo, logChartEvent } from "../utils.js";
 import { Avatar } from "./Avatar.jsx";
 import { FoundingBadge, NPCBadge, Badge } from "./FoundingBadge.jsx";
 import { ExitModal, LinkPreviewFetcher, LinkPreviewCard } from "./LinkPreview.jsx";
-import { SharePostButton } from "./ShareButton.jsx";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
 
 function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC, setActivePage) {
   if (!content) return null;
@@ -454,13 +454,12 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   if (localPost.deleted) return null;
 return (
-    <div style={{
-      background: C.surface,
-      border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
-      borderRadius: C.radius.card, marginBottom: 12, position: "relative",
-      boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
-      overflow: "hidden",
-    }}>
+    <PixelCornerBox
+      size="lg"
+      borderColor={localPost.user.isNPC ? C.goldBorder : C.border}
+      bg={C.surface}
+      style={{ marginBottom: 12, position: "relative" }}>
+      {localPost.user.isNPC && <div style={{ position: "absolute", inset: 0, boxShadow: `0 0 0 1px ${C.goldGlow}`, pointerEvents: "none", zIndex: 5 }} />}
       {/* Main post body */}
       <div style={{ display: "flex", gap: 0 }}>
 
@@ -662,7 +661,7 @@ return (
                               <div key={item.id} onMouseDown={() => selectEditMention(item)}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === editMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < editMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
                                 onMouseEnter={() => setEditMentionIndex(i)}>
-                                <div style={{ width: 26, height: 26, borderRadius: item._type === "game" ? C.radius.badge : "50%", background: item._type === "game" ? C.accent + "22" : C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+                                <div style={{ width: 26, height: 26, borderRadius: item._type === "game" ? 6 : "50%", background: item._type === "game" ? C.accent + "22" : C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
                                   {item._type === "game" ? "G" : (item.avatar_initials || (item.username || "?").slice(0,2)).toUpperCase()}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -760,7 +759,7 @@ return (
                           <div key={item.id} onMouseDown={() => selectCommentMention(item)}
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === commentMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < commentMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
                             onMouseEnter={() => setCommentMentionIndex(i)}>
-                            <div style={{ width: 26, height: 26, borderRadius: item._type === "game" ? C.radius.badge : "50%", background: item._type === "npc" ? C.goldGlow : item._type === "game" ? C.accent + "22" : C.accent + "33", border: "1px solid " + (item._type === "npc" ? C.goldBorder : C.accentDim), display: "flex", alignItems: "center", justifyContent: "center", fontSize: item._type === "game" ? 12 : 10, fontWeight: 700, color: item._type === "npc" ? C.gold : C.accent, flexShrink: 0 }}>
+                            <div style={{ width: 26, height: 26, borderRadius: item._type === "game" ? 6 : "50%", background: item._type === "npc" ? C.goldGlow : item._type === "game" ? C.accent + "22" : C.accent + "33", border: "1px solid " + (item._type === "npc" ? C.goldBorder : C.accentDim), display: "flex", alignItems: "center", justifyContent: "center", fontSize: item._type === "game" ? 12 : 10, fontWeight: 700, color: item._type === "npc" ? C.gold : C.accent, flexShrink: 0 }}>
                               {item._type === "game" ? "G" : (item.avatar_initials || (item.username || item.name || "?").slice(0,2)).toUpperCase()}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -793,7 +792,7 @@ return (
           </div>}
         </div>
       )}
-    </div>
+    </PixelCornerBox>
   );
 }
 

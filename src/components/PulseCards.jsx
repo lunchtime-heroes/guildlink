@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { Avatar } from "./Avatar.jsx";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
 
 function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAddToShelf }) {
   const accentColor = card.ctaStatus === "playing" ? C.accent : card.ctaStatus === "want_to_play" ? C.gold : card.ctaStatus === "have_played" ? C.teal : C.accentSoft;
@@ -24,7 +25,7 @@ function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAd
   };
 
   return (
-    <div style={{ background: C.surface, border: "1px solid " + (card.hasFollow ? C.accentDim : C.border), borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
+    <PixelCornerBox size="lg" borderColor={card.hasFollow ? C.accentDim : C.border} bg={C.surface} style={{ marginBottom: 12, display: "flex", alignItems: "stretch" }}>
       {card.game.cover_url && (
         <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
           style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
@@ -37,11 +38,11 @@ function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAd
           <div style={{ color: C.text, fontSize: 13, lineHeight: 1.4 }}>{card.text}</div>
         </div>
         <button onClick={handleCta}
-          style={{ background: accentColor + "18", border: "1px solid " + accentColor + "44", borderRadius: 8, padding: "6px 10px", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+          style={{ background: accentColor + "18", border: "1px solid " + accentColor + "44", borderRadius: C.radius.button, padding: "6px 10px", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
           {card.cta}
         </button>
       </div>
-    </div>
+    </PixelCornerBox>
   );
 }
 
@@ -52,18 +53,15 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
   const initials = (card.profile?.avatar_initials || card.profile?.username || "?").slice(0,2).toUpperCase();
 
   return (
-    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden" }}>
+    <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "stretch" }}>
-        {/* Game cover */}
         {card.game.cover_url && (
           <div onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
             style={{ width: 56, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
             <img src={card.game.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", minHeight: 80 }} />
           </div>
         )}
-        {/* Content */}
         <div style={{ flex: 1, minWidth: 0, padding: "12px 14px" }}>
-          {/* Header */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <div onClick={() => { if (card.profile?.id) { setCurrentPlayer(card.review.user_id); setActivePage("player"); window.history.pushState({ page: "player", playerId: card.review.user_id }, "", `/player/${card.profile?.handle?.replace("@","") || card.review.user_id}`); } }} style={{ cursor: "pointer", flexShrink: 0 }}>
               <Avatar initials={initials} size={20} founding={card.profile?.is_founding} ring={card.profile?.active_ring} avatarConfig={card.profile?.avatar_config} />
@@ -77,15 +75,13 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
               style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {card.game.name}
             </span>
-            <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+            <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: C.radius.badge, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
               {card.review.rating}/10
             </div>
           </div>
-          {/* Headline */}
           {card.review.headline && (
             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 4 }}>{card.review.headline}</div>
           )}
-          {/* Preview text */}
           {preview && !card.review.headline && (
             <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{preview}</div>
           )}
@@ -94,19 +90,13 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
           )}
         </div>
       </div>
-      {/* Read more */}
       <div style={{ borderTop: "1px solid " + C.border, padding: "8px 14px" }}>
-        <button onClick={() => {
-          if (setGameDefaultTab) setGameDefaultTab("reviews");
-          setCurrentGame(card.game.id);
-          setActivePage("game");
-          window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`);
-        }}
+        <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
           style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
           Read full review →
         </button>
       </div>
-    </div>
+    </PixelCornerBox>
   );
 }
 
@@ -115,7 +105,7 @@ function QACard({ card, setCurrentGame, setActivePage }) {
   const initials = (card.profile?.avatar_initials || card.profile?.username || "?").slice(0,2).toUpperCase();
 
   return (
-    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, marginBottom: 12, overflow: "hidden", display: "flex", alignItems: "stretch" }}>
+    <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ marginBottom: 12, display: "flex", alignItems: "stretch" }}>
       {card.game.cover_url && (
         <div onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
           style={{ width: 48, flexShrink: 0, cursor: "pointer", overflow: "hidden" }}>
@@ -131,16 +121,16 @@ function QACard({ card, setCurrentGame, setActivePage }) {
             style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer" }}>
             {card.game.name}
           </span>
-          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.badge, padding: "1px 6px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
           {card.hasFollow && <span style={{ color: C.accent, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>● Network</span>}
         </div>
         <p style={{ color: C.text, fontSize: 13, lineHeight: 1.5, margin: "0 0 10px", fontWeight: 500 }}>{card.question.content}</p>
         <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
-          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           Answer Now →
         </button>
       </div>
-    </div>
+    </PixelCornerBox>
   );
 }
 

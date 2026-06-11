@@ -23,7 +23,7 @@ import CultureAgreementPage from "./pages/CultureAgreementPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
-import supabase from "./supabase.js";
+import { PixelCornerBox } from "./components/PixelCornerBox.jsx";
 
 // Week start helper — Sunday 12:00am Pacific time
 // Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
@@ -397,12 +397,12 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
           onChange={e => setQuery(e.target.value)}
           onBlur={() => setTimeout(close, 200)}
           placeholder="Search games and players..."
-          style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+          style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "7px 12px 7px 32px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}
         />
         {query && <span onClick={close} style={{ position: "absolute", right: 10, color: C.textDim, cursor: "pointer", fontSize: 14 }}>×</span>}
       </div>
       {(hasResults || loading) && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", maxHeight: 400, overflowY: "auto" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", maxHeight: 400, overflowY: "auto" }}>
           {loading && <div style={{ padding: "12px 14px", color: C.textDim, fontSize: 12 }}>Searching...</div>}
           {results?.users.length > 0 && (
             <>
@@ -428,8 +428,8 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
                   onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   {g.cover_url
-                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 3, objectFit: "cover", flexShrink: 0 }} />
-                    : <div style={{ width: 24, height: 32, borderRadius: 3, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
+                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: C.radius.sm, objectFit: "cover", flexShrink: 0 }} />
+                    : <div style={{ width: 24, height: 32, borderRadius: C.radius.sm, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
                   }
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
@@ -499,7 +499,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGuest ? (
               <>
-                <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Up</button>
+                <button onClick={onSignIn} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Up</button>
               </>
             ) : (
               <>
@@ -513,7 +513,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                   )}
                 </button>
                 {showNotifs && (
-                  <div style={{ position: "fixed", top: 52, left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: "0 0 14px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden", maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
+                  <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ position: "fixed", top: 52, left: 0, right: 0, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
                     <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
                       <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
                       <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer" }}>×</button>
@@ -554,12 +554,12 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                         );
                       })}
                     </div>
-                  </div>
+                  </PixelCornerBox>
                 )}
                 <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
                   <Avatar initials={currentUser?.avatar || "GL"} size={28} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
                 </div>
-                <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Out</button>
+                <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Sign Out</button>
               </>
             )}
           </div>
@@ -614,7 +614,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
             background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : item.admin ? activePage === item.id ? "#ef444420" : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
             border: item.gold ? activePage === item.id ? "1px solid " + C.goldBorder : "1px solid transparent" : item.admin ? activePage === item.id ? "1px solid #ef444440" : "1px solid transparent" : activePage === item.id ? "1px solid " + C.accentDim : "1px solid transparent",
-            borderRadius: 8, padding: "6px 14px",
+            borderRadius: C.radius.button, padding: "6px 14px",
             color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : item.admin ? "#ef4444" : activePage === item.id ? C.accentSoft : C.textMuted,
             cursor: "pointer", fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 5,
@@ -624,14 +624,14 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
         {isGuest ? (
           <>
-            <button onClick={onSignIn} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
-            <button onClick={onSignUp} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
+            <button onClick={onSignIn} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
+            <button onClick={onSignUp} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
           </>
         ) : (
           <>
             <div style={{ position: "relative" }}>
               <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
-                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "8px 12px", display: "flex", alignItems: "center", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
+                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "none", borderRadius: C.radius.button, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "8px 12px", display: "flex", alignItems: "center", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
                 🔔
                 {unreadCount > 0 && (
                   <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: C.accentText, borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
@@ -640,7 +640,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 )}
               </button>
               {showNotifs && (
-                <div style={{ position: "fixed", top: isMobile ? 56 : "auto", right: isMobile ? 0 : 0, left: isMobile ? 0 : "auto", marginTop: isMobile ? 0 : 8, width: isMobile ? "100%" : 340, background: C.surface, border: "1px solid " + C.border, borderRadius: isMobile ? "0 0 14px 14px" : 14, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, overflow: "hidden", maxHeight: isMobile ? "70vh" : "auto" }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ position: "fixed", top: isMobile ? 56 : "auto", right: isMobile ? 0 : 0, left: isMobile ? 0 : "auto", marginTop: isMobile ? 0 : 8, width: isMobile ? "100%" : 340, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 200, maxHeight: isMobile ? "70vh" : "auto", overflow: "hidden" }}>
                   <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>Notifications</span>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -706,13 +706,13 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                       );
                     })}
                   </div>
-                </div>
+                </PixelCornerBox>
               )}
             </div>
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
               <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
             </div>
-            {signOut && <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
+            {signOut && <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
@@ -743,8 +743,9 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
       {loading ? (
         <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 40 }}>Loading characters…</div>
       ) : npcs.map(npc => (
-        <div key={npc.id} onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}
-          style={{ background: C.surface, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 18, marginBottom: 12, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}>
+        <PixelCornerBox key={npc.id} size="lg" borderColor={C.goldBorder} bg={C.surface}
+          style={{ marginBottom: 12, padding: 18, display: "flex", gap: 14, alignItems: "center", cursor: "pointer" }}
+          onClick={() => { setCurrentNPC(npc.id); setActivePage("npc"); }}>
           <Avatar initials={npc.avatar_initials || "?"} size={50} isNPC={true} status={npc.status} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
@@ -759,7 +760,7 @@ function NPCBrowsePage({ setActivePage, setCurrentNPC }) {
             </div>
           </div>
           <span style={{ color: C.textDim, fontSize: 18 }}>→</span>
-        </div>
+        </PixelCornerBox>
       ))}
     </div>
   );
@@ -1143,7 +1144,7 @@ export default function GuildLink() {
   );
 
   // Show full auth page if explicitly requested
-  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} onSignupOptIn={async (email) => { try { await fetch("/api/resend-add-contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }); } catch (err) { console.error("[onSignupOptIn]", err); } }} />;
+  if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} />;
 
   const isGuest = !session;
 
@@ -1235,17 +1236,15 @@ export default function GuildLink() {
 
       {/* Quest completion banner */}
       {questBanner && (
-        <div style={{
+        <PixelCornerBox size="lg" borderColor={C.green} bg={C.surface} style={{
           position: "fixed", bottom: isMobile ? 72 : 24, left: "50%", transform: "translateX(-50%)",
           zIndex: 9999, width: isMobile ? "calc(100vw - 32px)" : 420,
-          background: `linear-gradient(135deg, ${C.surface}, ${C.surfaceRaised})`,
-          border: "1px solid " + C.green + "44", borderRadius: 16,
-          padding: "16px 20px", boxShadow: `0 8px 32px #00000066, 0 0 0 1px ${C.green}22`,
+          padding: "16px 20px", boxShadow: "0 8px 32px #00000066",
           display: "flex", alignItems: "center", gap: 16,
           animation: "slideUp 0.3s ease",
         }}>
           <style>{`@keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: C.green + "18", border: "1px solid " + C.green + "33", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎯</div>
+          <div style={{ width: 44, height: 44, borderRadius: C.radius.button, background: C.green + "18", border: "1px solid " + C.green + "33", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎯</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: C.green, fontWeight: 800, fontSize: 13, marginBottom: 2 }}>Quest Complete!</div>
             <div style={{ color: C.text, fontWeight: 700, fontSize: 14, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questBanner.title}</div>
@@ -1256,15 +1255,15 @@ export default function GuildLink() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
             <button onClick={() => { setQuestBanner(null); navToPage("profile"); setProfileDefaultTab("quests"); }}
-              style={{ background: C.green, border: "none", borderRadius: 8, padding: "6px 12px", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ background: C.green, border: "none", borderRadius: C.radius.button, padding: "6px 12px", color: "#000", fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
               View Quests
             </button>
             <button onClick={() => setQuestBanner(null)}
-              style={{ background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "5px 12px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              style={{ background: "none", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "5px 12px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               Dismiss
             </button>
           </div>
-        </div>
+        </PixelCornerBox>
       )}
       {showUsernameGate && session?.user?.id && (
         <UsernameGateModal

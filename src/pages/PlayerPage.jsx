@@ -5,6 +5,7 @@ import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setGameDefaultTab }) {
   const [profile, setProfile] = useState(null);
@@ -166,7 +167,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   if (isPrivateAndLocked) return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header — still visible for private accounts */}
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: isMobile ? 100 : 150, background: "linear-gradient(135deg, #1a1040 0%, " + C.accent + "66 50%, #0a2040 100%)" }} />
         <div style={{ padding: isMobile ? "0 16px 20px" : "0 28px 24px", marginTop: isMobile ? -32 : -42 }}>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginBottom: 12 }}>
@@ -179,17 +180,17 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
         </div>
       </div>
       {/* Private wall */}
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: isMobile ? 32 : 48, textAlign: "center" }}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: isMobile ? 32 : 48, textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
         <div style={{ fontWeight: 800, color: C.text, fontSize: 18 }}>This account is private</div>
-      </div>
-    </div>
+      </PixelCornerBox>
+    </PixelCornerBox>
   );
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header card */}
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: isMobile ? 100 : 150, background: "linear-gradient(135deg, #1a1040 0%, " + C.accent + "66 50%, #0a2040 100%)", position: "relative" }}>
           <div style={{ position: "absolute", bottom: isMobile ? -28 : -36, left: isMobile ? 16 : 28 }}>
             <Avatar initials={profile.avatar_initials || profile.username?.slice(0,2).toUpperCase() || "??"} size={isMobile ? 64 : 84} status="online" founding={profile.is_founding} ring={profile.active_ring} avatarConfig={profile.avatar_config} />
@@ -209,7 +210,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{profile.handle}</div>
               {overlapCount !== null && !isOwnProfile && (
-                <div style={{ display: "inline-flex", alignItems: "center", background: overlapCount > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (overlapCount > 0 ? C.accentDim : C.border), borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700, color: overlapCount > 0 ? C.accentSoft : C.textDim, marginTop: 4 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", background: overlapCount > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (overlapCount > 0 ? C.accentDim : C.border), borderRadius: C.radius.badge, padding: "2px 10px", fontSize: 11, fontWeight: 700, color: overlapCount > 0 ? C.accentSoft : C.textDim, marginTop: 4 }}>
                   {overlapCount > 0 ? overlapCount + " games in common" : "no games in common"}
                 </div>
               )}
@@ -234,7 +235,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                             const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : "#ef444455";
                             const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : "#ef4444";
                             return (
-                              <span key={tag} style={{ background: bg, border: "1px solid " + border, color, fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>{tag}</span>
+                              <span key={tag} style={{ background: bg, border: "1px solid " + border, color, fontSize: 11, fontWeight: 700, borderRadius: C.radius.badge, padding: "3px 8px" }}>{tag}</span>
                             );
                           })}
                         </div>
@@ -247,12 +248,12 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", alignItems: isMobile ? "center" : "flex-end", gap: 8, width: isMobile ? "100%" : "auto" }}>
               {!isOwnProfile && (
-                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.accentGlow : C.accent, border: "1px solid " + (followed ? C.accentDim : C.accent), borderRadius: 8, padding: "8px 22px", color: followed ? C.accentSoft : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
+                <button onClick={toggleFollow} disabled={followLoading} style={{ background: followed ? C.accentGlow : C.accent, border: "1px solid " + (followed ? C.accentDim : C.accent), borderRadius: C.radius.button, padding: "8px 22px", color: followed ? C.accentSoft : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flex: isMobile ? 1 : "none" }}>
                   {followLoading ? "..." : followed ? "✓ Following" : "Follow"}
                 </button>
               )}
               {compatibilityText && (
-                <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : "none", textAlign: "center" }}>
+                <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "6px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : "none", textAlign: "center" }}>
                   {compatibilityText}
                 </div>
               )}
@@ -280,7 +281,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
+            style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: C.radius.button, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>
             {tab.label}
           </button>
         ))}
@@ -335,7 +336,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
               <div key={col.id} style={{ marginBottom: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                   <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
-                  <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
+                  <div style={{ background: col.color + "22", color: col.color, borderRadius: C.radius.card, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 10 }}>
                   {entries.map((entry, entryIndex) => {
@@ -346,7 +347,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                     return (
                       <div key={entry.game_id}
                         onClick={() => { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }}
-                        style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, cursor: "pointer", position: "relative", overflow: "hidden", alignSelf: "start", transition: "border-color 0.15s" }}
+                        style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, cursor: "pointer", position: "relative", overflow: "hidden", alignSelf: "start", transition: "border-color 0.15s" }}
                         onMouseEnter={e => e.currentTarget.style.borderColor = col.color + "88"}
                         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                         {/* Cover art */}
@@ -357,13 +358,13 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                           }
                           {/* Rank badge */}
                           {shelfRank && (
-                            <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
+                            <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: C.radius.badge, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
                               #{shelfRank}
                             </div>
                           )}
                           {/* Review badge */}
                           {col.id === "have_played" && review && (
-                            <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
+                            <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: C.radius.badge, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
                               {review.rating}/10
                             </div>
                           )}
@@ -392,10 +393,11 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
       {activeTab === "reviews" && (
         <div>
           {reviews.length > 0 ? reviews.map(review => (
-            <div key={review.id} onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"), window.history.pushState({ page: "game", gameId: review.game_id }, "", `/game/${review.game_id}`))}
-              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12, cursor: "pointer" }}>
+            <PixelCornerBox key={review.id} size="lg" borderColor={C.border} bg={C.surface}
+              style={{ padding: 20, marginBottom: 12, cursor: "pointer" }}
+              onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"), window.history.pushState({ page: "game", gameId: review.game_id }, "", `/game/${review.game_id}`))}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: C.radius.button, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -404,16 +406,16 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
                 </div>
                 {currentUser && review.user_id === currentUser.id && (
                   <button onClick={(e) => { e.stopPropagation(); setGameDefaultTab?.("reviews"); setCurrentGame(review.game_id); setActivePage("game"); }}
-                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                 )}
-                <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
+                <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: C.radius.button, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
               </div>
               {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
               {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"✅ " + review.loved}</div>}
               {review.didnt_love && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"⚠️ " + review.didnt_love}</div>}
               {review.content && <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: "8px 0 0" }}>{review.content}</p>}
               <div style={{ color: C.textDim, fontSize: 11, marginTop: 10 }}>{timeAgo(review.created_at)}</div>
-            </div>
+            </PixelCornerBox>
           )) : (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
               <div style={{ fontSize: 13 }}>No reviews yet.</div>
@@ -421,7 +423,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
           )}
         </div>
       )}
-    </div>
+    </PixelCornerBox>
   );
 }
 
