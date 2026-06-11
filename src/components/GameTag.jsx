@@ -20,11 +20,12 @@ import { buildClip, CONFIGS } from "./PixelCornerBox.jsx";
 //   size        — "sm" (default) | "md"
 //   style       — extra styles on the outer wrapper
 
-const CLIP_SM = "polygon(" + buildClip(CONFIGS.sm.steps, CONFIGS.sm.s) + ")";
 const CLIP_MD = "polygon(" + buildClip(CONFIGS.md.steps, CONFIGS.md.s) + ")";
+const CLIP_LG = "polygon(" + buildClip(CONFIGS.lg.steps, CONFIGS.lg.s) + ")";
 
-function GameTag({ label, onClick, onRemove, variant = "accent", size = "sm", style = {} }) {
-  const clip = size === "md" ? CLIP_MD : CLIP_SM;
+function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", style = {} }) {
+  // Always use md corners minimum — sm corners are too subtle to read as pixel art
+  const clip = size === "lg" ? CLIP_LG : CLIP_MD;
 
   // Resolve colors by variant
   let bg, border, color;
@@ -43,8 +44,8 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "sm", st
     color = C.accentSoft;
   }
 
-  const padding = size === "md" ? "3px 10px" : "2px 7px";
-  const fontSize = size === "md" ? 12 : 11;
+  const padding = size === "lg" ? "4px 12px" : size === "md" ? "3px 10px" : "2px 7px";
+  const fontSize = size === "lg" ? 13 : size === "md" ? 12 : 11;
 
   const handleClick = onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined;
   const handleRemove = onRemove ? (e) => { e.stopPropagation(); onRemove(e); } : undefined;

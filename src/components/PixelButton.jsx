@@ -32,8 +32,7 @@ function PixelButton({
   style = {},
   type = "button",
 }) {
-  const cornerSize = size === "xs" ? "sm" : size === "sm" ? "md" : "md";
-  const { steps, s } = CONFIGS[cornerSize] || CONFIGS.md;
+  const { steps, s } = CONFIGS.md;
   const clip = "polygon(" + buildClip(steps, s) + ")";
 
   // Resolve colors by variant
