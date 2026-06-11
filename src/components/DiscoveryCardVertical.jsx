@@ -104,30 +104,28 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           position: "absolute", inset: 0, zIndex: 10,
           background: C.bg,
           display: "flex", flexDirection: "column",
-          justifyContent: "center", alignItems: "center",
-          padding: "16px 12px",
+          justifyContent: "center", alignItems: "stretch",
+          padding: "16px 16px",
           gap: 8,
         }}>
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => {
-            const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.textMuted : C.textDim;
-            const optBorder = opt.status === "not_for_me" ? C.border : optColor + "66";
-            const optBg = opt.status === "not_for_me" ? C.bg : optColor + "18";
+            const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
+            const optBorder = optColor + "66";
+            const optBg = optColor + "18";
             return (
-              <div key={opt.status} style={{ width: "100%" }}>
-                <PixelButton fullWidth size="sm"
-                  bg={optBg}
-                  borderColor={optBorder}
-                  color={optColor}
-                  style={{ justifyContent: "center" }}
-                  onClick={() => handleShelfSelect(opt.status)}>
-                  {opt.label}
-                </PixelButton>
-              </div>
+              <PixelButton key={opt.status} fullWidth size="sm"
+                bg={optBg}
+                borderColor={optBorder}
+                color={optColor}
+                style={{ justifyContent: "center" }}
+                onClick={() => handleShelfSelect(opt.status)}>
+                {opt.label}
+              </PixelButton>
             );
           })}
           <button onClick={() => setShelfOpen(false)}
-            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4 }}>
+            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
             Cancel
           </button>
         </div>
