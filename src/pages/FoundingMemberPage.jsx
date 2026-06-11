@@ -68,7 +68,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 20 }}>
             {steps.map((step, i) => (
-              <PixelCornerBox key={i} size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 28 }}>
+              <PixelCornerBox key={i} size="lg" borderColor={C.border} bg={C.surfaceRaised} style={{ padding: 28 }}>
                 <div style={{ fontWeight: 900, color: C.gold, fontSize: 13, letterSpacing: "2px", marginBottom: 14, opacity: 0.7 }}>{step.num}</div>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 17, marginBottom: 10, lineHeight: 1.3 }}>{step.title}</div>
                 <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7 }}>{step.desc}</div>
@@ -78,7 +78,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </div>
 
         {/* NPC section */}
-        <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surface} style={{ padding: isMobile ? 24 : 40, marginBottom: 64, textAlign: "center" }}>
+        <PixelCornerBox size="lg" borderColor={C.accentDim} bgStyle={"linear-gradient(135deg, #080e1a, #0d1829)"} style={{ padding: isMobile ? 24 : 40, marginBottom: 64, textAlign: "center" }}>
           <div style={{ fontWeight: 900, color: C.text, fontSize: isMobile ? 20 : 26, marginBottom: 14, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
             For years you've jumped into<br /><span style={{ color: C.accentSoft }}>NPC worlds.</span> Now they're joining yours.
           </div>
@@ -88,7 +88,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
         </PixelCornerBox>
 
         {/* Profile rings */}
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ padding: isMobile ? 20 : 32, marginBottom: 64 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: isMobile ? 20 : 32, marginBottom: 64 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 6 }}>Earn your mark</div>
             <div style={{ color: C.textMuted, fontSize: 14 }}>Complete quests to unlock profile rings. Every ring tells a story.</div>
@@ -227,7 +227,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
 
       {/* CTA */}
       <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "40px 16px 80px" : "64px 24px 80px" }}>
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ padding: isMobile ? 24 : 36, textAlign: "center" }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"linear-gradient(135deg, #0f0a00, #1f1500)"} style={{ padding: isMobile ? 24 : 36, textAlign: "center" }}>
           <div style={{ fontWeight: 800, color: C.gold, fontSize: isMobile ? 18 : 22, marginBottom: 10 }}>Ready to find your next game?</div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, lineHeight: 1.7, maxWidth: 480, margin: "0 auto 24px" }}>
             Free to join. No credit card. Your shelf, your charts, your community.

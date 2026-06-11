@@ -102,24 +102,25 @@ function PixelCorners({ steps, s, color }) {
 // Props:
 //   size        — "lg" | "md" | "sm" (default: "lg")
 //   borderColor — border/corner color (default: C.border)
-//   bg          — background color (default: C.surface)
+//   bg          — solid background color (default: C.surface)
+//   bgStyle     — full CSS background value, overrides bg (use for gradients, tints)
 //   style       — additional styles on the outer wrapper
 //   className   — className on outer wrapper
 //   onClick     — click handler
-//   as          — element type for outer wrapper (default: "div")
 
 function PixelCornerBox({
   children,
   size = "lg",
   borderColor,
   bg,
+  bgStyle,
   style = {},
   className,
   onClick,
 }) {
   const { steps, s } = CONFIGS[size] || CONFIGS.lg;
   const bc = borderColor || C.border;
-  const background = bg || C.surface;
+  const background = bgStyle || bg || C.surface;
   const clip = buildClip(steps, s);
 
   return (
