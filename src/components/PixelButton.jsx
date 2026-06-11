@@ -29,6 +29,7 @@ function PixelButton({
   variant = "solid",
   onClick,
   disabled,
+  fullWidth = false,
   style = {},
   type = "button",
 }) {
@@ -62,7 +63,7 @@ function PixelButton({
   const fontSize = fontSizeMap[size] || fontSizeMap.sm;
 
   return (
-    <div style={{ position: "relative", display: "inline-flex", minWidth: 0 }}>
+    <div style={{ position: "relative", display: fullWidth ? "flex" : "inline-flex", width: fullWidth ? "100%" : undefined, minWidth: 0 }}>
       {/* Border layer */}
       {bc && bc !== "transparent" && (
         <div style={{
@@ -95,6 +96,7 @@ function PixelButton({
           display: "flex",
           alignItems: "center",
           justifyContent: fullWidth ? "center" : undefined,
+          flex: fullWidth ? 1 : undefined,
           gap: 6,
           whiteSpace: "nowrap",
           zIndex: 1,
