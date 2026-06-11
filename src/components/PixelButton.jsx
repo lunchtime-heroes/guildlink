@@ -9,7 +9,8 @@ import { PixelCornerBox, CONFIGS, buildClip } from "./PixelCornerBox.jsx";
 //   <PixelButton size="sm" variant="ghost" onClick={fn}>Cancel</PixelButton>
 //
 // Props:
-//   size      — "md" (default) | "sm"
+//   size      — "xs" (compact) | "sm" (default) | "md" (CTA)
+//   fullWidth — stretches button to fill container
 //   bg        — background color (default: C.accent)
 //   color     — text color (default: "#fff")
 //   borderColor — border/corner color (default: same as bg, or C.border for ghost)
@@ -28,11 +29,11 @@ function PixelButton({
   variant = "solid",
   onClick,
   disabled,
-  fullWidth = false,
   style = {},
   type = "button",
 }) {
-  const { steps, s } = CONFIGS[size] || CONFIGS.md;
+  const cornerSize = size === "xs" ? "sm" : size === "sm" ? "md" : "md";
+  const { steps, s } = CONFIGS[cornerSize] || CONFIGS.md;
   const clip = "polygon(" + buildClip(steps, s) + ")";
 
   // Resolve colors by variant
@@ -53,11 +54,16 @@ function PixelButton({
     bc = bc || bgColor;
   }
 
-  const padding = size === "sm" ? "4px 10px" : "7px 16px";
-  const fontSize = size === "sm" ? 11 : 13;
+  // xs — compact sidebar/card buttons (Follow, Add to Shelf, See Full Charts)
+  // sm — standard action buttons (Save, Cancel, inline actions)
+  // md — CTA buttons (Join Free, Post, primary actions)
+  const paddingMap = { xs: "4px 10px", sm: "6px 14px", md: "9px 20px" };
+  const fontSizeMap = { xs: 11, sm: 12, md: 13 };
+  const padding = paddingMap[size] || paddingMap.sm;
+  const fontSize = fontSizeMap[size] || fontSizeMap.sm;
 
   return (
-    <div style={{ position: "relative", display: fullWidth ? "flex" : "inline-flex", width: fullWidth ? "100%" : undefined, minWidth: 0 }}>
+    <div style={{ position: "relative", display: "inline-flex", minWidth: 0 }}>
       {/* Border layer */}
       {bc && bc !== "transparent" && (
         <div style={{
@@ -92,7 +98,6 @@ function PixelButton({
           gap: 6,
           whiteSpace: "nowrap",
           zIndex: 1,
-          flex: fullWidth ? 1 : undefined,
           ...style,
         }}
       >

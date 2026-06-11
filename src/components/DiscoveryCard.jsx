@@ -311,7 +311,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Ask CTA */}
             {copy.cta_ask && (
-              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
+              <PixelButton size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
                 onClick={() => { if (isGuest) { onSignIn?.("Sign in to start a conversation."); return; } navigateToReviews(); }}>
                 {copy.cta_ask + " →"}
               </PixelButton>
@@ -319,7 +319,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Write a review CTA */}
             {copy.cta_review && game && (
-              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.gold + "44"} color={C.gold}
+              <PixelButton size="xs" bg={C.accentGlow} borderColor={C.gold + "44"} color={C.gold}
                 onClick={() => { if (isGuest) { onSignIn?.("Sign in to write a review."); return; } navigateToReviews(); }}>
                 {"Write a Review →"}
               </PixelButton>
@@ -329,12 +329,12 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
             {copy.cta_shelf && !addedToShelf && !dismissed && game && (
               <>
                 {SHELF_BUTTONS.map(({ status, label }) => (
-                  <PixelButton key={status} size="sm" bg={C.surfaceRaised} borderColor={C.border} color={C.textMuted}
+                  <PixelButton key={status} size="xs" bg={C.surfaceRaised} borderColor={C.border} color={C.textMuted}
                     onClick={() => addToShelf(status)}>
                     {label}
                   </PixelButton>
                 ))}
-                <PixelButton size="sm" bg={C.surfaceRaised} borderColor={C.border} color={C.textDim}
+                <PixelButton size="xs" bg={C.surfaceRaised} borderColor={C.border} color={C.textDim}
                   onClick={markNotInterested}>
                   {"Not Interested"}
                 </PixelButton>
@@ -347,7 +347,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Follow */}
             {copy.cta_follow && actor && !followed && (
-              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
+              <PixelButton size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
                 onClick={followActor}>
                 {"Follow " + actor.username}
               </PixelButton>
@@ -359,7 +359,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
             {/* Charts link */}
             {copy.cta_charts && game && (
-              <PixelButton size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
+              <PixelButton size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft}
                 onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
                 {"See on Charts →"}
               </PixelButton>

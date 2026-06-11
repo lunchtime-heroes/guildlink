@@ -139,7 +139,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           })}
           {limit && (
             <div style={{ marginTop: 10 }}>
-              <PixelButton fullWidth size="sm" bg="transparent" borderColor={C.border} color={C.textMuted} style={{ justifyContent: "center" }} onClick={() => setActivePage("games")}>
+              <PixelButton fullWidth size="xs" bg="transparent" borderColor={C.border} color={C.textMuted} style={{ justifyContent: "center" }} onClick={() => setActivePage("games")}>
                 {"See Full Charts →"}
               </PixelButton>
             </div>
