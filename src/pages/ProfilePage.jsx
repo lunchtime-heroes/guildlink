@@ -27,7 +27,7 @@ function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMob
     opacity: isDragging ? 0.4 : 1,
     background: C.surface,
     border: "2px solid " + (isDropTarget ? col.color : menuOpen ? col.color : "transparent"),
-    borderRadius: 12,
+    borderRadius: 4,
     cursor: isMobile ? "pointer" : "default",
     position: "relative",
     overflow: "hidden",
@@ -58,13 +58,13 @@ function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMob
           className="remove-btn">×</button>
         {/* Rank badge */}
         {shelfRank && (
-          <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 6, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
+          <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + col.color + "66", borderRadius: 3, padding: "1px 6px", color: col.color, fontSize: 10, fontWeight: 800 }}>
             #{shelfRank}
           </div>
         )}
         {/* Review badge */}
         {col.id === "have_played" && review && (
-          <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 6, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
+          <div style={{ position: "absolute", bottom: 4, right: 4, background: "rgba(8,14,26,0.85)", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "1px 6px", color: C.gold, fontWeight: 800, fontSize: 10 }}>
             {review.rating}/10
           </div>
         )}
@@ -72,9 +72,9 @@ function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMob
         {col.id === "have_played" && !isMobile && (
           <div className="thumbs-bar" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(8,14,26,0.85)", display: "flex", gap: 4, padding: "4px 6px", opacity: 0, transition: "opacity 0.15s" }}>
             <button onClick={e => { e.stopPropagation(); onLike(); }}
-              style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>👍</button>
+              style={{ background: entry.liked === true ? "#10b98133" : "transparent", border: "1px solid " + (entry.liked === true ? "#10b98166" : C.border + "88"), borderRadius: 2, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>👍</button>
             <button onClick={e => { e.stopPropagation(); onDislike(); }}
-              style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border + "88"), borderRadius: 5, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>👎</button>
+              style={{ background: entry.liked === false ? "#ef444433" : "transparent", border: "1px solid " + (entry.liked === false ? "#ef444466" : C.border + "88"), borderRadius: 2, padding: "3px 0", fontSize: 11, cursor: "pointer", lineHeight: 1, flex: 1 }}>👎</button>
           </div>
         )}
       </div>
@@ -86,7 +86,7 @@ function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMob
           <div
             {...attributes}
             {...listeners}
-            style={{ cursor: "grab", textAlign: "center", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 20, padding: "3px 8px", color: C.textDim, fontSize: 10, fontWeight: 600, opacity: 0, transition: "opacity 0.15s" }}
+            style={{ cursor: "grab", textAlign: "center", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "3px 8px", color: C.textDim, fontSize: 10, fontWeight: 600, opacity: 0, transition: "opacity 0.15s" }}
             className="drag-handle"
             onClick={e => e.stopPropagation()}>
             Drag to reorder
@@ -853,14 +853,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       {/* Header card */}
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", marginBottom: 20 }}>
+      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ height: 150, background: "linear-gradient(135deg, #1a1040 0%, " + C.accent + "66 50%, #0a2040 100%)", position: "relative" }}>
           <div style={{ position: "absolute", bottom: -36, left: 28 }}>
             <Avatar initials={user.avatar} size={84} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={localAvatarConfig || user.avatarConfig} />
           </div>
           {user.isFounding && (
             <div style={{ position: "absolute", top: 16, right: 16 }}>
-              <span style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
+              <span style={{ background: C.goldGlow, color: C.gold, border: "1px solid " + C.goldBorder, borderRadius: 3, padding: "5px 12px", fontSize: 12, fontWeight: 800 }}>⚔️ Founding Member</span>
             </div>
           )}
         </div>
@@ -904,7 +904,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         };
                         return (
                           <button key={tag} onClick={cycle}
-                            style={{ background: bg, border: "1px solid " + border, color, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                            style={{ background: bg, border: "1px solid " + border, color, borderRadius: 3, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                             {tag}
                           </button>
                         );
@@ -919,12 +919,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {steamId ? (
                     <button onClick={disconnectSteam}
-                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 3, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       ✓ Steam
                     </button>
                   ) : (
                     <button onClick={() => setShowSteamImport(true)}
-                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       + Steam
                     </button>
                   )}
@@ -934,24 +934,24 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       if (authUser) await supabase.from("user_private").update({ xbox_gamertag: null }).eq("id", authUser.id);
                       setXboxGamertag(null);
                     }}
-                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 3, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       ✓ Xbox
                     </button>
                   ) : (
                     <button onClick={() => setShowXboxImport(true)}
-                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       + Xbox
                     </button>
                   )}
                   {/* Future platforms slot in here */}
                   {psnConnected ? (
                     <button onClick={() => setShowPSNImport(true)}
-                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 8, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 3, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       ✓ PlayStation
                     </button>
                   ) : (
                     <button onClick={() => setShowPSNImport(true)}
-                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                       + PlayStation
                     </button>
                   )}
@@ -968,7 +968,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     if (!authUser) return;
                     await supabase.from("profiles").update({ is_private: false }).eq("id", authUser.id);
                     setIsPrivate(false);
-                  }} style={{ background: !isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (!isPrivate ? "#10b98166" : C.border), borderRadius: 8, padding: "4px 14px", color: !isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  }} style={{ background: !isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (!isPrivate ? "#10b98166" : C.border), borderRadius: 3, padding: "4px 14px", color: !isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                     No
                   </button>
                   <button onClick={async () => {
@@ -976,14 +976,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     if (!authUser) return;
                     await supabase.from("profiles").update({ is_private: true }).eq("id", authUser.id);
                     setIsPrivate(true);
-                  }} style={{ background: isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (isPrivate ? "#10b98166" : C.border), borderRadius: 8, padding: "4px 14px", color: isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  }} style={{ background: isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (isPrivate ? "#10b98166" : C.border), borderRadius: 3, padding: "4px 14px", color: isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                     Yes
                   </button>
                 </div>
               </div>
 
               {/* Invite Gamers */}
-              <div style={{ marginTop: 20, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ marginTop: 20, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 4, padding: "14px 16px" }}>
                 <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Invite Gamers</div>
                 <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
                   Share your link and earn animated rings for every gamer who joins. {inviteCount > 0 && <span style={{ color: C.accentSoft, fontWeight: 700 }}>{inviteCount} joined so far.</span>}
@@ -999,14 +999,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 </div>
                 {inviteCode && (
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <div style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 10px", color: C.textDim, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "6px 10px", color: C.textDim, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       guildlink.gg/join/{inviteCode}
                     </div>
                     <button onClick={() => {
                       navigator.clipboard.writeText("https://guildlink.gg/join/" + inviteCode);
                       setInviteCopied(true);
                       setTimeout(() => setInviteCopied(false), 2000);
-                    }} style={{ background: inviteCopied ? "#10b98122" : C.accent, border: "none", borderRadius: 8, padding: "6px 14px", color: inviteCopied ? "#10b981" : C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+                    }} style={{ background: inviteCopied ? "#10b98122" : C.accent, border: "none", borderRadius: 3, padding: "6px 14px", color: inviteCopied ? "#10b981" : C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
                       {inviteCopied ? "Copied!" : "Copy Link"}
                     </button>
                   </div>
@@ -1015,34 +1015,34 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             </div>
             {editing ? (
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
+                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
-                  <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
+                  <button onClick={startEdit} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+                  <button onClick={() => setShowAvatarBuilder(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "8px 16px", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Character Builder</button>
                 </div>
                 {deletionPending ? (
-                  <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 8, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
+                  <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 3, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
                 ) : (
-                  <button onClick={() => setShowDeleteModal(true)} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 8, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Delete Account</button>
+                  <button onClick={() => setShowDeleteModal(true)} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 3, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Delete Account</button>
                 )}
               </div>
             )}
           </div>
 
           {editing && (
-            <div style={{ marginTop: 20, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 20 }}>
+            <div style={{ marginTop: 20, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: 20 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>Edit Profile</div>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Display Name</div>
-                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                <input value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
               </div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 4 }}>Bio</div>
-                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
+                <textarea value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell people who you are..." style={{ width: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box" }} />
               </div>
 
               {/* Theme picker — base themes + quest-unlocked catalog */}
@@ -1060,7 +1060,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       <div key={theme.id} style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
                         <button onClick={() => { setEditForm(f => ({ ...f, theme: theme.id })); applyTheme(theme.id); setPreviewThemeId(theme.id); }}
                           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 6 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg, " + theme.bg + " 60%, " + theme.accent + " 60%)", border: isActive ? "2px solid " + C.accent : "2px solid " + C.border, boxShadow: isActive ? "0 0 0 3px " + C.accentDim : "none", transition: "all 0.15s" }} />
+                          <div style={{ width: 48, height: 48, borderRadius: 4, background: "linear-gradient(135deg, " + theme.bg + " 60%, " + theme.accent + " 60%)", border: isActive ? "2px solid " + C.accent : "2px solid " + C.border, boxShadow: isActive ? "0 0 0 3px " + C.accentDim : "none", transition: "all 0.15s" }} />
                         </button>
                         <span style={{ color: isActive ? C.accentSoft : C.textMuted, fontSize: 10, fontWeight: isActive ? 700 : 400 }}>{theme.label}</span>
                       </div>
@@ -1077,7 +1077,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         <button onClick={() => { if (!isUnlocked) return; setEditForm(f => ({ ...f, theme: qt.id })); applyTheme(qt.id); setPreviewThemeId(qt.id); }}
                           title={isUnlocked ? qt.label : `Locked — ${qt.questLabel}`}
                           style={{ background: "none", border: "none", cursor: isUnlocked ? "pointer" : "default", padding: 0, marginBottom: 6 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg, " + palette.bg + " 60%, " + palette.accent + " 60%)", border: isActive && isUnlocked ? "2px solid " + palette.accent : "2px solid " + C.border, boxShadow: isActive && isUnlocked ? "0 0 0 3px " + palette.accent + "44" : "none", opacity: isUnlocked ? 1 : 0.45, transition: "all 0.15s" }} />
+                          <div style={{ width: 48, height: 48, borderRadius: 4, background: "linear-gradient(135deg, " + palette.bg + " 60%, " + palette.accent + " 60%)", border: isActive && isUnlocked ? "2px solid " + palette.accent : "2px solid " + C.border, boxShadow: isActive && isUnlocked ? "0 0 0 3px " + palette.accent + "44" : "none", opacity: isUnlocked ? 1 : 0.45, transition: "all 0.15s" }} />
                         </button>
                         <span style={{ color: isActive && isUnlocked ? palette.accent : isUnlocked ? C.textMuted : C.textDim, fontSize: 10, fontWeight: isActive ? 700 : 400, opacity: isUnlocked ? 1 : 0.6 }}>{qt.label}</span>
                         <span style={{ color: C.textDim, fontSize: 9, opacity: isUnlocked ? 1 : 0.5 }}>{isUnlocked ? "Unlocked" : qt.questLabel}</span>
@@ -1161,8 +1161,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               </div>
 
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
+                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
               </div>
             </div>
           )}
@@ -1189,8 +1189,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <span style={{ color: C.gold, fontSize: 12, fontWeight: 700 }}>XP Progress</span>
                 <span style={{ color: C.textDim, fontSize: 11 }}>{user.xp?.toLocaleString() || 0} / {user.xpNext?.toLocaleString() || 1000}</span>
               </div>
-              <div style={{ height: 8, background: C.surfaceHover, borderRadius: 4 }}>
-                <div style={{ height: "100%", width: Math.min(((user.xp || 0) / (user.xpNext || 1000)) * 100, 100) + "%", background: "linear-gradient(90deg, " + C.gold + ", #f97316)", borderRadius: 4 }} />
+              <div style={{ height: 8, background: C.surfaceHover, borderRadius: 2 }}>
+                <div style={{ height: "100%", width: Math.min(((user.xp || 0) / (user.xpNext || 1000)) * 100, 100) + "%", background: "linear-gradient(90deg, " + C.gold + ", #f97316)", borderRadius: 2 }} />
               </div>
             </div>
           </div>
@@ -1200,7 +1200,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto" }}>
         {tabs.map(tab => (
-          <button key={tab.id} data-tour={tab.id + "-tab"} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 8, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
+          <button key={tab.id} data-tour={tab.id + "-tab"} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? C.accentGlow : "transparent", border: activeTab === tab.id ? "1px solid " + C.accentDim : "1px solid transparent", borderRadius: 3, padding: "8px 16px", cursor: "pointer", color: activeTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{tab.label}</button>
         ))}
       </div>
 
@@ -1264,7 +1264,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       handle={user?.handle ? "@" + user.handle.replace(/^@+/, "") : ""}
                     />
                   )}
-                  <button data-tour="add-game-btn" onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
+                  <button data-tour="add-game-btn" onClick={() => setAddingGame(a => !a)} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "7px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Game</button>
                 </div>
               </div>
             );
@@ -1277,7 +1277,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               {isMobile && gameSearchResults.length > 0 && (
                 <div onClick={() => { setGameSearchResults([]); setGameSearch(""); }} style={{ position: "fixed", inset: 0, zIndex: 10 }} />
               )}
-              <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 16, marginBottom: 16, position: "relative", zIndex: 11 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 16, marginBottom: 16, position: "relative", zIndex: 11 }}>
                 <div style={{ position: "relative" }}>
                   <input
                     autoFocus
@@ -1301,7 +1301,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       }
                     }}
                     placeholder="Search for any game..."
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: isMobile ? "10px 36px 10px 12px" : "8px 36px 8px 12px", color: C.text, fontSize: isMobile ? 15 : 13, outline: "none", boxSizing: "border-box" }}
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: isMobile ? "10px 36px 10px 12px" : "8px 36px 8px 12px", color: C.text, fontSize: isMobile ? 15 : 13, outline: "none", boxSizing: "border-box" }}
                   />
                   {gameSearch.length > 0 && (
                     <button onClick={() => { setGameSearch(""); setGameSearchResults([]); }}
@@ -1311,12 +1311,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   )}
                 </div>
                 {gameSearchResults.length > 0 && (
-                  <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", border: "1px solid " + C.border }}>
+                  <div style={{ marginTop: 8, borderRadius: 4, overflow: "hidden", border: "1px solid " + C.border }}>
                     {gameSearchResults.map(game => (
                       <div key={game.id || game.igdb_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: isMobile ? "10px 12px" : "8px 14px", background: C.surfaceRaised, borderBottom: "1px solid " + C.border }}>
                         {game.cover_url
-                          ? <img src={game.cover_url} alt="" style={{ width: isMobile ? 56 : 48, height: isMobile ? 75 : 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
-                          : <div style={{ width: isMobile ? 56 : 48, height: isMobile ? 75 : 64, borderRadius: 5, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                          ? <img src={game.cover_url} alt="" style={{ width: isMobile ? 56 : 48, height: isMobile ? 75 : 64, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                          : <div style={{ width: isMobile ? 56 : 48, height: isMobile ? 75 : 64, borderRadius: 2, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                         }
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, color: C.text, fontSize: isMobile ? 15 : 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -1335,14 +1335,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                     }).select().single();
                                     if (inserted) { addToShelf(inserted, col.id); setGameSearchResults([]); setGameSearch(""); }
                                   }}
-                                    style={{ background: col.color + "22", border: "1px solid " + col.color + "55", borderRadius: 8, padding: "8px 12px", color: col.color, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+                                    style={{ background: col.color + "22", border: "1px solid " + col.color + "55", borderRadius: 3, padding: "8px 12px", color: col.color, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
                                     + {col.label}
                                   </button>
                                 ))
                               ) : (
                                 SHELF_COLUMNS.map(col => (
                                   <button key={col.id} onClick={() => { addToShelf(game, col.id); setGameSearchResults([]); setGameSearch(""); }}
-                                    style={{ background: col.color + "22", border: "1px solid " + col.color + "55", borderRadius: 8, padding: "8px 12px", color: col.color, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+                                    style={{ background: col.color + "22", border: "1px solid " + col.color + "55", borderRadius: 3, padding: "8px 12px", color: col.color, fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
                                     + {col.label}
                                   </button>
                                 ))
@@ -1364,14 +1364,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                                   }).select().single();
                                   if (inserted) { addToShelf(inserted, col.id); setGameSearchResults([]); setGameSearch(""); }
                                 }}
-                                  style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                                  style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 3, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                                   {col.label}
                                 </button>
                               ))
                             ) : (
                               SHELF_COLUMNS.map(col => (
                                 <button key={col.id} onClick={() => { addToShelf(game, col.id); setGameSearchResults([]); setGameSearch(""); }}
-                                  style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 6, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                                  style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 3, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                                   {col.label}
                                 </button>
                               ))
@@ -1401,16 +1401,16 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     {/* Section header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                       <div style={{ fontWeight: 800, color: col.color, fontSize: 14 }}>{col.label}</div>
-                      <div style={{ background: col.color + "22", color: col.color, borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
+                      <div style={{ background: col.color + "22", color: col.color, borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{entries.length}</div>
                       {/* Cross-column drop indicator */}
                       {activeId && activeStatus !== col.id && dragOverCol === col.id && (
-                        <div style={{ marginLeft: "auto", background: col.color + "22", border: "1px solid " + col.color, borderRadius: 8, padding: "2px 10px", color: col.color, fontSize: 11, fontWeight: 700 }}>
+                        <div style={{ marginLeft: "auto", background: col.color + "22", border: "1px solid " + col.color, borderRadius: 3, padding: "2px 10px", color: col.color, fontSize: 11, fontWeight: 700 }}>
                           Drop to move here
                         </div>
                       )}
                     </div>
                     {/* Column highlight when dragging cross-column */}
-                    <div style={{ borderRadius: 12, border: activeId && activeStatus !== col.id && dragOverCol === col.id ? "2px solid " + col.color : "2px solid transparent", transition: "border-color 0.15s", padding: 4 }}>
+                    <div style={{ borderRadius: 4, border: activeId && activeStatus !== col.id && dragOverCol === col.id ? "2px solid " + col.color : "2px solid transparent", transition: "border-color 0.15s", padding: 4 }}>
                     {/* Grid */}
                     <SortableContext
                       items={entries.map(e => e.game_id)}
@@ -1447,7 +1447,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         })}
                         {/* Empty state */}
                         {entries.length === 0 && (
-                          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 10, border: "1px dashed " + col.color + "33" }}>
+                          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "20px", color: col.color + "66", fontSize: 12, borderRadius: 4, border: "1px dashed " + col.color + "33" }}>
                             {col.emptyText}
                           </div>
                         )}
@@ -1465,7 +1465,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   const game = entry?.games;
                   if (!game) return null;
                   return (
-                    <div style={{ background: C.surface, borderRadius: 12, overflow: "hidden", opacity: 0.9, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", transform: "rotate(2deg)" }}>
+                    <div style={{ background: C.surface, borderRadius: 4, overflow: "hidden", opacity: 0.9, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", transform: "rotate(2deg)" }}>
                       <div style={{ width: "100%", aspectRatio: "3/4" }}>
                         {game.cover_url
                           ? <img src={game.cover_url} alt={game.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
@@ -1504,7 +1504,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   onClick={e => e.stopPropagation()}>
                   {/* Game cover peeking above sheet */}
                   {menuGame?.cover_url && (
-                    <div style={{ position: "absolute", top: -140, left: "50%", transform: "translateX(-50%)", width: 100, height: 133, borderRadius: 10, overflow: "hidden", border: "2px solid " + (menuCol?.color || C.border), boxShadow: "0 -4px 20px rgba(0,0,0,0.6)" }}>
+                    <div style={{ position: "absolute", top: -140, left: "50%", transform: "translateX(-50%)", width: 100, height: 133, borderRadius: 4, overflow: "hidden", border: "2px solid " + (menuCol?.color || C.border), boxShadow: "0 -4px 20px rgba(0,0,0,0.6)" }}>
                       <img src={menuGame.cover_url} alt={menuGame.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   )}
@@ -1516,11 +1516,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   {menuEntry.status === "have_played" && (
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => { saveLiked(shelfMenuOpen, menuEntry.liked === true ? null : true); setShelfMenuOpen(null); }}
-                        style={{ background: menuEntry.liked === true ? "#10b98133" : C.surfaceRaised, border: "1px solid " + (menuEntry.liked === true ? "#10b98166" : C.border), borderRadius: 10, padding: "12px 0", fontSize: 20, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                        style={{ background: menuEntry.liked === true ? "#10b98133" : C.surfaceRaised, border: "1px solid " + (menuEntry.liked === true ? "#10b98166" : C.border), borderRadius: 4, padding: "12px 0", fontSize: 20, cursor: "pointer", lineHeight: 1, flex: 1 }}>
                         👍
                       </button>
                       <button onClick={() => { saveLiked(shelfMenuOpen, menuEntry.liked === false ? null : false); setShelfMenuOpen(null); }}
-                        style={{ background: menuEntry.liked === false ? "#ef444433" : C.surfaceRaised, border: "1px solid " + (menuEntry.liked === false ? "#ef444466" : C.border), borderRadius: 10, padding: "12px 0", fontSize: 20, cursor: "pointer", lineHeight: 1, flex: 1 }}>
+                        style={{ background: menuEntry.liked === false ? "#ef444433" : C.surfaceRaised, border: "1px solid " + (menuEntry.liked === false ? "#ef444466" : C.border), borderRadius: 4, padding: "12px 0", fontSize: 20, cursor: "pointer", lineHeight: 1, flex: 1 }}>
                         👎
                       </button>
                     </div>
@@ -1528,7 +1528,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   {/* Move status */}
                   {SHELF_COLUMNS.filter(c => c.id !== menuEntry.status).map(target => (
                     <button key={target.id} onClick={() => { moveGame(shelfMenuOpen, menuEntry.status, target.id); setShelfMenuOpen(null); }}
-                      style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 10, padding: "14px 16px", color: target.color, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+                      style={{ background: target.color + "22", border: "1px solid " + target.color + "55", borderRadius: 4, padding: "14px 16px", color: target.color, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
                       → {target.label}
                     </button>
                   ))}
@@ -1552,7 +1552,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             saveSortOrder(menuEntry.status, reordered);
                             setShelfMenuOpen(null);
                           }}
-                            style={{ background: isCurrentRank ? (menuCol?.color || C.gold) + "33" : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? (menuCol?.color || C.gold) : C.border), borderRadius: 8, padding: "10px 0", color: isCurrentRank ? (menuCol?.color || C.gold) : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                            style={{ background: isCurrentRank ? (menuCol?.color || C.gold) + "33" : C.surfaceRaised, border: "1px solid " + (isCurrentRank ? (menuCol?.color || C.gold) : C.border), borderRadius: 3, padding: "10px 0", color: isCurrentRank ? (menuCol?.color || C.gold) : C.textMuted, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
                             {n}
                           </button>
                         );
@@ -1561,7 +1561,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   </div>
                   {/* Cancel */}
                   <button onClick={() => setShelfMenuOpen(null)}
-                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "14px 0", color: C.textDim, fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
+                    style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "14px 0", color: C.textDim, fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>
                     Cancel
                   </button>
                 </div>
@@ -1577,13 +1577,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
           {/* Write Review button + form */}
           <div style={{ marginBottom: 16 }}>
             {!showNewReview ? (
-              <button onClick={() => setShowNewReview(true)} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Write a Review</button>
+              <button onClick={() => setShowNewReview(true)} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Write a Review</button>
             ) : (
-              <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+              <div style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 4, padding: 20, marginBottom: 12 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 14 }}>New Review</div>
                 <div style={{ position: "relative", marginBottom: 12 }}>
                   {newReviewGame ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "8px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "8px 12px" }}>
                       <div style={{ flex: 1, fontWeight: 600, color: C.text, fontSize: 13 }}>{newReviewGame.name}</div>
                       <button onClick={() => { setNewReviewGame(null); setNewReviewGameSearch(""); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: 0 }}>×</button>
                     </div>
@@ -1595,9 +1595,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         if (q.length < 2) { setNewReviewGameResults([]); return; }
                         const { data } = await supabase.from("games").select("id, name, genre").ilike("name", "%" + q + "%").limit(8);
                         setNewReviewGameResults(data || []);
-                      }} placeholder="Search for a game..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                      }} placeholder="Search for a game..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                       {newReviewGameResults.length > 0 && (
-                        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 10, zIndex: 50, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+                        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, zIndex: 50, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", overflow: "hidden" }}>
                           {newReviewGameResults.map(g => (
                             <div key={g.id} onClick={() => { setNewReviewGame(g); setNewReviewGameResults([]); setNewReviewGameSearch(""); }}
                               style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border, fontSize: 13, color: C.text }}
@@ -1615,28 +1615,28 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                   {[1,2,3,4,5,6,7,8,9,10].map(n => (
                     <button key={n} onClick={() => setNewReviewForm(f => ({ ...f, rating: n }))}
-                      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (newReviewForm.rating >= n ? C.gold : C.border), background: newReviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: newReviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      style={{ width: 32, height: 32, borderRadius: 3, border: "1px solid " + (newReviewForm.rating >= n ? C.gold : C.border), background: newReviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: newReviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                       {n}
                     </button>
                   ))}
                 </div>
-                <input value={newReviewForm.headline} onChange={e => setNewReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                <input value={newReviewForm.loved} onChange={e => setNewReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                <input value={newReviewForm.didnt_love} onChange={e => setNewReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                <textarea value={newReviewForm.content} onChange={e => setNewReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
+                <input value={newReviewForm.headline} onChange={e => setNewReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (e.g. 'A masterpiece that respects your time')" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <input value={newReviewForm.loved} onChange={e => setNewReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <input value={newReviewForm.didnt_love} onChange={e => setNewReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <textarea value={newReviewForm.content} onChange={e => setNewReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={submitNewReview} disabled={!newReviewGame || !newReviewForm.rating || submittingNewReview}
-                    style={{ background: (newReviewGame && newReviewForm.rating) ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 20px", color: (newReviewGame && newReviewForm.rating) ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: (newReviewGame && newReviewForm.rating) ? "pointer" : "default" }}>
+                    style={{ background: (newReviewGame && newReviewForm.rating) ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "8px 20px", color: (newReviewGame && newReviewForm.rating) ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: (newReviewGame && newReviewForm.rating) ? "pointer" : "default" }}>
                     {submittingNewReview ? "Saving…" : "Submit Review"}
                   </button>
                   <button onClick={() => { setShowNewReview(false); setNewReviewForm({ rating: 0, headline: "", loved: "", didnt_love: "", content: "", time_played: "", completed: false }); setNewReviewGame(null); setNewReviewGameSearch(""); }}
-                    style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                    style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                 </div>
               </div>
             )}
           </div>
           {userReviews.length > 0 ? userReviews.map(review => (
-            <div key={review.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+            <div key={review.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 20, marginBottom: 12 }}>
               {editingReview?.game_id === review.game_id ? (
                 /* Inline edit form */
                 <div>
@@ -1644,21 +1644,21 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setReviewEditForm(f => ({ ...f, rating: n }))}
-                        style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + (reviewEditForm.rating >= n ? C.gold : C.border), background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        style={{ width: 32, height: 32, borderRadius: 3, border: "1px solid " + (reviewEditForm.rating >= n ? C.gold : C.border), background: reviewEditForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewEditForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                         {n}
                       </button>
                     ))}
                   </div>
-                  <input value={reviewEditForm.headline} onChange={e => setReviewEditForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                  <input value={reviewEditForm.loved} onChange={e => setReviewEditForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                  <input value={reviewEditForm.didnt_love} onChange={e => setReviewEditForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                  <input value={reviewEditForm.headline} onChange={e => setReviewEditForm(f => ({ ...f, headline: e.target.value }))} placeholder="Headline (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <input value={reviewEditForm.loved} onChange={e => setReviewEditForm(f => ({ ...f, loved: e.target.value }))} placeholder="What you loved..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <input value={reviewEditForm.didnt_love} onChange={e => setReviewEditForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                  <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={saveReview} disabled={!reviewEditForm.rating || savingReview}
-                      style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                       {savingReview ? "Saving…" : "Save"}
                     </button>
-                    <button onClick={() => setEditingReview(null)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                    <button onClick={() => setEditingReview(null)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                   </div>
                 </div>
               ) : (
@@ -1666,7 +1666,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                     <div onClick={() => review.games && (setCurrentGame(review.game_id), setActivePage("game"))}
-                      style={{ width: 36, height: 48, borderRadius: 6, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default", overflow: "hidden" }}>
+                      style={{ width: 36, height: 48, borderRadius: 3, background: C.surfaceRaised, border: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: review.games ? "pointer" : "default", overflow: "hidden" }}>
                       {review.games?.cover_url
                         ? <img src={review.games.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <div style={{ fontWeight: 800, color: C.textDim, fontSize: 11 }}>{(review.games?.name || "?").slice(0,2).toUpperCase()}</div>
@@ -1678,11 +1678,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       <div style={{ color: C.textDim, fontSize: 12 }}>{review.games?.developer}{review.time_played ? " · " + review.time_played + "h played" : ""}{review.completed ? " · Completed" : ""}</div>
                     </div>
                     <button onClick={() => startEditReview(review)}
-                      style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                      style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "6px 12px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                       Edit
                     </button>
                     <ShareReviewButton review={{ ...review, profiles: { handle: user?.handle, username: user?.username } }} />
-                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 8, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
+                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "6px 12px", color: C.gold, fontWeight: 800, fontSize: 16 }}>{review.rating + "/10"}</div>
                   </div>
                   {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 8 }}>{review.headline}</div>}
                   {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>Loved: {review.loved}</div>}
@@ -1714,7 +1714,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
               {profileFollowing.map(p => (
                 <div key={p.id} onClick={() => { if (p.type === "npc") { setCurrentNPC?.(p.id); setActivePage("npc"); } else { setCurrentPlayer?.(p.id); setActivePage("player"); } }}
-                  style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "12px 14px", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: "12px 14px", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accentDim}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                   <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={56} isNPC={p.type === "npc"} founding={p.type !== "npc" && p.is_founding} ring={p.type !== "npc" ? p.active_ring : null} avatarConfig={p.type !== "npc" ? p.avatar_config : null} />
@@ -1766,18 +1766,18 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <div key={quest.quest_id} style={{
                     background: C.surface,
                     border: "1px solid " + quest.completed ? C.green + "44" : C.border,
-                    borderRadius: 14, padding: "16px 20px",
+                    borderRadius: 4, padding: "16px 20px",
                     display: "flex", gap: 16, alignItems: "center",
                     opacity: quest.completed ? 0.85 : 1,
                   }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: quest.completed ? C.green + "18" : C.surfaceRaised, border: "1px solid " + quest.completed ? C.green + "33" : C.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 4, background: quest.completed ? C.green + "18" : C.surfaceRaised, border: "1px solid " + quest.completed ? C.green + "33" : C.border, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
                       {quest.completed ? "✓" : quest.is_onboarding ? "🗺️" : "🎯"}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 700, color: quest.completed ? C.green : C.text, fontSize: 14 }}>{quest.title}</span>
-                        {quest.is_onboarding && !quest.completed && <span style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>INTRO</span>}
-                        {quest.reward_id && <span style={{ background: rewardColor + "18", color: rewardColor, border: "1px solid " + rewardColor + "33", borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{quest.reward_label}</span>}
+                        {quest.is_onboarding && !quest.completed && <span style={{ background: C.accentGlow, color: C.accentSoft, border: "1px solid " + C.accentDim, borderRadius: 2, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>INTRO</span>}
+                        {quest.reward_id && <span style={{ background: rewardColor + "18", color: rewardColor, border: "1px solid " + rewardColor + "33", borderRadius: 2, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>{quest.reward_label}</span>}
                       </div>
                       <div style={{ color: C.textMuted, fontSize: 12, marginBottom: quest.completed ? 0 : 8 }}>{quest.description}</div>
                       {!quest.completed && (
@@ -1804,17 +1804,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 28, maxWidth: 420, width: "100%" }}>
+          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 28, maxWidth: 420, width: "100%" }}>
             <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 10 }}>Delete your account?</div>
             <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
               This will permanently delete your profile, shelf, reviews, posts, and all activity. You have 14 days to change your mind after requesting deletion — after that, everything is gone for good.
             </div>
-            <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+            <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "12px 14px", marginBottom: 16 }}>
               <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 8 }}>Want a copy of your data before you go?</div>
               {exportRequested ? (
                 <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700 }}>✓ Export requested — we'll be in touch.</div>
               ) : (
-                <button onClick={requestDataExport} style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={requestDataExport} style={{ background: C.surface, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "6px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   Request data export
                 </button>
               )}
@@ -1824,17 +1824,17 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               value={deleteConfirmText}
               onChange={e => setDeleteConfirmText(e.target.value)}
               placeholder="DELETE"
-              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 14px", color: C.text, fontSize: 14, marginBottom: 16, boxSizing: "border-box", outline: "none" }}
+              style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 14px", color: C.text, fontSize: 14, marginBottom: 16, boxSizing: "border-box", outline: "none" }}
             />
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
-                style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Never mind
               </button>
               <button
                 onClick={requestDeletion}
                 disabled={deleteConfirmText !== "DELETE"}
-                style={{ background: deleteConfirmText === "DELETE" ? "#c0392b" : C.surfaceRaised, border: "1px solid " + (deleteConfirmText === "DELETE" ? "#c0392b" : C.border), borderRadius: 8, padding: "8px 16px", color: deleteConfirmText === "DELETE" ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: deleteConfirmText === "DELETE" ? "pointer" : "default", transition: "all 0.2s" }}>
+                style={{ background: deleteConfirmText === "DELETE" ? "#c0392b" : C.surfaceRaised, border: "1px solid " + (deleteConfirmText === "DELETE" ? "#c0392b" : C.border), borderRadius: 3, padding: "8px 16px", color: deleteConfirmText === "DELETE" ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: deleteConfirmText === "DELETE" ? "pointer" : "default", transition: "all 0.2s" }}>
                 Request deletion
               </button>
             </div>

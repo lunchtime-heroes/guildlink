@@ -4,6 +4,7 @@ import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard } from "../components/FeedPostCard.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function NPCEditorModal({ npc, onClose, onSaved }) {
   const isNew = !npc;
@@ -93,7 +94,7 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
   };
 
   const labelStyle = { color: C.textMuted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4, display: "block" };
-  const inputStyle = { width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
+  const inputStyle = { width: "100%", background: C.surfaceHover, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
   const taStyle = { ...inputStyle, resize: "vertical", minHeight: 80, lineHeight: 1.6 };
   const section = (title) => (
     <div style={{ color: C.accent, fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 12, marginTop: 24, borderBottom: "1px solid " + C.border, paddingBottom: 6 }}>{title}</div>
@@ -101,7 +102,7 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 16px", overflowY: "auto" }}>
-      <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 20, width: "100%", maxWidth: 640, padding: 28, position: "relative", marginBottom: 20 }}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ width: "100%", maxWidth: 640, padding: 28, position: "relative", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div style={{ fontWeight: 800, fontSize: 18, color: C.text }}>{isNew ? "Create NPC" : "Edit NPC"}</div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, fontSize: 22, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
@@ -170,10 +171,10 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
               <input value={stat.label} onChange={e => updateStat(i, "label", e.target.value)} style={inputStyle} placeholder="Label" />
               <input value={stat.value} onChange={e => updateStat(i, "value", e.target.value)} style={inputStyle} placeholder="Value" />
               <input value={stat.note} onChange={e => updateStat(i, "note", e.target.value)} style={inputStyle} placeholder="Note (italic)" />
-              <button onClick={() => removeStat(i)} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 6, color: C.textDim, fontSize: 14, cursor: "pointer", height: 34, padding: "0 6px" }}>×</button>
+              <button onClick={() => removeStat(i)} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 3, color: C.textDim, fontSize: 14, cursor: "pointer", height: 34, padding: "0 6px" }}>×</button>
             </div>
           ))}
-          <button onClick={addStat} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer", marginTop: 4 }}>+ Add Stat Row</button>
+          <button onClick={addStat} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer", marginTop: 4 }}>+ Add Stat Row</button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20, marginBottom: 20 }}>
@@ -181,13 +182,13 @@ function NPCEditorModal({ npc, onClose, onSaved }) {
           <label htmlFor="npc-active" style={{ color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Active (visible in Studio and public browse)</label>
         </div>
 
-        {error && <div style={{ background: "#ef444418", border: "1px solid #ef444444", borderRadius: 8, padding: "8px 12px", color: "#ef4444", fontSize: 13, marginBottom: 16 }}>{error}</div>}
+        {error && <div style={{ background: "#ef444418", border: "1px solid #ef444444", borderRadius: 3, padding: "8px 12px", color: "#ef4444", fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 10, padding: "9px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 10, padding: "9px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>{saving ? "Saving…" : isNew ? "Create NPC" : "Save Changes"}</button>
+          <button onClick={onClose} style={{ background: "none", border: "1px solid " + C.border, borderRadius: 4, padding: "9px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 4, padding: "9px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}>{saving ? "Saving…" : isNew ? "Create NPC" : "Save Changes"}</button>
         </div>
-      </div>
+      </PixelCornerBox>
     </div>
   );
 }
@@ -723,7 +724,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
           <div style={{ display: "flex", gap: 8 }}>
             {studioTab === "characters" && (
               <button onClick={() => { setEditingNPC(null); setShowEditor(true); }}
-                style={{ background: C2.accent, border: "none", borderRadius: 10, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: C2.accent, border: "none", borderRadius: 4, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 + New NPC
               </button>
             )}
@@ -731,10 +732,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         </div>
 
         {/* Studio tabs */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 4 }}>
           {[{ id: "characters", label: "Characters" }, { id: "prompts", label: "Daily Prompts" }].map(t => (
             <button key={t.id} onClick={() => setStudioTab(t.id)}
-              style={{ flex: 1, background: studioTab === t.id ? C2.accentGlow : "transparent", border: "1px solid " + (studioTab === t.id ? C2.accentDim : "transparent"), borderRadius: 8, padding: "8px", color: studioTab === t.id ? C2.accentSoft : C2.textMuted, fontSize: 13, fontWeight: studioTab === t.id ? 700 : 500, cursor: "pointer" }}>
+              style={{ flex: 1, background: studioTab === t.id ? C2.accentGlow : "transparent", border: "1px solid " + (studioTab === t.id ? C2.accentDim : "transparent"), borderRadius: 3, padding: "8px", color: studioTab === t.id ? C2.accentSoft : C2.textMuted, fontSize: 13, fontWeight: studioTab === t.id ? 700 : 500, cursor: "pointer" }}>
               {t.label}
             </button>
           ))}
@@ -744,7 +745,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         {studioTab === "prompts" && (
           <div>
             {/* Add new prompt */}
-            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 16, marginBottom: 20 }}>
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 16, marginBottom: 20 }}>
               <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>ADD PROMPT</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
@@ -752,10 +753,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                   onChange={e => setNewPromptText(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && addPrompt()}
                   placeholder="What's a game moment you'll never forget?"
-                  style={{ flex: 1, background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, outline: "none" }}
+                  style={{ flex: 1, background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 3, padding: "8px 12px", color: C2.text, fontSize: 13, outline: "none" }}
                 />
                 <button onClick={addPrompt} disabled={savingPrompt || !newPromptText.trim()}
-                  style={{ background: newPromptText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 18px", color: newPromptText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: newPromptText.trim() ? "pointer" : "default" }}>
+                  style={{ background: newPromptText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 3, padding: "8px 18px", color: newPromptText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: newPromptText.trim() ? "pointer" : "default" }}>
                   {savingPrompt ? "Adding…" : "Add"}
                 </button>
               </div>
@@ -790,7 +791,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                     style={{
                       background: isToday ? C2.goldGlow : dragOverIndex === realIndex ? C2.surfaceHover : C2.surface,
                       border: "1px solid " + (isToday ? C2.goldBorder : dragOverIndex === realIndex ? C2.borderHover : C2.border),
-                      borderRadius: 10, padding: "12px 14px", marginBottom: 8,
+                      borderRadius: 4, padding: "12px 14px", marginBottom: 8,
                       display: "flex", alignItems: isEditing ? "flex-start" : "center", gap: 12,
                       cursor: isEditing ? "default" : "grab",
                       transition: "background 0.1s",
@@ -804,19 +805,19 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                             onChange={e => setEditingPromptText(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") savePromptEdit(prompt.id); if (e.key === "Escape") { setEditingPromptId(null); setEditingPromptText(""); } }}
                             autoFocus
-                            style={{ flex: 1, background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "5px 10px", color: C2.text, fontSize: 13, outline: "none" }}
+                            style={{ flex: 1, background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "5px 10px", color: C2.text, fontSize: 13, outline: "none" }}
                           />
                           <button onClick={() => savePromptEdit(prompt.id)}
-                            style={{ background: C2.accent, border: "none", borderRadius: 6, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                            style={{ background: C2.accent, border: "none", borderRadius: 3, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
                           <button onClick={() => { setEditingPromptId(null); setEditingPromptText(""); }}
-                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 6, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
                         </div>
                       ) : (
                         <div style={{ color: isToday ? C2.gold : C2.textMuted, fontSize: 13 }}>{prompt.question}</div>
                       )}
                     </div>
                     {isToday && !isEditing && (
-                      <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TODAY</div>
+                      <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 3, padding: "2px 8px", color: C2.gold, fontSize: 10, fontWeight: 700, flexShrink: 0 }}>TODAY</div>
                     )}
                     {!isEditing && (
                       <button onClick={() => { setEditingPromptId(prompt.id); setEditingPromptText(prompt.question); }}
@@ -839,14 +840,14 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
           {/* Bulk CSV upload */}
           <div style={{ marginTop: 32 }}>
             <div style={{ color: C2.textMuted, fontSize: 12, fontWeight: 700, marginBottom: 10 }}>BULK SCHEDULE</div>
-            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 16, marginBottom: 16 }}>
               <div style={{ color: C2.textMuted, fontSize: 13, marginBottom: 10 }}>
                 Upload a CSV with columns: <span style={{ color: C2.accentSoft, fontFamily: "monospace", fontSize: 12 }}>npc_handle, content, scheduled_date, scheduled_time</span>
               </div>
               <div style={{ color: C2.textDim, fontSize: 11, marginBottom: 12 }}>
                 Dates: YYYY-MM-DD &nbsp;|&nbsp; Times: HH:MM (24hr) &nbsp;|&nbsp; Handle must match exactly, e.g. @StayAtDaves_NPC
               </div>
-              <label style={{ display: "inline-block", background: C2.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              <label style={{ display: "inline-block", background: C2.accent, border: "none", borderRadius: 3, padding: "8px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 Upload CSV
                 <input type="file" accept=".csv" onChange={handleCsvFile} style={{ display: "none" }} />
               </label>
@@ -862,15 +863,15 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => { setCsvPreview(null); setCsvErrors([]); }}
-                      style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 14px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                      style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "6px 14px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
                     <button onClick={confirmBulkQueue} disabled={csvUploading || csvPreview.filter(r => r.valid).length === 0}
-                      style={{ background: csvPreview.filter(r => r.valid).length > 0 ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "6px 18px", color: csvPreview.filter(r => r.valid).length > 0 ? "#fff" : C2.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ background: csvPreview.filter(r => r.valid).length > 0 ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 3, padding: "6px 18px", color: csvPreview.filter(r => r.valid).length > 0 ? "#fff" : C2.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                       {csvUploading ? "Queuing…" : `Queue ${csvPreview.filter(r => r.valid).length} posts`}
                     </button>
                   </div>
                 </div>
                 {csvPreview.map((row, i) => (
-                  <div key={i} style={{ background: row.valid ? C2.surface : "#ef444410", border: "1px solid " + (row.valid ? C2.border : "#ef444444"), borderRadius: 10, padding: "10px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div key={i} style={{ background: row.valid ? C2.surface : "#ef444410", border: "1px solid " + (row.valid ? C2.border : "#ef444444"), borderRadius: 4, padding: "10px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: "flex-start" }}>
                     {row.npc ? <Avatar initials={row.npc.avatar_initials || "?"} size={32} isNPC={true} /> : <div style={{ width: 32, height: 32, borderRadius: "50%", background: C2.surfaceRaised, flexShrink: 0 }} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
@@ -893,7 +894,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               {queue.length > 0 && <div style={{ color: C2.textDim, fontSize: 11 }}>Sorted by scheduled time</div>}
             </div>
             {queue.length === 0 ? (
-              <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 10, padding: "24px 16px", textAlign: "center", color: C2.textDim, fontSize: 13 }}>
+              <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: "24px 16px", textAlign: "center", color: C2.textDim, fontSize: 13 }}>
                 No posts scheduled yet. Upload a CSV above or use the Post tab to schedule individual posts.
               </div>
             ) : queue.map(item => {
@@ -902,22 +903,22 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               const scheduledDate = new Date(item.scheduled_for);
               const isPast = scheduledDate < new Date();
               return (
-                <div key={item.id} style={{ background: C2.surface, border: "1px solid " + (isPast ? C2.textDim + "44" : C2.border), borderRadius: 10, padding: "12px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: isEditingThis ? "flex-start" : "flex-start", opacity: isPast ? 0.6 : 1 }}>
+                <div key={item.id} style={{ background: C2.surface, border: "1px solid " + (isPast ? C2.textDim + "44" : C2.border), borderRadius: 4, padding: "12px 14px", marginBottom: 8, display: "flex", gap: 12, alignItems: isEditingThis ? "flex-start" : "flex-start", opacity: isPast ? 0.6 : 1 }}>
                   <Avatar initials={qNPC?.avatar_initials || "?"} size={32} isNPC={true} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {isEditingThis ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <textarea value={editingScheduledContent} onChange={e => setEditingScheduledContent(e.target.value)}
-                          style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70, boxSizing: "border-box" }} />
+                          style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70, boxSizing: "border-box" }} />
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <input type="date" value={editingScheduledDate} onChange={e => setEditingScheduledDate(e.target.value)}
-                            style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
+                            style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
                           <input type="time" value={editingScheduledTime} onChange={e => setEditingScheduledTime(e.target.value)}
-                            style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
+                            style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 10px", color: C2.text, fontSize: 12, outline: "none" }} />
                           <button onClick={() => saveScheduledEdit(item.id)}
-                            style={{ background: C2.accent, border: "none", borderRadius: 8, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                            style={{ background: C2.accent, border: "none", borderRadius: 3, padding: "5px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
                           <button onClick={() => setEditingScheduledId(null)}
-                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
                         </div>
                       </div>
                     ) : (
@@ -967,10 +968,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 14, marginBottom: 32 }}>
             {dbNPCs.map(npc => (
               <div key={npc.id}
-                style={{ background: C2.surface, border: "1px solid " + (npc.is_active ? C2.border : C2.textDim + "33"), borderRadius: 16, padding: 18, opacity: npc.is_active ? 1 : 0.55, position: "relative" }}
+                style={{ background: C2.surface, border: "1px solid " + (npc.is_active ? C2.border : C2.textDim + "33"), borderRadius: 4, padding: 18, opacity: npc.is_active ? 1 : 0.55, position: "relative" }}
               >
                 {!npc.is_active && (
-                  <div style={{ position: "absolute", top: 10, right: 10, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 7px", color: C2.textDim, fontSize: 10, fontWeight: 700 }}>INACTIVE</div>
+                  <div style={{ position: "absolute", top: 10, right: 10, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "2px 7px", color: C2.textDim, fontSize: 10, fontWeight: 700 }}>INACTIVE</div>
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                   <Avatar initials={npc.avatar_initials || "?"} size={40} isNPC={true} status={npc.status} />
@@ -987,15 +988,15 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                 <div style={{ color: C2.textMuted, fontSize: 12, lineHeight: 1.6, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{npc.bio || "No bio yet."}</div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => setSelectedNPC(npc.id)}
-                    style={{ flex: 1, background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px", color: C2.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    style={{ flex: 1, background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "6px", color: C2.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     Write as
                   </button>
                   <button onClick={() => { setEditingNPC(npc); setShowEditor(true); }}
-                    style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>
+                    style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "6px 10px", color: C2.textMuted, fontSize: 12, cursor: "pointer" }}>
                     Edit
                   </button>
                   <button onClick={() => deleteNPC(npc.id)}
-                    style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>
+                    style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "6px 10px", color: C2.textDim, fontSize: 12, cursor: "pointer" }}>
                     Del
                   </button>
                 </div>
@@ -1039,12 +1040,12 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
             ← All characters
           </button>
           <button onClick={() => { setEditingNPC(npc); setShowEditor(true); }}
-            style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 12px", color: C2.textMuted, fontSize: 11, cursor: "pointer", marginBottom: 14, width: "100%" }}>
+            style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 12px", color: C2.textMuted, fontSize: 11, cursor: "pointer", marginBottom: 14, width: "100%" }}>
             ✏️ Edit this character
           </button>
 
           {/* NPC card */}
-          <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 16, padding: 18, marginBottom: 14 }}>
+          <div style={{ background: C2.goldGlow, border: "1px solid " + C2.goldBorder, borderRadius: 4, padding: 18, marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <Avatar initials={npc.avatar_initials || "?"} size={44} isNPC={true} status={npc.status} />
               <div>
@@ -1089,7 +1090,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                 <div style={{ color: C2.gold, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Games</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                   {(npc.games || []).map(g => (
-                    <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid " + C2.goldBorder, borderRadius: 6, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
+                    <span key={g} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid " + C2.goldBorder, borderRadius: 3, padding: "2px 8px", color: C2.gold, fontSize: 11 }}>{g}</span>
                   ))}
                 </div>
               </div>
@@ -1098,7 +1099,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
           {/* Stats */}
           {(npc.stats || []).length > 0 && (
-            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 16 }}>
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 16 }}>
               <div style={{ color: C2.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Stats</div>
               {(npc.stats || []).map(s => (
                 <div key={s.label} style={{ marginBottom: 10 }}>
@@ -1116,10 +1117,10 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         {/* Main panel */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
-          <div style={{ display: "flex", gap: 4, marginBottom: studioPrompt ? 12 : 20, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 12, padding: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: studioPrompt ? 12 : 20, background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 4 }}>
             {[{ id: "respond", label: "Respond" }, { id: "threads", label: "Threads" }, { id: "post", label: "Post" }].map(m => (
               <button key={m.id} onClick={() => { setMode(m.id); setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
-                style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: "1px solid " + mode === m.id ? C2.accentDim : "transparent", borderRadius: 8, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ flex: 1, background: mode === m.id ? C2.accentGlow : "transparent", border: "1px solid " + mode === m.id ? C2.accentDim : "transparent", borderRadius: 3, padding: "8px", color: mode === m.id ? C2.accentSoft : C2.textMuted, fontSize: 14, fontWeight: mode === m.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {m.label}
               </button>
             ))}
@@ -1127,7 +1128,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
           {/* Daily prompt bulletin */}
           {studioPrompt && (
-            <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 4, padding: "10px 14px", marginBottom: 16, display: "flex", gap: 10, alignItems: "flex-start" }}>
               <div style={{ color: C2.accentSoft, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", marginTop: 1 }}>Today</div>
               <div style={{ color: C2.text, fontSize: 13, lineHeight: 1.5 }}>{studioPrompt.question}</div>
             </div>
@@ -1180,11 +1181,11 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                     <div key={post.id} style={{ marginBottom: 12 }}>
                       {/* Studio status bar */}
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 5, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
-                        <span style={{ background: st.bg, border: "1px solid " + st.border, borderRadius: 6, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
-                        {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 6, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>{post.userPostCount === 1 ? "1ST POST" : post.userPostCount === 2 ? "2ND POST" : "3RD POST"}</span>}
-                        {post.hasThread && <span style={{ background: "#f59e0b22", border: "1px solid #f59e0b44", borderRadius: 6, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
+                        <span style={{ background: st.bg, border: "1px solid " + st.border, borderRadius: 3, padding: "2px 8px", color: st.color, fontSize: 10, fontWeight: 700 }}>{st.label}</span>
+                        {post.newUser && <span style={{ background: C2.accent + "22", border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "2px 7px", color: C2.accentSoft, fontSize: 10, fontWeight: 700 }}>{post.userPostCount === 1 ? "1ST POST" : post.userPostCount === 2 ? "2ND POST" : "3RD POST"}</span>}
+                        {post.hasThread && <span style={{ background: "#f59e0b22", border: "1px solid #f59e0b44", borderRadius: 3, padding: "2px 7px", color: C2.gold, fontSize: 10, fontWeight: 700 }}>THREAD</span>}
                         <button onClick={() => { setClosedCandidates(prev => new Set([...prev, post.id])); if (selectedPost?.id === post.id) { setSelectedPost(null); setReplyToComment(null); setComposeText(""); } }}
-                          style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                          style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                           Close ✓
                         </button>
                       </div>
@@ -1203,7 +1204,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       {!isSelected && (
                         <div style={{ marginTop: 6 }}>
                           <button onClick={() => { setSelectedPost(post); setComposeText(""); setReplyToComment(null); loadPostComments(post.id); }}
-                            style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                            style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                             Reply as {npc.name.split(" ")[0]}
                           </button>
                         </div>
@@ -1211,7 +1212,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                       {isSelected && (
                         <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow, borderRadius: "0 0 14px 14px", marginTop: 4 }}>
                           {replyToComment && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 10px" }}>
                               <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
                               <button onClick={() => setReplyToComment(null)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", padding: 0 }}>×</button>
                             </div>
@@ -1220,16 +1221,16 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                             <Avatar initials={npc.avatar_initials || "?"} size={28} isNPC={true} />
                             <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                               placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
-                              style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
+                              style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 3, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 80 }}
                               autoFocus
                             />
                           </div>
                           {renderScheduler()}
                           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                             <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); setScheduleMode(false); }}
-                              style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                              style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                             <button onClick={handleSend} disabled={!composeText.trim() || sending || (scheduleMode && (!scheduleDate || !scheduleTime))}
-                              style={{ background: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "pointer" : "default" }}>
+                              style={{ background: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 3, padding: "7px 20px", color: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "pointer" : "default" }}>
                               {sending ? "Sending…" : sent ? "✓ Sent" : scheduleMode ? "Schedule" : "Reply Now"}
                             </button>
                           </div>
@@ -1284,9 +1285,9 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                   <div key={thread.id} style={{ marginBottom: 14 }}>
                     {/* Studio status bar */}
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, marginBottom: 4 }}>
-                      <span style={{ background: statusBg, border: "1px solid " + statusBorder, borderRadius: 6, padding: "2px 8px", color: statusColor, fontSize: 10, fontWeight: 700 }}>{statusLabel}</span>
+                      <span style={{ background: statusBg, border: "1px solid " + statusBorder, borderRadius: 3, padding: "2px 8px", color: statusColor, fontSize: 10, fontWeight: 700 }}>{statusLabel}</span>
                       <button onClick={() => setClosedThreads(prev => new Set([...prev, thread.id]))}
-                        style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 6, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                        style={{ background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "2px 10px", color: C2.textDim, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                         Close ✓
                       </button>
                     </div>
@@ -1316,7 +1317,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                     <div style={{ marginTop: 6 }}>
                       {!(selectedPost?.id === thread.id) && (
                         <button onClick={() => { setSelectedPost(thread); setComposeText(""); setReplyToComment(null); }}
-                          style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 8, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          style={{ background: C2.accentGlow, border: "1px solid " + C2.accentDim, borderRadius: 3, padding: "6px 16px", color: C2.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           Reply as {npc.name.split(" ")[0]}
                         </button>
                       )}
@@ -1325,7 +1326,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                     {selectedPost?.id === thread.id && (
                       <div style={{ borderTop: "1px solid " + C2.accentDim, padding: "12px 16px", background: C2.accentGlow, borderRadius: "0 0 14px 14px", marginTop: 4 }}>
                         {replyToComment && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 8, padding: "5px 10px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, background: C2.surfaceRaised, border: "1px solid " + C2.border, borderRadius: 3, padding: "5px 10px" }}>
                             <span style={{ color: C2.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyToComment.name}</strong></span>
                             <button onClick={() => setReplyToComment(null)} style={{ background: "none", border: "none", color: C2.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", padding: 0 }}>×</button>
                           </div>
@@ -1334,13 +1335,13 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                           <Avatar initials={npc.avatar_initials || "?"} size={28} isNPC={true} />
                           <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                             placeholder={replyToComment ? `Reply to ${replyToComment.name} as ${npc.name}…` : `Reply as ${npc.name}…`}
-                            style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70 }}
+                            style={{ flex: 1, background: C2.bg, border: "1px solid " + C2.border, borderRadius: 3, padding: "8px 12px", color: C2.text, fontSize: 13, resize: "none", outline: "none", minHeight: 70 }}
                             autoFocus
                           />
                         </div>
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                           <button onClick={() => { setSelectedPost(null); setReplyToComment(null); setComposeText(""); }}
-                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                            style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "7px 16px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                           <button onClick={async () => {
                             if (!composeText.trim()) return;
                             setSending(true);
@@ -1367,7 +1368,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
                             setSent(true); setTimeout(() => setSent(false), 2000);
                             loadThreads();
                           }} disabled={!composeText.trim() || sending}
-                            style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
+                            style={{ background: composeText.trim() ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 3, padding: "7px 20px", color: composeText.trim() ? "#fff" : C2.textDim, fontSize: 13, fontWeight: 700, cursor: composeText.trim() ? "pointer" : "default" }}>
                             {sending ? "Sending…" : sent ? "✓ Sent" : "Reply Now"}
                           </button>
                         </div>
@@ -1381,7 +1382,7 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
 
           {/* Post mode */}
           {mode === "post" && (
-            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 14, padding: 20 }}>
+            <div style={{ background: C2.surface, border: "1px solid " + C2.border, borderRadius: 4, padding: 20 }}>
               <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
                 <Avatar initials={npc.avatar_initials || "?"} size={38} isNPC={true} status={npc.status} />
                 <div style={{ flex: 1 }}>
@@ -1391,15 +1392,15 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
               </div>
               <textarea value={composeText} onChange={e => setComposeText(e.target.value)}
                 placeholder={`What's ${npc.name.split(" ")[0]} thinking?`}
-                style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 10, padding: "12px 16px", color: C2.text, fontSize: 14, resize: "none", outline: "none", minHeight: 120, boxSizing: "border-box", lineHeight: 1.6 }}
+                style={{ width: "100%", background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 4, padding: "12px 16px", color: C2.text, fontSize: 14, resize: "none", outline: "none", minHeight: 120, boxSizing: "border-box", lineHeight: 1.6 }}
               />
               <div style={{ color: C2.textDim, fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 14 }}>{composeText.length} chars</div>
               {renderScheduler()}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button onClick={() => setComposeText("")}
-                  style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 8, padding: "8px 18px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
+                  style={{ background: "none", border: "1px solid " + C2.border, borderRadius: 3, padding: "8px 18px", color: C2.textMuted, fontSize: 13, cursor: "pointer" }}>Clear</button>
                 <button onClick={handleSend} disabled={!composeText.trim() || sending || (scheduleMode && (!scheduleDate || !scheduleTime))}
-                  style={{ background: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 8, padding: "8px 24px", color: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "#fff" : C2.textDim, fontSize: 14, fontWeight: 700, cursor: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "pointer" : "default" }}>
+                  style={{ background: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? C2.accent : C2.surfaceRaised, border: "none", borderRadius: 3, padding: "8px 24px", color: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "#fff" : C2.textDim, fontSize: 14, fontWeight: 700, cursor: (composeText.trim() && !(scheduleMode && (!scheduleDate || !scheduleTime))) ? "pointer" : "default" }}>
                   {sending ? "Sending…" : sent ? "✓ Posted" : scheduleMode ? "Schedule" : "Post Now"}
                 </button>
               </div>
@@ -1428,9 +1429,9 @@ function NPCStudioPage({ isMobile, currentUser, setActivePage, setCurrentNPC }) 
         {scheduleMode && (
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
-              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
+              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 3, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
             <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 8, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
+              style={{ background: C2.surfaceHover, border: "1px solid " + C2.border, borderRadius: 3, padding: "6px 10px", color: C2.text, fontSize: 13, outline: "none", flex: 1 }} />
           </div>
         )}
       </div>
