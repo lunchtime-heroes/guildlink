@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { C, NPCS, FOUNDING } from "../constants.js";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
@@ -47,7 +49,7 @@ function InviteModal({ onClose }) {
             />
             <button
               onClick={() => { if (email.includes("@")) setSent(true); }}
-              style={{ width: "100%", background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 10, padding: "12px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer", marginBottom: 10 }}>
+              style={{ width: "100%", background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 0, padding: "12px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer", marginBottom: 10 }}>
               Send Invite
             </button>
             <div style={{ color: C.textDim, fontSize: 11, textAlign: "center" }}>Invite rewards coming soon — you'll get credit for everyone you bring in.</div>
@@ -87,8 +89,8 @@ function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp 
               {spotsLeft.toLocaleString()} left
             </span>
           </div>
-          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 4, maxWidth: 280 }}>
-            <div style={{ height: "100%", width: pct + "%", background: "linear-gradient(90deg, " + C.gold + "88, " + C.gold + ")", borderRadius: 2, transition: "width 0.6s ease" }} />
+          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 0, overflow: "hidden", marginBottom: 4, maxWidth: 280 }}>
+            <div style={{ height: "100%", width: pct + "%", background: "linear-gradient(90deg, " + C.gold + "88, " + C.gold + ")", borderRadius: 0, transition: "width 0.6s ease" }} />
           </div>
           <div style={{ color: "rgba(255,255,255,0.35)", fontSize: isMobile ? 10 : 11 }}>
             {isGuest
@@ -99,17 +101,17 @@ function FoundingBanner({ onDismiss, setActivePage, isGuest, isMobile, onSignUp 
         <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
           {isGuest ? (
             <button onClick={() => onSignUp?.()}
-              style={{ background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 8, padding: isMobile ? "7px 14px" : "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 0, padding: isMobile ? "7px 14px" : "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
               Claim Your Spot
             </button>
           ) : (
             <>
               <button onClick={() => setShowInvite(true)}
-                style={{ background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 8, padding: isMobile ? "7px 14px" : "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+                style={{ background: "linear-gradient(135deg, " + C.gold + ", #d97706)", border: "none", borderRadius: 0, padding: isMobile ? "7px 14px" : "8px 18px", color: "#000", fontSize: 13, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
                 Invite a Friend
               </button>
               <button onClick={() => setActivePage("founding")}
-                style={{ background: "transparent", border: "1px solid " + C.goldBorder, borderRadius: 8, padding: isMobile ? "7px 12px" : "8px 14px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                style={{ background: "transparent", border: "1px solid " + C.goldBorder, borderRadius: 0, padding: isMobile ? "7px 12px" : "8px 14px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
                 Details
               </button>
             </>
@@ -911,12 +913,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         <div style={{ marginBottom: 4 }}>
           <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
           {isGuest ? (
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 14, marginBottom: 14 }}>
+            <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 14, marginBottom: 14 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Shelf</div>
               <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>
                 <span onClick={() => onSignIn?.("Sign up to build your shelf.")} style={{ color: C.accentSoft, cursor: "pointer" }}>Sign in</span> to build your shelf.
               </div>
-            </div>
+            </PixelCornerBox>
           ) : null}
         </div>
       )}
@@ -926,7 +928,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       {!isMobile && (
       <div style={{ width: 230, flexShrink: 0 }}>
         {isGuest ? (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden", marginBottom: 14 }}>
             <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "22, " + C.teal + "22)" }} />
             <div style={{ padding: "0 16px 18px", marginTop: -22 }}>
               <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.surfaceRaised, border: "2px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontWeight: 900, fontSize: 22 }}>?</div>
@@ -934,14 +936,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6 }}>This profile grid is waiting to be claimed. Will you be the proud new owner?</div>
               </div>
               <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
-                style={{ width: "100%", background: C.accent, border: "none", borderRadius: 8, padding: "8px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ width: "100%", background: C.accent, border: "none", borderRadius: 0, padding: "8px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 Join Free
               </button>
             </div>
-          </div>
+          </PixelCornerBox>
         ) : user ? (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "44, " + C.teal + "44)", borderRadius: "14px 14px 0 0" }} />
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden", marginBottom: 14 }}>
+            <div style={{ height: 56, background: "linear-gradient(135deg, " + C.accent + "44, " + C.teal + "44)" }} />
             <div style={{ padding: "0 16px 16px", marginTop: -22, overflow: "visible" }}>
               <Avatar initials={user.avatar} size={64} status="online" founding={user.isFounding} ring={user.activeRing} avatarConfig={user.avatarConfig} />
               <div style={{ marginTop: 8 }}>
@@ -959,10 +961,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 </div>
               </div>
             </div>
-          </div>
+          </PixelCornerBox>
         ) : null}
 
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16, marginBottom: 14 }}>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 3 }}>Currently Playing</div>
             <span onClick={() => { setProfileDefaultTab("games"); setActivePage("profile"); }} style={{ color: C.accentSoft, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Manage your shelf →</span>
@@ -982,9 +984,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
           ))}
-        </div>
+        </PixelCornerBox>
 
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 16 }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16 }}>
           <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Gamers</div>
           {suggestedGamers.length === 0 ? (
             <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Add games to your shelf to find players like you.</div>
@@ -1007,13 +1009,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
                 setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
                 loadFollowing();
-              }} style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 8, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Follow</button>
+              }} style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, padding: "5px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Follow</button>
             </div>
           ))}
-        </div>
+        </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
-        <div style={{ background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 14, padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
@@ -1032,7 +1034,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               <span style={{ color: C.textDim, fontSize: 11 }}>→</span>
             </div>
           ))}
-        </div>
+        </PixelCornerBox>
         )}
       </div>
       )}
@@ -1043,14 +1045,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           <div style={{ display: "flex", gap: 4, marginBottom: 14, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 4 }}>
             {[{ id: "forYou", label: "For You" }, { id: "following", label: "Following" }].map(tab => (
               <button key={tab.id} onClick={() => { setFeedTab(tab.id); if (tab.id === "following") loadFollowingPosts(); }}
-                style={{ flex: 1, background: feedTab === tab.id ? C.accentGlow : "transparent", border: "1px solid " + feedTab === tab.id ? C.accentDim : "transparent", borderRadius: 8, padding: "7px", color: feedTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: feedTab === tab.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
+                style={{ flex: 1, background: feedTab === tab.id ? C.accentGlow : "transparent", border: "1px solid " + feedTab === tab.id ? C.accentDim : "transparent", borderRadius: 0, padding: "7px", color: feedTab === tab.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: feedTab === tab.id ? 700 : 500, cursor: "pointer", transition: "all 0.15s" }}>
                 {tab.label}
               </button>
             ))}
           </div>
         )}
         {!isGuest && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: isMobile ? 12 : 16, marginBottom: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: isMobile ? 12 : 16, marginBottom: 14 }}>
           <div style={{ display: "flex", gap: 10 }}>
             <Avatar initials={user?.avatar || "GL"} size={isMobile ? 48 : 56} status="online" founding={user?.isFounding} ring={user?.activeRing} avatarConfig={user?.avatarConfig} />
             {/* Composer content — no overflow:hidden so mention portal can escape */}
@@ -1138,7 +1140,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                       )}
                     </div>
                     <button onClick={() => doSubmitPost()}
-                      style={{ background: C.accent, border: "none", borderRadius: 8, padding: "7px 14px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      style={{ background: C.accent, border: "none", borderRadius: 0, padding: "7px 14px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                       Post Anyway
                     </button>
                   </>
@@ -1158,7 +1160,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                         <span style={{ color: C.textDim, fontSize: 12 }}>@ a game, player, or NPC to tag</span>
                       )}
                     </div>
-                    <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s", flexShrink: 0 }}>{posting ? "Posting..." : "Post"}</button>
+                    <button onClick={submitPost} disabled={posting || !postText.trim()} style={{ background: postText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 0, padding: "7px 20px", color: postText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: postText.trim() ? "pointer" : "default", transition: "all 0.2s", flexShrink: 0 }}>{posting ? "Posting..." : "Post"}</button>
                   </>
                 )}
               </div>
@@ -1186,7 +1188,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               )}
             </div>
           </div>
-        </div>
+        </PixelCornerBox>
         )}
 
         {/* For You feed — discovery cards primary, posts interleaved */}
@@ -1349,7 +1351,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   : "The people you follow haven't posted yet this week. Check back soon."}
               </div>
               {following.length === 0 && (
-                <button onClick={() => setFeedTab("forYou")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "9px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse For You</button>
+                <button onClick={() => setFeedTab("forYou")} style={{ background: C.accent, border: "none", borderRadius: 0, padding: "9px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Browse For You</button>
               )}
             </div>
           ) : followingPosts.map(post => {
@@ -1386,7 +1388,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         {!isGuest && !feedLoading && hasMorePosts && (
           <div style={{ textAlign: "center", padding: "16px 0 24px" }}>
             <button onClick={loadMorePosts} disabled={loadingMore}
-              style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 28px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
+              style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 0, padding: "10px 28px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
               {loadingMore ? "Loading..." : "Load more posts"}
             </button>
           </div>
@@ -1400,11 +1402,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               Create a free account to see the full feed, post your own takes, build your shelf, and influence The Charts.
             </div>
             <button onClick={() => onSignIn?.("Create your free account and join the guild.")}
-              style={{ background: C.accent, border: "none", borderRadius: 10, padding: "12px 32px", color: C.accentText, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "block", width: "100%", maxWidth: 280, margin: "0 auto 12px" }}>
+              style={{ background: C.accent, border: "none", borderRadius: 0, padding: "12px 32px", color: C.accentText, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "block", width: "100%", maxWidth: 280, margin: "0 auto 12px" }}>
               Create Free Account
             </button>
             <button onClick={() => onSignIn?.()}
-              style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 10, padding: "10px 32px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "block", width: "100%", maxWidth: 280, margin: "0 auto" }}>
+              style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 0, padding: "10px 32px", color: C.textMuted, fontSize: 14, fontWeight: 600, cursor: "pointer", display: "block", width: "100%", maxWidth: 280, margin: "0 auto" }}>
               Sign In
             </button>
           </div>
