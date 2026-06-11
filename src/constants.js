@@ -88,31 +88,24 @@ export const QUEST_THEMES = [
   { id: "theme_8bit",  label: "8-Bit",   icon: "👾", questLabel: "Trusted Voice",   rewardId: "theme_8bit" },
 ];
 
-export const C = {
-  ...THEMES["deep-space"],
-  radius: {
-    card: 4,
-    button: 3,
-    badge: 3,
-    input: 3,
-    avatar: 4,
-    sm: 2,
-  },
-  type: {
-    xs: 10, sm: 12, base: 13, md: 14, lg: 16, xl: 20, xxl: 28,
-  },
-  space: {
-    cardPad: 16, cardPadSm: 12, gap: 12, gapSm: 8, gapLg: 20,
-  },
+export const C = { ...THEMES["deep-space"] };
+
+export const RADIUS = {
+  card: 4,
+  button: 3,
+  badge: 3,
+  input: 3,
+  avatar: 4,
+  sm: 2,
 };
+
+// Keep C.radius pointing to same object for compatibility
+C.radius = RADIUS;
 
 export function applyTheme(themeId) {
   const palette = THEMES[themeId] || THEMES["deep-space"];
-  const { radius, type, space } = C;
   Object.assign(C, palette);
-  C.radius = radius;
-  C.type = type;
-  C.space = space;
+  C.radius = RADIUS;
   document.body.style.background = palette.bg;
   document.documentElement.style.background = palette.bg;
 }
