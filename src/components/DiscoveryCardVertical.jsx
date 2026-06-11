@@ -150,14 +150,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {game && (
-          <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-            <GameTag label={game.name} onClick={() => { navigateToGame(); }} style={{ width: "100%", justifyContent: "center" }} />
+          <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+            <GameTag label={game.name} onClick={() => { navigateToGame(); }} size="md" style={{ maxWidth: "100%" }} />
           </div>
         )}
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <PixelButton fullWidth size="xs" bg="transparent" borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center", marginTop: 2 }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
+          <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center", marginTop: 2 }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
             {"+ Add to Shelf"}
           </PixelButton>
         )}
