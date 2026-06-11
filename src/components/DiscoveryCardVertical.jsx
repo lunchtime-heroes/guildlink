@@ -111,14 +111,11 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => {
             const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
-            const optBorder = optColor + "66";
-            const optBg = optColor + "18";
             return (
               <PixelButton key={opt.status} fullWidth size="sm"
-                bg={optBg}
-                borderColor={optBorder}
+                bg={optColor + "22"}
+                borderColor={optColor + "99"}
                 color={optColor}
-                style={{ justifyContent: "center" }}
                 onClick={() => handleShelfSelect(opt.status)}>
                 {opt.label}
               </PixelButton>

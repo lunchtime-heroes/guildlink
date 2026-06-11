@@ -94,6 +94,7 @@ function PixelButton({
           lineHeight: 1,
           display: "flex",
           alignItems: "center",
+          justifyContent: fullWidth ? "center" : undefined,
           gap: 6,
           whiteSpace: "nowrap",
           zIndex: 1,
