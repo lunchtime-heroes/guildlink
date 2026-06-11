@@ -4,6 +4,7 @@ import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { Badge } from "../components/FoundingBadge.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [section, setSection] = useState("insights");
@@ -176,7 +177,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
       <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 8 }}>Access Denied</div>
       <div style={{ color: C.textMuted, fontSize: 14, marginBottom: 24 }}>You need admin privileges to view this page.</div>
-      <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
+      <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
     </div>
   );
 
@@ -241,14 +242,14 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text }}>Admin Dashboard</h2>
           <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink Activity Monitor</div>
         </div>
-        <button onClick={loadAll} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
+        <button onClick={loadAll} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>↻ Refresh</button>
       </div>
 
       {/* Section switcher */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {sections.map(s => (
           <button key={s.id} onClick={() => handleSectionChange(s.id)}
-            style={{ background: section === s.id ? C.accentGlow : C.surface, border: "1px solid " + (section === s.id ? C.accentDim : C.border), borderRadius: 10, padding: "8px 18px", color: section === s.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: section === s.id ? 700 : 400, cursor: "pointer" }}>
+            style={{ background: section === s.id ? C.accentGlow : C.surface, border: "1px solid " + (section === s.id ? C.accentDim : C.border), borderRadius: 4, padding: "8px 18px", color: section === s.id ? C.accentSoft : C.textMuted, fontSize: 13, fontWeight: section === s.id ? 700 : 400, cursor: "pointer" }}>
             {s.label}
           </button>
         ))}
@@ -285,14 +286,14 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               { label: "Avg Overlap", value: stats.avgOverlap, color: C.accentSoft, icon: "📊" },
               { label: "Highest Overlap", value: stats.highestOverlap, color: C.accentSoft, icon: "🏆" },
             ].map(s => (
-              <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
+              <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: "18px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
                 <div style={{ fontWeight: 800, fontSize: 26, color: s.color, marginBottom: 4 }}>{s.value}</div>
                 <div style={{ color: C.textDim, fontSize: 11 }}>{s.label}</div>
               </div>
             ))}
           </div>
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Recent Signups</div>
             {users.slice(0, 5).map(u => (
               <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
@@ -309,8 +310,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               </div>
             ))}
             <button onClick={() => { handleSectionChange("content"); setTab("users"); }} style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, cursor: "pointer", marginTop: 10, padding: 0 }}>View all users →</button>
-          </div>
-        </div>
+          </PixelCornerBox>
+        </PixelCornerBox>
       )}
 
       {tab === "analytics" && (
@@ -325,14 +326,14 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   { label: "Unique Users (7d)", value: analyticsData.uniqueUsers, color: C.online },
                   { label: "Avg Daily Active", value: analyticsData.dailyActiveUsers.length ? Math.round(analyticsData.dailyActiveUsers.reduce((s,d) => s + d.count, 0) / analyticsData.dailyActiveUsers.length) : 0, color: C.gold },
                 ].map(s => (
-                  <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 18, textAlign: "center" }}>
+                  <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 18, textAlign: "center" }}>
                     <div style={{ fontWeight: 800, fontSize: 28, color: s.color }}>{s.value}</div>
                     <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Time Spent by Page</div>
                   {analyticsData.byPage.map(([page, count]) => {
                     const pct = Math.round((count / analyticsData.totalEvents) * 100);
@@ -349,7 +350,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                     );
                   })}
                 </div>
-                <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20 }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Daily Active Users (7d)</div>
                   {analyticsData.dailyActiveUsers.length === 0 ? (
                     <div style={{ color: C.textDim, fontSize: 13 }}>No data yet.</div>
@@ -364,7 +365,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                     </div>
                   ))}
                 </div>
-              </div>
+              </PixelCornerBox>
             </>
           )}
         </div>
@@ -383,18 +384,18 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   { label: "Rating ≥ 7", value: feedbackData.filter(f => f.rating >= 7).length, color: C.online },
                   { label: "Rating < 5", value: feedbackData.filter(f => f.rating < 5).length, color: C.red },
                 ].map(s => (
-                  <div key={s.label} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 16, textAlign: "center" }}>
+                  <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16, textAlign: "center" }}>
                     <div style={{ fontWeight: 800, fontSize: 24, color: s.color }}>{s.value}</div>
                     <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
               {feedbackData.map(f => (
-                <div key={f.id} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 20, marginBottom: 12 }}>
+                <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{f.username || "Anonymous"}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ background: f.rating >= 7 ? C.online + "22" : f.rating >= 5 ? C.gold + "22" : C.red + "22", color: f.rating >= 7 ? C.online : f.rating >= 5 ? C.gold : C.red, borderRadius: 8, padding: "3px 10px", fontWeight: 800, fontSize: 13 }}>{f.rating}/10</div>
+                      <div style={{ background: f.rating >= 7 ? C.online + "22" : f.rating >= 5 ? C.gold + "22" : C.red + "22", color: f.rating >= 7 ? C.online : f.rating >= 5 ? C.gold : C.red, borderRadius: 3, padding: "3px 10px", fontWeight: 800, fontSize: 13 }}>{f.rating}/10</div>
                       <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(f.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
@@ -409,7 +410,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       )}
 
       {tab === "charts" && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>Chart events this week — top 15 games</div>
           {chartEvents.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>No chart events yet this week.</div>}
           {chartEvents.map((g, i) => (
@@ -421,12 +422,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingLeft: 30 }}>
                 {Object.entries(g.types).map(([type, count]) => (
-                  <span key={type} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 6, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
+                  <span key={type} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "2px 8px", fontSize: 11, color: C.textMuted }}>{type}: {count}</span>
                 ))}
               </div>
             </div>
           ))}
-        </div>
+        </PixelCornerBox>
       )}
 
       {tab === "most_wanted" && (
@@ -438,7 +439,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           {mostWanted.length === 0 ? (
             <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 60 }}>No elevation data yet.</div>
           ) : (
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+            <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
               <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px 80px 100px", gap: 0, padding: "8px 16px", borderBottom: "1px solid " + C.border }}>
                 {["#", "Game", "Elevations", "#1 Slots", "Score", "Last Elevated"].map(h => (
                   <div key={h} style={{ color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>{h}</div>
@@ -474,7 +475,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
             <div style={{ color: C.textMuted, fontSize: 13 }}>Patterns blocked from usernames and guild names. Matching is case-insensitive and includes common leetspeak substitutions.</div>
           </div>
 
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 24 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Add pattern</div>
             <div style={{ display: "flex", gap: 10 }}>
               <input
@@ -482,22 +483,22 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 onChange={e => setNewPattern(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && addRestrictedPattern()}
                 placeholder="e.g. badword"
-                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }}
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }}
               />
               <button
                 onClick={addRestrictedPattern}
                 disabled={addingPattern || !newPattern.trim()}
-                style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: newPattern.trim() ? "pointer" : "default", opacity: newPattern.trim() ? 1 : 0.5 }}>
+                style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 18px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: newPattern.trim() ? "pointer" : "default", opacity: newPattern.trim() ? 1 : 0.5 }}>
                 {addingPattern ? "Adding…" : "Add"}
               </button>
             </div>
             <div style={{ color: C.textDim, fontSize: 11, marginTop: 8 }}>Enter the base term only — leetspeak variants are caught automatically.</div>
-          </div>
+          </PixelCornerBox>
 
           {restrictedUsernames.length === 0 ? (
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No restricted patterns yet.</div>
+            <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No restricted patterns yet.</PixelCornerBox>
           ) : (
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+            <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
               <div style={{ padding: "12px 20px", borderBottom: "1px solid " + C.border, color: C.textDim, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px" }}>
                 {restrictedUsernames.length} pattern{restrictedUsernames.length !== 1 ? "s" : ""}
               </div>
@@ -507,14 +508,14 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   <div style={{ color: C.textDim, fontSize: 11, flexShrink: 0 }}>Added {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
                   <button
                     onClick={() => removeRestrictedPattern(r.id)}
-                    style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 6, padding: "4px 10px", color: "#c0392b", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                    style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 3, padding: "4px 10px", color: "#c0392b", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                     Remove
                   </button>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </PixelCornerBox>
       )}
 
       {tab === "data_requests" && (
@@ -524,7 +525,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
             <div style={{ color: C.textMuted, fontSize: 13 }}>GDPR data export requests from users. Fulfill within 14 days of request date.</div>
           </div>
           {dataRequests.length === 0 ? (
-            <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No data requests yet.</div>
+            <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 40, textAlign: "center", color: C.textDim, fontSize: 13 }}>No data requests yet.</PixelCornerBox>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {dataRequests.map(r => {
@@ -532,18 +533,18 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 const daysSince = Math.floor((Date.now() - new Date(r.created_at)) / (1000 * 60 * 60 * 24));
                 const isUrgent = isPending && daysSince >= 7;
                 return (
-                  <div key={r.id} style={{ background: C.surface, border: "1px solid " + (isUrgent ? "#c0392b55" : C.border), borderRadius: 14, padding: 20 }}>
+                  <PixelCornerBox key={r.id} size="lg" borderColor={isUrgent ? "#c0392b55" : C.border} bg={C.surface} style={{ padding: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                           <span style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{r.username || "Unknown"}</span>
-                          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 6, padding: "2px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "2px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
                             {r.request_type === "export" ? "DATA EXPORT" : r.request_type.toUpperCase()}
                           </span>
-                          <span style={{ background: isPending ? C.gold + "22" : C.online + "22", border: "1px solid " + (isPending ? C.gold + "55" : C.online + "55"), borderRadius: 6, padding: "2px 8px", color: isPending ? C.gold : C.online, fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: isPending ? C.gold + "22" : C.online + "22", border: "1px solid " + (isPending ? C.gold + "55" : C.online + "55"), borderRadius: 3, padding: "2px 8px", color: isPending ? C.gold : C.online, fontSize: 11, fontWeight: 700 }}>
                             {r.status.toUpperCase()}
                           </span>
-                          {isUrgent && <span style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 6, padding: "2px 8px", color: "#c0392b", fontSize: 11, fontWeight: 700 }}>⚠ {daysSince}d — ACT SOON</span>}
+                          {isUrgent && <span style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 3, padding: "2px 8px", color: "#c0392b", fontSize: 11, fontWeight: 700 }}>⚠ {daysSince}d — ACT SOON</span>}
                         </div>
                         <div style={{ color: C.textDim, fontSize: 12 }}>
                           Requested {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -575,12 +576,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                             await supabase.from("data_requests").update({ status: "fulfilled", resolved_at: new Date().toISOString() }).eq("id", r.id);
                             setDataRequests(prev => prev.map(d => d.id === r.id ? { ...d, status: "fulfilled", resolved_at: new Date().toISOString() } : d));
                           }
-                        }} style={{ background: r.request_type === "deletion" ? "#c0392b22" : C.online + "22", border: "1px solid " + (r.request_type === "deletion" ? "#c0392b55" : C.online + "55"), borderRadius: 8, padding: "7px 16px", color: r.request_type === "deletion" ? "#c0392b" : C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                        }} style={{ background: r.request_type === "deletion" ? "#c0392b22" : C.online + "22", border: "1px solid " + (r.request_type === "deletion" ? "#c0392b55" : C.online + "55"), borderRadius: 3, padding: "7px 16px", color: r.request_type === "deletion" ? "#c0392b" : C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           {r.request_type === "deletion" ? "Delete now" : "Mark fulfilled"}
                         </button>
                       )}
                     </div>
-                  </div>
+                  </PixelCornerBox>
                 );
               })}
             </div>
@@ -591,7 +592,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       {/* ── CONTENT ── */}
 
       {tab === "users" && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>{stats?.totalUsers || users.length} users (most recent 50)</div>
           {users.map((u, i) => (
             <div key={u.id} onClick={() => { setCurrentPlayer(u.id); setActivePage("player"); }}
@@ -611,11 +612,11 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>→</div>
             </div>
           ))}
-        </div>
+        </PixelCornerBox>
       )}
 
       {tab === "posts" && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>Last 30 posts</div>
           {posts.map((p, i) => {
             const author = p.profiles?.username || p.npcs?.name || "Unknown";
@@ -632,11 +633,11 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               </div>
             );
           })}
-        </div>
+        </PixelCornerBox>
       )}
 
       {tab === "reviews" && (
-        <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid " + C.border, fontWeight: 700, color: C.text, fontSize: 13 }}>Last 20 reviews</div>
           {reviews.map((r, i) => (
             <div key={r.id} style={{ padding: "12px 20px", borderBottom: i < reviews.length - 1 ? "1px solid " + C.border : "none" }}>
@@ -650,7 +651,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               {r.headline && <div style={{ color: C.textMuted, fontSize: 13, fontStyle: "italic" }}>"{r.headline}"</div>}
             </div>
           ))}
-        </div>
+        </PixelCornerBox>
       )}
 
       {tab === "games" && (
@@ -658,16 +659,16 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url).length} with cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
             <button onClick={async () => { for (const game of allGames.filter(g => !g.cover_url)) { await enrichGame(game); } }}
-              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+              style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               Enrich All Missing →
             </button>
           </div>
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 14, overflow: "hidden" }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
             {allGames.map((game, i) => (
               <div key={game.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < allGames.length - 1 ? "1px solid " + C.border : "none" }}>
                 {game.cover_url
-                  ? <img src={game.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
-                  : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+                  ? <img src={game.cover_url} alt="" style={{ width: 48, height: 64, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                  : <div style={{ width: 48, height: 64, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                 }
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
@@ -677,16 +678,16 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   {enrichMsg[game.id] || (game.cover_url ? "✓ Has art" : "No art")}
                 </div>
                 <button onClick={() => enrichGame(game)} disabled={enriching[game.id]}
-                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 7, padding: "5px 12px", color: C.accentSoft, fontSize: 11, fontWeight: 600, cursor: enriching[game.id] ? "default" : "pointer", flexShrink: 0, opacity: enriching[game.id] ? 0.6 : 1 }}>
+                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 12px", color: C.accentSoft, fontSize: 11, fontWeight: 600, cursor: enriching[game.id] ? "default" : "pointer", flexShrink: 0, opacity: enriching[game.id] ? 0.6 : 1 }}>
                   {enriching[game.id] ? "…" : "Enrich"}
                 </button>
               </div>
             ))}
           </div>
-        </div>
+        </PixelCornerBox>
       )}
 
-    </div>
+    </PixelCornerBox>
   );
 }
 

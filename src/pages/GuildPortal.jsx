@@ -5,6 +5,7 @@ import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import SessionCard from "../components/SessionCard.jsx";
 import GuildActivityFeed from "../components/GuildActivityFeed.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [guild, setGuild] = useState(null);
@@ -350,8 +351,8 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     loadReplies(parentId);
   };
 
-  const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
-  const sectionStyle = { background: C.surface, border: "1px solid " + C.border, borderRadius: 16, padding: 20, marginBottom: 20 };
+  const inputStyle = { width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box" };
+  // sectionStyle replaced with PixelCornerBox
   const labelStyle = { color: C.textDim, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 };
 
   if (loading) return <div style={{ textAlign: "center", padding: "120px 20px", color: C.textDim }}>Loading guild...</div>;
@@ -386,7 +387,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "60px 16px 80px" : "80px 20px 40px" }}>
       <button onClick={() => setActivePage("squad")} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", marginBottom: 16, padding: 0 }}>← Back to Guilds</button>
 
-      <div style={sectionStyle}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
         {showEdit ? (
           <div>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 16 }}>Edit Guild</div>
@@ -420,12 +421,12 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
-                <button onClick={saveEdit} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 8, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                <button onClick={() => setShowEdit(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveEdit} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 24px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                   {saving ? "Saving..." : "Save"}
                 </button>
               </div>
-              <button onClick={deleteGuild} style={{ background: "#ef444418", border: "1px solid #ef444440", borderRadius: 8, padding: "8px 16px", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Delete Guild</button>
+              <button onClick={deleteGuild} style={{ background: "#ef444418", border: "1px solid #ef444440", borderRadius: 3, padding: "8px 16px", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Delete Guild</button>
             </div>
           </div>
         ) : (
@@ -433,15 +434,15 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
               <h1 style={{ margin: 0, fontWeight: 800, fontSize: isMobile ? 22 : 28, color: C.text, letterSpacing: "-0.5px" }}>{guild.name}</h1>
               {isLeader && (
-                <button onClick={() => setShowEdit(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 16px", color: C.textMuted, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                <button onClick={() => setShowEdit(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 16px", color: C.textMuted, fontSize: 12, cursor: "pointer", flexShrink: 0 }}>Edit</button>
               )}
             </div>
             {guild.description && <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, margin: "0 0 14px" }}>{guild.description}</p>}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
               {guild.looking_for_members && (
-                <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "3px 8px" }}>LFM</span>
+                <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 3, padding: "3px 8px" }}>LFM</span>
               )}
-              <span style={{ background: C.surfaceRaised, border: "1px solid " + C.border, color: C.textDim, fontSize: 11, fontWeight: 600, borderRadius: 6, padding: "3px 8px" }}>
+              <span style={{ background: C.surfaceRaised, border: "1px solid " + C.border, color: C.textDim, fontSize: 11, fontWeight: 600, borderRadius: 3, padding: "3px 8px" }}>
                 {guild.is_public ? "Public" : "Private"}
               </span>
               {guild.discord_url && (
@@ -452,26 +453,26 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
               )}
               {isMember && (
                 <button onClick={() => toggleNotifPref("notify_on_post")}
-                  style={{ background: notifPrefs.notify_on_post ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_post ? C.accentDim : C.border), borderRadius: 6, padding: "3px 10px", color: notifPrefs.notify_on_post ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: notifPrefs.notify_on_post ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_post ? C.accentDim : C.border), borderRadius: 3, padding: "3px 10px", color: notifPrefs.notify_on_post ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                   {notifPrefs.notify_on_post ? "🔔 Posts" : "🔕 Posts"}
                 </button>
               )}
               {isMember && (
                 <button onClick={() => toggleNotifPref("notify_on_session")}
-                  style={{ background: notifPrefs.notify_on_session ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_session ? C.accentDim : C.border), borderRadius: 6, padding: "3px 10px", color: notifPrefs.notify_on_session ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: notifPrefs.notify_on_session ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (notifPrefs.notify_on_session ? C.accentDim : C.border), borderRadius: 3, padding: "3px 10px", color: notifPrefs.notify_on_session ? C.accentSoft : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                   {notifPrefs.notify_on_session ? "🔔 Sessions" : "🔕 Sessions"}
                 </button>
               )}
               {isLeader && pendingRequests.length > 0 && (
                 <button onClick={() => setShowRequests(r => !r)}
-                  style={{ background: C.gold + "22", border: "1px solid " + C.gold + "55", borderRadius: 6, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ background: C.gold + "22", border: "1px solid " + C.gold + "55", borderRadius: 3, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                   {pendingRequests.length} Request{pendingRequests.length !== 1 ? "s" : ""} pending
                 </button>
               )}
             </div>
 
             {isLeader && showRequests && pendingRequests.length > 0 && (
-              <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+              <PixelCornerBox size="lg" borderColor={C.border} bg={C.surfaceRaised} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: 16, marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Join Requests</div>
                 {pendingRequests.map(req => {
                   const p = req.profiles;
@@ -483,18 +484,18 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                       <div style={{ flex: 1, color: C.text, fontSize: 13, fontWeight: 600 }}>{p?.username || "Unknown"}</div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={() => approveRequest(req.user_id)}
-                          style={{ background: C.online + "22", border: "1px solid " + C.online + "55", borderRadius: 7, padding: "5px 12px", color: C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          style={{ background: C.online + "22", border: "1px solid " + C.online + "55", borderRadius: 3, padding: "5px 12px", color: C.online, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           Approve
                         </button>
                         <button onClick={() => denyRequest(req.user_id)}
-                          style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 7, padding: "5px 12px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 3, padding: "5px 12px", color: "#c0392b", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           Deny
                         </button>
                       </div>
                     </div>
                   );
                 })}
-              </div>
+              </PixelCornerBox>
             )}
             <div style={labelStyle}>Members</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -510,9 +511,9 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             </div>
           </div>
         )}
-      </div>
+      </PixelCornerBox>
 
-      <div style={sectionStyle}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 4 }}>Gaming Schedule</div>
         <div style={{ color: C.textDim, fontSize: 12, marginBottom: 16 }}>Tap a day to schedule a session.</div>
 
@@ -554,7 +555,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                     style={{
                       background: isActive ? C.accentGlow : C.surfaceRaised,
                       border: "1px solid " + (isActive ? C.accentDim : C.border),
-                      borderRadius: 10,
+                      borderRadius: 4,
                       padding: "10px 0",
                       color: isActive ? C.accentSoft : C.textDim,
                       fontSize: 18,
@@ -568,7 +569,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 )}
 
                 {isFull && (
-                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 10, padding: "10px 0", color: C.textDim, fontSize: 10, fontWeight: 600, textAlign: "center" }}>Full</div>
+                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "10px 0", color: C.textDim, fontSize: 10, fontWeight: 600, textAlign: "center" }}>Full</div>
                 )}
               </div>
             );
@@ -576,7 +577,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
         </div>
 
         {activeDay !== null && isMember && (
-          <div style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 12, padding: 16, marginTop: 16 }}>
+          <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surfaceRaised} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 4, padding: 16, marginTop: 16 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>
               Schedule for {dayLabel(weekDays[activeDay])}
             </div>
@@ -591,7 +592,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 autoFocus
               />
               {gameResults.length > 0 && (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 8, zIndex: 10, overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, zIndex: 10, overflow: "hidden" }}>
                   {gameResults.map(g => (
                     <div key={g.id}
                       onClick={() => { setSelectedGame(g); setGameSearch(g.name); setGameResults([]); }}
@@ -634,19 +635,19 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
               <button
                 onClick={() => scheduleSession(weekDays[activeDay])}
                 disabled={(!selectedGame && !gameSearch.trim()) || !sessionTime || schedulingSession}
-                style={{ background: (selectedGame || gameSearch.trim()) && sessionTime ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "9px 24px", color: (selectedGame || gameSearch.trim()) && sessionTime ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: (selectedGame || gameSearch.trim()) && sessionTime ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "9px 24px", color: (selectedGame || gameSearch.trim()) && sessionTime ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 {schedulingSession ? "Sharing..." : "Share"}
               </button>
               <button onClick={() => setActiveDay(null)}
-                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 8, padding: "9px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
+                style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "9px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>
                 Cancel
               </button>
             </div>
-          </div>
+          </PixelCornerBox>
         )}
-      </div>
+      </PixelCornerBox>
 
-      <div style={sectionStyle}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Guild Thread</div>
 
         {isMember && (
@@ -656,10 +657,10 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
               onChange={e => setNewPost(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitPost(); } }}
               placeholder="Post to guild thread..."
-              style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "9px 14px", color: C.text, fontSize: 13, outline: "none" }}
+              style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "9px 14px", color: C.text, fontSize: 13, outline: "none" }}
             />
             <button onClick={submitPost} disabled={!newPost.trim() || postingToThread}
-              style={{ background: newPost.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "9px 18px", color: newPost.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              style={{ background: newPost.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "9px 18px", color: newPost.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
               Post
             </button>
           </div>
@@ -715,10 +716,10 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                         onChange={e => setNewReply(prev => ({ ...prev, [post.id]: e.target.value }))}
                         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitReply(post.id); } }}
                         placeholder="Write a reply..."
-                        style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 8, padding: "7px 12px", color: C.text, fontSize: 13, outline: "none" }}
+                        style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 12px", color: C.text, fontSize: 13, outline: "none" }}
                       />
                       <button onClick={() => submitReply(post.id)} disabled={!(newReply[post.id] || "").trim()}
-                        style={{ background: (newReply[post.id] || "").trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 8, padding: "7px 14px", color: (newReply[post.id] || "").trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                        style={{ background: (newReply[post.id] || "").trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "7px 14px", color: (newReply[post.id] || "").trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                         Reply
                       </button>
                     </div>
@@ -728,12 +729,12 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             </div>
           );
         })}
-      </div>
+      </PixelCornerBox>
 
-      <div style={sectionStyle}>
+      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Activity</div>
         <GuildActivityFeed guildId={guildId} memberIds={memberIds} />
-      </div>
+      </PixelCornerBox>
     </div>
   );
 }
