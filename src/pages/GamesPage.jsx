@@ -681,7 +681,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
       {/* ── Game Discovery Card ── */}
       {!currentUser ? (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ marginBottom: 32, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, color: C.gold, marginBottom: 4, letterSpacing: "-0.3px" }}>Game Discovery</div>
             <div style={{ color: C.textMuted, fontSize: 13 }}>Game discovery works when you build your game shelf.</div>
@@ -692,7 +692,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           </button>
         </PixelCornerBox>
       ) : (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.surface} style={{ marginBottom: 32 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ marginBottom: 32 }}>
           {/* Card header */}
           <div onClick={() => setDiscoveryOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
@@ -961,7 +961,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             return (
               <>
                 <div style={{ fontWeight: 700, fontSize: 13, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 14 }}>By Genre</div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, alignItems: "start" }}>
                   {genreEntries.map(([genre, games]) => {
                     const fullList = byGenreFull[genre] || games;
                     const isExpanded = expandedGenreAll.has(genre);
