@@ -290,7 +290,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
                 <div style={{ fontWeight: 800, fontSize: 26, color: s.color, marginBottom: 4 }}>{s.value}</div>
                 <div style={{ color: C.textDim, fontSize: 11 }}>{s.label}</div>
-              </div>
+              </PixelCornerBox>
             ))}
           </div>
           <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20 }}>
@@ -311,7 +311,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
             ))}
             <button onClick={() => { handleSectionChange("content"); setTab("users"); }} style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, cursor: "pointer", marginTop: 10, padding: 0 }}>View all users →</button>
           </PixelCornerBox>
-        </PixelCornerBox>
+        </div>
       )}
 
       {tab === "analytics" && (
@@ -329,7 +329,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 18, textAlign: "center" }}>
                     <div style={{ fontWeight: 800, fontSize: 28, color: s.color }}>{s.value}</div>
                     <div style={{ color: C.textDim, fontSize: 12, marginTop: 4 }}>{s.label}</div>
-                  </div>
+                  </PixelCornerBox>
                 ))}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
@@ -349,7 +349,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                       </div>
                     );
                   })}
-                </div>
+                </PixelCornerBox>
                 <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20 }}>
                   <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 14 }}>Daily Active Users (7d)</div>
                   {analyticsData.dailyActiveUsers.length === 0 ? (
@@ -364,8 +364,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                       </div>
                     </div>
                   ))}
-                </div>
-              </PixelCornerBox>
+                </PixelCornerBox>
+              </div>
             </>
           )}
         </div>
@@ -387,7 +387,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16, textAlign: "center" }}>
                     <div style={{ fontWeight: 800, fontSize: 24, color: s.color }}>{s.value}</div>
                     <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{s.label}</div>
-                  </div>
+                  </PixelCornerBox>
                 ))}
               </div>
               {feedbackData.map(f => (
@@ -402,7 +402,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   {f.liked && <div style={{ marginBottom: 8 }}><span style={{ color: C.online, fontSize: 11, fontWeight: 700 }}>LIKED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.liked}</span></div>}
                   {f.confused && <div style={{ marginBottom: 8 }}><span style={{ color: C.gold, fontSize: 11, fontWeight: 700 }}>CONFUSED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.confused}</span></div>}
                   {f.missing && <div><span style={{ color: C.accent, fontSize: 11, fontWeight: 700 }}>MISSING · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.missing}</span></div>}
-                </div>
+                </PixelCornerBox>
               ))}
             </>
           )}
@@ -461,7 +461,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(entry.latestAt).toLocaleDateString()}</div>
                 </div>
               ))}
-            </div>
+            </PixelCornerBox>
           )}
         </div>
       )}
@@ -513,9 +513,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   </button>
                 </div>
               ))}
-            </div>
+            </PixelCornerBox>
           )}
-        </PixelCornerBox>
+        </div>
       )}
 
       {tab === "data_requests" && (
@@ -683,11 +683,11 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                 </button>
               </div>
             ))}
-          </div>
-        </PixelCornerBox>
+          </PixelCornerBox>
+        </div>
       )}
 
-    </PixelCornerBox>
+    </div>
   );
 }
 
