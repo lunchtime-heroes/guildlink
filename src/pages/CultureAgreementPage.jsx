@@ -15,7 +15,7 @@ const Highlight = ({ children }) => (
 
 const Blip = ({ level, hours, description }) => (
   <PixelCornerBox size="md" borderColor={C.border} bg={C.surfaceRaised} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", marginBottom: 8 }}>
-    <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "4px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>{level}</div>
+    <div style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "4px 10px", color: C.accentSoft, fontSize: 11, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>{level}</div>
     <div>
       <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{hours}</div>
       <div style={{ color: C.textMuted, fontSize: 13 }}>{description}</div>
@@ -162,7 +162,7 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
       {/* Footer */}
       <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink · guildlink.gg</div>
-        <button onClick={() => { window.scrollTo(0, 0); setActivePage("feed"); }} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
+        <button onClick={() => { window.scrollTo(0, 0); setActivePage("feed"); }} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
       </div>
 
     </div>

@@ -13,11 +13,11 @@ const Highlight = ({ children }) => (
 );
 
 const GreenPill = ({ children }) => (
-  <span style={{ background: "#10b98118", border: "1px solid #10b98144", borderRadius: C.radius.badge, padding: "2px 8px", color: "#10b981", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{children}</span>
+  <span style={{ background: "#10b98118", border: "1px solid #10b98144", borderRadius: 3, padding: "2px 8px", color: "#10b981", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{children}</span>
 );
 
 const RedPill = ({ children }) => (
-  <span style={{ background: "#ef444418", border: "1px solid #ef444444", borderRadius: C.radius.badge, padding: "2px 8px", color: "#ef4444", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{children}</span>
+  <span style={{ background: "#ef444418", border: "1px solid #ef444444", borderRadius: 3, padding: "2px 8px", color: "#ef4444", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{children}</span>
 );
 
 function PrivacyPage({ isMobile, setActivePage }) {
@@ -134,7 +134,7 @@ import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
       {/* Footer CTA */}
       <div style={{ marginTop: 48, paddingTop: 24, borderTop: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div style={{ color: C.textDim, fontSize: 13 }}>GuildLink · guildlink.gg · The game discovery engine.</div>
-        <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
+        <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Back to GuildLink</button>
       </div>
 
     </div>

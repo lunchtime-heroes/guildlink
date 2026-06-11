@@ -38,7 +38,7 @@ function ShelfPulseCard({ card, setCurrentGame, setActivePage, currentUser, onAd
           <div style={{ color: C.text, fontSize: 13, lineHeight: 1.4 }}>{card.text}</div>
         </div>
         <button onClick={handleCta}
-          style={{ background: accentColor + "18", border: "1px solid " + accentColor + "44", borderRadius: C.radius.button, padding: "6px 10px", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
+          style={{ background: accentColor + "18", border: "1px solid " + accentColor + "44", borderRadius: 3, padding: "6px 10px", color: accentColor, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
           {card.cta}
         </button>
       </div>
@@ -75,7 +75,7 @@ function ReviewSpotlightCard({ card, setCurrentGame, setCurrentPlayer, setActive
               style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {card.game.name}
             </span>
-            <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: C.radius.badge, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+            <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "2px 8px", color: C.gold, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
               {card.review.rating}/10
             </div>
           </div>
@@ -121,12 +121,12 @@ function QACard({ card, setCurrentGame, setActivePage }) {
             style={{ fontWeight: 700, color: C.accentSoft, fontSize: 12, cursor: "pointer" }}>
             {card.game.name}
           </span>
-          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.badge, padding: "1px 6px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+          <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "1px 6px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
           {card.hasFollow && <span style={{ color: C.accent, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>● Network</span>}
         </div>
         <p style={{ color: C.text, fontSize: 13, lineHeight: 1.5, margin: "0 0 10px", fontWeight: 500 }}>{card.question.content}</p>
         <button onClick={() => { setCurrentGame(card.game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: card.game.id }, "", `/game/${card.game.id}`); }}
-          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
           Answer Now →
         </button>
       </div>

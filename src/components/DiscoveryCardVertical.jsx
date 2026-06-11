@@ -113,7 +113,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               style={{
                 background: opt.status === "not_for_me" ? "transparent" : C.surfaceRaised,
                 border: "1px solid " + (opt.status === "not_for_me" ? C.border : C.border),
-                borderRadius: C.radius.button,
+                borderRadius: 3,
                 padding: "9px 12px",
                 color: opt.status === "not_for_me" ? C.textDim : C.text,
                 fontSize: 12, fontWeight: 600,
@@ -147,7 +147,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         {typeLabel && (
           <span style={{
             background: typeLabel.color + "18", border: "1px solid " + typeLabel.color + "44",
-            borderRadius: C.radius.badge, padding: "1px 6px",
+            borderRadius: 3, padding: "1px 6px",
             fontSize: 9, fontWeight: 700, color: typeLabel.color,
             textTransform: "uppercase", letterSpacing: "0.4px",
           }}>{typeLabel.label}</span>
@@ -167,7 +167,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
                 width: "100%",
                 boxSizing: "border-box",
                 background: C.accentGlow, border: "1px solid " + C.accentDim,
-                borderRadius: C.radius.badge, padding: "2px 10px",
+                borderRadius: 3, padding: "2px 10px",
                 fontSize: 11, color: C.accentSoft, fontWeight: 700,
                 cursor: "pointer",
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -183,7 +183,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               width: "100%",
               background: "transparent",
               border: "1px solid " + C.gold + "88",
-              borderRadius: C.radius.button,
+              borderRadius: 3,
               padding: "6px 8px",
               color: C.gold,
               fontSize: 11, fontWeight: 700,
@@ -200,14 +200,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
         {card.discovery_type === "chart_climber" && (
           <button onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
-            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "5px 8px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 8px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
             See The Charts →
           </button>
         )}
 
         {card.discovery_type === "multi_review_prompt" && (
           <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}
-            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "5px 8px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 8px", color: C.accentSoft, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
             Write a Review →
           </button>
         )}

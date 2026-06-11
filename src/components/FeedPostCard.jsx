@@ -488,7 +488,7 @@ return (
             >{localPost.user.name}</span>
             {localPost.user.isNPC && <NPCBadge />}
             {!localPost.user.isNPC && currentUser && post.user_id !== currentUser.id && similarity !== null && (
-              <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: C.radius.badge, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
+              <span style={{ background: similarity > 0 ? C.accentGlow : C.surfaceRaised, border: "1px solid " + (similarity > 0 ? C.accentDim : C.border), borderRadius: 3, padding: "1px 7px", fontSize: 10, fontWeight: 700, color: similarity > 0 ? C.accentSoft : C.textDim, flexShrink: 0 }}>
                 {similarity > 0 ? similarity + " games in common" : "no games in common"}
               </span>
             )}
@@ -501,7 +501,7 @@ return (
               return (
                 <span
                   onClick={e => { e.stopPropagation(); if (gameId) { setCurrentGame(gameId); setActivePage("game"); window.history.pushState({ page: "game", gameId }, "", `/game/${gameId}`); } }}
-                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.badge, padding: "2px 8px", fontSize: 11, color: C.accentSoft, fontWeight: 600, cursor: gameId ? "pointer" : "default" }}>
+                  style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "2px 8px", fontSize: 11, color: C.accentSoft, fontWeight: 600, cursor: gameId ? "pointer" : "default" }}>
                   {displayName || "Game"}
                 </span>
               );
@@ -511,7 +511,7 @@ return (
               <div style={{ marginLeft: "auto", position: "relative" }}>
                 <button onClick={() => setShowPostMenu(v => !v)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>⋯</button>
                 {showPostMenu && (
-                  <div style={{ position: "absolute", right: 0, top: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, overflow: "hidden", zIndex: 100, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                  <div style={{ position: "absolute", right: 0, top: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 4, overflow: "hidden", zIndex: 100, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                     {localPost.user_id === currentUser.id && (
                       <button onClick={() => { setEditing(true); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}>Edit</button>
                     )}
@@ -526,10 +526,10 @@ return (
           {editing ? (
             <div style={{ marginBottom: 12 }}>
               <textarea value={editText} onChange={e => setEditText(e.target.value)}
-                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: C.radius.input, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box", fontFamily: "inherit" }} />
+                style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 72, boxSizing: "border-box", fontFamily: "inherit" }} />
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
-                <button onClick={() => setEditing(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                <button onClick={saveEdit} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                <button onClick={() => setEditing(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
               </div>
             </div>
           ) : (
@@ -590,7 +590,7 @@ return (
                     <span style={{ color: C.textDim, fontSize: 11 }}>{authorHandle}</span>
                     <span style={{ color: C.textDim, fontSize: 11 }}>· {timeAgo(comment.created_at)}</span>
                     {comment.game_tag && commentGameNames[comment.game_tag] && (
-                      <span onClick={() => { setCurrentGame(comment.game_tag); setActivePage("game"); window.history.pushState({ page: "game", gameId: comment.game_tag }, "", `/game/${comment.game_tag}`); }} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.sm, padding: "1px 6px", fontSize: 10, color: C.accentSoft, fontWeight: 600, cursor: "pointer" }}>
+                      <span onClick={() => { setCurrentGame(comment.game_tag); setActivePage("game"); window.history.pushState({ page: "game", gameId: comment.game_tag }, "", `/game/${comment.game_tag}`); }} style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 2, padding: "1px 6px", fontSize: 10, color: C.accentSoft, fontWeight: 600, cursor: "pointer" }}>
                         {commentGameNames[comment.game_tag]}
                       </span>
                     )}
@@ -634,7 +634,7 @@ return (
                   {editingComment?.id === comment.id && (
                     <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                       {editTaggedGame && editTaggedGameName && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.input, padding: "4px 10px", width: "fit-content" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "4px 10px", width: "fit-content" }}>
                           <span style={{ color: C.accentSoft, fontSize: 12, fontWeight: 600 }}>{editTaggedGameName}</span>
                           <button onClick={() => { setEditTaggedGame(null); setEditTaggedGameName(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1 }}>×</button>
                         </div>
@@ -645,7 +645,7 @@ return (
                           onChange={e => { editCursorRef.current = e.target.selectionStart; handleEditTextChange(e); const rect = e.target.getBoundingClientRect(); setEditDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width }); }}
                           autoFocus
                           rows={3}
-                          style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: C.radius.input, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                          style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "8px 10px", color: C.text, fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
                           onKeyDown={e => {
                             if (editMentionResults.length > 0) {
                               if (e.key === "ArrowDown") { e.preventDefault(); setEditMentionIndex(i => Math.min(i+1, editMentionResults.length-1)); return; }
@@ -656,7 +656,7 @@ return (
                           }}
                         />
                         {editMentionResults.length > 0 && editDropdownPos && ReactDOM.createPortal(
-                          <div style={{ position: "absolute", top: editDropdownPos.top, left: editDropdownPos.left, width: editDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
+                          <div style={{ position: "absolute", top: editDropdownPos.top, left: editDropdownPos.left, width: editDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
                             {editMentionResults.map((item, i) => (
                               <div key={item.id} onMouseDown={() => selectEditMention(item)}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === editMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < editMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
@@ -677,11 +677,11 @@ return (
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={saveCommentEdit}
-                          style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          style={{ background: C.accent, border: "none", borderRadius: 3, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           Save
                         </button>
                         <button onClick={() => { setEditingComment(null); setEditTaggedGame(null); setEditTaggedGameName(null); setEditMentionResults([]); setEditDropdownPos(null); }}
-                          style={{ background: "none", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
+                          style={{ background: "none", border: "1px solid " + C.border, borderRadius: 3, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
                           Cancel
                         </button>
                       </div>
@@ -696,20 +696,20 @@ return (
           {!readOnly && <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: "1px solid " + C.border }}>
             {isGuest ? (
               <div onClick={() => onSignIn?.("Join the conversation and comment on posts.")}
-                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.input, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 14px", color: C.textDim, fontSize: 13, cursor: "pointer" }}>
                 Sign in to join the conversation...
               </div>
             ) : currentUser ? (
               <div style={{ flex: 1 }}>
                 {replyTo && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.input, padding: "5px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 10px" }}>
                     <span style={{ color: C.accentSoft, fontSize: 12 }}>↩ Replying to <strong>{replyTo.name}</strong></span>
                     <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", marginLeft: "auto", lineHeight: 1 }}>×</button>
                   </div>
                 )}
                 {commentTaggedGame && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                    <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.badge, padding: "3px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
+                    <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "3px 8px", color: C.accentSoft, fontSize: 11, fontWeight: 700 }}>
                       {commentTaggedGameName}
                     </span>
                     <button onClick={() => { setCommentTaggedGame(null); setCommentTaggedGameName(null); }} style={{ background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", lineHeight: 1 }}>×</button>
@@ -751,10 +751,10 @@ return (
                       }}
                       placeholder={replyTo ? `Reply to ${replyTo.name}…` : "Write a comment… (@ to mention a player or game)"}
                       rows={1}
-                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.input, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 14px", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", resize: "none", overflow: "hidden", lineHeight: 1.5, fontFamily: "inherit" }}
                     />
                     {commentMentionResults.length > 0 && commentDropdownPos && ReactDOM.createPortal(
-                      <div style={{ position: "absolute", top: commentDropdownPos.top, left: commentDropdownPos.left, width: commentDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
+                      <div style={{ position: "absolute", top: commentDropdownPos.top, left: commentDropdownPos.left, width: commentDropdownPos.width, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
                         {commentMentionResults.map((item, i) => (
                           <div key={item.id} onMouseDown={() => selectCommentMention(item)}
                             style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", background: i === commentMentionIndex ? C.surfaceHover : "transparent", borderBottom: i < commentMentionResults.length - 1 ? "1px solid " + C.border : "none" }}
@@ -773,12 +773,12 @@ return (
                       document.body
                     )}
                   </div>
-                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: C.radius.input, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>
+                  <button onClick={submitComment} disabled={submittingComment || !commentText.trim()} style={{ background: commentText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "8px 14px", color: commentText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}>
                     {submittingComment ? "…" : "Reply"}
                   </button>
                 </div>
                 {commentLinkWarning && (
-                  <div style={{ marginTop: 6, background: "#ef444418", border: "1px solid #ef444444", borderRadius: C.radius.input, padding: "6px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ marginTop: 6, background: "#ef444418", border: "1px solid #ef444444", borderRadius: 3, padding: "6px 10px", display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ fontSize: 12 }}>🚫</span>
                     <span style={{ color: "#ef4444", fontSize: 11 }}><strong>{commentLinkWarning}</strong> isn't on our allowed list.</span>
                   </div>

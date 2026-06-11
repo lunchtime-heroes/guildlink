@@ -94,7 +94,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
   };
 
   return (
-    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, padding: 16, marginBottom: 14 }}>
+    <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 16, marginBottom: 14 }}>
       <div onClick={() => isMobile && setCollapsed(c => !c)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: collapsed ? 0 : 12, cursor: isMobile ? "pointer" : "default" }}>
         <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
           {category ? `${category} Charts` : "The Charts"}
@@ -136,7 +136,7 @@ function ChartsWidget({ setActivePage, setCurrentGame, category, refreshKey, lim
           })}
           {limit && (
             <button onClick={() => setActivePage("games")}
-              style={{ width: "100%", marginTop: 10, background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              style={{ width: "100%", marginTop: 10, background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               See Full Charts →
             </button>
           )}

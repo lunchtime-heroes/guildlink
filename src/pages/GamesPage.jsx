@@ -654,7 +654,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               )}
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <button onClick={e => { e.stopPropagation(); setCurrentGame(entry.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: entry.id }, "", `/game/${entry.id}`); }}
-                  style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "7px 16px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Game →</button>
+                  style={{ background: C.accent, border: "none", borderRadius: 3, padding: "7px 16px", color: C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>View Game →</button>
               </div>
             </div>
           );
@@ -687,7 +687,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             <div style={{ color: C.textMuted, fontSize: 13 }}>Game discovery works when you build your game shelf.</div>
           </div>
           <button onClick={() => onSignIn?.("Build your shelf and unlock game discovery.")}
-            style={{ background: C.gold, border: "none", borderRadius: C.radius.card, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+            style={{ background: C.gold, border: "none", borderRadius: 4, padding: "8px 18px", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
             Sign Up Now
           </button>
         </PixelCornerBox>
@@ -730,7 +730,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                           onClick={() => { if (!r.locked) { setActiveRing(r.ring); runInsight(insight, r.ring); } }}
                           title={r.locked ? r.lockMsg : insight.desc}
                           disabled={r.locked}
-                          style={{ background: activeInsight === insight.id ? r.color + "22" : C.surfaceRaised, border: "1px solid " + (activeInsight === insight.id ? r.color + "55" : r.locked ? C.border + "88" : C.border), borderRadius: C.radius.card, padding: "6px 14px", color: r.locked ? C.textDim : activeInsight === insight.id ? r.color : C.textMuted, fontSize: 12, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: r.locked ? "default" : "pointer", opacity: r.locked ? 0.45 : 1, transition: "all 0.15s" }}>
+                          style={{ background: activeInsight === insight.id ? r.color + "22" : C.surfaceRaised, border: "1px solid " + (activeInsight === insight.id ? r.color + "55" : r.locked ? C.border + "88" : C.border), borderRadius: 4, padding: "6px 14px", color: r.locked ? C.textDim : activeInsight === insight.id ? r.color : C.textMuted, fontSize: 12, fontWeight: activeInsight === insight.id ? 700 : 500, cursor: r.locked ? "default" : "pointer", opacity: r.locked ? 0.45 : 1, transition: "all 0.15s" }}>
                           {insight.label}
                         </button>
                       ))}
@@ -766,17 +766,17 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     onKeyDown={e => { if (e.key === "Enter") { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); } }}
                     onBlur={() => setTimeout(() => setTypeaheadResults([]), 150)}
                     placeholder="Search by name or @game..."
-                    style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.card, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
+                    style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
                   />
                   {nameSearch && (
                     <button onClick={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
-                      style={{ background: C.accent, border: "none", borderRadius: C.radius.card, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                      style={{ background: C.accent, border: "none", borderRadius: 4, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                       Search
                     </button>
                   )}
                 </div>
                 {typeaheadResults.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, marginTop: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+                  <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, marginTop: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                     {typeaheadResults.map((g, i) => (
                       <div key={g.id || g.igdb_id} onMouseDown={async () => {
                         if (g._fromIGDB) {
@@ -789,8 +789,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
                         onMouseLeave={e => e.currentTarget.style.background = C.surface}>
                         {g.cover_url
-                          ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: C.radius.sm, objectFit: "cover", flexShrink: 0 }} />
-                          : <div style={{ width: 24, height: 32, borderRadius: C.radius.sm, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
+                          ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                          : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
                         }
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
@@ -824,7 +824,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           </div>
           {discoveryLoading ? (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
-              {[...Array(8)].map((_, i) => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, height: 90 }} />)}
+              {[...Array(8)].map((_, i) => <div key={i} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, height: 90 }} />)}
             </div>
           ) : discoveryResults === "__empty_shelf__" ? (
             <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: "40px 24px", textAlign: "center" }}>
@@ -858,7 +858,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       }
                     </div>
                     {menuOpen && (
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.92)", borderRadius: C.radius.card, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.92)", borderRadius: 4, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
                         {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
                           <button key={opt.id} onClick={async e => {
                             e.stopPropagation();
@@ -871,7 +871,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                             setUserShelf(prev => new Set([...prev, g.id]));
                             setShelfMenuOpen(null);
                           }}
-                            style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "11px 12px", cursor: "pointer", color: C.text, fontSize: 13, fontWeight: 600, textAlign: "left" }}
+                            style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "11px 12px", cursor: "pointer", color: C.text, fontSize: 13, fontWeight: 600, textAlign: "left" }}
                             onMouseEnter={e => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = C.accent; }}
                             onMouseLeave={e => { e.currentTarget.style.background = C.surfaceRaised; e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.border; }}>
                             {opt.label}
@@ -892,7 +892,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         onShelf
                           ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
                           : <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
-                              style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: C.radius.badge, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}>
+                              style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 3, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}>
                               + Add to Shelf
                             </button>
                       )}
@@ -983,7 +983,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         {displayList.map((entry, i) => <ChartRow key={entry.id} entry={entry} rank={i + 1} section={genre} />)}
                         {(hasMore || isExpanded) && (
                           <button onClick={() => setExpandedGenreAll(prev => { const n = new Set(prev); isExpanded ? n.delete(genre) : n.add(genre); return n; })}
-                            style={{ margin: "10px 16px 14px", background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
+                            style={{ margin: "10px 16px 14px", background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "7px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
                             {isExpanded ? "Show less" : "See all " + fullList.length + " in " + genre + " →"}
                           </button>
                         )}

@@ -347,7 +347,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
     <div style={{ maxWidth: 800, margin: "100px auto", textAlign: "center", color: C.textMuted }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
       <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 8 }}>Loading...</div>
-      <button onClick={() => setActivePage("games")} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Browse Games</button>
+      <button onClick={() => setActivePage("games")} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Browse Games</button>
     </div>
   );
 
@@ -364,25 +364,25 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "24px 16px 20px" : "36px 24px 28px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 20, flexWrap: isMobile ? "wrap" : "nowrap" }}>
             {game.cover_url
-              ? <img src={game.cover_url} alt={game.name} style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: C.radius.card, objectFit: "cover", flexShrink: 0, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)" }} />
-              : <div style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: C.radius.card, background: game.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isMobile ? 28 : 48, flexShrink: 0 }}>{game.icon}</div>
+              ? <img src={game.cover_url} alt={game.name} style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: 4, objectFit: "cover", flexShrink: 0, boxShadow: "0 4px 20px rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)" }} />
+              : <div style={{ width: isMobile ? 56 : 100, height: isMobile ? 75 : 133, borderRadius: 4, background: game.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: isMobile ? 28 : 48, flexShrink: 0 }}>{game.icon}</div>
             }
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 900, fontSize: isMobile ? 22 : 32, color: "#fff", marginBottom: 6, letterSpacing: "-0.5px", lineHeight: 1.15 }}>{game.name}</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                {(game.genre || []).map(g => <span key={g} style={{ background: game.color + "22", border: "1px solid " + game.color + "44", color: game.color, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: C.radius.badge }}>{g}</span>)}
+                {(game.genre || []).map(g => <span key={g} style={{ background: game.color + "22", border: "1px solid " + game.color + "44", color: game.color, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3 }}>{g}</span>)}
                 {game.year && <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{game.year}</span>}
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowShelfMenu(s => !s)}
-                    style={{ background: shelfStatus ? game.color + "22" : game.color, border: "1px solid " + game.color + (shelfStatus ? "44" : ""), borderRadius: C.radius.button, padding: "8px 16px", color: shelfStatus ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    style={{ background: shelfStatus ? game.color + "22" : game.color, border: "1px solid " + game.color + (shelfStatus ? "44" : ""), borderRadius: 3, padding: "8px 16px", color: shelfStatus ? game.color : "#000", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                     {shelfStatus === "playing" ? "✓ Playing" : shelfStatus === "have_played" ? "✓ Played" : shelfStatus === "want_to_play" ? "✓ Want to Play" : "+ Add to Shelf"}
                   </button>
                   {showShelfMenu && (
                     <>
                       <div onClick={() => setShowShelfMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 49 }} />
-                      <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: C.radius.card, overflow: "hidden", zIndex: 50, minWidth: 160, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
+                      <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, overflow: "hidden", zIndex: 50, minWidth: 160, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
                         {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
                           <button key={opt.id} onClick={() => setShelf(opt.id)}
                             style={{ display: "block", width: "100%", background: shelfStatus === opt.id ? game.color + "22" : "none", border: "none", padding: "10px 16px", color: shelfStatus === opt.id ? game.color : C.text, fontSize: 13, cursor: "pointer", textAlign: "left", fontWeight: shelfStatus === opt.id ? 700 : 400 }}>
@@ -394,7 +394,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                   )}
                 </div>
                 <button onClick={isGuest ? () => onSignIn?.("Sign in to follow games.") : toggleFollow} disabled={followLoading}
-                  style={{ background: followed ? "rgba(255,255,255,0.1)" : "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: C.radius.button, padding: "8px 16px", color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  style={{ background: followed ? "rgba(255,255,255,0.1)" : "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 3, padding: "8px 16px", color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   {followLoading ? "..." : followed ? "✓ Following" : "Follow"}
                 </button>
               </div>
@@ -413,14 +413,14 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
             </div>
           </div>
           {shelfDrawer && shelfPlayers[shelfDrawer]?.length > 0 && (
-            <div style={{ marginTop: 16, background: "rgba(0,0,0,0.3)", borderRadius: C.radius.card, padding: "12px 16px" }}>
+            <div style={{ marginTop: 16, background: "rgba(0,0,0,0.3)", borderRadius: 4, padding: "12px 16px" }}>
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 {shelfDrawer === "playing" ? "Currently Playing" : shelfDrawer === "have_played" ? "Have Played" : "Want to Play"}
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {shelfPlayers[shelfDrawer].slice(0, 12).map(p => (
                   <div key={p.id} onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: p.id }, "", `/player/${p.handle?.replace("@", "") || p.id}`); }}
-                    style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", borderRadius: C.radius.button, padding: "4px 10px", cursor: "pointer" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, padding: "4px 10px", cursor: "pointer" }}>
                     <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={20} founding={p.is_founding} ring={p.active_ring} />
                     <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600 }}>{p.username}</span>
                   </div>
@@ -472,7 +472,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               </div>
               {topVoices.length > 0 ? topVoices.map((voice, i) => (
                 <div key={voice.user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < topVoices.length - 1 ? "1px solid " + C.border : "none" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: C.radius.badge, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
+                  <div style={{ width: 24, height: 24, borderRadius: 3, background: i === 0 ? C.goldDim : C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: i === 0 ? C.gold : C.textDim, fontSize: 11 }}>#{i + 1}</div>
                   <Avatar initials={voice.avatar_initials || "GL"} size={32} founding={voice.is_founding} ring={voice.active_ring} avatarConfig={voice.avatar_config} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{voice.username || "Gamer"}</div>
@@ -496,7 +496,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
               <div style={{ marginBottom: 20 }}>
                 {!showAskForm ? (
                   <button onClick={() => setShowAskForm(true)}
-                    style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.card, padding: "14px 20px", color: C.accentSoft, fontSize: 14, fontWeight: 700, cursor: "pointer", width: "100%", textAlign: "left" }}>
+                    style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 4, padding: "14px 20px", color: C.accentSoft, fontSize: 14, fontWeight: 700, cursor: "pointer", width: "100%", textAlign: "left" }}>
                     Ask a question about {game.name}…
                   </button>
                 ) : (
@@ -506,12 +506,12 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       onChange={e => setAskText(e.target.value)}
                       placeholder={"What do you want to know about " + game.name + "?"}
                       autoFocus
-                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "10px 14px", color: C.text, fontSize: 14, resize: "none", outline: "none", minHeight: 80, boxSizing: "border-box", marginBottom: 10 }}
+                      style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 14px", color: C.text, fontSize: 14, resize: "none", outline: "none", minHeight: 80, boxSizing: "border-box", marginBottom: 10 }}
                     />
                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                      <button onClick={() => { setShowAskForm(false); setAskText(""); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                      <button onClick={() => { setShowAskForm(false); setAskText(""); }} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "7px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                       <button onClick={submitQuestion} disabled={!askText.trim() || submittingAsk}
-                        style={{ background: askText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: C.radius.button, padding: "7px 20px", color: askText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: askText.trim() ? "pointer" : "default" }}>
+                        style={{ background: askText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "7px 20px", color: askText.trim() ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: askText.trim() ? "pointer" : "default" }}>
                         {submittingAsk ? "Posting…" : "Ask"}
                       </button>
                     </div>
@@ -537,7 +537,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                         <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{author?.username || "Gamer"}</span>
-                        <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.badge, padding: "1px 7px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
+                        <span style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "1px 7px", color: C.accentSoft, fontSize: 10, fontWeight: 700 }}>Q&A</span>
                         <span style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(q.created_at)}</span>
                       </div>
                       <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: 0, fontWeight: 500 }}>{q.content}</p>
@@ -557,7 +557,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                                 <span style={{ fontWeight: 700, color: C.text, fontSize: 12 }}>{comment.profiles?.username || "Gamer"}</span>
                                 {hasPlayed && (
-                                  <span style={{ background: "#22c55e18", border: "1px solid #22c55e44", borderRadius: C.radius.sm, padding: "1px 6px", color: "#22c55e", fontSize: 10, fontWeight: 700 }}>
+                                  <span style={{ background: "#22c55e18", border: "1px solid #22c55e44", borderRadius: 2, padding: "1px 6px", color: "#22c55e", fontSize: 10, fontWeight: 700 }}>
                                     {shelf === "playing" ? "Playing" : "Has Played"}
                                   </span>
                                 )}
@@ -577,13 +577,13 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       <span style={{ color: C.textDim, fontSize: 12 }}>{answerCount} {answerCount === 1 ? "answer" : "answers"}</span>
                       {currentUser && !isGuest && answeringId !== q.id && (
                         <button onClick={() => { setAnsweringId(q.id); setAnswerText(""); }}
-                          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                          style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "5px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                           Answer →
                         </button>
                       )}
                       {!currentUser && (
                         <button onClick={() => onSignIn?.("Sign in to answer questions.")}
-                          style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                          style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "5px 14px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           Sign in to answer →
                         </button>
                       )}
@@ -595,13 +595,13 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                           onChange={e => setAnswerText(e.target.value)}
                           placeholder="Write your answer…"
                           autoFocus
-                          style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: C.radius.button, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: 72, boxSizing: "border-box" }}
+                          style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3, padding: "10px 14px", color: C.text, fontSize: 13, resize: "none", outline: "none", minHeight: 72, boxSizing: "border-box" }}
                         />
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                           <button onClick={() => { setAnsweringId(null); setAnswerText(""); }}
-                            style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                            style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "6px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Cancel</button>
                           <button onClick={() => submitAnswer(q.id)} disabled={!answerText.trim() || submittingAnswer}
-                            style={{ background: answerText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: C.radius.button, padding: "6px 18px", color: answerText.trim() ? "#fff" : C.textDim, fontSize: 12, fontWeight: 700, cursor: answerText.trim() ? "pointer" : "default" }}>
+                            style={{ background: answerText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "6px 18px", color: answerText.trim() ? "#fff" : C.textDim, fontSize: 12, fontWeight: 700, cursor: answerText.trim() ? "pointer" : "default" }}>
                             {submittingAnswer ? "Posting…" : "Post Answer"}
                           </button>
                         </div>
@@ -657,7 +657,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
           <div>
             {currentUser && !isGuest && !showReviewForm && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-                <button onClick={() => setShowReviewForm(true)} style={{ background: C.accent, border: "none", borderRadius: C.radius.button, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
+                <button onClick={() => setShowReviewForm(true)} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Write Review</button>
               </div>
             )}
             {currentUser && !isGuest && showReviewForm && (
@@ -666,21 +666,21 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                   {[1,2,3,4,5,6,7,8,9,10].map(n => (
                     <button key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
-                      style={{ width: 32, height: 32, borderRadius: C.radius.button, border: "1px solid " + (reviewForm.rating >= n ? C.gold : C.border), background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      style={{ width: 32, height: 32, borderRadius: 3, border: "1px solid " + (reviewForm.rating >= n ? C.gold : C.border), background: reviewForm.rating >= n ? C.goldDim : C.surfaceRaised, color: reviewForm.rating >= n ? C.gold : C.textDim, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
                       {n}
                     </button>
                   ))}
                 </div>
-                <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Title (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                <input value={reviewForm.loved || ""} onChange={e => setReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What did you love?" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                <input value={reviewForm.didnt_love || ""} onChange={e => setReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What didn't you love?" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
-                <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Additional thoughts (optional)" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
+                <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} placeholder="Title (optional)" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <input value={reviewForm.loved || ""} onChange={e => setReviewForm(f => ({ ...f, loved: e.target.value }))} placeholder="What did you love?" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <input value={reviewForm.didnt_love || ""} onChange={e => setReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What didn't you love?" style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
+                <textarea value={reviewForm.content} onChange={e => setReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Additional thoughts (optional)" rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={submitReview} disabled={!reviewForm.rating || submittingReview}
-                    style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: C.radius.button, padding: "8px 20px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>
+                    style={{ background: reviewForm.rating ? game.color : C.surfaceRaised, border: "none", borderRadius: 3, padding: "8px 20px", color: reviewForm.rating ? "#000" : C.textDim, fontSize: 13, fontWeight: 700, cursor: reviewForm.rating ? "pointer" : "default" }}>
                     {submittingReview ? "Submitting..." : "Submit"}
                   </button>
-                  <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                  <button onClick={() => setShowReviewForm(false)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
                 </div>
               </PixelCornerBox>
             )}
@@ -699,9 +699,9 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                       <div style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(review.created_at)}</div>
                     </div>
                     {currentUser && review.user_id === currentUser.id && (
-                      <button onClick={() => setShowReviewForm(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: C.radius.button, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
+                      <button onClick={() => setShowReviewForm(true)} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "4px 10px", color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>Edit</button>
                     )}
-                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: C.radius.button, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
+                    <div style={{ background: C.goldDim, border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 10px", color: C.gold, fontWeight: 800, fontSize: 14 }}>{review.rating + "/10"}</div>
                   </div>
                   {review.headline && <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 6 }}>{review.headline}</div>}
                   {review.loved && <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 4 }}>{"Loved: " + review.loved}</div>}
@@ -718,7 +718,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
             {game.claimed ? (
               <PixelCornerBox size="lg" borderColor={C.teal} bg={C.surface} style={{ padding: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: C.radius.card, background: C.teal + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏢</div>
+                  <div style={{ width: 48, height: 48, borderRadius: 4, background: C.teal + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🏢</div>
                   <div>
                     <div style={{ fontWeight: 800, color: C.text, fontSize: 16 }}>{game.developer}</div>
                     <Badge color={C.teal}>✓ Verified Developer</Badge>
@@ -730,7 +730,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🏢</div>
                 <div style={{ fontWeight: 800, color: C.text, fontSize: 20, marginBottom: 8 }}>Are you the developer?</div>
                 <p style={{ color: C.textMuted, fontSize: 14, maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.7 }}>Claim this page to access community insights and post official announcements.</p>
-                <button style={{ background: C.teal, border: "none", borderRadius: C.radius.card, padding: "12px 32px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Claim This Page</button>
+                <button style={{ background: C.teal, border: "none", borderRadius: 4, padding: "12px 32px", color: "#000", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Claim This Page</button>
               </div>
             )}
           </div>
