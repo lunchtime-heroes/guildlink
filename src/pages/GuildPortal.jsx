@@ -472,7 +472,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             </div>
 
             {isLeader && showRequests && pendingRequests.length > 0 && (
-              <PixelCornerBox size="lg" borderColor={C.border} bg={C.surfaceRaised} style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: 16, marginBottom: 16 }}>
+              <PixelCornerBox size="lg" borderColor={C.border} bg={C.surfaceRaised} style={{ padding: 16, marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 12 }}>Join Requests</div>
                 {pendingRequests.map(req => {
                   const p = req.profiles;
@@ -577,7 +577,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
         </div>
 
         {activeDay !== null && isMember && (
-          <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surfaceRaised} style={{ background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 4, padding: 16, marginTop: 16 }}>
+          <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surfaceRaised} style={{ padding: 16, marginTop: 16 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 14, marginBottom: 16 }}>
               Schedule for {dayLabel(weekDays[activeDay])}
             </div>
