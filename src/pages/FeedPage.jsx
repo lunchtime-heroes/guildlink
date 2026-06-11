@@ -1026,7 +1026,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         </PixelCornerBox>
 
         {sidebarNPCs.length > 0 && (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"color-mix(in srgb, " + C.gold + " 18%, #0a0c10)"} style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
