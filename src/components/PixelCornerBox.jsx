@@ -123,11 +123,19 @@ function PixelCornerBox({
   const background = bgStyle || bg || C.surface;
   const clip = buildClip(steps, s);
 
-  // Split style: layout props stay on outer wrapper, padding goes inside card body
-  const { padding, paddingTop, paddingRight, paddingBottom, paddingLeft, ...outerStyle } = style;
-  const innerPadding = { padding, paddingTop, paddingRight, paddingBottom, paddingLeft };
+  // Split style: layout props (margin, position, sizing) stay on outer wrapper
+  // Padding and flex/display props go on inner card body
+  const {
+    padding, paddingTop, paddingRight, paddingBottom, paddingLeft,
+    display, flexDirection, flexWrap, alignItems, justifyContent, gap,
+    ...outerStyle
+  } = style;
+  const innerStyle = {
+    padding, paddingTop, paddingRight, paddingBottom, paddingLeft,
+    display, flexDirection, flexWrap, alignItems, justifyContent, gap,
+  };
   // Remove undefined keys
-  Object.keys(innerPadding).forEach(k => innerPadding[k] === undefined && delete innerPadding[k]);
+  Object.keys(innerStyle).forEach(k => innerStyle[k] === undefined && delete innerStyle[k]);
 
   return (
     <div style={{ position: "relative", minWidth: 0, ...outerStyle }} className={className} onClick={onClick}>
@@ -147,7 +155,9 @@ function PixelCornerBox({
         clipPath: "polygon(" + clip + ")",
         zIndex: 1,
         overflow: "hidden",
-        ...innerPadding,
+        height: "100%",
+        boxSizing: "border-box",
+        ...innerStyle,
       }}>
         <PixelCorners steps={steps} s={s} color={bc} />
         {children}
