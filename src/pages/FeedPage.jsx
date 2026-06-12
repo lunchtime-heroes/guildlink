@@ -194,7 +194,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [followingPosts, setFollowingPosts] = useState([]);
   const [playingGames, setPlayingGames] = useState([]);
   const [followedGames, setFollowedGames] = useState([]);
-  const [suggestedGamers, setSuggestedGamers] = useState([]);
+
   const [selectedGame, setSelectedGame] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
@@ -401,7 +401,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       loadFollowing();
       loadPlayingGames();
       loadFollowedGames();
-      loadSuggestedGamers();
+
       loadDiscoveryCards();
     }
   }, []);
@@ -504,53 +504,6 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     };
     syncCounts();
   }, [activePage]);
-
-  const loadSuggestedGamers = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: myShelf } = await supabase
-      .from("user_games").select("game_id, status").eq("user_id", user.id);
-    if (!myShelf || myShelf.length === 0) return;
-    const myGameIds = myShelf.map(g => g.game_id);
-    const statusWeight = { playing: 3, want_to_play: 2, have_played: 1 };
-    const { data: others } = await supabase
-      .from("user_games")
-      .select("user_id, game_id, status, profiles(id, username, handle, avatar_initials)")
-      .in("game_id", myGameIds)
-      .neq("user_id", user.id);
-    if (!others) return;
-    const myGameStatusMap = {};
-    myShelf.forEach(g => { myGameStatusMap[g.game_id] = g.status; });
-    const scores = {};
-    others.forEach(row => {
-      if (!row.profiles) return;
-      const uid = row.user_id;
-      if (!scores[uid]) scores[uid] = { profile: row.profiles, score: 0 };
-      const theirWeight = statusWeight[row.status] || 1;
-      const myWeight = statusWeight[myGameStatusMap[row.game_id]] || 0;
-      const combinedWeight = theirWeight + myWeight;
-      if (combinedWeight > (scores[uid].topWeight || 0)) {
-        scores[uid].topWeight = combinedWeight;
-      }
-      scores[uid].score += theirWeight;
-    });
-    const { data: followData } = await supabase
-      .from("follows").select("followed_user_id").eq("follower_id", user.id);
-    const followedIds = new Set((followData || []).map(f => f.followed_user_id));
-    const sorted = Object.values(scores)
-      .filter(s => !followedIds.has(s.profile.id))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3);
-    const targetIds = sorted.map(s => s.profile.id);
-    const { data: simData } = await supabase
-      .from("user_similarity")
-      .select("similar_user_id, overlap_count")
-      .eq("user_id", user.id)
-      .in("similar_user_id", targetIds);
-    const simMap = {};
-    (simData || []).forEach(s => { simMap[s.similar_user_id] = s.overlap_count; });
-    setSuggestedGamers(sorted.map(s => ({ ...s.profile, overlapCount: simMap[s.profile.id] || null })));
-  };
 
   const loadPlayingGames = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1024,39 +977,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           })}
         </PixelCornerBox>
 
-        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16 }}>
-          <div style={{ fontWeight: 700, color: C.text, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 12 }}>Gamers</div>
-          {suggestedGamers.length === 0 ? (
-            <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6 }}>Add games to your shelf to find players like you.</div>
-          ) : suggestedGamers.map((p, i) => {
-            const isLast = i === suggestedGamers.length - 1;
-            return (
-            <div key={p.id} style={{ marginBottom: isLast ? 0 : 14 }}>
-              <div onClick={() => { setCurrentPlayer(p.id); setActivePage("player"); window.history.pushState({ page: "player", playerId: p.id }, "", "/player/" + (p.handle || p.id).replace("@","")); }}
-                style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              >
-                <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
-                  {p.overlapCount && <GameTag label={p.overlapCount + " games in common"} />}
-                </div>
-              </div>
-              <PixelButton fullWidth size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={async () => {
-                  const { data: { user: au } } = await supabase.auth.getUser();
-                  if (!au) return;
-                  await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
-                  setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
-                  loadFollowing();
-                }}><span>{"+ Follow"}</span></PixelButton>
-            </div>
-            );
-          })}
-        </PixelCornerBox>
-
         {sidebarNPCs.length > 0 && (
-        <PixelCornerBox size="lg" borderColor={C.goldBorder} bg={C.goldGlow} style={{ padding: 16, marginTop: 14 }}>
+        <PixelCornerBox size="lg" borderColor={C.goldBorder} bgStyle={"color-mix(in srgb, " + C.gold + " 12%, " + C.bg + ")"} style={{ padding: 16, marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 700, color: C.gold, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>NPCs</div>
             <button onClick={() => setActivePage("npcs")} style={{ background: "none", border: "none", color: C.gold + "88", fontSize: 11, cursor: "pointer", padding: 0 }}>See all</button>
