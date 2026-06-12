@@ -429,28 +429,38 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       // Separate into buckets by type to ensure diversity
       const shelfAdds = sorted.filter(c => c.discovery_type === "shelf_add");
       const followedEvents = sorted.filter(c =>
-        c.discovery_type === "followed_shelf_event" ||
-        c.discovery_type === "new_similarity_match" ||
-        c.discovery_type === "followed_review"
+        c.discovery_type === "followed_shelf_add" ||
+        c.discovery_type === "followed_now_playing" ||
+        c.discovery_type === "followed_just_finished" ||
+        c.discovery_type === "followed_review" ||
+        c.discovery_type === "followed_similarity_match" ||
+        c.discovery_type === "new_similarity_match"
       );
       const chartAndOther = sorted.filter(c =>
         c.discovery_type === "chart_climber" ||
-        c.discovery_type === "new_review" ||
         c.discovery_type === "multi_review_prompt" ||
-        c.discovery_type === "genre_trending" ||
-        c.discovery_type === "hidden_gem"
+        c.discovery_type === "platform_trending"
+      );
+      const similarityEvents = sorted.filter(c =>
+        c.discovery_type === "now_playing" ||
+        c.discovery_type === "just_finished" ||
+        c.discovery_type === "review_positive" ||
+        c.discovery_type === "review_negative" ||
+        c.discovery_type === "thumbs_down"
       );
       const remaining = sorted.filter(c =>
-        !shelfAdds.includes(c) && !followedEvents.includes(c) && !chartAndOther.includes(c)
+        !shelfAdds.includes(c) && !followedEvents.includes(c) &&
+        !chartAndOther.includes(c) && !similarityEvents.includes(c)
       );
 
-      // Mix: 1 shelf_add, 1 followed event (if any), 1 chart/other (if any), repeat
-      // This ensures social and chart signals appear regularly, not just at the end
+      // Mix: 1 shelf_add, 1 followed event, 1 similarity event, 1 chart/other, repeat
+      // Followed events get equal footing with shelf_add — social signals matter
       const mixed = [];
-      let si = 0; let fi = 0; let ci = 0; let ri = 0;
-      while (si < shelfAdds.length || fi < followedEvents.length || ci < chartAndOther.length || ri < remaining.length) {
+      let si = 0; let fi = 0; let sei = 0; let ci = 0; let ri = 0;
+      while (si < shelfAdds.length || fi < followedEvents.length || sei < similarityEvents.length || ci < chartAndOther.length || ri < remaining.length) {
         if (si < shelfAdds.length) mixed.push(shelfAdds[si++]);
         if (fi < followedEvents.length) mixed.push(followedEvents[fi++]);
+        if (sei < similarityEvents.length) mixed.push(similarityEvents[sei++]);
         if (ci < chartAndOther.length) mixed.push(chartAndOther[ci++]);
         if (ri < remaining.length) mixed.push(remaining[ri++]);
       }
@@ -1269,7 +1279,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
           // Discovery feed: vertical game cards in 3-col grid, posts full-width
           if (!isGuest && discoveryCards.length > 0) {
-            const VERTICAL_TYPES = ['shelf_add', 'now_playing', 'just_finished', 'review_positive', 'review_negative', 'thumbs_down', 'chart_climber', 'multi_review_prompt'];
+            const VERTICAL_TYPES = [
+              'shelf_add', 'now_playing', 'just_finished',
+              'review_positive', 'review_negative', 'thumbs_down',
+              'chart_climber', 'multi_review_prompt', 'platform_trending',
+              'followed_shelf_add', 'followed_now_playing', 'followed_just_finished',
+              'followed_review',
+            ];
             const verticalCards = discoveryCards.filter(c => VERTICAL_TYPES.includes(c.discovery_type));
             const horizontalCards = discoveryCards.filter(c => !VERTICAL_TYPES.includes(c.discovery_type));
             const horizontalStream = [];

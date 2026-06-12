@@ -84,12 +84,48 @@ function getCardCopy(card, actorName) {
         isNegative: true,
       };
 
-    case "new_similarity_match":
+    case "followed_similarity_match":
       return {
-        phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with you",
-        sub: "You might want to follow them.",
+        phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with someone you follow",
+        sub: "You might want to follow them too.",
         cta_follow: true,
         no_game_tag: true,
+      };
+
+    case "platform_trending":
+      return {
+        phrase: card.actor_count + " players added this week:",
+        sub: "Gaining momentum across the platform.",
+        cta_shelf: true,
+      };
+
+    case "followed_shelf_add":
+      return {
+        phrase: actorName + (card.shelf_status === "playing" ? " is playing:" : card.shelf_status === "have_played" ? " played:" : " wants to play:"),
+        sub: null,
+        cta_shelf: true,
+      };
+
+    case "followed_now_playing":
+      return {
+        phrase: actorName + " is playing right now:",
+        sub: null,
+        cta_shelf: true,
+      };
+
+    case "followed_just_finished":
+      return {
+        phrase: actorName + " just finished:",
+        sub: null,
+        cta_shelf: true,
+        cta_ask: "Ask what they thought",
+      };
+
+    case "followed_review":
+      return {
+        phrase: actorName + " reviewed:",
+        sub: null,
+        cta_ask: "See the review",
       };
 
     case "chart_climber":
@@ -119,9 +155,15 @@ function getTypeLabel(discovery_type) {
     case "review_positive": return { label: "Loved It", color: C.gold };
     case "review_negative": return { label: "Skip Signal", color: C.red };
     case "thumbs_down": return { label: "Skip Signal", color: C.red };
-    case "new_similarity_match": return null;
-    case "chart_climber": return { label: "Chart Climber", color: C.gold };
-    case "multi_review_prompt": return { label: "Write a Review", color: C.gold };
+    case "new_similarity_match":         return null;
+    case "followed_similarity_match":    return null;
+    case "chart_climber":                return { label: "Chart Climber", color: C.gold };
+    case "multi_review_prompt":          return { label: "Write a Review", color: C.gold };
+    case "platform_trending":            return { label: "Trending", color: C.accent };
+    case "followed_shelf_add":           return { label: "From Someone You Follow", color: C.accent };
+    case "followed_now_playing":         return { label: "Now Playing", color: C.green };
+    case "followed_just_finished":       return { label: "Just Finished", color: C.teal };
+    case "followed_review":              return { label: "New Review", color: C.gold };
     default: return null;
   }
 }
@@ -157,7 +199,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     if (!card.seen) {
       supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id);
     }
-    if (card.actor_user_id && card.discovery_type === "new_similarity_match") {
+    if (card.actor_user_id && (card.discovery_type === "new_similarity_match" || card.discovery_type === "followed_similarity_match")) {
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
         if (!authUser) return;
         supabase.from("follows")
@@ -176,7 +218,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
 
   if (dismissed) return null;
 
-  const isSimilarityCard = card.discovery_type === "new_similarity_match";
+  const isSimilarityCard = card.discovery_type === "new_similarity_match" || card.discovery_type === "followed_similarity_match";
   if (isSimilarityCard && followed) return null;
 
   const isNegative = copy.isNegative;

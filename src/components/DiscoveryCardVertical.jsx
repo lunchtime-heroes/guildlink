@@ -10,27 +10,40 @@ import { GameTag } from "./GameTag.jsx";
 // ─── Copy ────────────────────────────────────────────────────────────────────
 function getPhrase(card, actorName) {
   switch (card.discovery_type) {
-    case "shelf_add": return card.actor_count + " players with similar libraries have:";
-    case "now_playing": return card.actor_count > 1 ? card.actor_count + " players started playing:" : actorName + " just started playing:";
-    case "just_finished": return card.actor_count > 1 ? card.actor_count + " players finished:" : actorName + " just finished:";
-    case "review_positive": return card.actor_count > 1 ? card.actor_count + " players loved:" : actorName + " loved:";
-    case "review_negative": return card.actor_count > 1 ? card.actor_count + " players gave a low score to:" : actorName + " gave a low score to:";
-    case "thumbs_down": return actorName + " passed on:";
-    case "chart_climber": return card.chart_movement >= 2 ? "jumped " + card.chart_movement + " spots into the top 10:" : "moved up " + (card.chart_movement || 1) + " spot on The Charts:";
+    case "shelf_add":          return card.actor_count + " players with similar libraries have:";
+    case "now_playing":        return card.actor_count > 1 ? card.actor_count + " players started playing:" : actorName + " just started playing:";
+    case "just_finished":      return card.actor_count > 1 ? card.actor_count + " players finished:" : actorName + " just finished:";
+    case "review_positive":    return card.actor_count > 1 ? card.actor_count + " players loved:" : actorName + " loved:";
+    case "review_negative":    return card.actor_count > 1 ? card.actor_count + " players gave a low score to:" : actorName + " gave a low score to:";
+    case "thumbs_down":        return actorName + " passed on:";
+    case "chart_climber":      return card.chart_movement >= 2 ? "jumped " + card.chart_movement + " spots into the top 10:" : "moved up " + (card.chart_movement || 1) + " spot on The Charts:";
     case "multi_review_prompt": return card.actor_count + " players reviewed:";
+    case "platform_trending":  return card.actor_count + " players added this week:";
+    case "followed_shelf_add":
+      if (card.shelf_status === "playing") return actorName + " is playing:";
+      if (card.shelf_status === "have_played") return actorName + " played:";
+      return actorName + " wants to play:";
+    case "followed_now_playing":   return actorName + " is playing right now:";
+    case "followed_just_finished": return actorName + " just finished:";
+    case "followed_review":        return actorName + " reviewed:";
     default: return null;
   }
 }
 
 function getTypeLabel(t) {
   switch (t) {
-    case "now_playing": return { label: "Now Playing", color: C.green };
-    case "just_finished": return { label: "Just Finished", color: C.teal };
-    case "review_positive": return { label: "Loved It", color: C.gold };
-    case "review_negative": return { label: "Skip Signal", color: C.red };
-    case "thumbs_down": return { label: "Skip Signal", color: C.red };
-    case "chart_climber": return { label: "Chart Climber", color: C.gold };
-    case "multi_review_prompt": return { label: "Write a Review", color: C.gold };
+    case "now_playing":            return { label: "Now Playing", color: C.green };
+    case "just_finished":          return { label: "Just Finished", color: C.teal };
+    case "review_positive":        return { label: "Loved It", color: C.gold };
+    case "review_negative":        return { label: "Skip Signal", color: C.red };
+    case "thumbs_down":            return { label: "Skip Signal", color: C.red };
+    case "chart_climber":          return { label: "Chart Climber", color: C.gold };
+    case "multi_review_prompt":    return { label: "Write a Review", color: C.gold };
+    case "platform_trending":      return { label: "Trending", color: C.accent };
+    case "followed_shelf_add":     return { label: "From Someone You Follow", color: C.accent };
+    case "followed_now_playing":   return { label: "Now Playing", color: C.green };
+    case "followed_just_finished": return { label: "Just Finished", color: C.teal };
+    case "followed_review":        return { label: "New Review", color: C.gold };
     default: return null;
   }
 }
