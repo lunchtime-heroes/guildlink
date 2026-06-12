@@ -64,28 +64,29 @@ function PixelButton({
   const padding = paddingMap[size] || paddingMap.sm;
   const fontSize = fontSizeMap[size] || fontSizeMap.sm;
 
+  // Build a slightly larger clip for the border layer by using steps+1 offset
+  // Instead of absolute positioning, use a wrapper div with border color bg
+  // and inner button with bg color - both clipped, no absolute positioning
+  const borderClip = "polygon(" + buildClip(steps, s + 1) + ")";
+
   return (
-    <div style={{ position: "relative", display: fullWidth ? "flex" : "inline-flex", width: fullWidth ? "100%" : undefined, minWidth: 0 }}>
-      {/* Border layer */}
-      {bc && bc !== "transparent" && (
-        <div style={{
-          position: "absolute",
-          inset: -1,
-          background: bc,
-          clipPath: clip,
-          pointerEvents: "none",
-          zIndex: 0,
-        }} />
-      )}
+    <div style={{
+      display: fullWidth ? "flex" : "inline-flex",
+      width: fullWidth ? "100%" : undefined,
+      minWidth: 0,
+      background: bc && bc !== "transparent" ? bc : undefined,
+      clipPath: bc && bc !== "transparent" ? "polygon(" + clip + ")" : undefined,
+      padding: bc && bc !== "transparent" ? 1 : 0,
+      boxSizing: "border-box",
+    }}>
       {/* Button body */}
       <button
         type={type}
         onClick={onClick}
         disabled={disabled}
         style={{
-          position: "relative",
           background: bgColor,
-          clipPath: clip,
+          clipPath: "polygon(" + clip + ")",
           color: textColor,
           border: "none",
           padding,
@@ -99,9 +100,9 @@ function PixelButton({
           alignItems: "center",
           justifyContent: fullWidth ? "center" : undefined,
           flex: fullWidth ? 1 : undefined,
+          width: fullWidth ? "100%" : undefined,
           gap: 6,
           whiteSpace: "nowrap",
-          zIndex: 1,
           ...style,
         }}
       >
