@@ -13,6 +13,13 @@ const CONFIGS = {
   sm: { steps: 1, s: 2 },
 };
 
+// Precomputed clip-paths — calculated once at module load, not on every render
+const CLIPS = {
+  lg: "polygon(" + buildClip(CONFIGS.lg.steps, CONFIGS.lg.s) + ")",
+  md: "polygon(" + buildClip(CONFIGS.md.steps, CONFIGS.md.s) + ")",
+  sm: "polygon(" + buildClip(CONFIGS.sm.steps, CONFIGS.sm.s) + ")",
+};
+
 // Build CSS clip-path polygon for pixel-stepped corners
 function buildClip(steps, s) {
   const pts = [];
@@ -121,7 +128,7 @@ function PixelCornerBox({
   const { steps, s } = CONFIGS[size] || CONFIGS.lg;
   const bc = borderColor || C.border;
   const background = bgStyle || bg || C.surface;
-  const clip = buildClip(steps, s);
+  const clip = CLIPS[size] || CLIPS.lg;
 
   // Split style: layout props (margin, position, sizing) stay on outer wrapper
   // Padding and flex/display props go on inner card body
@@ -144,7 +151,7 @@ function PixelCornerBox({
         position: "absolute",
         inset: -1,
         background: bc,
-        clipPath: "polygon(" + buildClip(steps, s) + ")",
+        clipPath: CLIPS[size] || CLIPS.lg,
         zIndex: 0,
         pointerEvents: "none",
       }} />
@@ -152,8 +159,9 @@ function PixelCornerBox({
       <div style={{
         position: "relative",
         background,
-        clipPath: "polygon(" + clip + ")",
+        clipPath: clip,
         zIndex: 1,
+        overflow: "hidden",
         height: "100%",
         boxSizing: "border-box",
         ...innerStyle,
@@ -166,5 +174,5 @@ function PixelCornerBox({
 }
 
 // Named exports for direct use
-export { PixelCornerBox, buildClip, PixelCorners, CONFIGS };
+export { PixelCornerBox, buildClip, PixelCorners, CONFIGS, CLIPS };
 export default PixelCornerBox;

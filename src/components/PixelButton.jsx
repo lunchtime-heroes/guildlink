@@ -1,5 +1,5 @@
 import React from "react";
-import { PixelCornerBox, CONFIGS, buildClip } from "./PixelCornerBox.jsx";
+import { PixelCornerBox, CONFIGS, CLIPS, buildClip } from "./PixelCornerBox.jsx";
 
 // ─── PixelButton ──────────────────────────────────────────────────────────────
 // A native button wrapped in pixel corners.
@@ -32,7 +32,7 @@ function PixelButton({
   type = "button",
 }) {
   const { steps, s } = CONFIGS.md;
-  const clip = "polygon(" + buildClip(steps, s) + ")";
+  const clip = CLIPS.md;
 
   let bgColor = bgStyle || bg;
   let bc = borderColor;
