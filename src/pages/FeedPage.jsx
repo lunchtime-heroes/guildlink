@@ -1163,16 +1163,46 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           // All discovery cards are vertical — posts interspersed between rows
           if (!isGuest && discoveryCards.length > 0) {
 
-            // Round-robin by type for maximum variety
-            const byType = {};
-            discoveryCards.forEach(c => {
-              if (!byType[c.discovery_type]) byType[c.discovery_type] = [];
-              byType[c.discovery_type].push(c);
+            // Categorize cards so no two follower updates appear side by side
+            const isFollower = (c) => c.discovery_type.startsWith("followed_");
+            const isSimilarity = (c) => ["shelf_add", "now_playing", "just_finished", "review_positive", "review_negative", "thumbs_down", "new_similarity_match"].includes(c.discovery_type);
+
+            // Within follower category: round-robin by actor so no one person dominates
+            const followerByActor = {};
+            discoveryCards.filter(isFollower).forEach(c => {
+              const key = c.actor_user_id || "unknown";
+              if (!followerByActor[key]) followerByActor[key] = [];
+              followerByActor[key].push(c);
             });
-            const typeQueues = Object.values(byType);
+            const followerActorQueues = Object.values(followerByActor);
+            const followerCards = [];
+            while (followerActorQueues.some(q => q.length > 0)) {
+              followerActorQueues.forEach(q => { if (q.length > 0) followerCards.push(q.shift()); });
+            }
+
+            // Similarity cards: round-robin by type
+            const similarityByType = {};
+            discoveryCards.filter(isSimilarity).forEach(c => {
+              if (!similarityByType[c.discovery_type]) similarityByType[c.discovery_type] = [];
+              similarityByType[c.discovery_type].push(c);
+            });
+            const similarityQueues = Object.values(similarityByType);
+            const similarityCards = [];
+            while (similarityQueues.some(q => q.length > 0)) {
+              similarityQueues.forEach(q => { if (q.length > 0) similarityCards.push(q.shift()); });
+            }
+
+            // System cards: chart climbers, trending, etc.
+            const systemCards = discoveryCards.filter(c => !isFollower(c) && !isSimilarity(c));
+
+            // Final mix: 1 similarity, 1 follower, 1 system, repeat
+            // This guarantees no two follower cards are ever adjacent
             const orderedCards = [];
-            while (typeQueues.some(q => q.length > 0)) {
-              typeQueues.forEach(q => { if (q.length > 0) orderedCards.push(q.shift()); });
+            let si2 = 0; let fi2 = 0; let syi = 0;
+            while (si2 < similarityCards.length || fi2 < followerCards.length || syi < systemCards.length) {
+              if (si2 < similarityCards.length) orderedCards.push(similarityCards[si2++]);
+              if (fi2 < followerCards.length) orderedCards.push(followerCards[fi2++]);
+              if (syi < systemCards.length) orderedCards.push(systemCards[syi++]);
             }
 
             const cardsPerRow = isMobile ? 2 : 3;
