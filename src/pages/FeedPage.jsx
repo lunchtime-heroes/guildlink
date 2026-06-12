@@ -1296,12 +1296,31 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             }
             let vi = 0; let hi = 0;
             const cardsPerRow = isMobile ? 2 : 3;
-            while (vi < verticalCards.length || hi < horizontalStream.length) {
+            const remaining = [...verticalCards];
+            while (remaining.length > 0 || hi < horizontalStream.length) {
               const rowCards = [];
-              for (let i = 0; i < cardsPerRow && vi < verticalCards.length; i++) rowCards.push(verticalCards[vi++]);
+              const usedTypes = new Set();
+              // Pick cardsPerRow cards, avoiding same type in same row
+              // First pass: pick cards with unused types
+              let attempts = 0;
+              while (rowCards.length < cardsPerRow && remaining.length > 0 && attempts < remaining.length) {
+                const idx = remaining.findIndex((c, i) => {
+                  if (i > Math.min(attempts + cardsPerRow * 3, remaining.length - 1)) return false;
+                  return !usedTypes.has(c.discovery_type);
+                });
+                if (idx === -1) {
+                  // No card with unused type found in lookahead — just take next
+                  rowCards.push(remaining.shift());
+                } else {
+                  const card = remaining.splice(idx, 1)[0];
+                  usedTypes.add(card.discovery_type);
+                  rowCards.push(card);
+                }
+                attempts++;
+              }
               if (rowCards.length > 0) {
                 items.push(
-                  <div key={'vrow_' + vi} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
+                  <div key={'vrow_' + items.length} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
                     {rowCards.map(dc => (
                       <DiscoveryCardVertical key={'dcv_' + dc.id} card={dc}
                         currentUser={user} setActivePage={setActivePage}
