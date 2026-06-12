@@ -857,8 +857,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     {menuOpen && (
                       <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
                         <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{g.name}</div>
-                        {[{ id: "want_to_play", label: "Want to Play" }, { id: "playing", label: "Playing Now" }, { id: "have_played", label: "Have Played" }].map(opt => {
-                          const optColor = opt.id === "playing" ? C.green : opt.id === "want_to_play" ? C.accent : C.gold;
+                        {[{ id: "want_to_play", label: "Want to Play" }, { id: "playing", label: "Playing Now" }, { id: "have_played", label: "Have Played" }, { id: "not_for_me", label: "Not Interested" }].map(opt => {
+                          const optColor = opt.id === "playing" ? C.green : opt.id === "want_to_play" ? C.accent : opt.id === "have_played" ? C.gold : C.red;
                           return (
                             <div key={opt.id} style={{ padding: "1px 0" }}>
                               <PixelButton key={opt.id} fullWidth size="xs" bg={C.surface} borderColor={optColor} color={optColor} style={{ justifyContent: "center" }} onClick={async e => {
@@ -869,6 +869,9 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                                 const eventMap = { playing: "shelf_playing", want_to_play: "shelf_want", have_played: "shelf_played" };
                                 if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
                                 setUserShelf(prev => new Set([...prev, g.id]));
+                                if (opt.id === "not_for_me") {
+                                  setDiscoveryResults(prev => prev.filter(r => r.id !== g.id));
+                                }
                                 setShelfMenuOpen(null);
                               }}>{opt.label}</PixelButton>
                             </div>
