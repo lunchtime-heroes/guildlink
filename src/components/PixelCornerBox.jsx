@@ -2,14 +2,16 @@ import React from "react";
 import { C } from "../constants.js";
 
 // ─── Pixel corner configuration ──────────────────────────────────────────────
-// Three sizes matching the design system:
-// lg — 5 steps, cards/panels/modals
-// md — 3 steps, buttons/badges/tabs
-// sm — 1 step, small indicators/avatar frames
+// Authentic retro pixel corners — bold steps like SNES/NES era UI.
+// Fewer steps, bigger pixel size = cleaner retro look + better performance.
+//
+// lg — 2 steps at 4px = 8px corner  → cards/panels/modals
+// md — 1 step  at 4px = 4px corner  → buttons/badges/tabs
+// sm — 1 step  at 2px = 2px corner  → small indicators/avatar frames
 
 const CONFIGS = {
-  lg: { steps: 5, s: 2 },
-  md: { steps: 3, s: 2 },
+  lg: { steps: 2, s: 4 },
+  md: { steps: 1, s: 4 },
   sm: { steps: 1, s: 2 },
 };
 
