@@ -145,7 +145,7 @@ function PixelCornerBox({
   Object.keys(innerStyle).forEach(k => innerStyle[k] === undefined && delete innerStyle[k]);
 
   return (
-    <div style={{ position: "relative", minWidth: 0, ...outerStyle }} className={className} onClick={onClick}>
+    <div style={{ position: "relative", minWidth: 0, willChange: "transform", ...outerStyle }} className={className} onClick={onClick}>
       {/* Border layer — slightly larger, same clip */}
       <div style={{
         position: "absolute",
