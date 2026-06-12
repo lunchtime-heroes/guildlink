@@ -35,8 +35,8 @@ function getTypeLabel(t) {
 }
 
 const SHELF_OPTIONS = [
-  { status: "playing", label: "Playing Now" },
   { status: "want_to_play", label: "Want to Play" },
+  { status: "playing", label: "Playing Now" },
   { status: "have_played", label: "Have Played" },
   { status: "not_for_me", label: "Not Interested" },
 ];
@@ -113,8 +113,8 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
             const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
             return (
               <PixelButton key={opt.status} fullWidth size="sm"
-                bg={optColor + "22"}
-                borderColor={optColor + "99"}
+                bg={optColor + "15"}
+                borderColor={optColor}
                 color={optColor}
                 onClick={() => handleShelfSelect(opt.status)}>
                 {opt.label}
