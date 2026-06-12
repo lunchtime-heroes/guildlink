@@ -149,7 +149,7 @@ function FoundingMemberPage({ setActivePage, isMobile, onSignUp }) {
                   </div>
                 </div>
                 <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 16, flex: 1 }}>{ring.desc}</div>
-                <PixelCornerBox size="sm" borderColor={ring.color + "33"} bgStyle={ring.color + "0d"} style={{ padding: "10px 14px" }}>
+                <PixelCornerBox size="sm" borderColor={ring.color + "44"} bgStyle={"color-mix(in srgb, " + ring.color + " 10%, " + C.bg + ")"} style={{ padding: "10px 14px" }}>
                   <div style={{ color: ring.color, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>On GuildLink today</div>
                   <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.6 }}>{ring.today}</div>
                 </PixelCornerBox>
