@@ -78,6 +78,8 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
           alignItems: "center",
           gap: 4,
           whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
           cursor: onClick ? "pointer" : "default",
           zIndex: 1,
           lineHeight: 1.4,

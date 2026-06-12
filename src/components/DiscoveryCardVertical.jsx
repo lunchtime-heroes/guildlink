@@ -94,7 +94,11 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>
             You might like
           </div>
-          {game && <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />}
+          {game && (
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+              <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
+            </div>
+          )}
           <div style={{ fontSize: 10, color: C.textDim }}>based on shelf overlap</div>
         </>
       );
@@ -109,7 +113,11 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
             ? <div style={{ fontSize: 11, fontWeight: 700, color: C.gold }}>New to the top 10</div>
             : <div style={{ fontSize: 11, color: C.textMuted }}>{"Moved up to #" + (card.chart_movement || "") + " on The Charts"}</div>
           }
-          {game && <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />}
+          {game && (
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+              <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
+            </div>
+          )}
           {isNew && <div style={{ fontSize: 10, color: C.textDim }}>jumped into the top 10</div>}
         </>
       );
@@ -122,7 +130,11 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           <div style={{ fontSize: 11, color: C.textMuted }}>
             {card.actor_count + " users added"}
           </div>
-          {game && <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />}
+          {game && (
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+              <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
+            </div>
+          )}
           <div style={{ fontSize: 10, color: C.textDim }}>to their shelves this week</div>
         </>
       );
@@ -140,7 +152,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
       return (
         <>
-          {/* Actor row — clickable username + handle + games in common badge */}
+          {/* Actor — just @handle, clickable */}
           {actor && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
               <div
@@ -149,8 +161,9 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                <span style={{ color: C.text, fontWeight: 700, fontSize: 12 }}>{actor.username}</span>
-                <span style={{ color: C.textDim, fontSize: 11, marginLeft: 4 }}>{actor.handle}</span>
+                <span style={{ color: C.text, fontWeight: 700, fontSize: 12 }}>
+                  {actor.handle || ("@" + actor.username)}
+                </span>
               </div>
               {card.overlap_count > 0 && (
                 <GameTag label={card.overlap_count + " games in common"} size="sm" />
@@ -158,7 +171,11 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
             </div>
           )}
           <div style={{ fontSize: 11, color: C.textMuted }}>{action}</div>
-          {game && <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />}
+          {game && (
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+              <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
+            </div>
+          )}
         </>
       );
     }
