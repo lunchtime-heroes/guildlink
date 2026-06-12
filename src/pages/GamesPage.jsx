@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { logChartEvent } from "../utils.js";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 
 function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSignIn }) {
@@ -839,58 +841,62 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 const cardId = g.id || g.igdb_id;
                 const onShelf = userShelf.has(g.id);
                 const menuOpen = shelfMenuOpen === cardId;
+                const navigateToGame = async () => {
+                  if (menuOpen) { setShelfMenuOpen(null); return; }
+                  if (g._fromIGDB) {
+                    const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
+                    if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", "/game/" + inserted.id); }
+                  } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", "/game/" + g.id); }
+                };
                 return (
                   <PixelCornerBox key={cardId} size="lg" borderColor={onShelf ? C.accentDim : C.border} bg={C.surface} style={{ cursor: "pointer", position: "relative", alignSelf: "start", minWidth: 0 }}>
-                    <div style={{ width: "100%", height: 200, flexShrink: 0, background: "#0a0f1a" }} onClick={async () => {
-                      if (menuOpen) { setShelfMenuOpen(null); return; }
-                      if (g._fromIGDB) {
-                        const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
-                        if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
-                      } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }
-                    }}>
+                    {menuOpen && ReactDOM.createPortal(
+                      <div onClick={() => setShelfMenuOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 9 }} />,
+                      document.body
+                    )}
+                    {menuOpen && (
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
+                        <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{g.name}</div>
+                        {[{ id: "want_to_play", label: "Want to Play" }, { id: "playing", label: "Playing Now" }, { id: "have_played", label: "Have Played" }].map(opt => {
+                          const optColor = opt.id === "playing" ? C.green : opt.id === "want_to_play" ? C.accent : C.gold;
+                          return (
+                            <div key={opt.id} style={{ padding: "1px 0" }}>
+                              <PixelButton key={opt.id} fullWidth size="xs" bg={C.surface} borderColor={optColor} color={optColor} style={{ justifyContent: "center" }} onClick={async e => {
+                                e.stopPropagation();
+                                const { data: { user: authUser } } = await supabase.auth.getUser();
+                                if (!authUser) return;
+                                await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
+                                const eventMap = { playing: "shelf_playing", want_to_play: "shelf_want", have_played: "shelf_played" };
+                                if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
+                                setUserShelf(prev => new Set([...prev, g.id]));
+                                setShelfMenuOpen(null);
+                              }}>{opt.label}</PixelButton>
+                            </div>
+                          );
+                        })}
+                        <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(null); }}
+                          style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ width: "100%", height: 200, flexShrink: 0, background: "#0a0f1a" }} onClick={navigateToGame}>
                       {g.cover_url
                         ? <img src={g.cover_url} alt={g.name} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
                         : <div style={{ width: "100%", height: "100%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
                       }
                     </div>
-                    {menuOpen && (
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(8,14,26,0.92)", borderRadius: 4, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
-                        {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
-                          <button key={opt.id} onClick={async e => {
-                            e.stopPropagation();
-                            const { data: { user: authUser } } = await supabase.auth.getUser();
-                            if (!authUser) return;
-                            await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
-                            await supabase.from("user_games_history").insert({ user_id: authUser.id, game_id: g.id, from_status: null, to_status: opt.id });
-                            const eventMap = { playing: 'shelf_playing', want_to_play: 'shelf_want', have_played: 'shelf_played' };
-                            if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
-                            setUserShelf(prev => new Set([...prev, g.id]));
-                            setShelfMenuOpen(null);
-                          }}
-                            style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "11px 12px", cursor: "pointer", color: C.text, fontSize: 13, fontWeight: 600, textAlign: "left" }}
-                            onMouseEnter={e => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = C.accent; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = C.surfaceRaised; e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.border; }}>
-                            {opt.label}
-                          </button>
-                        ))}
-                        <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(null); }}
-                          style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", marginTop: 4 }}>
-                          Cancel
-                        </button>
-                      </div>
-                    )}
                     <div style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
                       {g._stat && (
-                        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 4, lineHeight: 1.4 }}>{g._stat}</div>
+                        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{g._stat}</div>
                       )}
-                      {currentUser && !g._fromIGDB && (
-                        onShelf
-                          ? <div style={{ fontSize: 11, color: C.accentSoft, fontWeight: 700 }}>On your shelf</div>
-                          : <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
-                              style={{ background: "transparent", border: "1px solid " + C.gold + "66", borderRadius: 3, padding: "3px 10px", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", width: "100%" }}>
-                              + Add to Shelf
-                            </button>
+                      {currentUser && !g._fromIGDB && !onShelf && (
+                        <div style={{ padding: "1px 0" }}>
+                          <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}>
+                            {"+ Add to Shelf"}
+                          </PixelButton>
+                        </div>
                       )}
                     </div>
                   </PixelCornerBox>
