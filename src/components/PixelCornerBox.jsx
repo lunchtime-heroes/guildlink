@@ -6,9 +6,6 @@ import { C } from "../constants.js";
 // lg — 5 steps, cards/panels/modals
 // md — 3 steps, buttons/badges/tabs
 // sm — 1 step, small indicators/avatar frames
-//
-// Corner SVGs designed in Illustrator, rendered as inline SVG for performance.
-// No clip-path, no calc() — just stroked polylines on each corner.
 
 const CONFIGS = {
   lg: { steps: 5, s: 2 },
@@ -16,7 +13,7 @@ const CONFIGS = {
   sm: { steps: 1, s: 2 },
 };
 
-// Kept for GameTag and PixelTabBar which still use buildClip
+// Build CSS clip-path polygon for pixel-stepped corners
 function buildClip(steps, s) {
   const pts = [];
   pts.push(`${s * steps}px 0px`);
@@ -51,92 +48,57 @@ function buildClip(steps, s) {
   return pts.join(", ");
 }
 
+// Precomputed clip-paths — calculated once at module load, not on every render
 const CLIPS = {
   lg: "polygon(" + buildClip(CONFIGS.lg.steps, CONFIGS.lg.s) + ")",
   md: "polygon(" + buildClip(CONFIGS.md.steps, CONFIGS.md.s) + ")",
   sm: "polygon(" + buildClip(CONFIGS.sm.steps, CONFIGS.sm.s) + ")",
 };
 
-// ─── SVG corner definitions from Illustrator ─────────────────────────────────
-const CORNER_DEFS = {
-  lg: { viewBox: "0 0 92 92", points: "14 78 14 62 30 62 30 46 46 46 46 30 62 30 62 14 78 14", size: 92 },
-  md: { viewBox: "0 0 76 76", points: "14 62 14 46 30 46 30 30 46 30 46 14 62 14", size: 76 },
-  sm: { viewBox: "0 0 60 60", points: "14 46 14 30 30 30 30 14 46 14", size: 60 },
-};
-
-function PixelCorners({ size, color, strokeWidth = 2 }) {
-  const def = CORNER_DEFS[size] || CORNER_DEFS.lg;
-  const px = def.size;
-
-  // Each corner: position absolute, transform-origin at the card corner point
-  const corners = [
-    { style: { top: 0, left: 0 },                         transform: "none" },
-    { style: { top: 0, right: 0 },                        transform: "scale(-1, 1)" },
-    { style: { bottom: 0, right: 0 },                     transform: "scale(-1, -1)" },
-    { style: { bottom: 0, left: 0 },                      transform: "scale(1, -1)" },
-  ];
-
+// Render pixel squares at each corner
+function PixelCorners({ steps, s, color }) {
+  const squares = [];
+  for (let i = 0; i < steps; i++) {
+    const offset = s * (steps - 1 - i);
+    const inset = s * i;
+    squares.push({ l: inset, t: offset });
+    squares.push({ r: inset, t: offset });
+    squares.push({ l: inset, b: offset });
+    squares.push({ r: inset, b: offset });
+  }
   return (
-    <>
-      {corners.map((c, i) => (
-        <svg
-          key={i}
-          viewBox={def.viewBox}
-          xmlns="http://www.w3.org/2000/svg"
-          style={{
-            position: "absolute",
-            width: px,
-            height: px,
-            pointerEvents: "none",
-            zIndex: 4,
-            transform: c.transform,
-            ...c.style,
-          }}
-        >
-          <polyline
-            points={def.points}
-            fill="none"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeMiterlimit="10"
-          />
-        </svg>
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4, willChange: "transform" }}>
+      {squares.map((sq, i) => (
+        <div key={i} style={{
+          position: "absolute",
+          width: s, height: s,
+          background: color,
+          left: sq.l !== undefined ? sq.l : "auto",
+          right: sq.r !== undefined ? sq.r : "auto",
+          top: sq.t !== undefined ? sq.t : "auto",
+          bottom: sq.b !== undefined ? sq.b : "auto",
+        }} />
       ))}
-    </>
+    </div>
   );
 }
 
-// ─── PixelCornerBox ───────────────────────────────────────────────────────────
-// Usage:
-//   <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface}>
-//     content
-//   </PixelCornerBox>
-//
-// Props:
-//   size        — "lg" | "md" | "sm" (default: "lg")
-//   borderColor — corner stroke + border color (default: C.border)
-//   bg          — solid background color (default: C.surface)
-//   bgStyle     — full CSS background value, overrides bg (use for gradients, tints)
-//   strokeWidth — corner line weight (default: 2)
-//   style       — additional styles on the outer wrapper
-//   className   — className on outer wrapper
-//   onClick     — click handler
-
+// ─── Main component ───────────────────────────────────────────────────────────
 function PixelCornerBox({
   children,
   size = "lg",
   borderColor,
   bg,
   bgStyle,
-  strokeWidth = 2,
   style = {},
   className,
   onClick,
 }) {
+  const { steps, s } = CONFIGS[size] || CONFIGS.lg;
   const bc = borderColor || C.border;
   const background = bgStyle || bg || C.surface;
+  const clip = CLIPS[size] || CLIPS.lg;
 
-  // Split style props: padding/flex go on inner body, everything else on outer
   const {
     padding, paddingTop, paddingRight, paddingBottom, paddingLeft,
     display, flexDirection, flexWrap, alignItems, justifyContent, gap,
@@ -149,30 +111,34 @@ function PixelCornerBox({
   Object.keys(innerStyle).forEach(k => innerStyle[k] === undefined && delete innerStyle[k]);
 
   return (
-    <div style={{ position: "relative", minWidth: 0, ...outerStyle }} className={className} onClick={onClick}>
-      {/* Background + border */}
+    <div style={{ position: "relative", minWidth: 0, willChange: "transform", ...outerStyle }} className={className} onClick={onClick}>
+      {/* Border layer */}
       <div style={{
         position: "absolute",
-        inset: 0,
-        background,
-        border: "1px solid " + bc,
+        inset: -1,
+        background: bc,
+        clipPath: clip,
         zIndex: 0,
+        pointerEvents: "none",
+        willChange: "transform",
       }} />
-      {/* Content */}
+      {/* Card body */}
       <div style={{
         position: "relative",
+        background,
+        clipPath: clip,
         zIndex: 1,
         height: "100%",
         boxSizing: "border-box",
+        willChange: "transform",
         ...innerStyle,
       }}>
+        <PixelCorners steps={steps} s={s} color={bc} />
         {children}
       </div>
-      {/* SVG pixel corners — rendered on top */}
-      <PixelCorners size={size} color={bc} strokeWidth={strokeWidth} />
     </div>
   );
 }
 
-export { PixelCornerBox, buildClip, CONFIGS, CLIPS };
+export { PixelCornerBox, buildClip, PixelCorners, CONFIGS, CLIPS };
 export default PixelCornerBox;
