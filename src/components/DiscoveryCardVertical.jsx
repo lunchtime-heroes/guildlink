@@ -100,32 +100,37 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     <PixelCornerBox size="lg" borderColor={borderColor} bg={C.surface}>
       {/* Shelf overlay — full tile, appears on Add to Shelf click */}
       {shelfOpen && (
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 10,
-          background: C.bg,
-          display: "flex", flexDirection: "column",
-          justifyContent: "center", alignItems: "stretch",
-          padding: "16px 16px",
-          gap: 8,
-        }}>
-          {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
-          {SHELF_OPTIONS.map(opt => {
-            const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
-            return (
-              <PixelButton key={opt.status} fullWidth size="sm"
-                bg={C.bg}
-                borderColor={optColor}
-                color={optColor}
-                onClick={() => handleShelfSelect(opt.status)}>
-                {opt.label}
-              </PixelButton>
-            );
-          })}
-          <button onClick={() => setShelfOpen(false)}
-            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
-            Cancel
-          </button>
-        </div>
+        <>
+          {/* Global backdrop — closes overlay when clicking outside this card */}
+          <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9 }} />
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 10,
+            background: C.bg,
+            display: "flex", flexDirection: "column",
+            justifyContent: "center", alignItems: "stretch",
+            padding: "16px 16px",
+            gap: 8,
+          }}>
+            {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
+            {SHELF_OPTIONS.map(opt => {
+              const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
+              const optBg = "color-mix(in srgb, " + optColor + " 12%, " + C.bg + ")";
+              return (
+                <PixelButton key={opt.status} fullWidth size="sm"
+                  bgStyle={optBg}
+                  borderColor={optColor}
+                  color={optColor}
+                  onClick={() => handleShelfSelect(opt.status)}>
+                  {opt.label}
+                </PixelButton>
+              );
+            })}
+            <button onClick={() => setShelfOpen(false)}
+              style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
+              Cancel
+            </button>
+          </div>
+        </>
       )}
 
       {/* Game art with padding — aspect ratio maintained */}

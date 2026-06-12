@@ -24,6 +24,7 @@ function PixelButton({
   children,
   size = "md",
   bg,
+  bgStyle,
   color = "#fff",
   borderColor,
   variant = "solid",
@@ -37,7 +38,7 @@ function PixelButton({
   const clip = "polygon(" + buildClip(steps, s) + ")";
 
   // Resolve colors by variant
-  let bgColor = bg;
+  let bgColor = bgStyle || bg;
   let bc = borderColor;
   let textColor = color;
 
