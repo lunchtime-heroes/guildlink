@@ -165,12 +165,9 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <PixelCornerBox size="sm" borderColor={C.goldBorder} bg={C.goldGlow} style={{ width: "100%" }}>
-            <button onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}
-              style={{ width: "100%", background: "none", border: "none", padding: "4px 10px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-              {"+ Add to Shelf"}
-            </button>
-          </PixelCornerBox>
+          <PixelButton fullWidth size="xs" bg={C.goldGlow} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
+            {"+ Add to Shelf"}
+          </PixelButton>
         )}
 
         {addedToShelf && (
@@ -178,21 +175,15 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {card.discovery_type === "chart_climber" && (
-          <PixelCornerBox size="sm" borderColor={C.accentDim} bg={C.accentGlow} style={{ width: "100%" }}>
-            <button onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
-              style={{ width: "100%", background: "none", border: "none", padding: "4px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-              {"See The Charts →"}
-            </button>
-          </PixelCornerBox>
+          <PixelButton fullWidth size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
+            {"See The Charts →"}
+          </PixelButton>
         )}
 
         {card.discovery_type === "multi_review_prompt" && (
-          <PixelCornerBox size="sm" borderColor={C.accentDim} bg={C.accentGlow} style={{ width: "100%" }}>
-            <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}
-              style={{ width: "100%", background: "none", border: "none", padding: "4px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-              {"Write a Review →"}
-            </button>
-          </PixelCornerBox>
+          <PixelButton fullWidth size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
+            {"Write a Review →"}
+          </PixelButton>
         )}
 
       </div>
