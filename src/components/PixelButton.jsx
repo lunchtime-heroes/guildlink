@@ -34,7 +34,7 @@ function PixelButton({
   style = {},
   type = "button",
 }) {
-  const cornerSize = size === "xs" ? "sm" : size === "sm" ? "md" : "lg";
+  const cornerSize = size === "xs" ? "md" : size === "sm" ? "md" : "lg";
   const { steps, s } = CONFIGS[cornerSize] || CONFIGS.md;
   const clip = "polygon(" + buildClip(steps, s) + ")";
 
