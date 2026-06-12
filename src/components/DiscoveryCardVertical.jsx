@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
@@ -99,11 +100,12 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
   return (
     <PixelCornerBox size="lg" borderColor={borderColor} bg={C.surface}>
       {/* Shelf overlay — full tile, appears on Add to Shelf click */}
+      {shelfOpen && ReactDOM.createPortal(
+        <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9 }} />,
+        document.body
+      )}
       {shelfOpen && (
-        <>
-          {/* Global backdrop — closes overlay when clicking outside this card */}
-          <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9 }} />
-          <div style={{
+        <div style={{
             position: "absolute", inset: 0, zIndex: 10,
             background: C.bg,
             display: "flex", flexDirection: "column",
@@ -130,7 +132,6 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               Cancel
             </button>
           </div>
-        </>
       )}
 
       {/* Game art with padding — aspect ratio maintained */}
