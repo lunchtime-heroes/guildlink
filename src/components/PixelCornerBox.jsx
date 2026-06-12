@@ -42,10 +42,10 @@ function buildClip(steps, s) {
   // Bottom edge left
   pts.push(`${n}px 100%`);
 
-  // Bottom-left: step inward going up
+  // Bottom-left: step inward going up (points must go right-then-up, not up-then-right)
   for (let i = 0; i < steps; i++) {
-    pts.push(`${i * s}px calc(100% - ${(steps - i - 1) * s}px)`);
-    pts.push(`${i * s}px calc(100% - ${(steps - i) * s}px)`);
+    pts.push(`${(i + 1) * s}px calc(100% - ${i * s}px)`);
+    pts.push(`${i * s}px calc(100% - ${i * s}px)`);
   }
   pts.push(`0px calc(100% - ${n}px)`);
 
