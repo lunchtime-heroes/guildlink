@@ -925,7 +925,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
               {/* Invite Gamers */}
               <div style={{ marginTop: 20 }}>
-                <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.accentGlow} style={{ padding: "14px 16px" }}>
+                <PixelCornerBox size="lg" borderColor={C.accentDim} bgStyle={"color-mix(in srgb, " + C.accent + " 8%, " + C.bg + ")"} style={{ padding: "14px 16px" }}>
                   <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Invite Gamers</div>
                   <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
                     Share your link and earn animated rings for every gamer who joins. {inviteCount > 0 && <span style={{ color: C.accentSoft, fontWeight: 700 }}>{inviteCount} joined so far.</span>}
@@ -955,8 +955,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
             </div>
             {editing ? (
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 22px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <PixelButton onClick={saveProfile} disabled={saving} bg={C.accent} color={C.accentText}>{saving ? "Saving…" : "Save Changes"}</PixelButton>
+                <PixelButton onClick={cancelEdit} bg="transparent" borderColor={C.border} color={C.textMuted}>Cancel</PixelButton>
               </div>
             ) : (
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -965,9 +965,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <PixelButton onClick={() => setShowAvatarBuilder(true)} bg={C.surfaceRaised} borderColor={C.accentDim} color={C.accentSoft}>Character Builder</PixelButton>
                 </div>
                 {deletionPending ? (
-                  <button onClick={cancelDeletion} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 3, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Deletion pending — cancel?</button>
+                  <PixelButton onClick={cancelDeletion} bg="#c0392b22" borderColor="#c0392b55" color="#c0392b">{"Deletion pending — cancel?"}</PixelButton>
                 ) : (
-                  <button onClick={() => setShowDeleteModal(true)} style={{ background: "#c0392b22", border: "1px solid #c0392b55", borderRadius: 3, padding: "8px 16px", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Delete Account</button>
+                  <PixelButton onClick={() => setShowDeleteModal(true)} bg="#c0392b22" borderColor="#c0392b55" color="#c0392b">{"Delete Account"}</PixelButton>
                 )}
               </div>
             )}
@@ -1101,8 +1101,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               </div>
 
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{saving ? "Saving…" : "Save Changes"}</button>
-                <button onClick={cancelEdit} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 20px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                <PixelButton onClick={saveProfile} disabled={saving} bg={C.accent} color={C.accentText}>{saving ? "Saving…" : "Save Changes"}</PixelButton>
+                <PixelButton onClick={cancelEdit} bg="transparent" borderColor={C.border} color={C.textMuted}>Cancel</PixelButton>
               </div>
             </div>
           )}
@@ -1565,12 +1565,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <input value={newReviewForm.didnt_love} onChange={e => setNewReviewForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
                 <textarea value={newReviewForm.content} onChange={e => setNewReviewForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", minHeight: 80, marginBottom: 12, boxSizing: "border-box" }} />
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={submitNewReview} disabled={!newReviewGame || !newReviewForm.rating || submittingNewReview}
-                    style={{ background: (newReviewGame && newReviewForm.rating) ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "8px 20px", color: (newReviewGame && newReviewForm.rating) ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: (newReviewGame && newReviewForm.rating) ? "pointer" : "default" }}>
+                  <PixelButton onClick={submitNewReview} disabled={!newReviewGame || !newReviewForm.rating || submittingNewReview} bg={(newReviewGame && newReviewForm.rating) ? C.accent : C.surfaceRaised} color={(newReviewGame && newReviewForm.rating) ? "#fff" : C.textDim}>
                     {submittingNewReview ? "Saving…" : "Submit Review"}
-                  </button>
-                  <button onClick={() => { setShowNewReview(false); setNewReviewForm({ rating: 0, headline: "", loved: "", didnt_love: "", content: "", time_played: "", completed: false }); setNewReviewGame(null); setNewReviewGameSearch(""); }}
-                    style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                  </PixelButton>
+                  <PixelButton onClick={() => { setShowNewReview(false); setNewReviewForm({ rating: 0, headline: "", loved: "", didnt_love: "", content: "", time_played: "", completed: false }); setNewReviewGame(null); setNewReviewGameSearch(""); }} bg="transparent" borderColor={C.border} color={C.textMuted}>Cancel</PixelButton>
                 </div>
               </div>
             )}
@@ -1594,11 +1592,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <input value={reviewEditForm.didnt_love} onChange={e => setReviewEditForm(f => ({ ...f, didnt_love: e.target.value }))} placeholder="What you didn't love..." style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", marginBottom: 8, boxSizing: "border-box" }} />
                   <textarea value={reviewEditForm.content} onChange={e => setReviewEditForm(f => ({ ...f, content: e.target.value }))} placeholder="Full thoughts (optional)..." rows={3} style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none", resize: "none", marginBottom: 12, boxSizing: "border-box" }} />
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={saveReview} disabled={!reviewEditForm.rating || savingReview}
-                      style={{ background: C.accent, border: "none", borderRadius: 3, padding: "8px 20px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                      {savingReview ? "Saving…" : "Save"}
-                    </button>
-                    <button onClick={() => setEditingReview(null)} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+                    <PixelButton onClick={saveReview} disabled={!reviewEditForm.rating || savingReview} bg={C.accent} color={C.accentText}>{savingReview ? "Saving…" : "Save"}</PixelButton>
+                    <PixelButton onClick={() => setEditingReview(null)} bg="transparent" borderColor={C.border} color={C.textMuted}>Cancel</PixelButton>
                   </div>
                 </div>
               ) : (
@@ -1682,9 +1677,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {cat.tags.map(tag => {
                   const val = playerTags[tag];
-                  const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
-                  const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.border;
-                  const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textMuted;
+                  const bg = val === 1 ? C.green + "22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
+                  const border = val === 1 ? C.green : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.border;
+                  const color = val === 1 ? C.green : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textMuted;
                   const cycle = () => {
                     setPlayerTags(prev => {
                       let newTags;
