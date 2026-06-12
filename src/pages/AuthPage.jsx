@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
+import { PixelTabBar } from "../components/PixelTabBar.jsx";
 
 function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
@@ -115,7 +117,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
 
         /* Forgot password email sent */
         ) : forgotSuccess ? (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 32, textAlign: "center" }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
             <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Check your email</div>
             <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
@@ -124,11 +126,8 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
               Click the link to set a new password.
             </div>
             <div style={{ color: C.textDim, fontSize: 12, marginBottom: 20 }}>Didn't get it? Check your spam folder.</div>
-            <button onClick={() => { setForgotSuccess(false); setMode("login"); setContactEmail(""); }}
-              style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
-              Back to log in
-            </button>
-          </div>
+            <PixelButton onClick={() => { setForgotSuccess(false); setMode("login"); setContactEmail(""); }} bg="transparent" borderColor={C.accentDim} color={C.accentSoft}>{"Back to log in"}</PixelButton>
+          </PixelCornerBox>
 
         /* Reset password form (after clicking email link) */
         ) : mode === "reset" ? (
@@ -142,23 +141,19 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
                 style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
             </div>
             {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
-            <button onClick={handle} disabled={loading}
-              style={{ width: "100%", padding: "12px", borderRadius: 3, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-              {loading ? "..." : "Set Password"}
-            </button>
+            <PixelButton fullWidth onClick={handle} disabled={loading} bg={C.accent} color={C.accentText}>{loading ? "..." : "Set Password"}</PixelButton>
           </PixelCornerBox>
 
         ) : (
-          <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 4, padding: 32 }}>
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32 }}>
             {/* Tab switcher */}
             {mode !== "forgot" && (
-              <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C.surfaceRaised, borderRadius: 3, padding: 4 }}>
-                {["login", "signup"].map(m => (
-                  <button key={m} onClick={() => { setMode(m); setError(""); }}
-                    style={{ flex: 1, padding: "8px", borderRadius: 3, border: "none", background: mode === m ? C.accent : "transparent", color: mode === m ? C.accentText : C.textMuted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    {m === "login" ? "Log In" : "Sign Up"}
-                  </button>
-                ))}
+              <div style={{ marginBottom: 24 }}>
+                <PixelTabBar
+                  tabs={[{ id: "login", label: "Log In" }, { id: "signup", label: "Sign Up" }]}
+                  active={mode}
+                  onChange={(m) => { setMode(m); setError(""); }}
+                />
               </div>
             )}
 
@@ -236,25 +231,24 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
 
             {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
-            <button onClick={handle} disabled={loading}
-              style={{ width: "100%", padding: "12px", borderRadius: 3, border: "none", background: C.accent, color: C.accentText, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-              {loading ? "..." : mode === "login" ? "Log In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
-            </button>
+            <div style={{ padding: "1px 0" }}>
+              <PixelButton fullWidth onClick={handle} disabled={loading} bg={C.accent} color={C.accentText}>
+                {loading ? "..." : mode === "login" ? "Log In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
+              </PixelButton>
+            </div>
 
             {mode === "forgot" && (
-              <button onClick={() => { setMode("login"); setError(""); }}
-                style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 3, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                Back to log in
-              </button>
+              <div style={{ marginTop: 10, padding: "1px 0" }}>
+                <PixelButton fullWidth onClick={() => { setMode("login"); setError(""); }} bg="transparent" borderColor={C.border} color={C.textDim}>{"Back to log in"}</PixelButton>
+              </div>
             )}
 
             {onBack && mode !== "forgot" && (
-              <button onClick={onBack}
-                style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 3, border: "none", background: "transparent", color: C.textDim, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                Back
-              </button>
+              <div style={{ marginTop: 10, padding: "1px 0" }}>
+                <PixelButton fullWidth onClick={onBack} bg="transparent" borderColor={C.border} color={C.textDim}>{"Back"}</PixelButton>
+              </div>
             )}
-          </div>
+          </PixelCornerBox>
         )}
       </div>
     </div>
