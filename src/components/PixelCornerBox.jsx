@@ -13,61 +13,49 @@ const CONFIGS = {
 };
 
 // Build CSS clip-path polygon for pixel-stepped corners
-// Goes clockwise: top-left → top-right → bottom-right → bottom-left
+// Clockwise from top-left corner start point
 function buildClip(steps, s) {
+  const n = steps * s; // total corner notch size
   const pts = [];
-  const n = steps * s; // total corner size in px
 
-  // Top edge (left to right)
+  // Start top-left, move right along top edge
   pts.push(`${n}px 0px`);
   pts.push(`calc(100% - ${n}px) 0px`);
 
-  // Top-right corner (step down-left into the card)
+  // Top-right: step inward going down
   for (let i = 0; i < steps; i++) {
-    const x = n - i * s;
-    const y = i * s;
-    pts.push(`calc(100% - ${x}px) ${y}px`);
-    pts.push(`calc(100% - ${x - s}px) ${y}px`);
-    pts.push(`calc(100% - ${x - s}px) ${y + s}px`);
+    pts.push(`calc(100% - ${(steps - i) * s}px) ${i * s}px`);
+    pts.push(`calc(100% - ${(steps - i - 1) * s}px) ${i * s}px`);
   }
-
-  // Right edge (top to bottom)
   pts.push(`100% ${n}px`);
+
+  // Right edge down
   pts.push(`100% calc(100% - ${n}px)`);
 
-  // Bottom-right corner (step up-left into the card)
+  // Bottom-right: step inward going left
   for (let i = 0; i < steps; i++) {
-    const x = i * s;
-    const y = n - i * s;
-    pts.push(`calc(100% - ${x}px) calc(100% - ${y - s}px)`);
-    pts.push(`calc(100% - ${x + s}px) calc(100% - ${y - s}px)`);
-    pts.push(`calc(100% - ${x + s}px) calc(100% - ${y}px)`);
+    pts.push(`calc(100% - ${i * s}px) calc(100% - ${(steps - i) * s}px)`);
+    pts.push(`calc(100% - ${i * s}px) calc(100% - ${(steps - i - 1) * s}px)`);
   }
-
-  // Bottom edge (right to left)
   pts.push(`calc(100% - ${n}px) 100%`);
+
+  // Bottom edge left
   pts.push(`${n}px 100%`);
 
-  // Bottom-left corner (step up-right into the card)
+  // Bottom-left: step inward going up
   for (let i = 0; i < steps; i++) {
-    const x = i * s;
-    const y = n - i * s;
-    pts.push(`${x}px calc(100% - ${y - s}px)`);
-    pts.push(`${x}px calc(100% - ${y}px)`);
-    pts.push(`${x + s}px calc(100% - ${y}px)`);
+    pts.push(`${i * s}px calc(100% - ${(steps - i - 1) * s}px)`);
+    pts.push(`${i * s}px calc(100% - ${(steps - i) * s}px)`);
   }
-
-  // Left edge (bottom to top)
   pts.push(`0px calc(100% - ${n}px)`);
+
+  // Left edge up
   pts.push(`0px ${n}px`);
 
-  // Top-left corner (step down-right into the card)
-  for (let i = steps - 1; i >= 0; i--) {
-    const x = i * s;
-    const y = n - i * s;
-    pts.push(`${x}px ${y}px`);
-    pts.push(`${x}px ${y - s}px`);
-    pts.push(`${x + s}px ${y - s}px`);
+  // Top-left: step inward going right
+  for (let i = 0; i < steps; i++) {
+    pts.push(`${i * s}px ${(steps - i) * s}px`);
+    pts.push(`${i * s}px ${(steps - i - 1) * s}px`);
   }
 
   return pts.join(", ");
