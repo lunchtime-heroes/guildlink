@@ -882,23 +882,23 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Connected Platforms</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {steamId ? (
-                    <PixelButton size="sm" bg="#22c55e22" borderColor="#22c55e55" color="#22c55e" onClick={disconnectSteam}>{"✓ Steam"}</PixelButton>
+                    <PixelButton size="sm" bgStyle={"color-mix(in srgb, " + C.green + " 15%, " + C.bg + ")"} borderColor={C.green} color={C.green} onClick={disconnectSteam}>{"✓ Steam"}</PixelButton>
                   ) : (
-                    <PixelButton size="sm" bg={C.gold + "18"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowSteamImport(true)}>{"+ Steam"}</PixelButton>
+                    <PixelButton size="sm" bgStyle={"color-mix(in srgb, " + C.gold + " 10%, " + C.bg + ")"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowSteamImport(true)}>{"+ Steam"}</PixelButton>
                   )}
                   {xboxGamertag ? (
-                    <PixelButton size="sm" bg="#22c55e22" borderColor="#22c55e55" color="#22c55e" onClick={async () => {
+                    <PixelButton size="sm" bgStyle={"color-mix(in srgb, " + C.green + " 15%, " + C.bg + ")"} borderColor={C.green} color={C.green} onClick={async () => {
                       const { data: { user: authUser } } = await supabase.auth.getUser();
                       if (authUser) await supabase.from("user_private").update({ xbox_gamertag: null }).eq("id", authUser.id);
                       setXboxGamertag(null);
                     }}>{"✓ Xbox"}</PixelButton>
                   ) : (
-                    <PixelButton size="sm" bg={C.gold + "18"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowXboxImport(true)}>{"+ Xbox"}</PixelButton>
+                    <PixelButton size="sm" bgStyle={"color-mix(in srgb, " + C.gold + " 10%, " + C.bg + ")"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowXboxImport(true)}>{"+ Xbox"}</PixelButton>
                   )}
                   {psnConnected ? (
-                    <PixelButton size="sm" bg="#22c55e22" borderColor="#22c55e55" color="#22c55e" onClick={() => setShowPSNImport(true)}>{"✓ PlayStation"}</PixelButton>
+                    <PixelButton size="sm" bgStyle={"color-mix(in srgb, " + C.green + " 15%, " + C.bg + ")"} borderColor={C.green} color={C.green} onClick={() => setShowPSNImport(true)}>{"✓ PlayStation"}</PixelButton>
                   ) : (
-                    <PixelButton size="sm" bg={C.gold + "18"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowPSNImport(true)}>{"+ PlayStation"}</PixelButton>
+                    <PixelButton size="sm" bgStyle={"color-mix(in srgb, " + C.gold + " 10%, " + C.bg + ")"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowPSNImport(true)}>{"+ PlayStation"}</PixelButton>
                   )}
                 </div>
               </div>
@@ -908,13 +908,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Account Privacy</div>
                 <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 8 }}>Make your account private? Private accounts can only be viewed by followers. Shelf data is still used for recommendations.</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <PixelButton size="sm" bg={!isPrivate ? "#10b98122" : C.surfaceRaised} borderColor={!isPrivate ? "#10b98166" : C.border} color={!isPrivate ? "#10b981" : C.textDim} onClick={async () => {
+                  <PixelButton size="sm" bgStyle={!isPrivate ? "color-mix(in srgb, " + C.green + " 15%, " + C.bg + ")" : C.surfaceRaised} borderColor={!isPrivate ? C.green : C.border} color={!isPrivate ? C.green : C.textDim} onClick={async () => {
                     const { data: { user: authUser } } = await supabase.auth.getUser();
                     if (!authUser) return;
                     await supabase.from("profiles").update({ is_private: false }).eq("id", authUser.id);
                     setIsPrivate(false);
                   }}>{"Public"}</PixelButton>
-                  <PixelButton size="sm" bg={isPrivate ? "#10b98122" : C.surfaceRaised} borderColor={isPrivate ? "#10b98166" : C.border} color={isPrivate ? "#10b981" : C.textDim} onClick={async () => {
+                  <PixelButton size="sm" bgStyle={isPrivate ? "color-mix(in srgb, " + C.green + " 15%, " + C.bg + ")" : C.surfaceRaised} borderColor={isPrivate ? C.green : C.border} color={isPrivate ? C.green : C.textDim} onClick={async () => {
                     const { data: { user: authUser } } = await supabase.auth.getUser();
                     if (!authUser) return;
                     await supabase.from("profiles").update({ is_private: true }).eq("id", authUser.id);
@@ -965,9 +965,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                   <PixelButton onClick={() => setShowAvatarBuilder(true)} bg={C.surfaceRaised} borderColor={C.accentDim} color={C.accentSoft}>Character Builder</PixelButton>
                 </div>
                 {deletionPending ? (
-                  <PixelButton onClick={cancelDeletion} bg="#c0392b22" borderColor="#c0392b55" color="#c0392b">{"Deletion pending — cancel?"}</PixelButton>
+                  <PixelButton onClick={cancelDeletion} bgStyle={"color-mix(in srgb, #c0392b 15%, " + C.bg + ")"} borderColor="#c0392b55" color="#c0392b">{"Deletion pending — cancel?"}</PixelButton>
                 ) : (
-                  <PixelButton onClick={() => setShowDeleteModal(true)} bg="#c0392b22" borderColor="#c0392b55" color="#c0392b">{"Delete Account"}</PixelButton>
+                  <PixelButton onClick={() => setShowDeleteModal(true)} bgStyle={"color-mix(in srgb, #c0392b 15%, " + C.bg + ")"} borderColor="#c0392b55" color="#c0392b">{"Delete Account"}</PixelButton>
                 )}
               </div>
             )}
@@ -1677,7 +1677,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {cat.tags.map(tag => {
                   const val = playerTags[tag];
-                  const bg = val === 1 ? C.green + "22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
+                  const bg = val === 1 ? "color-mix(in srgb, " + C.green + " 15%, " + C.bg + ")" : val === 0 ? "color-mix(in srgb, " + C.gold + " 15%, " + C.bg + ")" : val === -1 ? "color-mix(in srgb, #ef4444 15%, " + C.bg + ")" : C.surfaceRaised;
                   const border = val === 1 ? C.green : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.border;
                   const color = val === 1 ? C.green : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textMuted;
                   const cycle = () => {
@@ -1698,11 +1698,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       return newTags;
                     });
                   };
-                  return (
                     <div key={tag} style={{ padding: "1px 0" }}>
-                      <PixelButton size="sm" bg={bg} borderColor={border} color={color} onClick={cycle}>{tag}</PixelButton>
+                      <PixelButton size="sm" bgStyle={bg} borderColor={border} color={color} onClick={cycle}>{tag}</PixelButton>
                     </div>
-                  );
                 })}
               </div>
             </div>
