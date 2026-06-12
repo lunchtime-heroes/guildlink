@@ -58,52 +58,50 @@ const CLIPS = {
 };
 
 // ─── SVG corner definitions from Illustrator ─────────────────────────────────
-// Each is a single polyline tracing one corner (top-left orientation).
-// Rotated 90/180/270 for the other three corners.
-
 const CORNER_DEFS = {
   lg: { viewBox: "0 0 92 92", points: "14 78 14 62 30 62 30 46 46 46 46 30 62 30 62 14 78 14", size: 92 },
   md: { viewBox: "0 0 76 76", points: "14 62 14 46 30 46 30 30 46 30 46 14 62 14", size: 76 },
   sm: { viewBox: "0 0 60 60", points: "14 46 14 30 30 30 30 14 46 14", size: 60 },
 };
 
-// ─── PixelCorners ─────────────────────────────────────────────────────────────
-// Renders four SVG corners at each corner of the parent container.
-
 function PixelCorners({ size, color, strokeWidth = 2 }) {
   const def = CORNER_DEFS[size] || CORNER_DEFS.lg;
   const px = def.size;
 
-  const corner = (rotation, style) => (
-    <svg
-      viewBox={def.viewBox}
-      xmlns="http://www.w3.org/2000/svg"
-      style={{
-        position: "absolute",
-        width: px,
-        height: px,
-        pointerEvents: "none",
-        zIndex: 4,
-        ...style,
-      }}
-    >
-      <polyline
-        points={def.points}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeMiterlimit="10"
-        transform={rotation ? "rotate(" + rotation + " " + (px / 2) + " " + (px / 2) + ")" : undefined}
-      />
-    </svg>
-  );
+  // Each corner: position absolute, transform-origin at the card corner point
+  const corners = [
+    { style: { top: 0, left: 0 },                         transform: "none" },
+    { style: { top: 0, right: 0 },                        transform: "scale(-1, 1)" },
+    { style: { bottom: 0, right: 0 },                     transform: "scale(-1, -1)" },
+    { style: { bottom: 0, left: 0 },                      transform: "scale(1, -1)" },
+  ];
 
   return (
     <>
-      {corner(0,   { top: 0,    left: 0,    transform: "rotate(0deg)" })}
-      {corner(90,  { top: 0,    right: 0,   transform: "rotate(90deg)" })}
-      {corner(180, { bottom: 0, right: 0,   transform: "rotate(180deg)" })}
-      {corner(270, { bottom: 0, left: 0,    transform: "rotate(270deg)" })}
+      {corners.map((c, i) => (
+        <svg
+          key={i}
+          viewBox={def.viewBox}
+          xmlns="http://www.w3.org/2000/svg"
+          style={{
+            position: "absolute",
+            width: px,
+            height: px,
+            pointerEvents: "none",
+            zIndex: 4,
+            transform: c.transform,
+            ...c.style,
+          }}
+        >
+          <polyline
+            points={def.points}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeMiterlimit="10"
+          />
+        </svg>
+      ))}
     </>
   );
 }
