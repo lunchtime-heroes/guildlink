@@ -845,11 +845,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
 
   const shelfCount = userShelf.want_to_play.length + userShelf.playing.length + userShelf.have_played.length;
   const tabs = [
-    { id: "posts", label: `Posts${postCount > 0 ? ` (${postCount})` : ""}` },
-    { id: "reviews", label: `Reviews${userReviews.length > 0 ? ` (${userReviews.length})` : ""}` },
-    { id: "games", label: `My Shelf${shelfCount > 0 ? ` (${shelfCount})` : ""}` },
-    { id: "following", label: `Following${profileFollowing.length > 0 ? ` (${profileFollowing.length})` : ""}` },
-    { id: "groups", label: "Groups" },
+    { id: "posts", label: "Posts" + (postCount > 0 ? " (" + postCount + ")" : "") },
+    { id: "reviews", label: "Reviews" + (userReviews.length > 0 ? " (" + userReviews.length + ")" : "") },
+    { id: "games", label: "My Shelf" + (shelfCount > 0 ? " (" + shelfCount + ")" : "") },
+    { id: "playstyle", label: "Play Style" },
+    { id: "following", label: "Following" + (profileFollowing.length > 0 ? " (" + profileFollowing.length + ")" : "") },
     { id: "quests", label: "Quests" },
   ];
 
@@ -876,87 +876,28 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 {user.isFounding && <FoundingBadge />}
               </div>
               <div style={{ color: C.textMuted, fontSize: 13, margin: "4px 0" }}>{user.handle}</div>
-              <div style={{ marginTop: 12, marginBottom: 4 }}>
-                {TAG_CATEGORIES.map(cat => (
-                  <div key={cat.label} style={{ marginBottom: 8 }}>
-                    <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5 }}>{cat.label}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                      {cat.tags.map(tag => {
-                        const val = playerTags[tag];
-                        const isUnset = val === undefined || val === null;
-                        const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.gold + "11";
-                        const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.gold + "33";
-                        const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.gold + "88";
-                        const cycle = () => {
-                          setPlayerTags(prev => {
-                            let newTags;
-                            if (cat.binary) {
-                              const cur = prev[tag];
-                              if (cur === 1) { newTags = { ...prev }; delete newTags[tag]; }
-                              else { newTags = { ...prev }; cat.tags.forEach(t => delete newTags[t]); newTags[tag] = 1; }
-                            } else {
-                              const cur = prev[tag];
-                              if (cur === undefined || cur === null) newTags = { ...prev, [tag]: 1 };
-                              else if (cur === 1) newTags = { ...prev, [tag]: 0 };
-                              else if (cur === 0) newTags = { ...prev, [tag]: -1 };
-                              else { newTags = { ...prev }; delete newTags[tag]; }
-                            }
-                            saveTag(newTags);
-                            return newTags;
-                          });
-                        };
-                        return (
-                          <button key={tag} onClick={cycle}
-                            style={{ background: bg, border: "1px solid " + border, color, borderRadius: 3, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                            {tag}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p style={{ color: C.textMuted, fontSize: 13, margin: "8px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
+              <p style={{ color: C.textMuted, fontSize: 13, margin: "12px 0 0", maxWidth: 480, lineHeight: 1.6 }}>{user.bio || "No bio yet."}</p>
               <div style={{ marginTop: 12 }}>
                 <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Connected Platforms</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {steamId ? (
-                    <button onClick={disconnectSteam}
-                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 3, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      ✓ Steam
-                    </button>
+                    <PixelButton size="sm" bg="#22c55e22" borderColor="#22c55e55" color="#22c55e" onClick={disconnectSteam}>{"✓ Steam"}</PixelButton>
                   ) : (
-                    <button onClick={() => setShowSteamImport(true)}
-                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      + Steam
-                    </button>
+                    <PixelButton size="sm" bg={C.gold + "18"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowSteamImport(true)}>{"+ Steam"}</PixelButton>
                   )}
                   {xboxGamertag ? (
-                    <button onClick={async () => {
+                    <PixelButton size="sm" bg="#22c55e22" borderColor="#22c55e55" color="#22c55e" onClick={async () => {
                       const { data: { user: authUser } } = await supabase.auth.getUser();
                       if (authUser) await supabase.from("user_private").update({ xbox_gamertag: null }).eq("id", authUser.id);
                       setXboxGamertag(null);
-                    }}
-                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 3, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      ✓ Xbox
-                    </button>
+                    }}>{"✓ Xbox"}</PixelButton>
                   ) : (
-                    <button onClick={() => setShowXboxImport(true)}
-                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      + Xbox
-                    </button>
+                    <PixelButton size="sm" bg={C.gold + "18"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowXboxImport(true)}>{"+ Xbox"}</PixelButton>
                   )}
-                  {/* Future platforms slot in here */}
                   {psnConnected ? (
-                    <button onClick={() => setShowPSNImport(true)}
-                      style={{ background: "#22c55e22", border: "1px solid #22c55e55", borderRadius: 3, padding: "4px 12px", color: "#22c55e", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      ✓ PlayStation
-                    </button>
+                    <PixelButton size="sm" bg="#22c55e22" borderColor="#22c55e55" color="#22c55e" onClick={() => setShowPSNImport(true)}>{"✓ PlayStation"}</PixelButton>
                   ) : (
-                    <button onClick={() => setShowPSNImport(true)}
-                      style={{ background: C.gold + "18", border: "1px solid " + C.gold + "44", borderRadius: 3, padding: "4px 12px", color: C.gold, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                      + PlayStation
-                    </button>
+                    <PixelButton size="sm" bg={C.gold + "18"} borderColor={C.gold + "44"} color={C.gold} onClick={() => setShowPSNImport(true)}>{"+ PlayStation"}</PixelButton>
                   )}
                 </div>
               </div>
@@ -966,54 +907,49 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                 <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Account Privacy</div>
                 <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 8 }}>Make your account private? Private accounts can only be viewed by followers. Shelf data is still used for recommendations.</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={async () => {
+                  <PixelButton size="sm" bg={!isPrivate ? "#10b98122" : C.surfaceRaised} borderColor={!isPrivate ? "#10b98166" : C.border} color={!isPrivate ? "#10b981" : C.textDim} onClick={async () => {
                     const { data: { user: authUser } } = await supabase.auth.getUser();
                     if (!authUser) return;
                     await supabase.from("profiles").update({ is_private: false }).eq("id", authUser.id);
                     setIsPrivate(false);
-                  }} style={{ background: !isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (!isPrivate ? "#10b98166" : C.border), borderRadius: 3, padding: "4px 14px", color: !isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                    No
-                  </button>
-                  <button onClick={async () => {
+                  }}>{"Public"}</PixelButton>
+                  <PixelButton size="sm" bg={isPrivate ? "#10b98122" : C.surfaceRaised} borderColor={isPrivate ? "#10b98166" : C.border} color={isPrivate ? "#10b981" : C.textDim} onClick={async () => {
                     const { data: { user: authUser } } = await supabase.auth.getUser();
                     if (!authUser) return;
                     await supabase.from("profiles").update({ is_private: true }).eq("id", authUser.id);
                     setIsPrivate(true);
-                  }} style={{ background: isPrivate ? "#10b98122" : C.surfaceRaised, border: "1px solid " + (isPrivate ? "#10b98166" : C.border), borderRadius: 3, padding: "4px 14px", color: isPrivate ? "#10b981" : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                    Yes
-                  </button>
+                  }}>{"Private"}</PixelButton>
                 </div>
               </div>
 
               {/* Invite Gamers */}
-              <div style={{ marginTop: 20, background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 4, padding: "14px 16px" }}>
-                <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Invite Gamers</div>
-                <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
-                  Share your link and earn animated rings for every gamer who joins. {inviteCount > 0 && <span style={{ color: C.accentSoft, fontWeight: 700 }}>{inviteCount} joined so far.</span>}
-                </div>
-                {/* Ring tier preview */}
-                <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center" }}>
-                  {[{label: "1 invite", color: "#a0522d", tier: "Bronze"}, {label: "5 invites", color: "#c0c0c0", tier: "Silver"}, {label: "10 invites", color: "#f5c842", tier: "Gold"}].map(t => (
-                    <div key={t.tier} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <div style={{ width: 12, height: 12, borderRadius: 3, background: t.color, boxShadow: "0 0 6px " + t.color + "88" }} />
-                      <span style={{ color: C.textDim, fontSize: 10, fontWeight: 600 }}>{t.label} → {t.tier}</span>
-                    </div>
-                  ))}
-                </div>
-                {inviteCode && (
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <div style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "6px 10px", color: C.textDim, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      guildlink.gg/join/{inviteCode}
-                    </div>
-                    <button onClick={() => {
-                      navigator.clipboard.writeText("https://guildlink.gg/join/" + inviteCode);
-                      setInviteCopied(true);
-                      setTimeout(() => setInviteCopied(false), 2000);
-                    }} style={{ background: inviteCopied ? "#10b98122" : C.accent, border: "none", borderRadius: 3, padding: "6px 14px", color: inviteCopied ? "#10b981" : C.accentText, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
-                      {inviteCopied ? "Copied!" : "Copy Link"}
-                    </button>
+              <div style={{ marginTop: 20 }}>
+                <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.accentGlow} style={{ padding: "14px 16px" }}>
+                  <div style={{ color: C.text, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Invite Gamers</div>
+                  <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+                    Share your link and earn animated rings for every gamer who joins. {inviteCount > 0 && <span style={{ color: C.accentSoft, fontWeight: 700 }}>{inviteCount} joined so far.</span>}
                   </div>
-                )}
+                  <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "center" }}>
+                    {[{label: "1 invite", color: "#a0522d", tier: "Bronze"}, {label: "5 invites", color: "#c0c0c0", tier: "Silver"}, {label: "10 invites", color: "#f5c842", tier: "Gold"}].map(t => (
+                      <div key={t.tier} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ width: 12, height: 12, borderRadius: 3, background: t.color, boxShadow: "0 0 6px " + t.color + "88" }} />
+                        <span style={{ color: C.textDim, fontSize: 10, fontWeight: 600 }}>{t.label + " → " + t.tier}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {inviteCode && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <div style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "6px 10px", color: C.textDim, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {"guildlink.gg/join/" + inviteCode}
+                      </div>
+                      <PixelButton size="sm" bg={inviteCopied ? "#10b98122" : C.accent} borderColor={inviteCopied ? "#10b98166" : C.accent} color={inviteCopied ? "#10b981" : C.accentText} onClick={() => {
+                        navigator.clipboard.writeText("https://guildlink.gg/join/" + inviteCode);
+                        setInviteCopied(true);
+                        setTimeout(() => setInviteCopied(false), 2000);
+                      }}>{inviteCopied ? "Copied!" : "Copy Link"}</PixelButton>
+                    </div>
+                  )}
+                </PixelCornerBox>
               </div>
             </div>
             {editing ? (
@@ -1176,7 +1112,6 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               { label: "Posts", val: postCount || 0, color: C.accent, tab: "posts" },
               { label: "Reviews", val: userReviews.length, color: C.teal, tab: "reviews" },
               { label: "Shelf", val: shelfCount || 0, color: C.gold, tab: "games" },
-              { label: "Groups", val: 0, color: C.purple, tab: "groups" },
             ].map(s => (
               <div key={s.label} onClick={() => setActiveTab(s.tab)}
                 style={{ cursor: "pointer" }}
@@ -1733,12 +1668,50 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         </div>
       )}
 
-      {activeTab === "groups" && (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: C.textDim }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>Groups coming soon</div>
-          <div style={{ fontSize: 14 }}>Join guilds, clans, and communities built around the games you love.</div>
-        </div>
+      {/* Play Style tab */}
+      {activeTab === "playstyle" && (
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 24 }}>
+          <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 4 }}>Play Style</div>
+          <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
+            Tell other gamers how you play. Click a tag to cycle through: selected → neutral → pass → unset.
+          </div>
+          {TAG_CATEGORIES.map(cat => (
+            <div key={cat.label} style={{ marginBottom: 20 }}>
+              <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>{cat.label}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {cat.tags.map(tag => {
+                  const val = playerTags[tag];
+                  const bg = val === 1 ? "#22c55e22" : val === 0 ? C.gold + "22" : val === -1 ? "#ef444422" : C.surfaceRaised;
+                  const border = val === 1 ? "#22c55e55" : val === 0 ? C.gold + "55" : val === -1 ? "#ef444455" : C.border;
+                  const color = val === 1 ? "#22c55e" : val === 0 ? C.gold : val === -1 ? "#ef4444" : C.textMuted;
+                  const cycle = () => {
+                    setPlayerTags(prev => {
+                      let newTags;
+                      if (cat.binary) {
+                        const cur = prev[tag];
+                        if (cur === 1) { newTags = { ...prev }; delete newTags[tag]; }
+                        else { newTags = { ...prev }; cat.tags.forEach(t => delete newTags[t]); newTags[tag] = 1; }
+                      } else {
+                        const cur = prev[tag];
+                        if (cur === undefined || cur === null) newTags = { ...prev, [tag]: 1 };
+                        else if (cur === 1) newTags = { ...prev, [tag]: 0 };
+                        else if (cur === 0) newTags = { ...prev, [tag]: -1 };
+                        else { newTags = { ...prev }; delete newTags[tag]; }
+                      }
+                      saveTag(newTags);
+                      return newTags;
+                    });
+                  };
+                  return (
+                    <div key={tag} style={{ padding: "1px 0" }}>
+                      <PixelButton size="sm" bg={bg} borderColor={border} color={color} onClick={cycle}>{tag}</PixelButton>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </PixelCornerBox>
       )}
 
       {/* Quests */}
