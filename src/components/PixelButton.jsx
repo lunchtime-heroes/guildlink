@@ -4,14 +4,11 @@ import { PixelCornerBox, CONFIGS, buildClip } from "./PixelCornerBox.jsx";
 // ─── PixelButton ──────────────────────────────────────────────────────────────
 // A native button wrapped in pixel corners.
 //
-// Usage:
-//   <PixelButton onClick={fn} bg={C.accent} color="#000">Join Free</PixelButton>
-//   <PixelButton size="sm" variant="ghost" onClick={fn}>Cancel</PixelButton>
-//
 // Props:
 //   size      — "xs" (compact) | "sm" (default) | "md" (CTA)
 //   fullWidth — stretches button to fill container
 //   bg        — background color (default: C.accent)
+//   bgStyle   — CSS background value (overrides bg, use for gradients)
 //   color     — text color (default: "#fff")
 //   borderColor — border/corner color (default: same as bg, or C.border for ghost)
 //   variant   — "solid" (default) | "ghost" | "outline"
@@ -34,12 +31,9 @@ function PixelButton({
   style = {},
   type = "button",
 }) {
-  // Size maps to design system: sm=1step, md=3steps, lg=5steps
-  const cornerSize = size === "lg" ? "lg" : size === "sm" ? "sm" : "md";
-  const { steps, s } = CONFIGS[cornerSize] || CONFIGS.md;
+  const { steps, s } = CONFIGS.md;
   const clip = "polygon(" + buildClip(steps, s) + ")";
 
-  // Resolve colors by variant
   let bgColor = bgStyle || bg;
   let bc = borderColor;
   let textColor = color;
@@ -56,21 +50,23 @@ function PixelButton({
     bc = bc || bgColor;
   }
 
-  // sm — compact, md — standard, lg — CTA
-  const paddingMap = { sm: "3px 10px", md: "6px 16px", lg: "10px 24px" };
-  const fontSizeMap = { sm: 11, md: 12, lg: 14 };
-  const padding = paddingMap[size] || paddingMap.md;
-  const fontSize = fontSizeMap[size] || fontSizeMap.md;
+  // xs — compact sidebar/card buttons
+  // sm — standard action buttons
+  // md — CTA buttons
+  const paddingMap = { xs: "4px 10px", sm: "6px 14px", md: "9px 20px" };
+  const fontSizeMap = { xs: 11, sm: 12, md: 13 };
+  const padding = paddingMap[size] || paddingMap.sm;
+  const fontSize = fontSizeMap[size] || fontSizeMap.sm;
 
   return (
     <div style={{ position: "relative", display: fullWidth ? "flex" : "inline-flex", width: fullWidth ? "100%" : undefined, minWidth: 0 }}>
-      {/* Border layer — same as GameTag */}
+      {/* Border layer */}
       {bc && bc !== "transparent" && (
         <div style={{
           position: "absolute",
           inset: -1,
           background: bc,
-          clipPath: "polygon(" + clip + ")",
+          clipPath: clip,
           pointerEvents: "none",
           zIndex: 0,
         }} />
@@ -83,11 +79,8 @@ function PixelButton({
         style={{
           position: "relative",
           background: bgColor,
-          clipPath: "polygon(" + clip + ")",
+          clipPath: clip,
           color: textColor,
-          appearance: "none",
-          WebkitAppearance: "none",
-          borderRadius: 0,
           border: "none",
           padding,
           fontSize,

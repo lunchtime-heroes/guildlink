@@ -118,7 +118,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
               const optBg = "color-mix(in srgb, " + optColor + " 12%, " + C.bg + ")";
               return (
-                <PixelButton key={opt.status} fullWidth size="md"
+                <PixelButton key={opt.status} fullWidth size="sm"
                   bgStyle={optBg}
                   borderColor={optColor}
                   color={optColor}
@@ -165,8 +165,8 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <div style={{ width: "100%", padding: "0 2px" }}>
-            <PixelButton fullWidth size="md" bg={C.goldGlow} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
+          <div style={{ width: "100%", padding: "1px 0" }}>
+            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
               {"+ Add to Shelf"}
             </PixelButton>
           </div>
@@ -177,13 +177,13 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {card.discovery_type === "chart_climber" && (
-          <PixelButton fullWidth size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
+          <PixelButton fullWidth size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
             {"See The Charts →"}
           </PixelButton>
         )}
 
         {card.discovery_type === "multi_review_prompt" && (
-          <PixelButton fullWidth size="md" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
+          <PixelButton fullWidth size="sm" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
             {"Write a Review →"}
           </PixelButton>
         )}
