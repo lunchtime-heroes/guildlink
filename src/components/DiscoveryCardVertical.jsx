@@ -165,10 +165,12 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <button onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}
-            style={{ width: "100%", background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 0, padding: "3px 10px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-            {"+ Add to Shelf"}
-          </button>
+          <PixelCornerBox size="sm" borderColor={C.goldBorder} bg={C.goldGlow} style={{ width: "100%" }}>
+            <button onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}
+              style={{ width: "100%", background: "none", border: "none", padding: "4px 10px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {"+ Add to Shelf"}
+            </button>
+          </PixelCornerBox>
         )}
 
         {addedToShelf && (
@@ -176,17 +178,21 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {card.discovery_type === "chart_climber" && (
-          <button onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
-            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, padding: "3px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-            {"See The Charts →"}
-          </button>
+          <PixelCornerBox size="sm" borderColor={C.accentDim} bg={C.accentGlow} style={{ width: "100%" }}>
+            <button onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
+              style={{ width: "100%", background: "none", border: "none", padding: "4px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {"See The Charts →"}
+            </button>
+          </PixelCornerBox>
         )}
 
         {card.discovery_type === "multi_review_prompt" && (
-          <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}
-            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, padding: "3px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-            {"Write a Review →"}
-          </button>
+          <PixelCornerBox size="sm" borderColor={C.accentDim} bg={C.accentGlow} style={{ width: "100%" }}>
+            <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}
+              style={{ width: "100%", background: "none", border: "none", padding: "4px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+              {"Write a Review →"}
+            </button>
+          </PixelCornerBox>
         )}
 
       </div>
