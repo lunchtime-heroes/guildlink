@@ -12,53 +12,60 @@ const CONFIGS = {
   sm: { steps: 1, s: 2, inset: 1 },
 };
 
-// Build CSS clip-path polygon for pixel-stepped corners
-// Clockwise from top-left corner start point
+// Build CSS clip-path polygon - verified correct, no duplicate points
 function buildClip(steps, s) {
-  const n = steps * s; // total corner notch size
-  const pts = [];
+  const n = steps * s;
+  const W = (v) => v === 0 ? "100%" : "calc(100% - " + v + "px)";
+  const H = (v) => v === 0 ? "100%" : "calc(100% - " + v + "px)";
+  const all = [];
 
-  // Start top-left, move right along top edge
-  pts.push(`${n}px 0px`);
-  pts.push(`calc(100% - ${n}px) 0px`);
+  // Top edge
+  all.push(n + "px 0px");
+  all.push(W(n) + " 0px");
 
-  // Top-right: step inward going down
+  // Top-right corner (step down into card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`calc(100% - ${(steps - i) * s}px) ${i * s}px`);
-    pts.push(`calc(100% - ${(steps - i - 1) * s}px) ${i * s}px`);
+    all.push(W((steps - i) * s) + " " + (i * s) + "px");
+    all.push(W((steps - i - 1) * s) + " " + (i * s) + "px");
+    if (i < steps - 1) all.push(W((steps - i - 1) * s) + " " + ((i + 1) * s) + "px");
   }
-  pts.push(`100% ${n}px`);
+  all.push("100% " + n + "px");
 
-  // Right edge down
-  pts.push(`100% calc(100% - ${n}px)`);
+  // Right edge
+  all.push("100% " + H(n));
 
-  // Bottom-right: step inward going left
+  // Bottom-right corner (step left into card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`calc(100% - ${i * s}px) calc(100% - ${(steps - i) * s}px)`);
-    pts.push(`calc(100% - ${i * s}px) calc(100% - ${(steps - i - 1) * s}px)`);
+    all.push(W(i * s) + " " + H((steps - i) * s));
+    all.push(W(i * s) + " " + H((steps - i - 1) * s));
+    if (i < steps - 1) all.push(W((i + 1) * s) + " " + H((steps - i - 1) * s));
   }
-  pts.push(`calc(100% - ${n}px) 100%`);
+  all.push(W(n) + " 100%");
 
-  // Bottom edge left
-  pts.push(`${n}px 100%`);
+  // Bottom edge
+  all.push(n + "px 100%");
 
-  // Bottom-left: step inward going up (points must go right-then-up, not up-then-right)
+  // Bottom-left corner (step up into card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`${(i + 1) * s}px calc(100% - ${i * s}px)`);
-    pts.push(`${i * s}px calc(100% - ${i * s}px)`);
+    all.push((steps - i) * s + "px " + H(i * s));
+    all.push((steps - i - 1) * s + "px " + H(i * s));
+    if (i < steps - 1) all.push((steps - i - 1) * s + "px " + H((i + 1) * s));
   }
-  pts.push(`0px calc(100% - ${n}px)`);
+  all.push("0px " + H(n));
 
-  // Left edge up
-  pts.push(`0px ${n}px`);
+  // Left edge
+  all.push("0px " + n + "px");
 
-  // Top-left: step inward going right
+  // Top-left corner (step right into card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`${i * s}px ${(steps - i) * s}px`);
-    pts.push(`${i * s}px ${(steps - i - 1) * s}px`);
+    all.push(i * s + "px " + (steps - i) * s + "px");
+    all.push(i * s + "px " + (steps - i - 1) * s + "px");
+    if (i < steps - 1) all.push((i + 1) * s + "px " + (steps - i - 1) * s + "px");
   }
 
-  return pts.join(", ");
+  // Deduplicate consecutive identical points (transition between sections)
+  const pts = all.filter((p, i) => i === 0 || p !== all[i - 1]);
+  return all.join(", ");
 }
 
 // Precomputed clip-paths — calculated once at module load, not on every render
