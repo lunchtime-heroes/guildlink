@@ -165,11 +165,10 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
         {/* Add to Shelf — gold button */}
         {!addedToShelf && !dismissed && (
-          <div style={{ width: "100%", padding: "1px 0" }}>
-            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
-              {"+ Add to Shelf"}
-            </PixelButton>
-          </div>
+          <button onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}
+            style={{ width: "100%", background: C.goldGlow, border: "1px solid " + C.goldBorder, borderRadius: 0, padding: "3px 10px", color: C.gold, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+            {"+ Add to Shelf"}
+          </button>
         )}
 
         {addedToShelf && (
@@ -177,15 +176,17 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         )}
 
         {card.discovery_type === "chart_climber" && (
-          <PixelButton fullWidth size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
+          <button onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}
+            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, padding: "3px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
             {"See The Charts →"}
-          </PixelButton>
+          </button>
         )}
 
         {card.discovery_type === "multi_review_prompt" && (
-          <PixelButton fullWidth size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
+          <button onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}
+            style={{ width: "100%", background: C.accentGlow, border: "1px solid " + C.accentDim, borderRadius: 0, padding: "3px 10px", color: C.accentSoft, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
             {"Write a Review →"}
-          </PixelButton>
+          </button>
         )}
 
       </div>
