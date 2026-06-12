@@ -78,14 +78,16 @@ function PixelButton({
         }} />
       )}
       {/* Button body */}
-      <div
-        role="button"
-        onClick={disabled ? undefined : onClick}
+      <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
         style={{
           position: "relative",
           background: bgColor,
           clipPath: "polygon(" + clip + ")",
           color: textColor,
+          border: "none",
           padding,
           fontSize,
           fontWeight: 700,
@@ -99,13 +101,12 @@ function PixelButton({
           flex: fullWidth ? 1 : undefined,
           gap: 6,
           whiteSpace: "nowrap",
-          userSelect: "none",
           zIndex: 1,
           ...style,
         }}
       >
         {children}
-      </div>
+      </button>
     </div>
   );
 }
