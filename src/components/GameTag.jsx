@@ -44,8 +44,8 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
     color = C.accentSoft;
   }
 
-  const padding = size === "lg" ? "4px 12px" : size === "md" ? "3px 10px" : "2px 7px";
-  const fontSize = size === "lg" ? 13 : size === "md" ? 12 : 11;
+  const padding = size === "lg" ? "4px 12px" : size === "md" ? "3px 10px" : "1px 6px";
+  const fontSize = size === "lg" ? 13 : size === "md" ? 12 : 10;
 
   const handleClick = onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined;
   const handleRemove = onRemove ? (e) => { e.stopPropagation(); onRemove(e); } : undefined;

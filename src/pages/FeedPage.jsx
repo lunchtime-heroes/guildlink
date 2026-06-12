@@ -1012,6 +1012,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   {p.overlapCount && <GameTag label={p.overlapCount + " games in common"} size="sm" />}
                 </div>
               </div>
+              <div style={{ marginTop: 5 }}>
               <PixelButton size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} fullWidth onClick={async () => {
                   const { data: { user: au } } = await supabase.auth.getUser();
                   if (!au) return;
@@ -1019,6 +1020,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   setSuggestedGamers(prev => prev.filter(x => x.id !== p.id));
                   loadFollowing();
                 }}><span>{"+ Follow"}</span></PixelButton>
+              </div>
             </div>
             );
           })}

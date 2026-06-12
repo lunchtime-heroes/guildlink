@@ -58,7 +58,7 @@ function PixelButton({
   // xs — compact sidebar/card buttons (Follow, Add to Shelf, See Full Charts)
   // sm — standard action buttons (Save, Cancel, inline actions)
   // md — CTA buttons (Join Free, Post, primary actions)
-  const paddingMap = { xs: "4px 10px", sm: "6px 14px", md: "9px 20px" };
+  const paddingMap = { xs: "3px 10px", sm: "6px 14px", md: "9px 20px" };
   const fontSizeMap = { xs: 11, sm: 12, md: 13 };
   const padding = paddingMap[size] || paddingMap.sm;
   const fontSize = fontSizeMap[size] || fontSizeMap.sm;
