@@ -1698,9 +1698,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       return newTags;
                     });
                   };
+                  return (
                     <div key={tag} style={{ padding: "1px 0" }}>
                       <PixelButton size="sm" bgStyle={bg} borderColor={border} color={color} onClick={cycle}>{tag}</PixelButton>
                     </div>
+                  );
                 })}
               </div>
             </div>
