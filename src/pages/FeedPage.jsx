@@ -472,6 +472,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     syncCounts();
   }, [activePage]);
 
+  const loadPlayingGames = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await supabase
