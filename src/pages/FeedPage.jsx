@@ -1010,7 +1010,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
                   {p.overlapCount && (
-                    <span style={{ display: "inline-block", background: C.accentGlow, border: "1px solid " + C.accentDim, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: C.accentSoft, marginTop: 2 }}>{p.overlapCount + " games in common"}</span>
+                    <GameTag label={p.overlapCount + " games in common"} size="sm" style={{ marginTop: 2 }} />
                   )}
                 </div>
               </div>
