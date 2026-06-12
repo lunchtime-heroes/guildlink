@@ -1277,7 +1277,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             );
           };
 
-          // Discovery feed: vertical game cards in 3-col grid, posts full-width
+          // Discovery feed: vertical game cards in grid, posts + horizontal discovery full-width
           if (!isGuest && discoveryCards.length > 0) {
             const VERTICAL_TYPES = [
               'shelf_add', 'now_playing', 'just_finished',
@@ -1286,7 +1286,24 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               'followed_shelf_add', 'followed_now_playing', 'followed_just_finished',
               'followed_review',
             ];
-            const verticalCards = discoveryCards.filter(c => VERTICAL_TYPES.includes(c.discovery_type));
+
+            // ── Round-robin vertical card ordering ──────────────────────────
+            // Group cards by type, then interleave so no type repeats until
+            // all other types have been shown. Ensures maximum variety.
+            const verticalPool = discoveryCards.filter(c => VERTICAL_TYPES.includes(c.discovery_type));
+            const byType = {};
+            verticalPool.forEach(c => {
+              if (!byType[c.discovery_type]) byType[c.discovery_type] = [];
+              byType[c.discovery_type].push(c);
+            });
+            const typeQueues = Object.values(byType);
+            const verticalCards = [];
+            while (typeQueues.some(q => q.length > 0)) {
+              // One pass: take one card from each non-empty type queue
+              typeQueues.forEach(q => { if (q.length > 0) verticalCards.push(q.shift()); });
+            }
+
+            // ── Horizontal stream: discovery cards + posts interleaved ───────
             const horizontalCards = discoveryCards.filter(c => !VERTICAL_TYPES.includes(c.discovery_type));
             const horizontalStream = [];
             let hci2 = 0; let pi2 = 0;
@@ -1294,33 +1311,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               if (hci2 < horizontalCards.length) horizontalStream.push({ type: 'discovery', card: horizontalCards[hci2++] });
               if (pi2 < livePosts.length) horizontalStream.push({ type: 'post', post: livePosts[pi2++] });
             }
-            let vi = 0; let hi = 0;
+
+            // ── Feed layout: 1 vertical row, 2 horizontal, repeat ───────────
             const cardsPerRow = isMobile ? 2 : 3;
-            const remaining = [...verticalCards];
-            while (remaining.length > 0 || hi < horizontalStream.length) {
-              const rowCards = [];
-              const usedTypes = new Set();
-              // Pick cardsPerRow cards, avoiding same type in same row
-              // First pass: pick cards with unused types
-              let attempts = 0;
-              while (rowCards.length < cardsPerRow && remaining.length > 0 && attempts < remaining.length) {
-                const idx = remaining.findIndex((c, i) => {
-                  if (i > Math.min(attempts + cardsPerRow * 3, remaining.length - 1)) return false;
-                  return !usedTypes.has(c.discovery_type);
-                });
-                if (idx === -1) {
-                  // No card with unused type found in lookahead — just take next
-                  rowCards.push(remaining.shift());
-                } else {
-                  const card = remaining.splice(idx, 1)[0];
-                  usedTypes.add(card.discovery_type);
-                  rowCards.push(card);
-                }
-                attempts++;
-              }
-              if (rowCards.length > 0) {
+            let vci = 0; let hi = 0;
+            while (vci < verticalCards.length || hi < horizontalStream.length) {
+              // 1 vertical row
+              if (vci < verticalCards.length) {
+                const rowCards = verticalCards.slice(vci, vci + cardsPerRow);
+                vci += cardsPerRow;
                 items.push(
-                  <div key={'vrow_' + items.length} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
+                  <div key={'vrow_' + vci} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
                     {rowCards.map(dc => (
                       <DiscoveryCardVertical key={'dcv_' + dc.id} card={dc}
                         currentUser={user} setActivePage={setActivePage}
@@ -1332,7 +1333,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   </div>
                 );
               }
-              if (hi < horizontalStream.length) {
+              // 2 horizontal items
+              for (let h = 0; h < 2 && hi < horizontalStream.length; h++) {
                 const item = horizontalStream[hi++];
                 if (item.type === 'discovery') {
                   items.push(<DiscoveryCard key={'dc_' + item.card.id} card={item.card} currentUser={user} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} setGameDefaultTab={setGameDefaultTab} isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn} />);

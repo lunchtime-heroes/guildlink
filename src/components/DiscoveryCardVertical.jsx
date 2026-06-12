@@ -40,7 +40,7 @@ function getTypeLabel(t) {
     case "chart_climber":          return { label: "Chart Climber", color: C.gold };
     case "multi_review_prompt":    return { label: "Write a Review", color: C.gold };
     case "platform_trending":      return { label: "Trending", color: C.accent };
-    case "followed_shelf_add":     return { label: "From Someone You Follow", color: C.accent };
+    case "followed_shelf_add":     return null;
     case "followed_now_playing":   return { label: "Now Playing", color: C.green };
     case "followed_just_finished": return { label: "Just Finished", color: C.teal };
     case "followed_review":        return { label: "New Review", color: C.gold };
