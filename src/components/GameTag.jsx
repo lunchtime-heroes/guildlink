@@ -20,12 +20,12 @@ import { buildClip, CONFIGS } from "./PixelCornerBox.jsx";
 //   size        — "sm" (default) | "md"
 //   style       — extra styles on the outer wrapper
 
+const CLIP_SM = "polygon(" + buildClip(CONFIGS.sm.steps, CONFIGS.sm.s) + ")";
 const CLIP_MD = "polygon(" + buildClip(CONFIGS.md.steps, CONFIGS.md.s) + ")";
 const CLIP_LG = "polygon(" + buildClip(CONFIGS.lg.steps, CONFIGS.lg.s) + ")";
 
 function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", style = {} }) {
-  // Always use md corners minimum — sm corners are too subtle to read as pixel art
-  const clip = size === "lg" ? CLIP_LG : CLIP_MD;
+  const clip = size === "lg" ? CLIP_LG : size === "sm" ? CLIP_SM : CLIP_MD;
 
   // Resolve colors by variant
   let bg, border, color;

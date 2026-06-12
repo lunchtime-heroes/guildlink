@@ -1009,10 +1009,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 <Avatar initials={(p.avatar_initials || p.username || "?").slice(0,2).toUpperCase()} size={32} founding={p.is_founding} ring={p.active_ring} avatarConfig={p.avatar_config} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.username}</div>
-                  {p.overlapCount && <GameTag label={p.overlapCount + " games in common"} />}
+                  {p.overlapCount && <GameTag label={p.overlapCount + " games in common"} size="sm" />}
                 </div>
               </div>
-              <PixelButton fullWidth size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} style={{ justifyContent: "center" }} onClick={async () => {
+              <PixelButton size="xs" bg={C.accentGlow} borderColor={C.accentDim} color={C.accentSoft} fullWidth onClick={async () => {
                   const { data: { user: au } } = await supabase.auth.getUser();
                   if (!au) return;
                   await supabase.from("follows").insert({ follower_id: au.id, followed_user_id: p.id });
