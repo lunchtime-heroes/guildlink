@@ -154,7 +154,6 @@ function PixelCornerBox({
         background,
         clipPath: "polygon(" + clip + ")",
         zIndex: 1,
-        overflow: "hidden",
         height: "100%",
         boxSizing: "border-box",
         ...innerStyle,
