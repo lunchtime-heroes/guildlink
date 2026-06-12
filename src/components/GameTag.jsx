@@ -50,12 +50,14 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
   const handleClick = onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined;
   const handleRemove = onRemove ? (e) => { e.stopPropagation(); onRemove(e); } : undefined;
 
+  const borderInset = size === "sm" ? 0 : -1;
+
   return (
-    <div style={{ position: "relative", display: "inline-flex", minWidth: 0, flexShrink: 0, ...style }}>
+    <div style={{ position: "relative", display: "inline-flex", minWidth: 0, flexShrink: 0, alignSelf: "flex-start", ...style }}>
       {/* Border layer */}
       <div style={{
         position: "absolute",
-        inset: -1,
+        inset: borderInset,
         background: border,
         clipPath: clip,
         pointerEvents: "none",
