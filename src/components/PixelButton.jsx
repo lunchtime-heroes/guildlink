@@ -34,7 +34,8 @@ function PixelButton({
   style = {},
   type = "button",
 }) {
-  const cornerSize = size === "xs" ? "md" : size === "sm" ? "md" : "lg";
+  // Size maps to design system: sm=1step, md=3steps, lg=5steps
+  const cornerSize = size === "lg" ? "lg" : size === "sm" ? "sm" : "md";
   const { steps, s } = CONFIGS[cornerSize] || CONFIGS.md;
   const clip = "polygon(" + buildClip(steps, s) + ")";
 
@@ -51,18 +52,15 @@ function PixelButton({
     bc = bc || borderColor;
     textColor = color;
   } else {
-    // solid
     bgColor = bgColor || "#0ea5e9";
     bc = bc || bgColor;
   }
 
-  // xs — compact sidebar/card buttons (Follow, Add to Shelf, See Full Charts)
-  // sm — standard action buttons (Save, Cancel, inline actions)
-  // md — CTA buttons (Join Free, Post, primary actions)
-  const paddingMap = { xs: "3px 10px", sm: "6px 14px", md: "9px 20px" };
-  const fontSizeMap = { xs: 11, sm: 12, md: 13 };
-  const padding = paddingMap[size] || paddingMap.sm;
-  const fontSize = fontSizeMap[size] || fontSizeMap.sm;
+  // sm — compact, md — standard, lg — CTA
+  const paddingMap = { sm: "3px 10px", md: "6px 16px", lg: "10px 24px" };
+  const fontSizeMap = { sm: 11, md: 12, lg: 14 };
+  const padding = paddingMap[size] || paddingMap.md;
+  const fontSize = fontSizeMap[size] || fontSizeMap.md;
 
   return (
     <div style={{ position: "relative", display: fullWidth ? "flex" : "inline-flex", width: fullWidth ? "100%" : undefined, minWidth: 0 }}>
