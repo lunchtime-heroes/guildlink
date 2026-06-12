@@ -2,51 +2,74 @@ import React from "react";
 import { C } from "../constants.js";
 
 // ─── Pixel corner configuration ──────────────────────────────────────────────
-// Authentic retro pixel corners — bold steps like SNES/NES era UI.
-// Fewer steps, bigger pixel size = cleaner retro look + better performance.
-//
-// lg — 2 steps at 4px = 8px corner  → cards/panels/modals
-// md — 1 step  at 4px = 4px corner  → buttons/badges/tabs
-// sm — 1 step  at 2px = 2px corner  → small indicators/avatar frames
+// lg — bold retro corners for cards/panels: 2 steps at 4px = 8px notch, 4px border unit
+// md — fine corners for buttons/badges: 3 steps at 2px = 6px notch, 2px border unit  
+// sm — minimal corners for small elements: 1 step at 2px = 2px notch, 2px border unit
 
 const CONFIGS = {
-  lg: { steps: 2, s: 4 },
-  md: { steps: 1, s: 4 },
-  sm: { steps: 1, s: 2 },
+  lg: { steps: 2, s: 4, inset: 2 },
+  md: { steps: 3, s: 2, inset: 1 },
+  sm: { steps: 1, s: 2, inset: 1 },
 };
 
 // Build CSS clip-path polygon for pixel-stepped corners
+// Goes clockwise: top-left → top-right → bottom-right → bottom-left
 function buildClip(steps, s) {
   const pts = [];
-  pts.push(`${s * steps}px 0px`);
-  pts.push(`calc(100% - ${s * steps}px) 0px`);
+  const n = steps * s; // total corner size in px
+
+  // Top edge (left to right)
+  pts.push(`${n}px 0px`);
+  pts.push(`calc(100% - ${n}px) 0px`);
+
+  // Top-right corner (step down-left into the card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`calc(100% - ${s * (steps - i)}px) ${s * i}px`);
-    pts.push(`calc(100% - ${s * (steps - i - 1)}px) ${s * i}px`);
-    if (i < steps - 1) pts.push(`calc(100% - ${s * (steps - i - 1)}px) ${s * (i + 1)}px`);
+    const x = n - i * s;
+    const y = i * s;
+    pts.push(`calc(100% - ${x}px) ${y}px`);
+    pts.push(`calc(100% - ${x - s}px) ${y}px`);
+    pts.push(`calc(100% - ${x - s}px) ${y + s}px`);
   }
-  pts.push(`100% ${s * steps}px`);
-  pts.push(`100% calc(100% - ${s * steps}px)`);
+
+  // Right edge (top to bottom)
+  pts.push(`100% ${n}px`);
+  pts.push(`100% calc(100% - ${n}px)`);
+
+  // Bottom-right corner (step up-left into the card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`calc(100% - ${s * i}px) calc(100% - ${s * (steps - i)}px)`);
-    pts.push(`calc(100% - ${s * i}px) calc(100% - ${s * (steps - i - 1)}px)`);
-    if (i < steps - 1) pts.push(`calc(100% - ${s * (i + 1)}px) calc(100% - ${s * (steps - i - 1)}px)`);
+    const x = i * s;
+    const y = n - i * s;
+    pts.push(`calc(100% - ${x}px) calc(100% - ${y - s}px)`);
+    pts.push(`calc(100% - ${x + s}px) calc(100% - ${y - s}px)`);
+    pts.push(`calc(100% - ${x + s}px) calc(100% - ${y}px)`);
   }
-  pts.push(`calc(100% - ${s * steps}px) 100%`);
-  pts.push(`${s * steps}px 100%`);
+
+  // Bottom edge (right to left)
+  pts.push(`calc(100% - ${n}px) 100%`);
+  pts.push(`${n}px 100%`);
+
+  // Bottom-left corner (step up-right into the card)
   for (let i = 0; i < steps; i++) {
-    pts.push(`${s * i}px calc(100% - ${s * (steps - i)}px)`);
-    pts.push(`${s * i}px calc(100% - ${s * (steps - i - 1)}px)`);
-    if (i < steps - 1) pts.push(`${s * (i + 1)}px calc(100% - ${s * (steps - i - 1)}px)`);
+    const x = i * s;
+    const y = n - i * s;
+    pts.push(`${x}px calc(100% - ${y - s}px)`);
+    pts.push(`${x}px calc(100% - ${y}px)`);
+    pts.push(`${x + s}px calc(100% - ${y}px)`);
   }
-  pts.push(`0px calc(100% - ${s * steps}px)`);
-  pts.push(`0px ${s * steps}px`);
-  for (let i = 0; i < steps; i++) {
-    pts.push(`${s * i}px ${s * (steps - i)}px`);
-    pts.push(`${s * i}px ${s * (steps - i - 1)}px`);
-    if (i < steps - 1) pts.push(`${s * (i + 1)}px ${s * (steps - i - 1)}px`);
+
+  // Left edge (bottom to top)
+  pts.push(`0px calc(100% - ${n}px)`);
+  pts.push(`0px ${n}px`);
+
+  // Top-left corner (step down-right into the card)
+  for (let i = steps - 1; i >= 0; i--) {
+    const x = i * s;
+    const y = n - i * s;
+    pts.push(`${x}px ${y}px`);
+    pts.push(`${x}px ${y - s}px`);
+    pts.push(`${x + s}px ${y - s}px`);
   }
-  pts.push(`${s * steps}px 0px`);
+
   return pts.join(", ");
 }
 
@@ -96,7 +119,7 @@ function PixelCornerBox({
   className,
   onClick,
 }) {
-  const { steps, s } = CONFIGS[size] || CONFIGS.lg;
+  const { steps, s, inset: borderInset } = CONFIGS[size] || CONFIGS.lg;
   const bc = borderColor || C.border;
   const background = bgStyle || bg || C.surface;
   const clip = CLIPS[size] || CLIPS.lg;
@@ -117,7 +140,7 @@ function PixelCornerBox({
       {/* Border layer */}
       <div style={{
         position: "absolute",
-        inset: -1,
+        inset: -borderInset,
         background: bc,
         clipPath: clip,
         zIndex: 0,
