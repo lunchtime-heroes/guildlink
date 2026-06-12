@@ -20,6 +20,7 @@ import { ShareReviewButton, ShareShelfButton } from "../components/ShareButton.j
 import { GameTag } from "../components/GameTag.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 // SortableTile — individual draggable shelf tile using dnd-kit
 function SortableTile({ id, entry, game, col, review, menuOpen, shelfRank, isMobile, activeId, isDropTarget, onTileClick, onGameClick, onRemove, onLike, onDislike, C }) {
