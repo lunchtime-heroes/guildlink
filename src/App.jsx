@@ -25,6 +25,7 @@ import AuthPage from "./pages/AuthPage.jsx";
 
 import supabase from "./supabase.js";
 import { PixelCornerBox } from "./components/PixelCornerBox.jsx";
+import { PixelButton } from "./components/PixelButton.jsx";
 
 // Week start helper — Sunday 12:00am Pacific time
 // Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
@@ -611,22 +612,28 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       </div>
       <NavSearch setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} />
       <div style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
-        {desktopItems.map(item => (
-          <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
-            background: item.gold ? activePage === item.id ? C.goldGlow : "transparent" : item.admin ? activePage === item.id ? "#ef444420" : "transparent" : activePage === item.id ? C.accentGlow : "transparent",
-            border: item.gold ? activePage === item.id ? "1px solid " + C.goldBorder : "1px solid transparent" : item.admin ? activePage === item.id ? "1px solid #ef444440" : "1px solid transparent" : activePage === item.id ? "1px solid " + C.accentDim : "1px solid transparent",
-            borderRadius: 3, padding: "6px 14px",
-            color: item.gold ? activePage === item.id ? C.gold : C.gold + "99" : item.admin ? "#ef4444" : activePage === item.id ? C.accentSoft : C.textMuted,
-            cursor: "pointer", fontSize: 13, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 5,
-          }}>{item.label}</button>
-        ))}
+        {desktopItems.map(item => {
+          const active = activePage === item.id || (item.id === "reviews-nav" && activePage === "reviews");
+          const bc = item.gold ? C.goldBorder : item.admin ? "#ef444440" : C.accentDim;
+          const bg = item.gold ? "color-mix(in srgb, " + C.gold + " 10%, " + C.bg + ")" : item.admin ? "color-mix(in srgb, #ef4444 10%, " + C.bg + ")" : "color-mix(in srgb, " + C.accent + " 10%, " + C.bg + ")";
+          const color = item.gold ? C.gold : item.admin ? "#ef4444" : C.accentSoft;
+          const inactiveColor = item.gold ? C.gold + "99" : item.admin ? "#ef4444" : C.textMuted;
+          return (
+            <PixelButton key={item.id} size="sm"
+              bgStyle={active ? bg : "transparent"}
+              borderColor={active ? bc : "transparent"}
+              color={active ? color : inactiveColor}
+              onClick={() => handleNavClick(item.id)}>
+              {item.label}
+            </PixelButton>
+          );
+        })}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 10 }}>
         {isGuest ? (
           <>
-            <button onClick={onSignIn} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "6px 14px", color: C.textMuted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign In</button>
-            <button onClick={onSignUp} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "6px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Join Free</button>
+            <PixelButton size="sm" bg="transparent" borderColor={C.border} color={C.textMuted} onClick={onSignIn}>{"Sign In"}</PixelButton>
+            <PixelButton size="sm" bg={C.accent} borderColor={C.accent} color={C.accentText} onClick={onSignUp}>{"Join Free"}</PixelButton>
           </>
         ) : (
           <>
@@ -713,7 +720,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             <div onClick={() => setActivePage("profile")} style={{ cursor: "pointer" }}>
               <Avatar initials={currentUser?.avatar || "GL"} size={34} status="online" founding={currentUser?.isFounding} ring={currentUser?.activeRing || "none"} avatarConfig={currentUser?.avatarConfig} />
             </div>
-            {signOut && <button onClick={signOut} style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "5px 10px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Sign Out</button>}
+            {signOut && <PixelButton size="sm" bg="transparent" borderColor={C.border} color={C.textMuted} onClick={signOut}>{"Sign Out"}</PixelButton>}
           </>
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
