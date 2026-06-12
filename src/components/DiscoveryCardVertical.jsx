@@ -113,7 +113,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
             const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
             return (
               <PixelButton key={opt.status} fullWidth size="sm"
-                bg={optColor + "15"}
+                bg={C.bg}
                 borderColor={optColor}
                 color={optColor}
                 onClick={() => handleShelfSelect(opt.status)}>
