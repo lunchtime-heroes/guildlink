@@ -425,46 +425,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
           return (b.overlap_count || 0) - (a.overlap_count || 0);
         });
-
-      // Separate into buckets by type to ensure diversity
-      const shelfAdds = sorted.filter(c => c.discovery_type === "shelf_add");
-      const followedEvents = sorted.filter(c =>
-        c.discovery_type === "followed_shelf_add" ||
-        c.discovery_type === "followed_now_playing" ||
-        c.discovery_type === "followed_just_finished" ||
-        c.discovery_type === "followed_review" ||
-        c.discovery_type === "followed_similarity_match" ||
-        c.discovery_type === "new_similarity_match"
-      );
-      const chartAndOther = sorted.filter(c =>
-        c.discovery_type === "chart_climber" ||
-        c.discovery_type === "multi_review_prompt" ||
-        c.discovery_type === "platform_trending"
-      );
-      const similarityEvents = sorted.filter(c =>
-        c.discovery_type === "now_playing" ||
-        c.discovery_type === "just_finished" ||
-        c.discovery_type === "review_positive" ||
-        c.discovery_type === "review_negative" ||
-        c.discovery_type === "thumbs_down"
-      );
-      const remaining = sorted.filter(c =>
-        !shelfAdds.includes(c) && !followedEvents.includes(c) &&
-        !chartAndOther.includes(c) && !similarityEvents.includes(c)
-      );
-
-      // Mix: 1 shelf_add, 1 followed event, 1 similarity event, 1 chart/other, repeat
-      // Followed events get equal footing with shelf_add — social signals matter
-      const mixed = [];
-      let si = 0; let fi = 0; let sei = 0; let ci = 0; let ri = 0;
-      while (si < shelfAdds.length || fi < followedEvents.length || sei < similarityEvents.length || ci < chartAndOther.length || ri < remaining.length) {
-        if (si < shelfAdds.length) mixed.push(shelfAdds[si++]);
-        if (fi < followedEvents.length) mixed.push(followedEvents[fi++]);
-        if (sei < similarityEvents.length) mixed.push(similarityEvents[sei++]);
-        if (ci < chartAndOther.length) mixed.push(chartAndOther[ci++]);
-        if (ri < remaining.length) mixed.push(remaining[ri++]);
-      }
-      setDiscoveryCards(mixed);
+      setDiscoveryCards(sorted);
     }
   };
 
@@ -1199,53 +1160,32 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             );
           };
 
-          // Discovery feed: vertical game cards in grid, posts + horizontal discovery full-width
+          // All discovery cards are vertical — posts interspersed between rows
           if (!isGuest && discoveryCards.length > 0) {
-            const VERTICAL_TYPES = [
-              'shelf_add', 'now_playing', 'just_finished',
-              'review_positive', 'review_negative', 'thumbs_down',
-              'chart_climber', 'multi_review_prompt', 'platform_trending',
-              'followed_shelf_add', 'followed_now_playing', 'followed_just_finished',
-              'followed_review',
-            ];
 
-            // ── Round-robin vertical card ordering ──────────────────────────
-            // Group cards by type, then interleave so no type repeats until
-            // all other types have been shown. Ensures maximum variety.
-            const verticalPool = discoveryCards.filter(c => VERTICAL_TYPES.includes(c.discovery_type));
+            // Round-robin by type for maximum variety
             const byType = {};
-            verticalPool.forEach(c => {
+            discoveryCards.forEach(c => {
               if (!byType[c.discovery_type]) byType[c.discovery_type] = [];
               byType[c.discovery_type].push(c);
             });
             const typeQueues = Object.values(byType);
-            const verticalCards = [];
+            const orderedCards = [];
             while (typeQueues.some(q => q.length > 0)) {
-              // One pass: take one card from each non-empty type queue
-              typeQueues.forEach(q => { if (q.length > 0) verticalCards.push(q.shift()); });
+              typeQueues.forEach(q => { if (q.length > 0) orderedCards.push(q.shift()); });
             }
 
-            // ── Horizontal stream: discovery cards + posts interleaved ───────
-            const horizontalCards = discoveryCards.filter(c => !VERTICAL_TYPES.includes(c.discovery_type));
-            const horizontalStream = [];
-            let hci2 = 0; let pi2 = 0;
-            while (hci2 < horizontalCards.length || pi2 < livePosts.length) {
-              if (hci2 < horizontalCards.length) horizontalStream.push({ type: 'discovery', card: horizontalCards[hci2++] });
-              if (pi2 < livePosts.length) horizontalStream.push({ type: 'post', post: livePosts[pi2++] });
-            }
-
-            // ── Feed layout: 1 vertical row, 2 horizontal, repeat ───────────
             const cardsPerRow = isMobile ? 2 : 3;
-            let vci = 0; let hi = 0;
-            while (vci < verticalCards.length || hi < horizontalStream.length) {
-              // 1 vertical row
-              if (vci < verticalCards.length) {
-                const rowCards = verticalCards.slice(vci, vci + cardsPerRow);
-                vci += cardsPerRow;
+            let ci = 0; let pi = 0;
+            while (ci < orderedCards.length || pi < livePosts.length) {
+              // 1 row of discovery cards
+              if (ci < orderedCards.length) {
+                const rowCards = orderedCards.slice(ci, ci + cardsPerRow);
+                ci += cardsPerRow;
                 items.push(
-                  <div key={'vrow_' + vci} style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
+                  <div key={"vrow_" + ci} style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 10, marginBottom: 10 }}>
                     {rowCards.map(dc => (
-                      <DiscoveryCardVertical key={'dcv_' + dc.id} card={dc}
+                      <DiscoveryCardVertical key={"dcv_" + dc.id} card={dc}
                         currentUser={user} setActivePage={setActivePage}
                         setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
                         setGameDefaultTab={setGameDefaultTab}
@@ -1255,15 +1195,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   </div>
                 );
               }
-              // 2 horizontal items
-              for (let h = 0; h < 2 && hi < horizontalStream.length; h++) {
-                const item = horizontalStream[hi++];
-                if (item.type === 'discovery') {
-                  items.push(<DiscoveryCard key={'dc_' + item.card.id} card={item.card} currentUser={user} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} setGameDefaultTab={setGameDefaultTab} isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn} />);
-                } else {
-                  const el = renderPost(item.post);
-                  if (el) items.push(el);
-                }
+              // 2 posts
+              for (let h = 0; h < 2 && pi < livePosts.length; h++) {
+                const el = renderPost(livePosts[pi++]);
+                if (el) items.push(el);
               }
             }
             return items;
