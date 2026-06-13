@@ -244,13 +244,18 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
         <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 8 }} />,
         document.body
       )}
-      {shelfOpen && (
+      {shelfOpen && ReactDOM.createPortal(
         <div style={{
-          position: "absolute", inset: 0, zIndex: 10,
+          position: "fixed",
+          top: "50%", left: "50%",
+          transform: "translateX(-50%) translateY(-50%)",
+          zIndex: 10,
           background: C.bg,
+          border: "1px solid " + C.border,
+          borderRadius: 4,
           display: "flex", flexDirection: "column",
-          justifyContent: "center", alignItems: "stretch",
           padding: "16px", gap: 8,
+          minWidth: 200,
         }} onClick={e => e.stopPropagation()}>
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => {
@@ -268,7 +273,8 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
             style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
             Cancel
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Game art */}
