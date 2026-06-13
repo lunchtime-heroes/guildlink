@@ -46,6 +46,8 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
   const [addedToShelf, setAddedToShelf] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [shelfOpen, setShelfOpen] = useState(false);
+  const [cardRect, setCardRect] = useState(null);
+  const cardRef = React.useRef(null);
 
   useEffect(() => {
     if (card.game_id) {
@@ -225,7 +227,11 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
         <div style={{ width: "100%", padding: "1px 0" }}>
           <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold}
             style={{ justifyContent: "center" }}
-            onClick={() => isGuest ? onSignIn?.("Sign in to add games to your shelf.") : setShelfOpen(true)}>
+            onClick={() => {
+              if (isGuest) { onSignIn?.("Sign in to add games to your shelf."); return; }
+              if (cardRef.current) setCardRect(cardRef.current.getBoundingClientRect());
+              setShelfOpen(true);
+            }}>
             {"+ Add to Shelf"}
           </PixelButton>
         </div>
@@ -238,39 +244,56 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
   };
 
   return (
+    <div ref={cardRef}>
     <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface}>
       {/* Shelf overlay */}
       {shelfOpen && ReactDOM.createPortal(
         <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 8 }} />,
         document.body
       )}
-      {shelfOpen && ReactDOM.createPortal(
-        <div style={{
-          position: "fixed",
-          top: "50%", left: "50%",
-          transform: "translateX(-50%) translateY(-50%)",
-          zIndex: 10,
-          background: C.bg,
-          border: "1px solid " + C.border,
-          borderRadius: 4,
-          display: "flex", flexDirection: "column",
-          padding: "16px", gap: 8,
-          minWidth: 200,
-        }} onClick={e => e.stopPropagation()}>
-          {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
+      {shelfOpen && cardRect && ReactDOM.createPortal(
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: "fixed",
+            top: cardRect.top,
+            left: cardRect.left,
+            width: cardRect.width,
+            height: cardRect.height,
+            zIndex: 10,
+            background: C.bg,
+            border: "1px solid " + C.border,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "stretch",
+            padding: "12px",
+            gap: 6,
+            boxSizing: "border-box",
+          }}>
+          {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => {
             const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
             return (
-              <PixelButton key={opt.status} fullWidth size="sm"
-                bgStyle={"color-mix(in srgb, " + optColor + " 12%, " + C.bg + ")"}
-                borderColor={optColor} color={optColor}
-                onClick={() => handleShelfSelect(opt.status)}>
+              <button key={opt.status}
+                onClick={() => handleShelfSelect(opt.status)}
+                style={{
+                  background: "color-mix(in srgb, " + optColor + " 12%, " + C.bg + ")",
+                  border: "1px solid " + optColor,
+                  color: optColor,
+                  fontFamily: "inherit",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  padding: "8px",
+                  cursor: "pointer",
+                  borderRadius: 2,
+                }}>
                 {opt.label}
-              </PixelButton>
+              </button>
             );
           })}
           <button onClick={() => setShelfOpen(false)}
-            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
+            style={{ background: "none", border: "none", color: C.textDim, fontSize: 11, cursor: "pointer", marginTop: 2 }}>
             Cancel
           </button>
         </div>,
@@ -299,6 +322,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
         {renderCTA()}
       </div>
     </PixelCornerBox>
+    </div>
   );
 });
 
