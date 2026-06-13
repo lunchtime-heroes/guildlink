@@ -149,7 +149,7 @@ function getCardCopy(card, actorName) {
 
 function getTypeLabel(discovery_type) {
   switch (discovery_type) {
-    case "shelf_add": return null;
+    case "shelf_add": return { phrase: "You might like this", sub: "Based on shelf overlap.", cta_shelf: true };
     case "now_playing": return { label: "Now Playing", color: C.green };
     case "just_finished": return { label: "Just Finished", color: C.teal };
     case "review_positive": return { label: "Loved It", color: C.gold };
@@ -219,7 +219,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
   }, [card.id]);
 
   const actorName = actor?.username || (card.actor_count > 1 ? card.actor_count + " players" : "A player");
-  const copy = getCardCopy(card, actorName);
+  const copy = getCardCopy(card, actorName) || { phrase: null, sub: null };
   const typeLabel = getTypeLabel(card.discovery_type);
 
   if (dismissed) return null;
