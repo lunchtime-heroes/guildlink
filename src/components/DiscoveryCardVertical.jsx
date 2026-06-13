@@ -101,7 +101,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
       ),
       supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id),
     ]);
-    if (status === "not_for_me") { setDismissed(true); } else { setAddedToShelf(status); }
+    setDismissed(true);
     setShelfOpen(false);
   };
 

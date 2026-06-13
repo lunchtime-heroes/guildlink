@@ -410,7 +410,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const [{ data }, { data: followData }] = await Promise.all([
-      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).order("actor_count", { ascending: false }).limit(400),
+      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).eq("seen", false).order("actor_count", { ascending: false }).limit(400),
       supabase.from("follows").select("followed_user_id").eq("follower_id", authUser.id),
     ]);
     if (data) {
