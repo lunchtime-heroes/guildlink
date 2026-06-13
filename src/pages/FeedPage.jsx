@@ -410,7 +410,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const [{ data }, { data: followData }] = await Promise.all([
-      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).limit(100),
+      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).order("actor_count", { ascending: false }).limit(400),
       supabase.from("follows").select("followed_user_id").eq("follower_id", authUser.id),
     ]);
     if (data) {
@@ -421,9 +421,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           return true;
         })
         .sort((a, b) => {
-          if (a.seen !== b.seen) return a.seen ? 1 : -1;
-          if (b.actor_count !== a.actor_count) return b.actor_count - a.actor_count;
-          return (b.overlap_count || 0) - (a.overlap_count || 0);
+          if (parseInt(b.actor_count) !== parseInt(a.actor_count)) return parseInt(b.actor_count) - parseInt(a.actor_count);
+          return (parseInt(b.overlap_count) || 0) - (parseInt(a.overlap_count) || 0);
         });
       setDiscoveryCards(sorted);
     }
@@ -1167,9 +1166,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             const noGameCards = discoveryCards.filter(c => !c.game_id);
             const gameCards = discoveryCards.filter(c => !!c.game_id);
 
-            // Categorize game cards
+            // Categorize game cards — shelf_add is similarity, followed_* is follower
             const isFollower = (c) => c.discovery_type.startsWith("followed_");
-            const isSimilarity = (c) => ["shelf_add", "now_playing", "just_finished", "review_positive", "review_negative", "thumbs_down"].includes(c.discovery_type);
+            const isSimilarity = (c) => !isFollower(c) && c.game_id; // everything with a game that isn't a followed card
 
             // Within follower: round-robin by actor
             const followerByActor = {};
@@ -1199,13 +1198,19 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             // System: chart, trending, etc.
             const systemCards = gameCards.filter(c => !isFollower(c) && !isSimilarity(c));
 
-            // Final vertical order: 1 similarity, 1 follower, 1 system, repeat
+            // Final vertical order — strictly alternate categories
+            // Never show more than 1 of the same category in a row
+            // Priority order within each pass: similarity first, then follower, then system
             const orderedCards = [];
             let si2 = 0; let fi2 = 0; let syi = 0;
             while (si2 < similarityCards.length || fi2 < followerCards.length || syi < systemCards.length) {
+              // Take 1 from each non-empty bucket per cycle
+              // Similarity types get slightly higher weight — take 1, then alternate
               if (si2 < similarityCards.length) orderedCards.push(similarityCards[si2++]);
-              if (fi2 < followerCards.length) orderedCards.push(followerCards[fi2++]);
               if (syi < systemCards.length) orderedCards.push(systemCards[syi++]);
+              if (fi2 < followerCards.length) orderedCards.push(followerCards[fi2++]);
+              if (fi2 < followerCards.length) orderedCards.push(followerCards[fi2++]);
+              if (si2 < similarityCards.length) orderedCards.push(similarityCards[si2++]);
             }
 
             // Horizontal stream: no-game discovery cards + posts interleaved
