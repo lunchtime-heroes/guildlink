@@ -294,6 +294,6 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
       </div>
     </PixelCornerBox>
   );
-}
+});
 
 export { DiscoveryCardVertical };
