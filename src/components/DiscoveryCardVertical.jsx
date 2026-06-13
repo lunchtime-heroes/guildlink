@@ -6,16 +6,15 @@ import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 import { GameTag } from "./GameTag.jsx";
 
-// ─── Banner label per discovery type ─────────────────────────────────────────
 function getBanner(type) {
   switch (type) {
-    case "shelf_add":             return { label: "GuildLink Discovery", color: C.accent };
-    case "chart_climber":         return { label: "Chart Climber", color: C.gold };
-    case "platform_trending":     return { label: "Trending on GuildLink", color: C.accent };
-    case "followed_shelf_add":    return { label: "Follower Update", color: C.teal };
-    case "followed_now_playing":  return { label: "Follower Update", color: C.teal };
-    case "followed_just_finished":return { label: "Follower Update", color: C.teal };
-    case "followed_review":       return { label: "Follower Update", color: C.teal };
+    case "shelf_add":              return { label: "GuildLink Discovery", color: C.accent };
+    case "chart_climber":          return { label: "Chart Climber", color: C.gold };
+    case "platform_trending":      return { label: "Trending on GuildLink", color: C.accent };
+    case "followed_shelf_add":     return { label: "Follower Update", color: C.teal };
+    case "followed_now_playing":   return { label: "Follower Update", color: C.teal };
+    case "followed_just_finished": return { label: "Follower Update", color: C.teal };
+    case "followed_review":        return { label: "Follower Update", color: C.teal };
     default: return null;
   }
 }
@@ -27,7 +26,8 @@ const SHELF_OPTIONS = [
   { status: "not_for_me",   label: "Not Interested" },
 ];
 
-// ─── Main component ───────────────────────────────────────────────────────────
+const textStyle = { fontSize: 12, color: C.textMuted, lineHeight: 1.4 };
+
 function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn, setGameDefaultTab }) {
   const [game, setGame] = useState(null);
   const [actor, setActor] = useState(null);
@@ -68,6 +68,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", ""));
   };
 
+  const navigateToActorShelf = () => {
+    if (!actor) return;
+    setCurrentPlayer(actor.id);
+    setActivePage("player");
+    window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", ""));
+    // Shelf tab will be default on player page
+  };
+
   const handleShelfSelect = async (status) => {
     if (isGuest) { onSignIn?.("Sign in to add games to your shelf."); return; }
     if (!game) return;
@@ -83,25 +91,42 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     setShelfOpen(false);
   };
 
-  // ─── Card content by type ─────────────────────────────────────────────────
+  // ── GIC badge — gold, clickable to actor's shelf ──────────────────────────
+  const GICBadge = () => {
+    if (!card.overlap_count || card.overlap_count <= 0) return null;
+    return (
+      <GameTag
+        label={card.overlap_count + " GIC"}
+        variant="gold"
+        size="sm"
+        onClick={navigateToActorShelf}
+      />
+    );
+  };
 
+  // ── Card body by type ─────────────────────────────────────────────────────
   const renderBody = () => {
 
-    // ── shelf_add ────────────────────────────────────────────────────────────
+    // GuildLink Discovery
     if (card.discovery_type === "shelf_add") {
       return (
         <>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.5px" }}>Discovery</span>
+            <GICBadge />
+          </div>
+          <div style={textStyle}>You might like</div>
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          <div style={{ fontSize: 11, color: C.textMuted }}>You might like this</div>
+          <div style={textStyle}>based on shelf overlap</div>
         </>
       );
     }
 
-    // ── chart_climber ────────────────────────────────────────────────────────
+    // Chart Climber
     if (card.discovery_type === "chart_climber") {
       const isNew = !card.chart_movement || card.chart_movement >= 5;
       return (
@@ -111,14 +136,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          <div style={{ fontSize: 11, color: C.textMuted }}>
+          <div style={textStyle}>
             {isNew ? "jumped into the top 10" : "moved up to #" + (card.chart_movement || "") + " on The Charts"}
           </div>
         </>
       );
     }
 
-    // ── platform_trending ────────────────────────────────────────────────────
+    // Trending
     if (card.discovery_type === "platform_trending") {
       return (
         <>
@@ -127,15 +152,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          <div style={{ fontSize: 11, color: C.textMuted }}>
-            {card.actor_count + " players added this week"}
-          </div>
+          <div style={textStyle}>{card.actor_count + " players added this week"}</div>
         </>
       );
     }
 
-    // ── followed_* ───────────────────────────────────────────────────────────
+    // Follower Update
     if (isFollowCard) {
+      const actorName = actor ? (actor.handle || ("@" + actor.username)) : "Someone you follow";
       const action =
         card.discovery_type === "followed_review"         ? "reviewed" :
         card.discovery_type === "followed_now_playing"    ? "started playing" :
@@ -144,31 +168,32 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
         card.shelf_status === "playing"                   ? "started playing" :
         "added";
 
+      const postfix =
+        card.discovery_type === "followed_review"         ? "" :
+        card.discovery_type === "followed_now_playing"    ? "" :
+        card.discovery_type === "followed_just_finished"  ? "" :
+        "to their shelf";
+
       return (
         <>
-          {/* Actor — @handle + games in common on one line */}
-          {actor && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
-              <span
-                onClick={navigateToActor}
-                style={{ color: C.text, fontWeight: 700, fontSize: 12, cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              >
-                {actor.handle || ("@" + actor.username)}
-              </span>
-              {card.overlap_count > 0 && (
-                <GameTag label={card.overlap_count + " games in common"} size="sm" />
-              )}
-            </div>
-          )}
-          {/* Action + game tag on same line where possible */}
-          <div style={{ fontSize: 11, color: C.textMuted }}>{action}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+            <span
+              onClick={navigateToActor}
+              style={{ fontSize: 12, fontWeight: 700, color: C.text, cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              {actorName}
+            </span>
+            <GICBadge />
+          </div>
+          <div style={textStyle}>{action}</div>
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
+          {postfix ? <div style={textStyle}>{postfix}</div> : null}
         </>
       );
     }
@@ -176,11 +201,13 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     return null;
   };
 
-  // ─── CTA buttons ─────────────────────────────────────────────────────────
+  // ── CTA ───────────────────────────────────────────────────────────────────
   const renderCTA = () => {
     if (card.discovery_type === "chart_climber") {
       return (
-        <PixelButton fullWidth size="sm" bgStyle={"color-mix(in srgb, " + C.gold + " 10%, " + C.bg + ")"} borderColor={C.goldBorder} color={C.gold}
+        <PixelButton fullWidth size="sm"
+          bgStyle={"color-mix(in srgb, " + C.gold + " 10%, " + C.bg + ")"}
+          borderColor={C.goldBorder} color={C.gold}
           onClick={() => { setActivePage("games"); window.history.pushState({ page: "games" }, "", "/games"); }}>
           {"View The Charts →"}
         </PixelButton>
@@ -188,13 +215,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     }
     if (card.discovery_type === "followed_review") {
       return (
-        <PixelButton fullWidth size="sm" bgStyle={"color-mix(in srgb, " + C.accent + " 10%, " + C.bg + ")"} borderColor={C.accentDim} color={C.accentSoft}
+        <PixelButton fullWidth size="sm"
+          bgStyle={"color-mix(in srgb, " + C.accent + " 10%, " + C.bg + ")"}
+          borderColor={C.accentDim} color={C.accentSoft}
           onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
           {"Read their review →"}
         </PixelButton>
       );
     }
-    // Default: Add to Shelf
     if (!addedToShelf && !dismissed) {
       return (
         <div style={{ width: "100%", padding: "1px 0" }}>
@@ -225,8 +253,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           background: C.bg,
           display: "flex", flexDirection: "column",
           justifyContent: "center", alignItems: "stretch",
-          padding: "16px",
-          gap: 8,
+          padding: "16px", gap: 8,
         }}>
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => {
@@ -258,21 +285,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
       </div>
 
       {/* Content zone */}
-      <div style={{ padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 6, alignItems: "center", textAlign: "center" }}>
+      <div style={{ padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 5, alignItems: "center", textAlign: "center" }}>
         {/* Banner */}
         {banner && (
-          <div style={{ 
-            fontSize: 10, fontWeight: 700, textTransform: "uppercase", 
-            letterSpacing: "1px", color: banner.color,
-            borderBottom: "1px solid " + banner.color + "44",
-            paddingBottom: 4, width: "100%", textAlign: "center"
-          }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: banner.color }}>
             {banner.label}
           </div>
         )}
-        {/* Card body */}
         {renderBody()}
-        {/* CTA */}
         {renderCTA()}
       </div>
     </PixelCornerBox>

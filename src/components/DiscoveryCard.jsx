@@ -155,7 +155,13 @@ function getTypeLabel(discovery_type) {
     case "review_positive": return { label: "Loved It", color: C.gold };
     case "review_negative": return { label: "Skip Signal", color: C.red };
     case "thumbs_down": return { label: "Skip Signal", color: C.red };
-    case "new_similarity_match":         return null;
+    case "new_similarity_match":
+      return {
+        phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with you",
+        sub: "You might want to follow them.",
+        cta_follow: true,
+        no_game_tag: true,
+      };
     case "followed_similarity_match":    return null;
     case "chart_climber":                return { label: "Chart Climber", color: C.gold };
     case "multi_review_prompt":          return { label: "Write a Review", color: C.gold };
