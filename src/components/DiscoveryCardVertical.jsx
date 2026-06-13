@@ -105,6 +105,8 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
   };
 
   // ── Card body by type ─────────────────────────────────────────────────────
+  const actorName = actor ? (actor.handle || ("@" + actor.username)) : "Someone you follow";
+
   const renderBody = () => {
 
     // GuildLink Discovery
@@ -159,7 +161,6 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
     // Follower Update
     if (isFollowCard) {
-      const actorName = actor ? (actor.handle || ("@" + actor.username)) : "Someone you follow";
       const action =
         card.discovery_type === "followed_review"         ? "reviewed" :
         card.discovery_type === "followed_now_playing"    ? "started playing" :
