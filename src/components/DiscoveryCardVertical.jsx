@@ -13,7 +13,6 @@ function getBanner(type) {
     case "platform_trending":      return { label: "Trending on GuildLink", color: C.accent };
     case "followed_shelf_add":     return { label: "Follower Update", color: C.teal };
     case "followed_now_playing":   return { label: "Follower Update", color: C.teal };
-    case "followed_just_finished": return { label: "Follower Update", color: C.teal };
     case "followed_review":        return { label: "Follower Update", color: C.teal };
     default: return null;
   }
@@ -158,12 +157,9 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     // Follower Update
     if (isFollowCard) {
       const action =
-        card.discovery_type === "followed_review"         ? "reviewed" :
-        card.discovery_type === "followed_now_playing"    ? "started playing" :
-        card.discovery_type === "followed_just_finished"  ? "just finished" :
-        card.shelf_status === "want_to_play"              ? "wants to play" :
-        card.shelf_status === "playing"                   ? "started playing" :
-        "added";
+        card.discovery_type === "followed_review"       ? "reviewed" :
+        card.discovery_type === "followed_now_playing"  ? "is playing" :
+        "wants to play";
 
       const postfix =
         card.discovery_type === "followed_review"         ? "" :

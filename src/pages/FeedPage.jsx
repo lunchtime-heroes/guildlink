@@ -415,14 +415,21 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     ]);
     if (data) {
       const followedIds = new Set((followData || []).map(f => f.followed_user_id));
+      const activeTypes = new Set([
+        "shelf_add", "chart_climber", "platform_trending",
+        "followed_shelf_add", "followed_now_playing", "followed_review",
+        "new_similarity_match",
+      ]);
       const seenKeys = new Set();
       const sorted = [...data]
         .filter(c => {
+          if (!activeTypes.has(c.discovery_type)) return false;
           if (c.discovery_type === "new_similarity_match" && followedIds.has(c.actor_user_id)) return false;
-          if (c.discovery_type === "followed_similarity_match") return false;
+          // followed_shelf_add: only show want_to_play, not have_played
+          if (c.discovery_type === "followed_shelf_add" && c.shelf_status !== "want_to_play") return false;
           const key = c.discovery_type.startsWith("followed_")
-              ? (c.game_id || "ng") + "_" + c.discovery_type
-              : (c.game_id || "ng") + "_" + (c.actor_user_id || "na") + "_" + c.discovery_type;
+            ? (c.game_id || "ng") + "_" + c.discovery_type
+            : (c.game_id || "ng") + "_" + (c.actor_user_id || "na") + "_" + c.discovery_type;
           if (seenKeys.has(key)) return false;
           seenKeys.add(key);
           return true;
