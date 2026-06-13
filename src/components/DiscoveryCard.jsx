@@ -131,7 +131,7 @@ function getCardCopy(card, actorName) {
     case "new_similarity_match":
       return {
         phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with you",
-        sub: "You might want to follow them.",
+        sub: null,
         cta_follow: true,
         no_game_tag: true,
       };

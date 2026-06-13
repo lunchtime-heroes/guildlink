@@ -113,10 +113,6 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     if (card.discovery_type === "shelf_add") {
       return (
         <>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: "0.5px" }}>Discovery</span>
-            <GICBadge />
-          </div>
           <div style={textStyle}>You might like</div>
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
@@ -194,7 +190,6 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          {postfix ? <div style={textStyle}>{postfix}</div> : null}
         </>
       );
     }
