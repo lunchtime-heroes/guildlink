@@ -16,7 +16,11 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   const [reviews, setReviews] = useState([]);
   const [shelf, setShelf] = useState({ want_to_play: [], playing: [], have_played: [] });
   const [postGameNames, setPostGameNames] = useState({});
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = sessionStorage.getItem("playerDefaultTab");
+    if (tab) { sessionStorage.removeItem("playerDefaultTab"); return tab; }
+    return "posts";
+  });
   const [compatibility, setCompatibility] = useState(null);
   const [overlapCount, setOverlapCount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -160,7 +164,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
   const totalGames = shelf.want_to_play.length + shelf.playing.length + shelf.have_played.length;
   const tabs = [
     { id: "posts", label: `Posts${posts.length > 0 ? ` (${posts.length})` : ""}` },
-    { id: "games", label: `My Shelf${totalGames > 0 ? ` (${totalGames})` : ""}` },
+    { id: "games", label: "Shelf" + (totalGames > 0 ? " (" + totalGames + ")" : "") },
     { id: "reviews", label: `Reviews${reviews.length > 0 ? ` (${reviews.length})` : ""}` },
   ];
 

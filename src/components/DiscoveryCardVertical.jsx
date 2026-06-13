@@ -69,10 +69,10 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
   const navigateToActorShelf = () => {
     if (!actor) return;
+    sessionStorage.setItem("playerDefaultTab", "games");
     setCurrentPlayer(actor.id);
     setActivePage("player");
     window.history.pushState({ page: "player", playerId: actor.id }, "", "/player/" + (actor.handle || actor.id).replace("@", ""));
-    // Shelf tab will be default on player page
   };
 
   const handleShelfSelect = async (status) => {

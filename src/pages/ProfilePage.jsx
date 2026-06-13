@@ -848,7 +848,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const tabs = [
     { id: "posts", label: "Posts" + (postCount > 0 ? " (" + postCount + ")" : "") },
     { id: "reviews", label: "Reviews" + (userReviews.length > 0 ? " (" + userReviews.length + ")" : "") },
-    { id: "games", label: "My Shelf" + (shelfCount > 0 ? " (" + shelfCount + ")" : "") },
+    { id: "games", label: "Shelf" + (shelfCount > 0 ? " (" + shelfCount + ")" : "") },
     { id: "playstyle", label: "Play Style" },
     { id: "following", label: "Following" + (profileFollowing.length > 0 ? " (" + profileFollowing.length + ")" : "") },
     { id: "quests", label: "Quests" },
