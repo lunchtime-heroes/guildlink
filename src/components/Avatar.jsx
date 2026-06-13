@@ -20,9 +20,9 @@ function injectRingStyles() {
       0%, 100% { border-color: #b8860b; box-shadow: 0 0 6px #b8860b44; }
       50%       { border-color: #fff8dc; box-shadow: 0 0 12px #fff8dc88; }
     }
-    .gl-ring-invite-bronze { border: 3px solid #a0522d !important; animation: gl-bronze-pulse 2.5s ease-in-out infinite; }
-    .gl-ring-invite-silver { border: 3px solid #999999 !important; animation: gl-silver-pulse 2.5s ease-in-out infinite; }
-    .gl-ring-invite-gold   { border: 3px solid #b8860b !important; animation: gl-gold-pulse 2.5s ease-in-out infinite; }
+    .gl-ring-invite-bronze { border: 3px solid #a0522d !important; animation: gl-bronze-pulse 2.5s ease-in-out 3; animation-fill-mode: forwards; }
+    .gl-ring-invite-silver { border: 3px solid #999999 !important; animation: gl-silver-pulse 2.5s ease-in-out 3; animation-fill-mode: forwards; }
+    .gl-ring-invite-gold   { border: 3px solid #b8860b !important; animation: gl-gold-pulse 2.5s ease-in-out 3; animation-fill-mode: forwards; }
   `;
   document.head.appendChild(style);
 }
