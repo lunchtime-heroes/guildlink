@@ -18,6 +18,19 @@ function getBanner(type) {
   }
 }
 
+// GIC badge — defined outside component so it's not recreated on every render
+function GICBadge({ overlap_count, onClick }) {
+  if (!overlap_count || overlap_count <= 0) return null;
+  return (
+    <GameTag
+      label={overlap_count + " GIC"}
+      variant="gold"
+      size="sm"
+      onClick={onClick}
+    />
+  );
+}
+
 const SHELF_OPTIONS = [
   { status: "want_to_play", label: "Want to Play" },
   { status: "playing",      label: "Playing Now" },
@@ -27,7 +40,7 @@ const SHELF_OPTIONS = [
 
 const textStyle = { fontSize: 12, color: C.textMuted, lineHeight: 1.4 };
 
-function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn, setGameDefaultTab }) {
+const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn, setGameDefaultTab }) {
   const [game, setGame] = useState(null);
   const [actor, setActor] = useState(null);
   const [addedToShelf, setAddedToShelf] = useState(null);
@@ -90,18 +103,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     setShelfOpen(false);
   };
 
-  // ── GIC badge — gold, clickable to actor's shelf ──────────────────────────
-  const GICBadge = () => {
-    if (!card.overlap_count || card.overlap_count <= 0) return null;
-    return (
-      <GameTag
-        label={card.overlap_count + " GIC"}
-        variant="gold"
-        size="sm"
-        onClick={navigateToActorShelf}
-      />
-    );
-  };
+  // ── GIC badge ─────────────────────────────────────────────────────────────
 
   // ── Card body by type ─────────────────────────────────────────────────────
   const actorName = actor ? (actor.handle || ("@" + actor.username)) : "Someone you follow";
@@ -178,7 +180,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
             >
               {actorName}
             </span>
-            <GICBadge />
+            <GICBadge overlap_count={card.overlap_count} onClick={navigateToActorShelf} />
           </div>
           <div style={textStyle}>{action}</div>
           {game && (
@@ -239,7 +241,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface}>
       {/* Shelf overlay */}
       {shelfOpen && ReactDOM.createPortal(
-        <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9 }} />,
+        <div onClick={() => setShelfOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 8 }} />,
         document.body
       )}
       {shelfOpen && (
@@ -249,7 +251,7 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
           display: "flex", flexDirection: "column",
           justifyContent: "center", alignItems: "stretch",
           padding: "16px", gap: 8,
-        }}>
+        }} onClick={e => e.stopPropagation()}>
           {game && <div style={{ color: C.text, fontWeight: 700, fontSize: 13, textAlign: "center", marginBottom: 8 }}>{game.name}</div>}
           {SHELF_OPTIONS.map(opt => {
             const optColor = opt.status === "playing" ? C.green : opt.status === "want_to_play" ? C.accent : opt.status === "have_played" ? C.gold : C.red;
