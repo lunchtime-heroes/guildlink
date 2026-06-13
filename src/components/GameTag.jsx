@@ -25,7 +25,7 @@ const CLIP_MD = "polygon(" + buildClip(CONFIGS.md.steps, CONFIGS.md.s) + ")";
 const CLIP_LG = "polygon(" + buildClip(CONFIGS.lg.steps, CONFIGS.lg.s) + ")";
 
 function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", style = {} }) {
-  const clip = size === "lg" ? CLIP_LG : size === "sm" ? CLIP_SM : CLIP_MD;
+  const clip = size === "lg" ? CLIP_LG : CLIP_MD; // sm uses md corners — 1-step is invisible
 
   // Resolve colors by variant
   let bg, border, color;

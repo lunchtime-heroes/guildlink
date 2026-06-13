@@ -1163,13 +1163,17 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           // All discovery cards are vertical — posts interspersed between rows
           if (!isGuest && discoveryCards.length > 0) {
 
-            // Categorize cards so no two follower updates appear side by side
-            const isFollower = (c) => c.discovery_type.startsWith("followed_");
-            const isSimilarity = (c) => ["shelf_add", "now_playing", "just_finished", "review_positive", "review_negative", "thumbs_down", "new_similarity_match"].includes(c.discovery_type);
+            // Cards with no game_id (similarity matches) render horizontal
+            const noGameCards = discoveryCards.filter(c => !c.game_id);
+            const gameCards = discoveryCards.filter(c => !!c.game_id);
 
-            // Within follower category: round-robin by actor so no one person dominates
+            // Categorize game cards
+            const isFollower = (c) => c.discovery_type.startsWith("followed_");
+            const isSimilarity = (c) => ["shelf_add", "now_playing", "just_finished", "review_positive", "review_negative", "thumbs_down"].includes(c.discovery_type);
+
+            // Within follower: round-robin by actor
             const followerByActor = {};
-            discoveryCards.filter(isFollower).forEach(c => {
+            gameCards.filter(isFollower).forEach(c => {
               const key = c.actor_user_id || "unknown";
               if (!followerByActor[key]) followerByActor[key] = [];
               followerByActor[key].push(c);
@@ -1180,9 +1184,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               followerActorQueues.forEach(q => { if (q.length > 0) followerCards.push(q.shift()); });
             }
 
-            // Similarity cards: round-robin by type
+            // Similarity: round-robin by type
             const similarityByType = {};
-            discoveryCards.filter(isSimilarity).forEach(c => {
+            gameCards.filter(isSimilarity).forEach(c => {
               if (!similarityByType[c.discovery_type]) similarityByType[c.discovery_type] = [];
               similarityByType[c.discovery_type].push(c);
             });
@@ -1192,11 +1196,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               similarityQueues.forEach(q => { if (q.length > 0) similarityCards.push(q.shift()); });
             }
 
-            // System cards: chart climbers, trending, etc.
-            const systemCards = discoveryCards.filter(c => !isFollower(c) && !isSimilarity(c));
+            // System: chart, trending, etc.
+            const systemCards = gameCards.filter(c => !isFollower(c) && !isSimilarity(c));
 
-            // Final mix: 1 similarity, 1 follower, 1 system, repeat
-            // This guarantees no two follower cards are ever adjacent
+            // Final vertical order: 1 similarity, 1 follower, 1 system, repeat
             const orderedCards = [];
             let si2 = 0; let fi2 = 0; let syi = 0;
             while (si2 < similarityCards.length || fi2 < followerCards.length || syi < systemCards.length) {
@@ -1205,15 +1208,23 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
               if (syi < systemCards.length) orderedCards.push(systemCards[syi++]);
             }
 
+            // Horizontal stream: no-game discovery cards + posts interleaved
+            const horizontalStream = [];
+            let hci = 0; let pi = 0;
+            while (hci < noGameCards.length || pi < livePosts.length) {
+              if (hci < noGameCards.length) horizontalStream.push({ type: "discovery", card: noGameCards[hci++] });
+              if (pi < livePosts.length) horizontalStream.push({ type: "post", post: livePosts[pi++] });
+            }
+
             const cardsPerRow = isMobile ? 2 : 3;
-            let ci = 0; let pi = 0;
-            while (ci < orderedCards.length || pi < livePosts.length) {
-              // 1 row of discovery cards
-              if (ci < orderedCards.length) {
-                const rowCards = orderedCards.slice(ci, ci + cardsPerRow);
-                ci += cardsPerRow;
+            let vci = 0; let hi = 0;
+            while (vci < orderedCards.length || hi < horizontalStream.length) {
+              // 1 row of vertical discovery cards
+              if (vci < orderedCards.length) {
+                const rowCards = orderedCards.slice(vci, vci + cardsPerRow);
+                vci += cardsPerRow;
                 items.push(
-                  <div key={"vrow_" + ci} style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 10, marginBottom: 10 }}>
+                  <div key={"vrow_" + vci} style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 10, marginBottom: 10 }}>
                     {rowCards.map(dc => (
                       <DiscoveryCardVertical key={"dcv_" + dc.id} card={dc}
                         currentUser={user} setActivePage={setActivePage}
@@ -1225,10 +1236,19 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                   </div>
                 );
               }
-              // 2 posts
-              for (let h = 0; h < 2 && pi < livePosts.length; h++) {
-                const el = renderPost(livePosts[pi++]);
-                if (el) items.push(el);
+              // 2 horizontal items (posts + no-game discovery cards)
+              for (let h = 0; h < 2 && hi < horizontalStream.length; h++) {
+                const item = horizontalStream[hi++];
+                if (item.type === "discovery") {
+                  items.push(<DiscoveryCard key={"dc_" + item.card.id} card={item.card}
+                    currentUser={user} setActivePage={setActivePage}
+                    setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                    setGameDefaultTab={setGameDefaultTab}
+                    isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn} />);
+                } else {
+                  const el = renderPost(item.post);
+                  if (el) items.push(el);
+                }
               }
             }
             return items;
