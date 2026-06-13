@@ -201,9 +201,7 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
         .single()
         .then(({ data }) => { if (data) setGame(data); });
     }
-    if (!card.seen) {
-      supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id);
-    }
+
     if (card.actor_user_id && (card.discovery_type === "new_similarity_match" || card.discovery_type === "followed_similarity_match")) {
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
         if (!authUser) return;
@@ -269,7 +267,10 @@ function DiscoveryCard({ card, currentUser, setActivePage, setCurrentGame, setCu
     if (isGuest) { onSignIn?.("Sign in to follow players."); return; }
     if (!actor) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    await supabase.from("follows").insert({ follower_id: authUser.id, followed_user_id: actor.id });
+    await Promise.all([
+      supabase.from("follows").insert({ follower_id: authUser.id, followed_user_id: actor.id }),
+      supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id),
+    ]);
     setFollowed(true);
   };
 

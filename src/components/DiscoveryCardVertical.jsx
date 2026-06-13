@@ -58,9 +58,6 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
       supabase.from("profiles").select("id, username, handle").eq("id", card.actor_user_id).single()
         .then(({ data }) => { if (data) setActor(data); });
     }
-    if (!card.seen) {
-      supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id);
-    }
   }, [card.id]);
 
   if (dismissed) return null;
@@ -217,7 +214,12 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
         <PixelButton fullWidth size="sm"
           bgStyle={"color-mix(in srgb, " + C.accent + " 10%, " + C.bg + ")"}
           borderColor={C.accentDim} color={C.accentSoft}
-          onClick={() => { if (setGameDefaultTab) setGameDefaultTab("reviews"); navigateToGame(); }}>
+          onClick={() => {
+            supabase.from("discovery_cards").update({ seen: true }).eq("id", card.id);
+            setDismissed(true);
+            if (setGameDefaultTab) setGameDefaultTab("reviews");
+            navigateToGame();
+          }}>
           {"Read their review →"}
         </PixelButton>
       );
