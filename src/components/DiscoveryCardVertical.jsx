@@ -194,10 +194,13 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
       );
     }
 
-    return null;
+    // Fallback — show game tag if we have it
+    return game ? (
+      <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
+        <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
+      </div>
+    ) : null;
   };
-
-  // ── CTA ───────────────────────────────────────────────────────────────────
   const renderCTA = () => {
     if (card.discovery_type === "chart_climber") {
       return (

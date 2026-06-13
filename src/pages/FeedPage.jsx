@@ -420,7 +420,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         .filter(c => {
           if (c.discovery_type === "new_similarity_match" && followedIds.has(c.actor_user_id)) return false;
           if (c.discovery_type === "followed_similarity_match") return false;
-          const key = (c.game_id || "ng") + "_" + (c.actor_user_id || "na") + "_" + c.discovery_type;
+          const key = c.discovery_type.startsWith("followed_")
+              ? (c.game_id || "ng") + "_" + c.discovery_type
+              : (c.game_id || "ng") + "_" + (c.actor_user_id || "na") + "_" + c.discovery_type;
           if (seenKeys.has(key)) return false;
           seenKeys.add(key);
           return true;
