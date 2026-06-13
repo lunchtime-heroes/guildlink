@@ -128,14 +128,20 @@ function getCardCopy(card, actorName) {
         cta_ask: "See the review",
       };
 
+    case "new_similarity_match":
+      return {
+        phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with you",
+        sub: "You might want to follow them.",
+        cta_follow: true,
+        no_game_tag: true,
+      };
+
     case "chart_climber":
       return {
         phrase: "is climbing The Charts this week" + (card.chart_movement ? " — up " + card.chart_movement + " positions:" : ":"),
         sub: "It's on your shelf.",
         cta_charts: true,
       };
-
-    case "multi_review_prompt":
       return {
         phrase: card.actor_count + " players reviewed:",
         sub: "You've played it — what did you think?",
@@ -149,27 +155,20 @@ function getCardCopy(card, actorName) {
 
 function getTypeLabel(discovery_type) {
   switch (discovery_type) {
-    case "shelf_add": return { phrase: "You might like this", sub: "Based on shelf overlap.", cta_shelf: true };
-    case "now_playing": return { label: "Now Playing", color: C.green };
-    case "just_finished": return { label: "Just Finished", color: C.teal };
-    case "review_positive": return { label: "Loved It", color: C.gold };
-    case "review_negative": return { label: "Skip Signal", color: C.red };
-    case "thumbs_down": return { label: "Skip Signal", color: C.red };
-    case "new_similarity_match":
-      return {
-        phrase: actorName + " has " + (card.overlap_count || "several") + " games in common with you",
-        sub: "You might want to follow them.",
-        cta_follow: true,
-        no_game_tag: true,
-      };
-    case "followed_similarity_match":    return null;
-    case "chart_climber":                return { label: "Chart Climber", color: C.gold };
-    case "multi_review_prompt":          return { label: "Write a Review", color: C.gold };
-    case "platform_trending":            return { label: "Trending", color: C.accent };
-    case "followed_shelf_add":           return null;
-    case "followed_now_playing":         return { label: "Now Playing", color: C.green };
-    case "followed_just_finished":       return { label: "Just Finished", color: C.teal };
-    case "followed_review":              return { label: "New Review", color: C.gold };
+    case "now_playing":            return { label: "Now Playing", color: C.green };
+    case "just_finished":          return { label: "Just Finished", color: C.teal };
+    case "review_positive":        return { label: "Loved It", color: C.gold };
+    case "review_negative":        return { label: "Skip Signal", color: C.red };
+    case "thumbs_down":            return { label: "Skip Signal", color: C.red };
+    case "new_similarity_match":   return null;
+    case "followed_similarity_match": return null;
+    case "chart_climber":          return { label: "Chart Climber", color: C.gold };
+    case "multi_review_prompt":    return { label: "Write a Review", color: C.gold };
+    case "platform_trending":      return { label: "Trending", color: C.accent };
+    case "followed_shelf_add":     return null;
+    case "followed_now_playing":   return { label: "Now Playing", color: C.green };
+    case "followed_just_finished": return { label: "Just Finished", color: C.teal };
+    case "followed_review":        return { label: "New Review", color: C.gold };
     default: return null;
   }
 }
