@@ -91,15 +91,12 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     if (card.discovery_type === "shelf_add") {
       return (
         <>
-          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>
-            You might like
-          </div>
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          <div style={{ fontSize: 10, color: C.textDim }}>based on shelf overlap</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>You might like this</div>
         </>
       );
     }
@@ -109,16 +106,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
       const isNew = !card.chart_movement || card.chart_movement >= 5;
       return (
         <>
-          {isNew
-            ? <div style={{ fontSize: 11, fontWeight: 700, color: C.gold }}>New to the top 10</div>
-            : <div style={{ fontSize: 11, color: C.textMuted }}>{"Moved up to #" + (card.chart_movement || "") + " on The Charts"}</div>
-          }
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          {isNew && <div style={{ fontSize: 10, color: C.textDim }}>jumped into the top 10</div>}
+          <div style={{ fontSize: 11, color: C.textMuted }}>
+            {isNew ? "jumped into the top 10" : "moved up to #" + (card.chart_movement || "") + " on The Charts"}
+          </div>
         </>
       );
     }
@@ -127,15 +122,14 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
     if (card.discovery_type === "platform_trending") {
       return (
         <>
-          <div style={{ fontSize: 11, color: C.textMuted }}>
-            {card.actor_count + " users added"}
-          </div>
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
               <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ maxWidth: "100%" }} />
             </div>
           )}
-          <div style={{ fontSize: 10, color: C.textDim }}>to their shelves this week</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>
+            {card.actor_count + " players added this week"}
+          </div>
         </>
       );
     }
@@ -152,24 +146,23 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
 
       return (
         <>
-          {/* Actor — just @handle, clickable */}
+          {/* Actor — @handle + games in common on one line */}
           {actor && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-              <div
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap" }}>
+              <span
                 onClick={navigateToActor}
-                style={{ cursor: "pointer", textAlign: "center" }}
+                style={{ color: C.text, fontWeight: 700, fontSize: 12, cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
               >
-                <span style={{ color: C.text, fontWeight: 700, fontSize: 12 }}>
-                  {actor.handle || ("@" + actor.username)}
-                </span>
-              </div>
+                {actor.handle || ("@" + actor.username)}
+              </span>
               {card.overlap_count > 0 && (
                 <GameTag label={card.overlap_count + " games in common"} size="sm" />
               )}
             </div>
           )}
+          {/* Action + game tag on same line where possible */}
           <div style={{ fontSize: 11, color: C.textMuted }}>{action}</div>
           {game && (
             <div style={{ width: "100%", display: "flex", justifyContent: "center", overflow: "hidden" }}>
@@ -268,7 +261,12 @@ function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGam
       <div style={{ padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 6, alignItems: "center", textAlign: "center" }}>
         {/* Banner */}
         {banner && (
-          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: banner.color, opacity: 0.8 }}>
+          <div style={{ 
+            fontSize: 10, fontWeight: 700, textTransform: "uppercase", 
+            letterSpacing: "1px", color: banner.color,
+            borderBottom: "1px solid " + banner.color + "44",
+            paddingBottom: 4, width: "100%", textAlign: "center"
+          }}>
             {banner.label}
           </div>
         )}

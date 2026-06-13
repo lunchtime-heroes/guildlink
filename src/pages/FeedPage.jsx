@@ -418,6 +418,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const sorted = [...data]
         .filter(c => {
           if (c.discovery_type === "new_similarity_match" && followedIds.has(c.actor_user_id)) return false;
+          if (c.discovery_type === "followed_similarity_match") return false;
           return true;
         })
         .sort((a, b) => {
