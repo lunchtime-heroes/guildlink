@@ -180,6 +180,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
   const [targetPostId, setTargetPostId] = useState(null);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
   const [feedLoading, setFeedLoading] = useState(true);
   const [hasMorePosts, setHasMorePosts] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -405,14 +406,20 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
       loadDiscoveryCards();
     }
+  }, []);
 
-    // Handle navigation from a notification click — scroll to and highlight a specific post
+  // Handle navigation from a notification click — scroll to and highlight a specific post.
+  // Runs on mount AND whenever activePage becomes "feed" again, since clicking a post
+  // notification while already on the feed doesn't remount this component.
+  useEffect(() => {
+    if (activePage !== "feed") return;
     const pendingPostId = sessionStorage.getItem("feedTargetPostId");
     if (pendingPostId) {
       sessionStorage.removeItem("feedTargetPostId");
       setTargetPostId(pendingPostId);
+      setScrollTrigger(t => t + 1);
     }
-  }, []);
+  }, [activePage]);
 
   // Once posts are loaded, if a target post isn't in the list (e.g. older than the
   // initial 20-post window), fetch it directly so it can be displayed and scrolled to.
@@ -450,7 +457,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [targetPostId, livePosts]);
+  }, [targetPostId, livePosts, scrollTrigger]);
 
   const loadDiscoveryCards = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
