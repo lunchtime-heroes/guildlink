@@ -49,6 +49,14 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
 
 function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit, autoExpandComments }) {
   const [showComments, setShowComments] = useState(!!autoExpandComments);
+
+  // useState's initializer only runs once on mount — if this post was already
+  // rendered (e.g. loaded in the initial feed batch) before targetPostId was set
+  // from a notification click, autoExpandComments flips to true AFTER mount and
+  // the initializer above won't catch it. This effect handles that case.
+  useEffect(() => {
+    if (autoExpandComments) setShowComments(true);
+  }, [autoExpandComments]);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
