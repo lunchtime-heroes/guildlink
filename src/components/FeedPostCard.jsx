@@ -235,13 +235,20 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     if (!post.id || !post.id.includes('-')) return;
     const { data, error } = await supabase
       .from("comments")
-      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials)")
+      .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
     if (!error && data) {
-      setLiveComments(data);
-      resolveCommentGameNames(data);
-      const ids = data.map(c => c.id);
+      const npcIds = [...new Set(data.filter(c => c.npc_id).map(c => c.npc_id))];
+      let npcMap = {};
+      if (npcIds.length > 0) {
+        const { data: npcData } = await supabase.from("npcs").select("id, name, handle, avatar_initials").in("id", npcIds);
+        (npcData || []).forEach(n => { npcMap[n.id] = n; });
+      }
+      const withNPCs = data.map(c => c.npc_id ? { ...c, npcs: npcMap[c.npc_id] || null } : c);
+      setLiveComments(withNPCs);
+      resolveCommentGameNames(withNPCs);
+      const ids = withNPCs.map(c => c.id);
       if (ids.length > 0) {
         const { data: reactions } = await supabase
           .from("comment_reactions")
