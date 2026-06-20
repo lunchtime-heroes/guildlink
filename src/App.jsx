@@ -1206,8 +1206,13 @@ export default function GuildLink() {
   // this surfaces the post within the feed, matching how all post interaction works today.
   // PostModal was referenced here previously but never existed as a component,
   // causing a ReferenceError and black page on every notification click.
+  // Uses state (not just sessionStorage) because setActivePage("feed") is a no-op
+  // when already on the feed page — FeedPage needs a changing prop to react to,
+  // since activePage itself won't change value in that case.
+  const [feedTargetPost, setFeedTargetPost] = useState(null); // { id, ts } - set when a post notification is clicked
+
   const navToPost = (postId) => {
-    sessionStorage.setItem("feedTargetPostId", postId);
+    setFeedTargetPost({ id: postId, ts: Date.now() });
     navToPage("feed");
   };
 
@@ -1328,7 +1333,7 @@ export default function GuildLink() {
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}
       {activePage === "charts" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
-      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} onExit={url => setExitModalUrl(url)} setGameDefaultTab={setGameDefaultTab} />}
+      {activePage === "feed" && <FeedPage activePage={activePage} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setProfileDefaultTab={setProfileDefaultTab} onQuestTrigger={() => session?.user?.id && checkQuestCompletions(session.user.id)} onExit={url => setExitModalUrl(url)} setGameDefaultTab={setGameDefaultTab} feedTargetPost={feedTargetPost} />}
       {activePage === "reviews" && <ReviewsPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} setGameDefaultTab={setGameDefaultTab} />}
       {activePage === "games" && <GamesPage setActivePage={navToPage} setCurrentGame={navToGame} isMobile={isMobile} currentUser={liveUser} onSignIn={openSignIn} />}
       {activePage === "game" && <GamePage gameId={currentGame} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={gameDefaultTab} onTabConsumed={() => setGameDefaultTab(null)} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} />}

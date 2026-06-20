@@ -172,7 +172,7 @@ function ShelfSidebarWidget({ setActivePage, setCurrentGame, setProfileDefaultTa
 }
 
 
-function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit, setGameDefaultTab }) {
+function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setProfileDefaultTab, onQuestTrigger, onExit, setGameDefaultTab, feedTargetPost }) {
   const user = currentUser;
   const [showBanner, setShowBanner] = useState(false);
   const [postText, setPostText] = useState("");
@@ -409,17 +409,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   }, []);
 
   // Handle navigation from a notification click — scroll to and highlight a specific post.
-  // Runs on mount AND whenever activePage becomes "feed" again, since clicking a post
-  // notification while already on the feed doesn't remount this component.
+  // feedTargetPost is a { id, ts } object from App.jsx that changes (new ts) every click,
+  // even if clicking the same post twice or already being on the feed page.
   useEffect(() => {
-    if (activePage !== "feed") return;
-    const pendingPostId = sessionStorage.getItem("feedTargetPostId");
-    if (pendingPostId) {
-      sessionStorage.removeItem("feedTargetPostId");
-      setTargetPostId(pendingPostId);
-      setScrollTrigger(t => t + 1);
-    }
-  }, [activePage]);
+    if (!feedTargetPost?.id) return;
+    setTargetPostId(feedTargetPost.id);
+    setScrollTrigger(t => t + 1);
+  }, [feedTargetPost]);
 
   // Once posts are loaded, if a target post isn't in the list (e.g. older than the
   // initial 20-post window), fetch it directly so it can be displayed and scrolled to.

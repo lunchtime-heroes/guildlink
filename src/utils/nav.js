@@ -34,9 +34,10 @@ export const navToPage = (page, setActivePage) => {
   pushNav({ page }, path);
 };
 
-// Navigates to the feed and scrolls to a specific post (e.g. from a notification).
-// No dedicated single-post page exists yet — this surfaces the post within the
-// normal feed view, matching how all post interaction already happens in-app.
+// Note: navToPost in App.jsx uses local React state (not sessionStorage) so it
+// works correctly even when already on the feed page — see App.jsx for the real
+// implementation. This export is kept for reference/consistency but is not
+// currently wired into App.jsx's navigation calls.
 export const navToPost = (postId, setActivePage) => {
   sessionStorage.setItem("feedTargetPostId", postId);
   setActivePage("feed");
