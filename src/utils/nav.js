@@ -33,3 +33,12 @@ export const navToPage = (page, setActivePage) => {
   const path = page === "founding" ? "/about" : page === "squad" ? "/guilds" : `/${page}`;
   pushNav({ page }, path);
 };
+
+// Navigates to the feed and scrolls to a specific post (e.g. from a notification).
+// No dedicated single-post page exists yet — this surfaces the post within the
+// normal feed view, matching how all post interaction already happens in-app.
+export const navToPost = (postId, setActivePage) => {
+  sessionStorage.setItem("feedTargetPostId", postId);
+  setActivePage("feed");
+  pushNav({ page: "feed", postId }, "/feed");
+};

@@ -179,6 +179,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [posting, setPosting] = useState(false);
   const [chartRefresh, setChartRefresh] = useState(0);
   const [livePosts, setLivePosts] = useState([]);
+  const [targetPostId, setTargetPostId] = useState(null);
   const [feedLoading, setFeedLoading] = useState(true);
   const [hasMorePosts, setHasMorePosts] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -404,7 +405,52 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
 
       loadDiscoveryCards();
     }
+
+    // Handle navigation from a notification click — scroll to and highlight a specific post
+    const pendingPostId = sessionStorage.getItem("feedTargetPostId");
+    if (pendingPostId) {
+      sessionStorage.removeItem("feedTargetPostId");
+      setTargetPostId(pendingPostId);
+    }
   }, []);
+
+  // Once posts are loaded, if a target post isn't in the list (e.g. older than the
+  // initial 20-post window), fetch it directly so it can be displayed and scrolled to.
+  useEffect(() => {
+    if (!targetPostId || isGuest) return;
+    const alreadyLoaded = livePosts.some(p => p.id === targetPostId);
+    if (alreadyLoaded) return;
+    if (livePosts.length === 0) return; // wait for initial load to finish first
+
+    const fetchTargetPost = async () => {
+      const { data } = await supabase.from("posts")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+        .eq("id", targetPostId)
+        .single();
+      if (data) {
+        const mapped = { ...data, comment_count: data.comments?.length || 0 };
+        setLivePosts(prev => [mapped, ...prev.filter(p => p.id !== mapped.id)]);
+      }
+    };
+    fetchTargetPost();
+  }, [targetPostId, livePosts.length, isGuest]);
+
+  // Scroll to the target post once it's present in the rendered list
+  useEffect(() => {
+    if (!targetPostId) return;
+    if (!livePosts.some(p => p.id === targetPostId)) return;
+    const el = document.getElementById("post-" + targetPostId);
+    if (el) {
+      const timer = setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.style.outline = "2px solid " + C.accent;
+        el.style.outlineOffset = "4px";
+        el.style.borderRadius = "8px";
+        setTimeout(() => { el.style.outline = "none"; }, 3000);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [targetPostId, livePosts]);
 
   const loadDiscoveryCards = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -1149,27 +1195,30 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
             const displayAuthor = author || npcFallback || realFallback;
             if (post.post_type === "question") return null;
             return (
-              <FeedPostCard key={post.id} post={{
-                id: post.id, npc_id: post.npc_id, game_tag: post.game_tag, user_id: post.user_id,
-                user: {
-                  name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
-                  handle: displayAuthor?.handle || "",
-                  avatar: displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL",
-                  status: "online", isNPC,
-                  isFounding: !isNPC && (displayAuthor?.is_founding || false),
-                  activeRing: !isNPC ? (displayAuthor?.active_ring || "none") : "none",
-                  avatarConfig: !isNPC ? (displayAuthor?.avatar_config || null) : null,
-                },
-                content: post.content, gameId: post.game_tag,
-                tagged_users: post.tagged_users || [],
-                time: timeAgo(post.created_at),
-                likes: post.likes || 0, liked: post.liked || false,
-                comment_count: post.comment_count || 0, commentList: [],
-                link_url: post.link_url || null,
-              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame}
-                setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer}
-                isMobile={isMobile} currentUser={user} isGuest={isGuest}
-                onSignIn={onSignIn} onExit={onExit} />
+              <div key={"postwrap_" + post.id} id={"post-" + post.id}>
+                <FeedPostCard key={post.id} post={{
+                  id: post.id, npc_id: post.npc_id, game_tag: post.game_tag, user_id: post.user_id,
+                  user: {
+                    name: isNPC ? (displayAuthor?.name || "NPC") : (displayAuthor?.username || "Gamer"),
+                    handle: displayAuthor?.handle || "",
+                    avatar: displayAuthor?.avatar_initials || displayAuthor?.avatar || "GL",
+                    status: "online", isNPC,
+                    isFounding: !isNPC && (displayAuthor?.is_founding || false),
+                    activeRing: !isNPC ? (displayAuthor?.active_ring || "none") : "none",
+                    avatarConfig: !isNPC ? (displayAuthor?.avatar_config || null) : null,
+                  },
+                  content: post.content, gameId: post.game_tag,
+                  tagged_users: post.tagged_users || [],
+                  time: timeAgo(post.created_at),
+                  likes: post.likes || 0, liked: post.liked || false,
+                  comment_count: post.comment_count || 0, commentList: [],
+                  link_url: post.link_url || null,
+                }} setActivePage={setActivePage} setCurrentGame={setCurrentGame}
+                  setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer}
+                  isMobile={isMobile} currentUser={user} isGuest={isGuest}
+                  onSignIn={onSignIn} onExit={onExit}
+                  autoExpandComments={post.id === targetPostId} />
+              </div>
             );
           };
 

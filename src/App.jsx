@@ -1127,7 +1127,6 @@ export default function GuildLink() {
     setNotifications([]);
   };
 
-  const [postModal, setPostModal] = useState(null); // post_id to show in modal
   const [exitModalUrl, setExitModalUrl] = useState(null);
   const [questBanner, setQuestBanner] = useState(null); // { quest_id, title, xp_reward, reward_label }
 
@@ -1201,6 +1200,15 @@ export default function GuildLink() {
     const path = page === "founding" ? "/about" : page === "squad" ? "/guilds" : `/${page}`;
     window.history.pushState({ page }, "", path);
     supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", page); });
+  };
+
+  // Navigates to a specific post from a notification. No standalone post page exists —
+  // this surfaces the post within the feed, matching how all post interaction works today.
+  // PostModal was referenced here previously but never existed as a component,
+  // causing a ReferenceError and black page on every notification click.
+  const navToPost = (postId) => {
+    sessionStorage.setItem("feedTargetPostId", postId);
+    navToPage("feed");
   };
 
   const liveUser = profile ? {
@@ -1315,8 +1323,7 @@ export default function GuildLink() {
         @keyframes pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
         ::-webkit-scrollbar { display: ${isMobile ? "none" : "block"}; }
       `}</style>
-      <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={(postId) => setPostModal(postId)} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} setCurrentGuild={navToGuild} />
-      {postModal && <PostModal postId={postModal} onClose={() => setPostModal(null)} currentUser={liveUser} onNavigateToPlayer={(userId) => { setPostModal(null); navToPlayer(userId); setActivePage("player"); }} />}
+      <NavBar activePage={activePage} setActivePage={navToPage} isMobile={isMobile} signOut={signOut} currentUser={liveUser} isGuest={isGuest} onSignIn={() => openSignIn()} onSignUp={openSignUp} notifications={notifications} onMarkAllRead={() => markAllRead(session?.user?.id)} onClearAll={() => clearAllNotifications(session?.user?.id)} onOpenPost={navToPost} setProfileDefaultTab={setProfileDefaultTab} setCurrentGame={navToGame} setCurrentPlayer={navToPlayer} setCurrentGuild={navToGuild} />
       {exitModalUrl && <ExitModal url={exitModalUrl} onClose={() => setExitModalUrl(null)} />}
       {activePage === "admin" && liveUser?.is_admin && <AdminPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "npc-studio" && (liveUser?.is_admin || liveUser?.is_writer) && <NPCStudioPage isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentNPC={setCurrentNPC} />}

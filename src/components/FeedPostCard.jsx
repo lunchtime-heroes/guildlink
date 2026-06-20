@@ -47,8 +47,8 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit }) {
-  const [showComments, setShowComments] = useState(false);
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit, autoExpandComments }) {
+  const [showComments, setShowComments] = useState(!!autoExpandComments);
   const [localPost, setLocalPost] = useState(post);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
