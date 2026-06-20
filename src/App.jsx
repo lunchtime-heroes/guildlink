@@ -842,6 +842,7 @@ export default function GuildLink() {
   const [themeKey, setThemeKey] = useState("deep-space");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUsernameGate, setShowUsernameGate] = useState(false);
+  const [feedTargetPost, setFeedTargetPost] = useState(null); // { id, ts } - set when a post notification is clicked
   const width = useWindowSize();
   const isMobile = width < 768;
 
@@ -1209,7 +1210,6 @@ export default function GuildLink() {
   // Uses state (not just sessionStorage) because setActivePage("feed") is a no-op
   // when already on the feed page — FeedPage needs a changing prop to react to,
   // since activePage itself won't change value in that case.
-  const [feedTargetPost, setFeedTargetPost] = useState(null); // { id, ts } - set when a post notification is clicked
 
   const navToPost = (postId) => {
     setFeedTargetPost({ id: postId, ts: Date.now() });
