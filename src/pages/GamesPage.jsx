@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
-import { logChartEvent } from "../utils.js";
+import { logChartEvent, formatScore } from "../utils.js";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
@@ -637,7 +637,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 <div style={{ display: "flex", justifyContent: "space-around", alignItems: "flex-end", marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid " + C.border }}>
                   {orbs.map(orb => {
                     const size = orbSize(orb.value);
-                    const displayScore = orb.value > 0 ? "+" + orb.value : "—";
+                    const displayScore = orb.value > 0 ? "+" + formatScore(orb.value) : "—";
                     return (
                       <div key={orb.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: 1 }}>
                         <div style={{ width: size, height: size, borderRadius: "50%", background: orb.color + "22", border: "2px solid " + orb.color + (orb.value === 0 ? "33" : "99"), display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.3s", boxShadow: orb.value > 0 ? "0 0 " + (size * 0.3) + "px " + orb.color + "33" : "none" }}>

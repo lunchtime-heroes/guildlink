@@ -19,6 +19,16 @@ function getPacificDateParts(date = new Date()) {
   };
 }
 
+// Formats a raw chart/signal score for display only — multiplies by 100 for
+// legibility (0.05 -> "5.0" instead of ".05") and keeps one decimal place so
+// near-tied scores stay visually distinguishable instead of looking identical.
+// Never use the output of this for comparisons, sorting, or storage — always
+// rank and compute on the raw decimal score. This is presentation-only.
+function formatScore(rawScore) {
+  if (rawScore === null || rawScore === undefined) return "0.0";
+  return (rawScore * 100).toFixed(1);
+}
+
 // Week start helper — Sunday 12:00am Pacific time
 function getWeekStart() {
   const { y, m, d } = getPacificDateParts();
@@ -139,7 +149,7 @@ async function updateTasteProfile(gameId, eventType, userId) {
   } catch(e) { /* non-fatal */ }
 }
 
-export { getWeekStart, logAnalytics, logChartEvent, updateTasteProfile, getAge, timeAgo, notifLabel, useWindowSize };
+export { getWeekStart, logAnalytics, logChartEvent, updateTasteProfile, getAge, timeAgo, notifLabel, useWindowSize, formatScore };
 
 export async function isUsernameRestricted(value) {
   const normalize = (str) => str
