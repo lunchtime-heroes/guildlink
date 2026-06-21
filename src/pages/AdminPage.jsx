@@ -51,7 +51,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [usersRes, totalUsersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes] = await Promise.all([
+    const [usersRes, totalUsersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes, weekUsersRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
@@ -66,6 +66,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       supabase.from("discovery_events").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
       supabase.from("user_similarity").select("user_id", { count: "exact", head: true }),
       supabase.from("user_similarity").select("overlap_count"),
+      supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
     ]);
 
     if (usersRes.data) setUsers(usersRes.data);
@@ -137,7 +138,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       setChartEvents(Object.values(byGame).sort((a, b) => b.total - a.total).slice(0, 15));
     }
 
-    const newUsersWeek = usersRes.data?.filter(u => new Date(u.created_at) > new Date(oneWeekAgo)).length || 0;
+    const newUsersWeek = weekUsersRes.count || 0;
     setStats({
       totalUsers: totalUsersRes.count || 0,
       newUsersWeek,
