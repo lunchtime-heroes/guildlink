@@ -1,25 +1,34 @@
 import { useState, useEffect } from "react";
 import supabase from "./supabase.js";
 
+// Returns Pacific calendar date parts for a given instant, via Intl directly.
+// NEVER replace this with manual UTC-offset arithmetic — a sign error in that
+// approach previously caused chart_events to get duplicate-stamped with the
+// wrong week_start for users outside Pacific time, inflating chart scores.
+// Intl.DateTimeFormat reads the Pacific calendar date directly and is immune
+// to the browser's own local timezone, so it can't drift like that again.
+function getPacificDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(date);
+  return {
+    y: Number(parts.find(p => p.type === "year").value),
+    m: Number(parts.find(p => p.type === "month").value),
+    d: Number(parts.find(p => p.type === "day").value),
+  };
+}
+
 // Week start helper — Sunday 12:00am Pacific time
-// Uses a fixed UTC offset: Pacific is UTC-8 (PST) or UTC-7 (PDT)
-// We detect DST automatically via Intl
 function getWeekStart() {
-  const now = new Date();
-  // Get current Pacific offset in minutes
-  const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-    .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-  // Shift now to Pacific time
-  const pacificNow = new Date(now.getTime() + (pacificOffset + now.getTimezoneOffset()) * 60000);
-  // Roll back to the most recent Sunday
-  const dayOfWeek = pacificNow.getDay(); // 0 = Sunday
-  const sunday = new Date(pacificNow);
-  sunday.setDate(pacificNow.getDate() - dayOfWeek);
-  // Return as YYYY-MM-DD using Pacific date components
-  const y = sunday.getFullYear();
-  const m = String(sunday.getMonth() + 1).padStart(2, '0');
-  const d = String(sunday.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const { y, m, d } = getPacificDateParts();
+  const pacificDate = new Date(Date.UTC(y, m - 1, d));
+  const dayOfWeek = pacificDate.getUTCDay(); // 0 = Sunday
+  pacificDate.setUTCDate(pacificDate.getUTCDate() - dayOfWeek);
+  const sy = pacificDate.getUTCFullYear();
+  const sm = String(pacificDate.getUTCMonth() + 1).padStart(2, '0');
+  const sd = String(pacificDate.getUTCDate()).padStart(2, '0');
+  return `${sy}-${sm}-${sd}`;
 }
 
 async function logAnalytics(userId, eventType, page, metadata = {}) {
@@ -34,11 +43,8 @@ async function logAnalytics(userId, eventType, page, metadata = {}) {
 async function logChartEvent(gameId, eventType, userId) {
   if (!gameId || !gameId.includes('-')) return;
   const weekStart = getWeekStart();
-  const today = new Date();
-  const pacificOffset = -new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
-    .match(/GMT([+-]\d+)/)?.[1] * 60 || -480;
-  const pacificNow = new Date(today.getTime() + (pacificOffset + today.getTimezoneOffset()) * 60000);
-  const todayDate = `${pacificNow.getFullYear()}-${String(pacificNow.getMonth() + 1).padStart(2, "0")}-${String(pacificNow.getDate()).padStart(2, "0")}`;
+  const { y, m, d } = getPacificDateParts();
+  const todayDate = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   if (eventType === 'post') {
     const { data: existing } = await supabase
