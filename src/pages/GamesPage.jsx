@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
@@ -661,6 +661,30 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     );
   };
 
+  // Search dropdown positioning — portaled outside PixelCornerBox to escape clip-path
+  const searchWrapRef = useRef(null);
+  const [dropdownRect, setDropdownRect] = useState(null);
+
+  useEffect(() => {
+    if (typeaheadResults.length === 0) { setDropdownRect(null); return; }
+    const updateRect = () => {
+      if (searchWrapRef.current) setDropdownRect(searchWrapRef.current.getBoundingClientRect());
+    };
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [typeaheadResults]);
+
+  const dropdownLeftOffset = 120;
+  const dropdownRightOffset = nameSearch ? 96 : 0;
+  const dropdownTop = dropdownRect ? dropdownRect.bottom + 4 : 0;
+  const dropdownLeft = dropdownRect ? dropdownRect.left + dropdownLeftOffset : 0;
+  const dropdownWidth = dropdownRect ? dropdownRect.width - dropdownLeftOffset - dropdownRightOffset : 0;
+
   // Ring configs
   const RINGS = [
     { ring: 1, label: "Ring 1", desc: "Discover through all of GuildLink", color: C.accent, locked: false },
@@ -738,7 +762,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               </div>
 
               {/* Name search */}
-              <div style={{ position: "relative", zIndex: 100 }}>
+              <div ref={searchWrapRef} style={{ position: "relative", zIndex: 100 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ color: C.textDim, fontSize: 12, flexShrink: 0 }}>or search by name</div>
                   <input value={nameSearch}
@@ -773,8 +797,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     </button>
                   )}
                 </div>
-                {typeaheadResults.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 120, right: nameSearch ? 96 : 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, marginTop: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+                {typeaheadResults.length > 0 && dropdownRect && ReactDOM.createPortal(
+                  <div style={{ position: "fixed", top: dropdownTop, left: dropdownLeft, width: dropdownWidth, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, zIndex: 2000, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                     {typeaheadResults.map((g, i) => (
                       <div key={g.id || g.igdb_id} onMouseDown={async () => {
                         if (g._fromIGDB) {
@@ -803,7 +827,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       Search all results for "{nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch}" →
                     </div>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             </div>
