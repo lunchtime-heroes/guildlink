@@ -379,14 +379,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           // Release date filter applied client-side — PostgREST doesn't reliably filter
           // on nested join columns, and the filter would silently do nothing rather than error.
-          // 2020+ keeps results in the modern indie era where "rare on GuildLink" actually
-          // correlates with "genuinely obscure." Older games appear rare only because people
-          // don't import full back-catalogue history. Games with null release dates (incomplete
-          // IGDB data) are also excluded since we can't verify their era.
-          const GEM_CUTOFF = "2020-01-01";
+          // first_release_date is stored as a Unix timestamp (integer) from IGDB — not a date
+          // string. 1577836800 = 2020-01-01 00:00:00 UTC. Comparing against a date string
+          // coerces to NaN in JS and silently rejects every game.
+          // Games with null/zero release dates (incomplete IGDB data) are also excluded.
+          const GEM_CUTOFF = 1577836800; // 2020-01-01 Unix timestamp
           const filteredGames = (similarGames || []).filter(r =>
             r.games &&
-            r.games.first_release_date &&
+            r.games.first_release_date != null &&
             r.games.first_release_date >= GEM_CUTOFF
           );
 
