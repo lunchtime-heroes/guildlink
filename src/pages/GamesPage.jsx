@@ -337,130 +337,26 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           if (userShelf.size === 0) return "__empty_shelf__";
           if (!currentUser) return [];
 
-          // Step 1 — find similar users with their similarity scores
-          const { data: simData } = await supabase
-            .from("user_similarity")
-            .select("similar_user_id, overlap_count, similarity_score")
-            .eq("user_id", currentUser.id)
-            .order("similarity_score", { ascending: false })
-            .limit(50);
-
-          let similarUsers = (simData || []);
-          let similarUserIds = similarUsers.map(r => r.similar_user_id);
-
-          // Fall back to live query for new users not yet in similarity table
-          if (similarUserIds.length === 0) {
-            const { data: allShelfRaw } = await supabase.from("user_games").select("game_id, user_id").in("status", ["have_played", "playing"]);
-            const overlapByUser = {};
-            (allShelfRaw || []).forEach(r => { if (userShelf.has(r.game_id) && r.user_id !== currentUser.id) overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1; });
-            const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
-            similarUserIds = Object.entries(overlapByUser).filter(([, c]) => c >= OVERLAP_THRESHOLD).map(([uid]) => uid);
-            similarUsers = similarUserIds.map(uid => ({ similar_user_id: uid, similarity_score: 1, overlap_count: 0 }));
-          }
-
-          if (similarUserIds.length === 0) return [];
-
-          // Build a similarity score lookup for ranking
-          const simScoreByUser = {};
-          similarUsers.forEach(r => { simScoreByUser[r.similar_user_id] = r.similarity_score || 0; });
-
-          // Step 2 — fetch only similar users' games (scoped query, avoids Supabase
-          // row limit that breaks the old approach of fetching the entire platform's shelf).
-          // Shelf exclusion is done client-side below — .not("game_id", "in", ...) with
-          // hundreds of UUIDs exceeds Supabase REST URL limits and silently drops the filter,
-          // causing the current user's own games to flood back in as candidates.
-          const similarGamesQuery = supabase
-            .from("user_games")
-            .select("game_id, user_id, games(id, name, genre, cover_url, first_release_date)")
-            .in("user_id", similarUserIds)
-            .in("status", ["have_played", "playing", "want_to_play"]);
-          const { data: similarGames } = await similarGamesQuery;
-
-          // Release date filter applied client-side — PostgREST doesn't reliably filter
-          // on nested join columns, and the filter would silently do nothing rather than error.
-          // first_release_date is stored as a Unix timestamp (integer) from IGDB — not a date
-          // string. 1577836800 = 2020-01-01 00:00:00 UTC. Comparing against a date string
-          // coerces to NaN in JS and silently rejects every game.
-          // Games with null/zero release dates (incomplete IGDB data) are also excluded.
-          const GEM_CUTOFF = 1577836800; // 2020-01-01 Unix timestamp
-          const filteredGames = (similarGames || []).filter(r =>
-            r.games &&
-            !userShelf.has(r.game_id) &&
-            r.games.first_release_date != null &&
-            r.games.first_release_date >= GEM_CUTOFF
-          );
-
-          const candidateGameIds = [...new Set(filteredGames.map(r => r.game_id))];
-          if (candidateGameIds.length === 0) return [];
-
-          // Step 3 — get platform-wide counts for ONLY these candidate games.
-          // Since we're checking specific rare game IDs, this won't hit row limits
-          // (a game with 1-2 shelf entries can only have 1-2 rows to return).
-          const { data: platformRows } = await supabase
-            .from("user_games")
-            .select("game_id")
-            .in("game_id", candidateGameIds)
-            .in("status", ["have_played", "playing", "want_to_play"]);
-
-          const platformCounts = {};
-          (platformRows || []).forEach(r => {
-            platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1;
+          // All logic lives in the get_hidden_gems() Postgres function:
+          // compatibility (similarity score) → recency → rarity, post-2020, platform_count ≤ 2.
+          // Previously done client-side, but JS row limits, URL limits, and multi-step
+          // filtering kept producing results that diverged from the equivalent SQL query.
+          const { data, error } = await supabase.rpc("get_hidden_gems", {
+            p_user_id: currentUser.id
           });
 
-          // Step 4 — build candidate list. A hidden gem is rare platform-wide (≤2 total
-          // shelf entries) but present on a similar user's shelf. If too few results,
-          // widen to ≤3. Rank by the similarity score of the user who has it —
-          // discoveries from your most taste-aligned users surface first.
-          const gameData = {};
-          const bestSimScore = {};
-          filteredGames.forEach(r => {
-            const pc = platformCounts[r.game_id] || 0;
-            if (pc > 3) return;
-            if (!gameData[r.game_id]) {
-              gameData[r.game_id] = r.games;
-              bestSimScore[r.game_id] = 0;
-            }
-            const sc = simScoreByUser[r.user_id] || 0;
-            if (sc > bestSimScore[r.game_id]) {
-              bestSimScore[r.game_id] = sc;
-            }
-          });
+          if (error || !data) return [];
 
-          // Sort: compatibility first (similarity score of the user who has it),
-          // then recency within that tier (newest undiscovered games surface before older ones),
-          // then rarity as final tiebreaker. This ensures Hidden Gems are filtered by
-          // taste compatibility before surfacing by recency — not just "newest rare thing
-          // from any similar user" regardless of how similar they actually are.
-          let results = Object.entries(gameData)
-            .filter(([id]) => (platformCounts[id] || 0) <= 2)
-            .sort(([aId], [bId]) => {
-              const simDiff = (bestSimScore[bId] || 0) - (bestSimScore[aId] || 0);
-              if (Math.abs(simDiff) > 0.001) return simDiff;
-              const dateDiff = (gameData[bId].first_release_date || 0) - (gameData[aId].first_release_date || 0);
-              if (dateDiff !== 0) return dateDiff;
-              return (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
-            });
-
-          if (results.length < 4) {
-            results = Object.entries(gameData)
-              .sort(([aId], [bId]) => {
-                const simDiff = (bestSimScore[bId] || 0) - (bestSimScore[aId] || 0);
-                if (Math.abs(simDiff) > 0.001) return simDiff;
-                const dateDiff = (gameData[bId].first_release_date || 0) - (gameData[aId].first_release_date || 0);
-                if (dateDiff !== 0) return dateDiff;
-                return (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
-              });
-          }
-
-          return results.slice(0, 12).map(([id, game]) => {
-            const pc = platformCounts[id] || 1;
-            return {
-              ...game,
-              _stat: pc === 1
-                ? "only 1 person on GuildLink has this"
-                : pc + " people on GuildLink have this"
-            };
-          });
+          return data.map(g => ({
+            id: g.id,
+            name: g.name,
+            genre: g.genre,
+            cover_url: g.cover_url,
+            first_release_date: g.first_release_date,
+            _stat: g.platform_count === 1
+              ? "only 1 person on GuildLink has this"
+              : g.platform_count + " people on GuildLink have this"
+          }));
         }
       },
       {
