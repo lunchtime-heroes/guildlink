@@ -371,24 +371,31 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           // Step 2 — fetch only similar users' games (scoped query, avoids Supabase
           // row limit that breaks the old approach of fetching the entire platform's shelf)
-          // Release date filter: 2020+ keeps results in the modern indie era where
-          // "rare on GuildLink" actually correlates with "genuinely obscure." Older games
-          // appear rare only because people don't import full back-catalogue history.
-          // Also exclude games with null release dates (incomplete IGDB data).
           const userShelfArray = [...userShelf];
           let similarGamesQuery = supabase
             .from("user_games")
             .select("game_id, user_id, games(id, name, genre, cover_url, first_release_date)")
             .in("user_id", similarUserIds)
-            .in("status", ["have_played", "playing", "want_to_play"])
-            .gte("games.first_release_date", "2020-01-01")
-            .not("games.first_release_date", "is", null);
+            .in("status", ["have_played", "playing", "want_to_play"]);
           if (userShelfArray.length > 0) {
             similarGamesQuery = similarGamesQuery.not("game_id", "in", "(" + userShelfArray.join(",") + ")");
           }
           const { data: similarGames } = await similarGamesQuery;
 
-          const candidateGameIds = [...new Set((similarGames || []).filter(r => r.games).map(r => r.game_id))];
+          // Release date filter applied client-side — PostgREST doesn't reliably filter
+          // on nested join columns, and the filter would silently do nothing rather than error.
+          // 2020+ keeps results in the modern indie era where "rare on GuildLink" actually
+          // correlates with "genuinely obscure." Older games appear rare only because people
+          // don't import full back-catalogue history. Games with null release dates (incomplete
+          // IGDB data) are also excluded since we can't verify their era.
+          const GEM_CUTOFF = "2020-01-01";
+          const filteredGames = (similarGames || []).filter(r =>
+            r.games &&
+            r.games.first_release_date &&
+            r.games.first_release_date >= GEM_CUTOFF
+          );
+
+          const candidateGameIds = [...new Set(filteredGames.map(r => r.game_id))];
           if (candidateGameIds.length === 0) return [];
 
           // Step 3 — get platform-wide counts for ONLY these candidate games.
@@ -411,9 +418,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           // discoveries from your most taste-aligned users surface first.
           const gameData = {};
           const bestSimScore = {};
-          const holderName = {};
-          (similarGames || []).forEach(r => {
-            if (!r.games) return;
+          filteredGames.forEach(r => {
             const pc = platformCounts[r.game_id] || 0;
             if (pc > 3) return;
             if (!gameData[r.game_id]) {
