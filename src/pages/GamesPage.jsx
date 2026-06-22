@@ -342,7 +342,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           if (userShelf.size === 0) return "__empty_shelf__";
           if (!currentUser) return [];
 
-          // Try precomputed similarity first
+          // Step 1 — find similar users via precomputed similarity
           const { data: simData } = await supabase
             .from("user_similarity")
             .select("similar_user_id, overlap_count")
@@ -352,7 +352,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           let similarUserIds = (simData || []).map(r => r.similar_user_id);
 
-          // Fall back to live query for new users
+          // Fall back to live query for new users not yet in similarity table
           if (similarUserIds.length === 0) {
             const { data: allShelfRaw } = await supabase.from("user_games").select("game_id, user_id").in("status", ["have_played", "playing"]);
             const overlapByUser = {};
@@ -363,26 +363,63 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           if (similarUserIds.length === 0) return [];
 
-          // Get platform shelf counts for rarity check — include want_to_play since
-          // a widely-wishlisted game isn't hidden either
-          const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing", "want_to_play"]);
-          const platformCounts = {};
-          (allShelf || []).forEach(r => { platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1; });
+          const totalSimilar = similarUserIds.length;
 
-          // Guard against undefined count — if the Supabase head query returns undefined,
-          // Math.max(3, NaN) = NaN and 11 > NaN = false, silently disabling the rarity filter entirely.
-          const profileCountRes = await supabase.from("profiles").select("id", { count: "exact", head: true });
-          const profileCount = profileCountRes.count || 0;
-          const RARITY_THRESHOLD = Math.max(3, Math.floor(profileCount * 0.05));
-          const candidates = {};
+          // Step 2 — fetch all shelf entries (all statuses count toward platform popularity —
+          // a widely-wishlisted game isn't hidden either)
+          const { data: allShelf } = await supabase
+            .from("user_games")
+            .select("game_id, user_id, games(id, name, genre, cover_url)")
+            .in("status", ["have_played", "playing", "want_to_play"]);
+
+          // Step 3 — build platform-wide counts and similar-user counts separately
+          const platformCounts = {};
+          const similarCounts = {};
+          const gameData = {};
           (allShelf || []).forEach(r => {
-            if (!r.games || !similarUserIds.includes(r.user_id) || userShelf.has(r.game_id)) return;
-            if ((platformCounts[r.game_id] || 0) > RARITY_THRESHOLD) return;
-            if (!candidates[r.game_id]) candidates[r.game_id] = { game: r.games, count: 0 };
-            candidates[r.game_id].count++;
+            if (!r.games || userShelf.has(r.game_id)) return;
+            platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1;
+            gameData[r.game_id] = r.games;
+            if (similarUserIds.includes(r.user_id)) {
+              similarCounts[r.game_id] = (similarCounts[r.game_id] || 0) + 1;
+            }
           });
-          return Object.values(candidates).sort((a, b) => b.count - a.count).slice(0, 12)
-            .map(r => ({ ...r.game, _stat: "loved by " + r.count + " player" + (r.count !== 1 ? "s" : "") + " with a shelf like yours" }));
+
+          // Step 4 — get total active platform users for lift denominator.
+          // Guard against undefined count: if the Supabase head query doesn't populate
+          // .count, Math.max(n, NaN) = NaN and every lift comparison silently fails.
+          const { count: profileCount } = await supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true });
+          const totalPlatform = profileCount || 0;
+          if (totalPlatform === 0) return [];
+
+          // Step 5 — score by lift: how much more likely your similar users are to have
+          // a game compared to the platform as a whole. Games exclusively inside your
+          // taste cluster score highest. Minimum 3 similar users for confidence.
+          //
+          // lift = (similarCount / totalSimilar) / (platformCount / totalPlatform)
+          //
+          // Tiebreaker: similarCount DESC — games more of your taste group independently
+          // converged on are a stronger signal than ones only 2-3 people share.
+          const scored = Object.entries(similarCounts)
+            .filter(([, sc]) => sc >= 3)
+            .map(([gameId, sc]) => {
+              const pc = platformCounts[gameId] || 1;
+              const lift = (sc / totalSimilar) / (pc / totalPlatform);
+              return { game: gameData[gameId], similarCount: sc, platformCount: pc, lift };
+            });
+
+          scored.sort((a, b) => {
+            if (Math.abs(b.lift - a.lift) > 0.001) return b.lift - a.lift;
+            return b.similarCount - a.similarCount;
+          });
+
+          return scored.slice(0, 12).map(r => ({
+            ...r.game,
+            _stat: r.similarCount + " player" + (r.similarCount !== 1 ? "s" : "") +
+              " with a shelf like yours · " + r.platformCount + " on platform"
+          }));
         }
       },
       {
