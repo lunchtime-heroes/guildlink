@@ -426,29 +426,29 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             }
           });
 
-          // Prefer truly rare (≤2) first; fall through to ≤3 if needed.
-          // Sort by rarity first — the taste filter is already applied by limiting to
-          // similar users, so re-ranking by similarity score on top of that just privileges
-          // mainstream picks from your closest matches over genuinely obscure games from
-          // slightly less close ones. Rarity → similarity → recency gives the right result.
+          // Sort: compatibility first (similarity score of the user who has it),
+          // then recency within that tier (newest undiscovered games surface before older ones),
+          // then rarity as final tiebreaker. This ensures Hidden Gems are filtered by
+          // taste compatibility before surfacing by recency — not just "newest rare thing
+          // from any similar user" regardless of how similar they actually are.
           let results = Object.entries(gameData)
             .filter(([id]) => (platformCounts[id] || 0) <= 2)
             .sort(([aId], [bId]) => {
-              const pcDiff = (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
-              if (pcDiff !== 0) return pcDiff;
               const simDiff = (bestSimScore[bId] || 0) - (bestSimScore[aId] || 0);
               if (Math.abs(simDiff) > 0.001) return simDiff;
-              return (gameData[bId].first_release_date || 0) - (gameData[aId].first_release_date || 0);
+              const dateDiff = (gameData[bId].first_release_date || 0) - (gameData[aId].first_release_date || 0);
+              if (dateDiff !== 0) return dateDiff;
+              return (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
             });
 
           if (results.length < 4) {
             results = Object.entries(gameData)
               .sort(([aId], [bId]) => {
-                const pcDiff = (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
-                if (pcDiff !== 0) return pcDiff;
                 const simDiff = (bestSimScore[bId] || 0) - (bestSimScore[aId] || 0);
                 if (Math.abs(simDiff) > 0.001) return simDiff;
-                return (gameData[bId].first_release_date || 0) - (gameData[aId].first_release_date || 0);
+                const dateDiff = (gameData[bId].first_release_date || 0) - (gameData[aId].first_release_date || 0);
+                if (dateDiff !== 0) return dateDiff;
+                return (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
               });
           }
 
