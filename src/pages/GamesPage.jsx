@@ -337,20 +337,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       {
         id: "hidden_gems",
         label: "Hidden Gems",
-        desc: "Loved by players with taste like yours, unknown to most",
+        desc: "Rare finds on shelves of players with taste like yours",
         run: async () => {
           if (userShelf.size === 0) return "__empty_shelf__";
           if (!currentUser) return [];
 
-          // Step 1 — find similar users via precomputed similarity
+          // Step 1 — find similar users with their similarity scores
           const { data: simData } = await supabase
             .from("user_similarity")
-            .select("similar_user_id, overlap_count")
+            .select("similar_user_id, overlap_count, similarity_score")
             .eq("user_id", currentUser.id)
             .order("similarity_score", { ascending: false })
             .limit(50);
 
-          let similarUserIds = (simData || []).map(r => r.similar_user_id);
+          let similarUsers = (simData || []);
+          let similarUserIds = similarUsers.map(r => r.similar_user_id);
 
           // Fall back to live query for new users not yet in similarity table
           if (similarUserIds.length === 0) {
@@ -359,67 +360,89 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
             (allShelfRaw || []).forEach(r => { if (userShelf.has(r.game_id) && r.user_id !== currentUser.id) overlapByUser[r.user_id] = (overlapByUser[r.user_id] || 0) + 1; });
             const OVERLAP_THRESHOLD = Math.max(2, Math.floor(userShelf.size * 0.15));
             similarUserIds = Object.entries(overlapByUser).filter(([, c]) => c >= OVERLAP_THRESHOLD).map(([uid]) => uid);
+            similarUsers = similarUserIds.map(uid => ({ similar_user_id: uid, similarity_score: 1, overlap_count: 0 }));
           }
 
           if (similarUserIds.length === 0) return [];
 
-          const totalSimilar = similarUserIds.length;
+          // Build a similarity score lookup for ranking
+          const simScoreByUser = {};
+          similarUsers.forEach(r => { simScoreByUser[r.similar_user_id] = r.similarity_score || 0; });
 
-          // Step 2 — fetch all shelf entries (all statuses count toward platform popularity —
-          // a widely-wishlisted game isn't hidden either)
-          const { data: allShelf } = await supabase
+          // Step 2 — fetch only similar users' games (scoped query, avoids Supabase
+          // row limit that breaks the old approach of fetching the entire platform's shelf)
+          const userShelfArray = [...userShelf];
+          let similarGamesQuery = supabase
             .from("user_games")
             .select("game_id, user_id, games(id, name, genre, cover_url)")
+            .in("user_id", similarUserIds)
+            .in("status", ["have_played", "playing", "want_to_play"]);
+          if (userShelfArray.length > 0) {
+            similarGamesQuery = similarGamesQuery.not("game_id", "in", "(" + userShelfArray.join(",") + ")");
+          }
+          const { data: similarGames } = await similarGamesQuery;
+
+          const candidateGameIds = [...new Set((similarGames || []).filter(r => r.games).map(r => r.game_id))];
+          if (candidateGameIds.length === 0) return [];
+
+          // Step 3 — get platform-wide counts for ONLY these candidate games.
+          // Since we're checking specific rare game IDs, this won't hit row limits
+          // (a game with 1-2 shelf entries can only have 1-2 rows to return).
+          const { data: platformRows } = await supabase
+            .from("user_games")
+            .select("game_id")
+            .in("game_id", candidateGameIds)
             .in("status", ["have_played", "playing", "want_to_play"]);
 
-          // Step 3 — build platform-wide counts and similar-user counts separately
           const platformCounts = {};
-          const similarCounts = {};
-          const gameData = {};
-          (allShelf || []).forEach(r => {
-            if (!r.games || userShelf.has(r.game_id)) return;
+          (platformRows || []).forEach(r => {
             platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1;
-            gameData[r.game_id] = r.games;
-            if (similarUserIds.includes(r.user_id)) {
-              similarCounts[r.game_id] = (similarCounts[r.game_id] || 0) + 1;
+          });
+
+          // Step 4 — build candidate list. A hidden gem is rare platform-wide (≤2 total
+          // shelf entries) but present on a similar user's shelf. If too few results,
+          // widen to ≤3. Rank by the similarity score of the user who has it —
+          // discoveries from your most taste-aligned users surface first.
+          const gameData = {};
+          const bestSimScore = {};
+          const holderName = {};
+          (similarGames || []).forEach(r => {
+            if (!r.games) return;
+            const pc = platformCounts[r.game_id] || 0;
+            if (pc > 3) return;
+            if (!gameData[r.game_id]) {
+              gameData[r.game_id] = r.games;
+              bestSimScore[r.game_id] = 0;
+            }
+            const sc = simScoreByUser[r.user_id] || 0;
+            if (sc > bestSimScore[r.game_id]) {
+              bestSimScore[r.game_id] = sc;
             }
           });
 
-          // Step 4 — get total active platform users for lift denominator.
-          // Guard against undefined count: if the Supabase head query doesn't populate
-          // .count, Math.max(n, NaN) = NaN and every lift comparison silently fails.
-          const { count: profileCount } = await supabase
-            .from("profiles")
-            .select("id", { count: "exact", head: true });
-          const totalPlatform = profileCount || 0;
-          if (totalPlatform === 0) return [];
+          // Prefer truly rare (≤2) first; fall through to ≤3 if needed
+          let results = Object.entries(gameData)
+            .filter(([id]) => (platformCounts[id] || 0) <= 2)
+            .sort(([aId], [bId]) => (bestSimScore[bId] || 0) - (bestSimScore[aId] || 0));
 
-          // Step 5 — score by lift: how much more likely your similar users are to have
-          // a game compared to the platform as a whole. Games exclusively inside your
-          // taste cluster score highest. Minimum 3 similar users for confidence.
-          //
-          // lift = (similarCount / totalSimilar) / (platformCount / totalPlatform)
-          //
-          // Tiebreaker: similarCount DESC — games more of your taste group independently
-          // converged on are a stronger signal than ones only 2-3 people share.
-          const scored = Object.entries(similarCounts)
-            .filter(([, sc]) => sc >= 3)
-            .map(([gameId, sc]) => {
-              const pc = platformCounts[gameId] || 1;
-              const lift = (sc / totalSimilar) / (pc / totalPlatform);
-              return { game: gameData[gameId], similarCount: sc, platformCount: pc, lift };
-            });
+          if (results.length < 4) {
+            results = Object.entries(gameData)
+              .sort(([aId], [bId]) => {
+                const pcDiff = (platformCounts[aId] || 0) - (platformCounts[bId] || 0);
+                if (pcDiff !== 0) return pcDiff;
+                return (bestSimScore[bId] || 0) - (bestSimScore[aId] || 0);
+              });
+          }
 
-          scored.sort((a, b) => {
-            if (Math.abs(b.lift - a.lift) > 0.001) return b.lift - a.lift;
-            return b.similarCount - a.similarCount;
+          return results.slice(0, 12).map(([id, game]) => {
+            const pc = platformCounts[id] || 1;
+            return {
+              ...game,
+              _stat: pc === 1
+                ? "only 1 person on GuildLink has this"
+                : pc + " people on GuildLink have this"
+            };
           });
-
-          return scored.slice(0, 12).map(r => ({
-            ...r.game,
-            _stat: r.similarCount + " player" + (r.similarCount !== 1 ? "s" : "") +
-              " with a shelf like yours · " + r.platformCount + " on platform"
-          }));
         }
       },
       {
