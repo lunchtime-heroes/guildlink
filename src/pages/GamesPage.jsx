@@ -363,12 +363,17 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           if (similarUserIds.length === 0) return [];
 
-          // Get platform shelf counts for rarity check
-          const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing"]);
+          // Get platform shelf counts for rarity check — include want_to_play since
+          // a widely-wishlisted game isn't hidden either
+          const { data: allShelf } = await supabase.from("user_games").select("game_id, user_id, games(id, name, genre, cover_url)").in("status", ["have_played", "playing", "want_to_play"]);
           const platformCounts = {};
           (allShelf || []).forEach(r => { platformCounts[r.game_id] = (platformCounts[r.game_id] || 0) + 1; });
 
-          const RARITY_THRESHOLD = Math.max(3, Math.floor((await supabase.from("profiles").select("id", { count: "exact", head: true })).count * 0.1));
+          // Guard against undefined count — if the Supabase head query returns undefined,
+          // Math.max(3, NaN) = NaN and 11 > NaN = false, silently disabling the rarity filter entirely.
+          const profileCountRes = await supabase.from("profiles").select("id", { count: "exact", head: true });
+          const profileCount = profileCountRes.count || 0;
+          const RARITY_THRESHOLD = Math.max(3, Math.floor(profileCount * 0.05));
           const candidates = {};
           (allShelf || []).forEach(r => {
             if (!r.games || !similarUserIds.includes(r.user_id) || userShelf.has(r.game_id)) return;
