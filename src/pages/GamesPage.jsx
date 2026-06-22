@@ -371,12 +371,18 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
 
           // Step 2 — fetch only similar users' games (scoped query, avoids Supabase
           // row limit that breaks the old approach of fetching the entire platform's shelf)
+          // Release date filter: 2020+ keeps results in the modern indie era where
+          // "rare on GuildLink" actually correlates with "genuinely obscure." Older games
+          // appear rare only because people don't import full back-catalogue history.
+          // Also exclude games with null release dates (incomplete IGDB data).
           const userShelfArray = [...userShelf];
           let similarGamesQuery = supabase
             .from("user_games")
-            .select("game_id, user_id, games(id, name, genre, cover_url)")
+            .select("game_id, user_id, games(id, name, genre, cover_url, first_release_date)")
             .in("user_id", similarUserIds)
-            .in("status", ["have_played", "playing", "want_to_play"]);
+            .in("status", ["have_played", "playing", "want_to_play"])
+            .gte("games.first_release_date", "2020-01-01")
+            .not("games.first_release_date", "is", null);
           if (userShelfArray.length > 0) {
             similarGamesQuery = similarGamesQuery.not("game_id", "in", "(" + userShelfArray.join(",") + ")");
           }
