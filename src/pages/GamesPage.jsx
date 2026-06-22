@@ -365,16 +365,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           similarUsers.forEach(r => { simScoreByUser[r.similar_user_id] = r.similarity_score || 0; });
 
           // Step 2 — fetch only similar users' games (scoped query, avoids Supabase
-          // row limit that breaks the old approach of fetching the entire platform's shelf)
-          const userShelfArray = [...userShelf];
-          let similarGamesQuery = supabase
+          // row limit that breaks the old approach of fetching the entire platform's shelf).
+          // Shelf exclusion is done client-side below — .not("game_id", "in", ...) with
+          // hundreds of UUIDs exceeds Supabase REST URL limits and silently drops the filter,
+          // causing the current user's own games to flood back in as candidates.
+          const similarGamesQuery = supabase
             .from("user_games")
             .select("game_id, user_id, games(id, name, genre, cover_url, first_release_date)")
             .in("user_id", similarUserIds)
             .in("status", ["have_played", "playing", "want_to_play"]);
-          if (userShelfArray.length > 0) {
-            similarGamesQuery = similarGamesQuery.not("game_id", "in", "(" + userShelfArray.join(",") + ")");
-          }
           const { data: similarGames } = await similarGamesQuery;
 
           // Release date filter applied client-side — PostgREST doesn't reliably filter
@@ -386,6 +385,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
           const GEM_CUTOFF = 1577836800; // 2020-01-01 Unix timestamp
           const filteredGames = (similarGames || []).filter(r =>
             r.games &&
+            !userShelf.has(r.game_id) &&
             r.games.first_release_date != null &&
             r.games.first_release_date >= GEM_CUTOFF
           );
