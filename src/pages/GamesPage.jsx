@@ -203,13 +203,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       const emergingList = (scores || []).filter(s => s.games && emergingGameIds.has(s.game_id)).slice(0, 10)
         .map(s => ({ id: s.game_id, finalScore: s.score, name: s.games.name, genre: s.games.genre, cover_url: s.games.cover_url, uniqueUsers: 1, post: 0, review: 0, shelf_playing: 0, shelf_want: 0, shelf_played: 0, comment: 0 }));
       setEmerging(emergingList);
-      const emergingNewSparklines = {};
-      emergingList.forEach(g => {
-        if (emergingNewSparklines[g.id]) return;
-        const points = buildPoints(g.id);
-        emergingNewSparklines[g.id] = { points, labels, globalMax, referencePoints: null, genreGlobalMax: globalMax, genreRefPoints: null };
-      });
-      if (Object.keys(emergingNewSparklines).length > 0) { setSparklines(prev => ({ ...prev, ...emergingNewSparklines })); }
+      // Sparklines for emerging games load on demand via loadSparkline when expanded —
+      // buildPoints was removed in a past refactor, leaving this call orphaned and crashing.
     };
     load();
   }, []);
