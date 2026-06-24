@@ -352,14 +352,17 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
     if (q.length < 2) { setResults(null); return; }
     setLoading(true);
     const [gamesRes, usersRes, igdbRes] = await Promise.allSettled([
-      supabase.from("games").select("id, name, genre, cover_url").ilike("name", `%${q}%`).limit(4),
-      supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or(`username.ilike.%${q}%,handle.ilike.%${q}%`).limit(4),
+      supabase.from("games").select("id, name, genre, cover_url, first_release_date").ilike("name", "%" + q + "%").order("first_release_date", { ascending: false }).limit(4),
+      supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or("username.ilike.%" + q + "%,handle.ilike.%" + q + "%").limit(4),
       fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
     ]);
     const games = gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : [];
     const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
     const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
     const localNames = new Set(games.map(g => g.name.toLowerCase()));
+    // Local results sorted by first_release_date DESC (already ordered by DB query).
+    // IGDB results kept in IGDB's relevance order — do NOT re-sort by date or less
+    // relevant but newer games (e.g. "Fabled") will leapfrog more relevant ones ("Fable").
     const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
     setResults({ games: [...games, ...igdbNew], users });
     setLoading(false);
@@ -440,6 +443,12 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
                   {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
                 </div>
               ))}
+              <div onMouseDown={() => { setActivePage("games"); window.history.pushState({ page: "games", search: query }, "", "/games"); close(); }}
+                style={{ padding: "10px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "center", borderTop: "1px solid " + C.border }}
+                onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                {"Search all results for \"" + query + "\" \u2192"}
+              </div>
             </>
           )}
           {results && !results.games.length && !results.users.length && !loading && (

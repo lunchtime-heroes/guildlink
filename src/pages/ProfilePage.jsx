@@ -1231,15 +1231,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
                         const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
                         const localNames = new Set(local.map(g => g.name.toLowerCase()));
+                        // Local results already sorted by first_release_date DESC by the DB query.
+                        // IGDB results kept in IGDB's relevance order — do NOT re-sort by date or
+                        // less relevant but newer games ("Fabled") will leapfrog relevant ones ("Fable").
                         const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        const combined = [...local, ...fromIGDB].sort((a, b) => (b.first_release_date || 0) - (a.first_release_date || 0));
-                        setGameSearchResults(combined.slice(0, 8));
-                      } else {
-                        setGameSearchResults([]);
-                      }
-                    }}
-                    placeholder="Search for any game..."
-                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "11px 36px 11px 12px", color: C.text, fontSize: 16, outline: "none", boxSizing: "border-box" }}
+                        setGameSearchResults([...local, ...fromIGDB].slice(0, 15));
                   />
                   {gameSearch.length > 0 && (
                     <button onClick={() => { setGameSearch(""); setGameSearchResults([]); }}
@@ -1320,8 +1316,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
                         const localNames = new Set(local.map(g => g.name.toLowerCase()));
                         const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        const combined = [...local, ...fromIGDB].sort((a, b) => (b.first_release_date || 0) - (a.first_release_date || 0));
-                        setGameSearchResults(combined.slice(0, 8));
+                        setGameSearchResults([...local, ...fromIGDB].slice(0, 8));
                       } else {
                         setGameSearchResults([]);
                       }
@@ -1370,6 +1365,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         </div>
                       </div>
                     ))}
+                    <div onClick={() => { setGameSearchResults([]); setGameSearch(""); }}
+                      style={{ padding: "10px 14px", color: C.textDim, fontSize: 12, textAlign: "center", cursor: "default" }}>
+                      {"Not finding it? Try a more specific title — results come from your library and IGDB."}
+                    </div>
                   </div>
                 )}
               </div>
