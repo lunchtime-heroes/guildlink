@@ -1236,6 +1236,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         // less relevant but newer games ("Fabled") will leapfrog relevant ones ("Fable").
                         const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
                         setGameSearchResults([...local, ...fromIGDB].slice(0, 15));
+                      } else {
+                        setGameSearchResults([]);
+                      }
+                    }}
+                    placeholder="Search for any game..."
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "11px 36px 11px 12px", color: C.text, fontSize: 16, outline: "none", boxSizing: "border-box" }}
                   />
                   {gameSearch.length > 0 && (
                     <button onClick={() => { setGameSearch(""); setGameSearchResults([]); }}
