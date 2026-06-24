@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/react';
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import ReactDOM from "react-dom";
 import GuildPortal from "./pages/GuildPortal.jsx";
 import LFGPage from "./pages/LFGPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
@@ -342,10 +343,11 @@ const AVATAR_BG_COLORS_LOCAL = {
 // ─── ONBOARDING TUTORIAL ──────────────────────────────────────────────────────
 import { OnboardingErrorBoundary, UsernameGateModal, OnboardingModal } from "./components/Onboarding.jsx";
 
-function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
+function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer, isMobile }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const inputRef = useRef(null);
 
   const search = async (q) => {
@@ -361,7 +363,6 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
     const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
     const nowUnix = Math.floor(Date.now() / 1000);
     const localNames = new Set(games.map(g => g.name.toLowerCase()));
-    // _upcoming flag comes from igdb.js for IGDB results; for local DB games, check first_release_date
     const localWithFlags = games.map(g => ({ ...g, _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) }));
     const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
     setResults({ games: [...localWithFlags, ...igdbNew], users });
@@ -374,23 +375,108 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
   }, [query]);
 
   const close = () => { setQuery(""); setResults(null); };
+  const closeModal = () => { setModalOpen(false); setQuery(""); setResults(null); };
 
   const selectGame = async (game) => {
     if (game._fromIGDB) {
       const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0, platforms: game.platforms || null }).select().single();
-      if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
-    } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }
-    close();
+      if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", "/game/" + inserted.id); }
+    } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id); }
+    isMobile ? closeModal() : close();
   };
 
   const selectUser = async (user) => {
     setCurrentPlayer(user.id); setActivePage("player");
     const handle = user.handle?.replace("@", "") || user.id;
-    window.history.pushState({ page: "player", playerId: user.id, playerHandle: handle }, "", `/player/${handle}`);
-    close();
+    window.history.pushState({ page: "player", playerId: user.id, playerHandle: handle }, "", "/player/" + handle);
+    isMobile ? closeModal() : close();
   };
 
   const hasResults = results && (results.games.length > 0 || results.users.length > 0);
+
+  const resultRows = (
+    <>
+      {loading && <div style={{ padding: "12px 14px", color: C.textDim, fontSize: isMobile ? 13 : 12 }}>Searching...</div>}
+      {results?.users?.length > 0 && (
+        <>
+          <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Players</div>
+          {results.users.map(u => (
+            <div key={u.id} onClick={() => selectUser(u)} style={{ display: "flex", alignItems: "center", gap: 10, padding: isMobile ? "12px 14px" : "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{u.avatar_initials || u.username?.slice(0,2).toUpperCase()}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: C.text, fontSize: isMobile ? 14 : 13 }}>{u.username}</div>
+                <div style={{ color: C.textDim, fontSize: 11 }}>{u.handle}</div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+      {results?.games?.length > 0 && (
+        <>
+          <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Games</div>
+          {results.games.map(g => (
+            <div key={g.id || g.igdb_id} onClick={() => selectGame(g)} style={{ display: "flex", alignItems: "center", gap: 12, padding: isMobile ? "12px 14px" : "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}>
+              {g.cover_url
+                ? <img src={g.cover_url} alt="" style={{ width: isMobile ? 36 : 24, height: isMobile ? 48 : 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                : <div style={{ width: isMobile ? 36 : 24, height: isMobile ? 48 : 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
+              }
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 600, color: C.text, fontSize: isMobile ? 14 : 13 }}>{g.name}</span>
+                  {g._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>SOON</span>}
+                </div>
+                {g.genre && <div style={{ color: C.textDim, fontSize: isMobile ? 12 : 10 }}>{g.genre}</div>}
+              </div>
+              {g._fromIGDB && <span style={{ color: C.teal, fontSize: 11, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
+            </div>
+          ))}
+          <div onClick={() => { setActivePage("games"); window.history.pushState({ page: "games", search: query }, "", "/games"); isMobile ? closeModal() : close(); }}
+            style={{ padding: isMobile ? "14px" : "10px 14px", color: C.accentSoft, fontSize: isMobile ? 13 : 12, fontWeight: 600, cursor: "pointer", textAlign: "center", borderTop: "1px solid " + C.border }}>
+            {"Search all results for \"" + query + "\" \u2192"}
+          </div>
+        </>
+      )}
+      {results && !results.games?.length && !results.users?.length && !loading && (
+        <div style={{ padding: "24px 14px", color: C.textDim, fontSize: 13, textAlign: "center" }}>No results for "{query}"</div>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <div onClick={() => setModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: 8, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 12px", cursor: "pointer", width: "100%" }}>
+          <span style={{ color: C.textDim, fontSize: 14 }}>🔍</span>
+          <span style={{ color: C.textDim, fontSize: 13 }}>Search games and players...</span>
+        </div>
+        {modalOpen && ReactDOM.createPortal(
+          <div style={{ position: "fixed", inset: 0, zIndex: 3000, display: "flex", flexDirection: "column", background: C.bg }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
+              <div style={{ position: "relative", flex: 1 }}>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textDim, fontSize: 14, pointerEvents: "none" }}>🔍</span>
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search games and players..."
+                  style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "10px 32px 10px 34px", color: C.text, fontSize: 16, outline: "none", boxSizing: "border-box" }}
+                />
+                {query && <span onClick={() => setQuery("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: C.textDim, cursor: "pointer", fontSize: 18 }}>×</span>}
+              </div>
+              <button onClick={closeModal} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 15, fontWeight: 600, cursor: "pointer", padding: "8px 4px", flexShrink: 0 }}>
+                Cancel
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+              {!query && <div style={{ padding: 32, color: C.textDim, fontSize: 13, textAlign: "center" }}>Search for games or players</div>}
+              {query.length >= 2 && resultRows}
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
+    );
+  }
 
   return (
     <div style={{ flex: 1, maxWidth: 320, position: "relative" }}>
@@ -408,80 +494,13 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
       </div>
       {(hasResults || loading) && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", maxHeight: 400, overflowY: "auto" }}>
-          {loading && <div style={{ padding: "12px 14px", color: C.textDim, fontSize: 12 }}>Searching...</div>}
-          {results?.upcoming?.length > 0 && (
-            <>
-              <div style={{ padding: "8px 14px 4px", color: C.teal, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Coming Soon</div>
-              {results.upcoming.map(g => (
-                <div key={g.igdb_id} onMouseDown={() => selectGame(g)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  {g.cover_url
-                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                    : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0 }} />
-                  }
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                    {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
-                  </div>
-                  <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>
-                </div>
-              ))}
-            </>
-          )}
-          {results?.users.length > 0 && (
-            <>
-              <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Players</div>
-              {results.users.map(u => (
-                <div key={u.id} onMouseDown={() => selectUser(u)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.accent + "33", border: "1px solid " + C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{u.avatar_initials || u.username?.slice(0,2).toUpperCase()}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.username}</div>
-                    <div style={{ color: C.textDim, fontSize: 10 }}>{u.handle}</div>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-          {results?.games.length > 0 && (
-            <>
-              <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Games</div>
-              {results.games.map(g => (
-                <div key={g.id || g.igdb_id} onMouseDown={() => selectGame(g)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  {g.cover_url
-                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                    : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
-                  }
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
-                      {g._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>SOON</span>}
-                    </div>
-                    {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
-                  </div>
-                  {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
-                </div>
-              ))}
-              <div onMouseDown={() => { setActivePage("games"); window.history.pushState({ page: "games", search: query }, "", "/games"); close(); }}
-                style={{ padding: "10px 14px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", textAlign: "center", borderTop: "1px solid " + C.border }}
-                onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                {"Search all results for \"" + query + "\" \u2192"}
-              </div>
-            </>
-          )}
-          {results && !results.games.length && !results.users.length && !loading && (
-            <div style={{ padding: "14px", color: C.textDim, fontSize: 13, textAlign: "center" }}>No results for "{query}"</div>
-          )}
+          {resultRows}
         </div>
       )}
     </div>
   );
 }
+
 function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isGuest, onSignIn, onSignUp, notifications, onMarkAllRead, onClearAll, onOpenPost, setProfileDefaultTab, setCurrentGame, setCurrentPlayer, setCurrentGuild }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.read).length;
@@ -528,7 +547,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             <span style={{ fontWeight: 800, fontSize: 16, color: C.text, letterSpacing: "-0.5px" }}>Guild<span style={{ color: C.accent }}>Link</span></span>
           </div>
           <div style={{ flex: 1 }}>
-            <NavSearch setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} />
+            <NavSearch setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer} isMobile={true} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGuest ? (
