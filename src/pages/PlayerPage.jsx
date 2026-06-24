@@ -103,13 +103,31 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
               }
             }
 
-            // Load overlap count from user_similarity
+            // Load overlap count from user_similarity.
+            // If no similarity pair exists (below the 2-game minimum threshold),
+            // fall back to a direct count of shared have_played games so the badge
+            // shows the real number rather than 0. Similarity scoring is unchanged —
+            // this only affects what the badge displays.
             const { data: simData } = await supabase.from("user_similarity")
               .select("overlap_count")
               .eq("user_id", authUser.id)
               .eq("similar_user_id", userId)
               .maybeSingle();
-            setOverlapCount(simData ? simData.overlap_count : 0);
+            if (simData) {
+              setOverlapCount(simData.overlap_count);
+            } else {
+              const { count } = await supabase.from("user_games")
+                .select("game_id", { count: "exact", head: true })
+                .eq("status", "have_played")
+                .in("game_id", (
+                  await supabase.from("user_games")
+                    .select("game_id")
+                    .eq("user_id", authUser.id)
+                    .eq("status", "have_played")
+                ).data?.map(r => r.game_id) || [])
+                .eq("user_id", userId);
+              setOverlapCount(count || 0);
+            }
           }
         }
       }
