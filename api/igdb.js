@@ -80,8 +80,17 @@ export default async function handler(req, res) {
     }
 
     if (query) {
-      const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${query.replace(/"/g, "")}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 30;` });
-      const games = await r.json();
+      const nowUnix = Math.floor(Date.now() / 1000);
+      // Run main search and upcoming-games search in parallel.
+      // Upcoming games need their own query because they score near the bottom of the
+      // relevance sort (0 rating_count, low follows) and get buried under older entries
+      // with the same name (e.g. new "Fable" loses to 2004 "Fable" every time).
+      const [mainRes, upcomingRes] = await Promise.all([
+        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${query.replace(/"/g, "")}"; fields ${FIELDS}, follows, category, rating, rating_count; where first_release_date < ${nowUnix} | first_release_date = null; limit 30;` }),
+        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${query.replace(/"/g, "")}"; fields ${FIELDS}, follows, category; where first_release_date > ${nowUnix} & category = (0, 8, 9); limit 5;` }),
+      ]);
+      const games = await mainRes.json();
+      const upcomingGames = await upcomingRes.json();
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
@@ -91,7 +100,15 @@ export default async function handler(req, res) {
         const bScore = (b.cover?.image_id ? 10000 : 0) + (b.rating_count || 0) * 10 + (b.follows || 0);
         return bScore - aScore;
       });
-      return res.status(200).json({ games: (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10).map(formatGame) });
+      const upcoming = (upcomingGames || [])
+        .filter(g => ![1, 2, 6].includes(g.category) && g.cover?.image_id)
+        .sort((a, b) => (a.first_release_date || 0) - (b.first_release_date || 0))
+        .slice(0, 3)
+        .map(formatGame);
+      return res.status(200).json({
+        games: (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10).map(formatGame),
+        upcoming,
+      });
     }
 
     return res.status(400).json({ error: "Provide query or igdb_id" });

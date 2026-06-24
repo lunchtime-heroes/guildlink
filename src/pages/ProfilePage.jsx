@@ -1230,12 +1230,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         ]);
                         const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
                         const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+                        const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
                         const localNames = new Set(local.map(g => g.name.toLowerCase()));
                         // Local results already sorted by first_release_date DESC by the DB query.
                         // IGDB results kept in IGDB's relevance order — do NOT re-sort by date or
                         // less relevant but newer games ("Fabled") will leapfrog relevant ones ("Fable").
                         const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        setGameSearchResults([...local, ...fromIGDB].slice(0, 15));
+                        const fromUpcoming = upcoming.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
+                        setGameSearchResults([...fromUpcoming, ...local, ...fromIGDB].slice(0, 15));
                       } else {
                         setGameSearchResults([]);
                       }
@@ -1266,7 +1268,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       : <div style={{ width: 48, height: 64, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🎮</div>
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 2 }}>{game.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{game.name}</span>
+                        {game._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>COMING SOON</span>}
+                      </div>
                       <div style={{ color: C.textDim, fontSize: 12, marginBottom: 10 }}>{game.genre || game.developer || ""}</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {SHELF_COLUMNS.map(col => (
@@ -1320,9 +1325,11 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         ]);
                         const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
                         const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+                        const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
                         const localNames = new Set(local.map(g => g.name.toLowerCase()));
                         const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        setGameSearchResults([...local, ...fromIGDB].slice(0, 8));
+                        const fromUpcoming = upcoming.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
+                        setGameSearchResults([...fromUpcoming, ...local, ...fromIGDB].slice(0, 8));
                       } else {
                         setGameSearchResults([]);
                       }
@@ -1346,7 +1353,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           : <div style={{ width: 48, height: 64, borderRadius: 2, background: C.surface, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                         }
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
+                            {game._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>COMING SOON</span>}
+                          </div>
                           <div style={{ color: C.textDim, fontSize: 11 }}>{game.platforms || game.genre || game.developer || ""}</div>
                         </div>
                         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>

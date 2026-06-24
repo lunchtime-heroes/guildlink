@@ -359,12 +359,11 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
     const games = gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : [];
     const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
     const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+    const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
     const localNames = new Set(games.map(g => g.name.toLowerCase()));
-    // Local results sorted by first_release_date DESC (already ordered by DB query).
-    // IGDB results kept in IGDB's relevance order — do NOT re-sort by date or less
-    // relevant but newer games (e.g. "Fabled") will leapfrog more relevant ones ("Fable").
     const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
-    setResults({ games: [...games, ...igdbNew], users });
+    const upcomingNew = upcoming.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
+    setResults({ games: [...games, ...igdbNew], users, upcoming: upcomingNew });
     setLoading(false);
   };
 
@@ -409,6 +408,26 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
       {(hasResults || loading) && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, zIndex: 200, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", maxHeight: 400, overflowY: "auto" }}>
           {loading && <div style={{ padding: "12px 14px", color: C.textDim, fontSize: 12 }}>Searching...</div>}
+          {results?.upcoming?.length > 0 && (
+            <>
+              <div style={{ padding: "8px 14px 4px", color: C.teal, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Coming Soon</div>
+              {results.upcoming.map(g => (
+                <div key={g.igdb_id} onMouseDown={() => selectGame(g)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid " + C.border }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  {g.cover_url
+                    ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                    : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0 }} />
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                    {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
+                  </div>
+                  <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>
+                </div>
+              ))}
+            </>
+          )}
           {results?.users.length > 0 && (
             <>
               <div style={{ padding: "8px 14px 4px", color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Players</div>
