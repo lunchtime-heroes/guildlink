@@ -81,13 +81,17 @@ export default async function handler(req, res) {
 
     if (query) {
       const nowUnix = Math.floor(Date.now() / 1000);
+      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "");
       // Run main search and upcoming-games search in parallel.
       // Upcoming games need their own query because they score near the bottom of the
       // relevance sort (0 rating_count, low follows) and get buried under older entries
       // with the same name (e.g. new "Fable" loses to 2004 "Fable" every time).
+      // NOTE: IGDB's `search` operator ignores `where` field filters — it uses a
+      // separate full-text index. For upcoming games we must use a `where` query with
+      // name ~ "*query*" instead of `search "query"` to make the date filter work.
       const [mainRes, upcomingRes] = await Promise.all([
-        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${query.replace(/"/g, "")}"; fields ${FIELDS}, follows, category, rating, rating_count; where first_release_date < ${nowUnix} | first_release_date = null; limit 30;` }),
-        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${query.replace(/"/g, "")}"; fields ${FIELDS}, follows, category; where first_release_date > ${nowUnix} & category = (0, 8, 9); limit 5;` }),
+        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 30;` }),
+        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `fields ${FIELDS}, follows, category; where name ~ *"${safeQuery}"* & first_release_date > ${nowUnix} & category = (0, 8, 9) & cover != null; sort first_release_date asc; limit 5;` }),
       ]);
       const games = await mainRes.json();
       const upcomingGames = await upcomingRes.json();
