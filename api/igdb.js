@@ -82,36 +82,31 @@ export default async function handler(req, res) {
     if (query) {
       const nowUnix = Math.floor(Date.now() / 1000);
       const safeQuery = query.replace(/"/g, "").replace(/\*/g, "");
-      // Run main search and upcoming-games search in parallel.
-      // Upcoming games need their own query because they score near the bottom of the
-      // relevance sort (0 rating_count, low follows) and get buried under older entries
-      // with the same name (e.g. new "Fable" loses to 2004 "Fable" every time).
-      // NOTE: IGDB's `search` operator ignores `where` field filters — it uses a
-      // separate full-text index. For upcoming games we must use a `where` query with
-      // name ~ "*query*" instead of `search "query"` to make the date filter work.
-      const [mainRes, upcomingRes] = await Promise.all([
-        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 30;` }),
-        fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `fields ${FIELDS}, follows, category; where name ~ *"${safeQuery}"* & first_release_date > ${nowUnix} & category = (0, 8, 9) & cover != null; sort first_release_date asc; limit 5;` }),
-      ]);
+      // Single query with higher limit — upcoming games get floated to the top of the
+      // sort rather than relying on a separate where-clause query. IGDB's `search`
+      // operator ignores `where` field filters (it uses a separate full-text index),
+      // so a second query with `where first_release_date > now` silently returns nothing.
+      const mainRes = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
       const games = await mainRes.json();
-      const upcomingGames = await upcomingRes.json();
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
       );
+      // Sort: upcoming games (first_release_date > now) float to top, soonest first.
+      // Among released games, sort by quality score as before.
       const sorted = qualityFiltered.sort((a, b) => {
+        const aUp = a.first_release_date && a.first_release_date > nowUnix ? 1 : 0;
+        const bUp = b.first_release_date && b.first_release_date > nowUnix ? 1 : 0;
+        if (bUp !== aUp) return bUp - aUp;
+        if (aUp && bUp) return (a.first_release_date || 0) - (b.first_release_date || 0);
         const aScore = (a.cover?.image_id ? 10000 : 0) + (a.rating_count || 0) * 10 + (a.follows || 0);
         const bScore = (b.cover?.image_id ? 10000 : 0) + (b.rating_count || 0) * 10 + (b.follows || 0);
         return bScore - aScore;
       });
-      const upcoming = (upcomingGames || [])
-        .filter(g => ![1, 2, 6].includes(g.category) && g.cover?.image_id)
-        .sort((a, b) => (a.first_release_date || 0) - (b.first_release_date || 0))
-        .slice(0, 3)
-        .map(formatGame);
+      const results = (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10);
       return res.status(200).json({
-        games: (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10).map(formatGame),
-        upcoming,
+        games: results.map(g => ({ ...formatGame(g), _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) })),
+        upcoming: [],
       });
     }
 

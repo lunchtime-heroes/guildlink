@@ -359,11 +359,12 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
     const games = gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : [];
     const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
     const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-    const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
+    const nowUnix = Math.floor(Date.now() / 1000);
     const localNames = new Set(games.map(g => g.name.toLowerCase()));
+    // _upcoming flag comes from igdb.js for IGDB results; for local DB games, check first_release_date
+    const localWithFlags = games.map(g => ({ ...g, _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) }));
     const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
-    const upcomingNew = upcoming.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
-    setResults({ games: [...games, ...igdbNew], users, upcoming: upcomingNew });
+    setResults({ games: [...localWithFlags, ...igdbNew], users });
     setLoading(false);
   };
 
@@ -456,7 +457,10 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer }) {
                     : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
                   }
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontWeight: 600, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+                      {g._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>SOON</span>}
+                    </div>
                     {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
                   </div>
                   {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
