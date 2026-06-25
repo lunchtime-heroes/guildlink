@@ -447,7 +447,7 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer, isMobile }
       <>
         <div onClick={() => setModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: 8, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 12px", cursor: "pointer", width: "100%" }}>
           <span style={{ color: C.textDim, fontSize: 14 }}>🔍</span>
-          <span style={{ color: C.textDim, fontSize: 13 }}>Search games and players...</span>
+          <span style={{ color: C.textDim, fontSize: 13 }}>Search</span>
         </div>
         {modalOpen && ReactDOM.createPortal(
           <div style={{ position: "fixed", inset: 0, zIndex: 3000, display: "flex", flexDirection: "column", background: C.bg }}>

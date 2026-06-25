@@ -1137,13 +1137,24 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
         </div>
       </div>
 
-      {/* Tabs */}
-      <PixelTabBar
-        tabs={tabs}
-        active={activeTab}
-        onChange={(id) => setActiveTab(id)}
-        style={{ marginBottom: 20 }}
-      />
+      {/* Tabs — scrollable full words on mobile, PixelTabBar on desktop */}
+      {isMobile ? (
+        <div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch", borderBottom: "1px solid " + C.border, marginBottom: 20, scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              style={{ flexShrink: 0, padding: "10px 16px", border: "none", borderBottom: activeTab === tab.id ? "2px solid " + C.accent : "2px solid transparent", background: "transparent", color: activeTab === tab.id ? C.accent : C.textMuted, fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <PixelTabBar
+          tabs={tabs}
+          active={activeTab}
+          onChange={(id) => setActiveTab(id)}
+          style={{ marginBottom: 20 }}
+        />
+      )}
 
       {/* Posts tab */}
       {activeTab === "posts" && (
@@ -1196,8 +1207,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
               ...userShelf.have_played,
             ].slice(0, 10).map(e => ({ name: e.games?.name || "", cover_url: e.games?.cover_url || null }));
             return (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ color: C.textDim, fontSize: 13 }}>{isMobile ? "Tap a game to move or remove it." : "Drag games to reorder. Hover to remove."}</div>
+              <div style={{ display: "flex", justifyContent: isMobile ? "flex-end" : "space-between", alignItems: "center", marginBottom: 16 }}>
+                {!isMobile && <div style={{ color: C.textDim, fontSize: 13 }}>Drag games to reorder. Hover to remove.</div>}
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   {allRanked.length >= 10 && (
                     <ShareShelfButton
