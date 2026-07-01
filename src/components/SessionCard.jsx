@@ -4,7 +4,7 @@ import { C } from "../constants.js";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 
-function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile }) {
+function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, isLive, guildName }) {
   const [showEdit, setShowEdit] = useState(false);
   const [showRsvp, setShowRsvp] = useState(false);
 
@@ -63,6 +63,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
 
   // Color helpers — compute once, use in PixelCornerBox bgStyle/borderColor
   const getBaseColor = () => {
+    if (isLive) return C.accent;
     if (isCreator && !myRsvp) return "#22c55e";
     if (!myRsvp) return C.gold;
     if (myRsvp.response === "in") return "#22c55e";
@@ -70,6 +71,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     return "#ef4444";
   };
   const getBorderColor = () => {
+    if (isLive) return C.accent + "88";
     if (isCreator && !myRsvp) return "#22c55e55";
     if (!myRsvp) return C.gold + "66";
     if (myRsvp.response === "in") return "#22c55e55";
@@ -77,6 +79,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     return "#ef444455";
   };
   const getStatusColor = () => {
+    if (isLive) return C.accent;
     if (isCreator && !myRsvp) return "#22c55e";
     if (!myRsvp) return C.gold;
     if (myRsvp.response === "in") return "#22c55e";
@@ -218,9 +221,12 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
         <div style={{ fontWeight: 800, fontSize: 12, color: C.text, marginBottom: 2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
           {session.game || "Untitled"}
         </div>
-        <div style={{ fontSize: 11, color: statusColor, fontWeight: 700, marginBottom: 6 }}>
-          {timeStr}{durationStr ? " · " + durationStr : ""}
+        <div style={{ fontSize: 11, color: statusColor, fontWeight: 700, marginBottom: guildName ? 2 : 6 }}>
+          {isLive ? "\u25cf Online Now" : (timeStr + (durationStr ? " \u00b7 " + durationStr : ""))}
         </div>
+        {guildName && (
+          <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 6, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{guildName}</div>
+        )}
         {!showRsvp && (
           <div style={{ fontSize: 11, lineHeight: 2 }}>
             <div style={{ color: "#22c55e", fontWeight: 700 }}>{counts.in} in</div>

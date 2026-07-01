@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/react';
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
 import GuildPortal from "./pages/GuildPortal.jsx";
+import GamingSessionsPage from "./pages/GamingSessionsPage.jsx";
 import LFGPage from "./pages/LFGPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import FeedPage from "./pages/FeedPage.jsx";
@@ -914,6 +915,7 @@ export default function GuildLink() {
     if (p === "games") return { page: "games" };
     if (p === "reviews") return { page: "reviews" };
     if (p === "about") return { page: "founding" };
+    if (p === "sessions") return { page: "sessions" };
     if (p === "guilds") return { page: "squad" };
     if (p === "reset-password") return { page: "reset" };
     if (p === "profile") return { page: "profile" };
@@ -1397,6 +1399,7 @@ export default function GuildLink() {
         </div>
       ) : <ProfilePage setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} defaultTab={profileDefaultTab} onProfileSaved={() => session && fetchProfile(session.user.id)} onThemeChange={applyAndSetTheme} onQuestComplete={() => session?.user?.id && checkQuestCompletions(session.user.id)} xboxImportData={xboxImportData} xboxImportError={xboxImportError} onXboxImportConsumed={() => { setXboxImportData(null); setXboxImportError(null); }} />)}
       {activePage === "player" && <PlayerProfilePage userId={currentPlayer} setActivePage={navToPage} setCurrentGame={navToGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={navToPlayer} isMobile={isMobile} currentUser={liveUser} isGuest={isGuest} onSignIn={openSignIn} setGameDefaultTab={setGameDefaultTab} />}
+      {activePage === "sessions" && <GamingSessionsPage currentUser={liveUser} setActivePage={navToPage} isMobile={isMobile} />}
       {activePage === "squad" && <LFGPage isMobile={isMobile} currentUser={liveUser} setCurrentPlayer={navToPlayer} setActivePage={navToPage} setCurrentGuild={navToGuild} />}
       {activePage === "guild" && <GuildPortal guildId={currentGuild} isMobile={isMobile} currentUser={liveUser} setActivePage={navToPage} setCurrentPlayer={navToPlayer} />}
       {activePage === "founding" && <FoundingMemberPage setActivePage={navToPage} isMobile={isMobile} onSignUp={openSignUp} />}

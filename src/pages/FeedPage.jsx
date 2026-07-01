@@ -922,7 +922,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       )}
       {isMobile && (
         <div style={{ marginBottom: 4 }}>
-          <ChartsWidget setActivePage={setActivePage} setCurrentGame={setCurrentGame} refreshKey={chartRefresh} limit={5} />
+          <div onClick={() => setActivePage("sessions")}
+            style={{ background: "color-mix(in srgb, " + C.accent + " 8%, " + C.bg + ")", border: "1px solid " + C.accentDim, borderRadius: 4, padding: "14px 16px", marginBottom: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: C.text, marginBottom: 2 }}>Upcoming Gaming Sessions</div>
+              <div style={{ color: C.textDim, fontSize: 12 }}>See what your guilds are playing</div>
+            </div>
+            <span style={{ color: C.accentSoft, fontSize: 20, fontWeight: 700 }}>{"\u2192"}</span>
+          </div>
           {isGuest ? (
             <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 14, marginBottom: 14 }}>
               <div style={{ fontWeight: 700, color: C.text, fontSize: 12, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>Your Shelf</div>
