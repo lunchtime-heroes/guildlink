@@ -7,6 +7,7 @@ import SessionCard from "../components/SessionCard.jsx";
 import GuildActivityFeed from "../components/GuildActivityFeed.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
+import { PixelButton } from "../components/PixelButton.jsx";
 
 function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [guild, setGuild] = useState(null);
@@ -543,32 +544,27 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 ))}
 
                 {isMember && !isFull && (
-                  <button
-                    onClick={() => {
-                      setActiveDay(isActive ? null : i);
-                      setSessionTime("20:00");
-                      setGameSearch("");
-                      setGameResults([]);
-                      setSelectedGame(null);
-                    }}
-                    style={{
-                      background: isActive ? C.accentGlow : C.surfaceRaised,
-                      border: "1px solid " + (isActive ? C.accentDim : C.border),
-                      borderRadius: 4,
-                      padding: "10px 0",
-                      color: isActive ? C.accentSoft : C.textDim,
-                      fontSize: 18,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      textAlign: "center",
-                      width: "100%",
-                    }}>
-                    +
-                  </button>
+                  <div style={{ padding: "1px 0" }}>
+                    <PixelButton
+                      fullWidth
+                      onClick={() => {
+                        setActiveDay(isActive ? null : i);
+                        setSessionTime("20:00");
+                        setGameSearch("");
+                        setGameResults([]);
+                        setSelectedGame(null);
+                      }}
+                      bg={isActive ? "color-mix(in srgb, " + C.accent + " 12%, " + C.bg + ")" : C.surfaceRaised}
+                      borderColor={isActive ? C.accentDim : C.border}>
+                      <span style={{ color: isActive ? C.accentSoft : C.textDim, fontSize: 18, fontWeight: 700 }}>{"+"}</span>
+                    </PixelButton>
+                  </div>
                 )}
 
                 {isFull && (
-                  <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "10px 0", color: C.textDim, fontSize: 10, fontWeight: 600, textAlign: "center" }}>Full</div>
+                  <PixelCornerBox size="md" bg={C.surfaceRaised} borderColor={C.border} style={{ padding: "10px 0", textAlign: "center" }}>
+                    <span style={{ color: C.textDim, fontSize: 10, fontWeight: 600 }}>Full</span>
+                  </PixelCornerBox>
                 )}
               </div>
             );
