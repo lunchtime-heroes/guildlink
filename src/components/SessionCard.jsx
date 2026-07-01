@@ -29,6 +29,17 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
   const editAmpm = editH24 >= 12 ? "pm" : "am";
   const editH12 = editH24 % 12 === 0 ? 12 : editH24 % 12;
 
+  // Local display states — allow empty/partial values while typing; committed on blur
+  const [editHourDisp, setEditHourDisp] = useState(() => {
+    if (!session.scheduled_at) return "10";
+    const h24 = new Date(session.scheduled_at).getHours();
+    return String(h24 % 12 === 0 ? 12 : h24 % 12);
+  });
+  const [editMinDisp, setEditMinDisp] = useState(() => {
+    if (!session.scheduled_at) return "00";
+    return String(new Date(session.scheduled_at).getMinutes()).padStart(2, "0");
+  });
+
   const updateTime = (h12, m, ampm) => {
     let h24 = h12 % 12;
     if (ampm === "pm") h24 = h24 + 12;
@@ -131,14 +142,30 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
           <div style={{ color: C.textDim, fontSize: 10, marginBottom: 6 }}>Start Time</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
-              <input type="text" inputMode="numeric" pattern="[0-9]*" value={editH12}
-                onChange={e => handleHourChange(e.target.value)} style={smallInput} />
+              <input type="text" inputMode="numeric" pattern="[0-9]*"
+                value={editHourDisp}
+                onChange={e => setEditHourDisp(e.target.value.replace(/[^0-9]/g, ""))}
+                onBlur={() => {
+                  const v = parseInt(editHourDisp) || 12;
+                  const c = v < 1 ? 1 : v > 12 ? 12 : v;
+                  setEditHourDisp(String(c));
+                  handleHourChange(String(c));
+                }}
+                style={smallInput} />
               <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>hr</div>
             </div>
             <div style={{ color: C.textDim, fontSize: 16, paddingBottom: 16 }}>:</div>
             <div style={{ flex: 1 }}>
-              <input type="text" inputMode="numeric" pattern="[0-9]*" value={String(editMin).padStart(2, "0")}
-                onChange={e => handleMinChange(e.target.value)} style={smallInput} />
+              <input type="text" inputMode="numeric" pattern="[0-9]*"
+                value={editMinDisp}
+                onChange={e => setEditMinDisp(e.target.value.replace(/[^0-9]/g, ""))}
+                onBlur={() => {
+                  const v = parseInt(editMinDisp) || 0;
+                  const c = v < 0 ? 0 : v > 59 ? 59 : v;
+                  setEditMinDisp(String(c).padStart(2, "0"));
+                  handleMinChange(String(c));
+                }}
+                style={smallInput} />
               <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>min</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 16 }}>

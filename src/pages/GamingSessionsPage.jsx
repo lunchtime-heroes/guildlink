@@ -176,6 +176,19 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
   const schedAmpm = schedH24 >= 12 ? "pm" : "am";
   const schedH12 = schedH24 % 12 === 0 ? 12 : schedH24 % 12;
 
+  // Local display state for time inputs — allows empty/partial values while typing.
+  // Committed to sessionTime only on blur to avoid the "defaults to 12" snap mid-edit.
+  const [hourDisp, setHourDisp] = useState(String(schedH12));
+  const [minDisp, setMinDisp] = useState(String(schedMin).padStart(2, "0"));
+
+  // Sync display state when activeDay resets (new form opened)
+  useEffect(() => {
+    if (activeDay === null) {
+      setHourDisp("8");
+      setMinDisp("00");
+    }
+  }, [activeDay]);
+
   const updateScheduleTime = (h12, min, ampm) => {
     let h24 = h12 % 12;
     if (ampm === "pm") h24 = h24 + 12;
@@ -256,15 +269,29 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
         <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>Start Time</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div style={{ flex: 1 }}>
-            <input type="text" inputMode="numeric" value={schedH12}
-              onChange={e => { const v = parseInt(e.target.value) || 12; const c = v < 1 ? 1 : v > 12 ? 12 : v; updateScheduleTime(c, schedMin, schedAmpm); }}
+            <input type="text" inputMode="numeric"
+              value={hourDisp}
+              onChange={e => setHourDisp(e.target.value.replace(/[^0-9]/g, ""))}
+              onBlur={() => {
+                const v = parseInt(hourDisp) || 12;
+                const c = v < 1 ? 1 : v > 12 ? 12 : v;
+                setHourDisp(String(c));
+                updateScheduleTime(c, schedMin, schedAmpm);
+              }}
               style={inputStyle} />
             <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>hr</div>
           </div>
           <div style={{ color: C.textDim, fontSize: 16, paddingBottom: 16 }}>:</div>
           <div style={{ flex: 1 }}>
-            <input type="text" inputMode="numeric" value={String(schedMin).padStart(2, "0")}
-              onChange={e => { const v = parseInt(e.target.value) || 0; const c = v < 0 ? 0 : v > 59 ? 59 : v; updateScheduleTime(schedH12, c, schedAmpm); }}
+            <input type="text" inputMode="numeric"
+              value={minDisp}
+              onChange={e => setMinDisp(e.target.value.replace(/[^0-9]/g, ""))}
+              onBlur={() => {
+                const v = parseInt(minDisp) || 0;
+                const c = v < 0 ? 0 : v > 59 ? 59 : v;
+                setMinDisp(String(c).padStart(2, "0"));
+                updateScheduleTime(schedH12, c, schedAmpm);
+              }}
               style={inputStyle} />
             <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>min</div>
           </div>
@@ -332,7 +359,7 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
   const dayCount = isMobile ? 3 : 7;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "16px 12px" : "24px 20px" }}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "72px 12px 16px" : "24px 20px" }}>
 
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
