@@ -121,6 +121,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
   const loadSessions = async () => {
     if (!guildId) return;
+    const now = new Date();
     // Use local midnight as the start boundary so sessions don't disappear based on UTC rollover
     const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const weekEnd = new Date(localMidnight);
