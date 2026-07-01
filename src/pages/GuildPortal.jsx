@@ -196,50 +196,55 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     if (!sessionTime || schedulingSession) return;
     if (!selectedGame && !gameSearch.trim()) return;
     setSchedulingSession(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSchedulingSession(false); return; }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const [h, m] = sessionTime.split(":").map(Number);
-    const scheduled = new Date(dayDate);
-    scheduled.setHours(h, m, 0, 0);
+      const [h, m] = sessionTime.split(":").map(Number);
+      const scheduled = new Date(dayDate);
+      scheduled.setHours(h, m, 0, 0);
 
-    const gameName = selectedGame ? selectedGame.name : gameSearch.trim();
-    const gameId = selectedGame ? selectedGame.id : null;
+      const gameName = selectedGame ? selectedGame.name : gameSearch.trim();
+      const gameId = selectedGame ? selectedGame.id : null;
 
-    const { data: newSession } = await supabase.from("guild_sessions").insert({
-      guild_id: guildId,
-      game: gameName,
-      game_id: gameId,
-      scheduled_at: scheduled.toISOString(),
-      duration_minutes: (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0) || null,
-      created_by: user.id,
-      creator_tz_offset: -new Date().getTimezoneOffset(),
-    }).select().single();
+      // Generate ID client-side so we can use it for RSVP without a round-trip select
+      const sessionId = crypto.randomUUID();
 
-    // Auto-RSVP creator as "in"
-    if (newSession) {
+      await supabase.from("guild_sessions").insert({
+        id: sessionId,
+        guild_id: guildId,
+        game: gameName,
+        game_id: gameId,
+        scheduled_at: scheduled.toISOString(),
+        duration_minutes: (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0) || null,
+        created_by: user.id,
+        creator_tz_offset: -new Date().getTimezoneOffset(),
+      });
+
+      // Auto-RSVP creator as "in"
       await supabase.from("guild_session_rsvps").insert({
-        session_id: newSession.id,
+        session_id: sessionId,
         user_id: user.id,
         response: "in",
       }).catch(() => {});
+
+      if (gameId) {
+        supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
+      }
+
+      notifyGuildMembers(user.id, "guild_session", "New gaming session scheduled in " + (guild?.name || "your guild"), guildId);
+
+      setSessionTime("20:00");
+      setSessionDurH("");
+      setSessionDurM("");
+      setGameSearch("");
+      setGameResults([]);
+      setSelectedGame(null);
+      setActiveDay(null);
+      loadSessions();
+    } finally {
+      setSchedulingSession(false);
     }
-
-    if (gameId) {
-      supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
-    }
-
-    notifyGuildMembers(user.id, "guild_session", `New gaming session scheduled in ${guild?.name || "your guild"}`, guildId);
-
-    setSessionTime("20:00");
-    setSessionDurH("");
-    setSessionDurM("");
-    setGameSearch("");
-    setGameResults([]);
-    setSelectedGame(null);
-    setActiveDay(null);
-    setSchedulingSession(false);
-    loadSessions();
   };
 
   const handleRsvp = async (sessionId, response) => {
@@ -641,7 +646,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                 onClick={() => scheduleSession(weekDays[activeDay])}
                 disabled={(!selectedGame && !gameSearch.trim()) || !sessionTime || schedulingSession}
                 style={{ background: (selectedGame || gameSearch.trim()) && sessionTime ? C.accent : C.surfaceRaised, border: "none", borderRadius: 3, padding: "9px 24px", color: (selectedGame || gameSearch.trim()) && sessionTime ? "#fff" : C.textDim, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {schedulingSession ? "Sharing..." : "Share"}
+                {schedulingSession ? "Scheduling..." : "Schedule"}
               </button>
               <button onClick={() => setActiveDay(null)}
                 style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "9px 16px", color: C.textMuted, fontSize: 13, cursor: "pointer" }}>

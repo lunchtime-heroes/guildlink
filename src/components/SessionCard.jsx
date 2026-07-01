@@ -17,9 +17,9 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
   const [loadingThread, setLoadingThread] = useState(false);
   const threadBottomRef = useRef(null);
 
-  // Load thread messages when modal opens
+  // Load thread messages when modal opens — don't clear on close so reopening is instant
   useEffect(() => {
-    if (!showModal) { setMessages([]); return; }
+    if (!showModal) return;
     loadThread();
   }, [showModal]);
 
@@ -449,14 +449,20 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
         document.body
       )}
 
-      {/* Edit form portal — triggered from modal Edit button */}
+      {/* Edit form portal — centered overlay on desktop, full-screen on mobile */}
       {showEdit && ReactDOM.createPortal(
-        <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: C.bg, display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: C.text }}>{session.game || "Untitled"}</div>
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 24 }}>
-            {editForm}
+        <div
+          onClick={() => setShowEdit(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: C.bg, width: isMobile ? "100%" : 520, maxHeight: isMobile ? "90vh" : "80vh", display: "flex", flexDirection: "column", borderRadius: isMobile ? "12px 12px 0 0" : 8, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, color: C.text }}>{session.game || "Untitled"}</div>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 24 }}>
+              {editForm}
+            </div>
           </div>
         </div>,
         document.body

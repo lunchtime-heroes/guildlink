@@ -139,37 +139,39 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
   const scheduleSession = async (dayDate) => {
     if (!selectedGuildId || saving) return;
     setSaving(true);
-    const parts = sessionTime.split(":");
-    const h = parseInt(parts[0]) || 20;
-    const m = parseInt(parts[1]) || 0;
-    const scheduled = new Date(dayDate);
-    scheduled.setHours(h, m, 0, 0);
-    const totalMinutes = (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0);
-    const { data: newSession } = await supabase.from("guild_sessions").insert({
-      guild_id: selectedGuildId,
-      created_by: currentUser.id,
-      game: selectedGame?.name || "TBD",
-      game_id: selectedGame?.id || null,
-      title: selectedGame?.name || "Gaming Session",
-      scheduled_at: scheduled.toISOString(),
-      duration_minutes: totalMinutes > 0 ? totalMinutes : null,
-    }).select().single();
-
-    // Auto-RSVP creator as "in"
-    if (newSession) {
+    try {
+      const parts = sessionTime.split(":");
+      const h = parseInt(parts[0]) || 20;
+      const m = parseInt(parts[1]) || 0;
+      const scheduled = new Date(dayDate);
+      scheduled.setHours(h, m, 0, 0);
+      const totalMinutes = (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0);
+      const sessionId = crypto.randomUUID();
+      await supabase.from("guild_sessions").insert({
+        id: sessionId,
+        guild_id: selectedGuildId,
+        created_by: currentUser.id,
+        game: selectedGame?.name || "TBD",
+        game_id: selectedGame?.id || null,
+        title: selectedGame?.name || "Gaming Session",
+        scheduled_at: scheduled.toISOString(),
+        duration_minutes: totalMinutes > 0 ? totalMinutes : null,
+      });
+      // Auto-RSVP creator as "in"
       await supabase.from("guild_session_rsvps").insert({
-        session_id: newSession.id,
+        session_id: sessionId,
         user_id: currentUser.id,
         response: "in",
       }).catch(() => {});
+      setActiveDay(null);
+      setGameSearch("");
+      setSelectedGame(null);
+      setGameResults([]);
+      setSessionTime("20:00");
+      await load();
+    } finally {
+      setSaving(false);
     }
-    setActiveDay(null);
-    setGameSearch("");
-    setSelectedGame(null);
-    setGameResults([]);
-    setSessionTime("20:00");
-    setSaving(false);
-    await load();
   };
 
   const dayLabel = (d) => {
