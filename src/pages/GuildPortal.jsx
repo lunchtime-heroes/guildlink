@@ -147,6 +147,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
   const loadThread = async () => {
     if (!guildId) return;
+    const { data } = await supabase
       .from("guild_posts")
       .select("id, content, created_at, user_id, parent_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("guild_id", guildId)
