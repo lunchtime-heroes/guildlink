@@ -946,7 +946,7 @@ export default function GuildLink() {
       }
       if (state.guildId) {
         setCurrentGuild(state.guildId);
-      } else {
+      } else if (state.page !== "guild") {
         setCurrentGuild(null);
       }
       if (state.playerId) {
@@ -962,7 +962,7 @@ export default function GuildLink() {
     };
     window.addEventListener("popstate", onPop);
     // Seed initial history state so back works from first page
-    const { page, gameId, playerHandle } = parsePath(window.location.pathname);
+    const { page, gameId, playerHandle, guildId: parsedGuildId } = parsePath(window.location.pathname);
     if (page === "reset") { setShowAuth("reset"); }
     // Handle Xbox OAuth return params
     const urlParams = new URLSearchParams(window.location.search);
@@ -974,13 +974,14 @@ export default function GuildLink() {
       if (xboxErrorParam) window.__xboxError = xboxErrorParam;
       window.history.replaceState({}, "", window.location.pathname);
     }
-    window.history.replaceState({ page, gameId, playerHandle }, "", window.location.pathname + window.location.hash);
+    window.history.replaceState({ page, gameId, playerHandle, guildId: parsedGuildId }, "", window.location.pathname + window.location.hash);
     // Apply parsed path so refresh restores the correct page
     if (page && page !== "reset") {
       setActivePage(page);
       if (gameId) setCurrentGame(gameId);
+      if (parsedGuildId) setCurrentGuild(parsedGuildId);
       if (playerHandle) {
-        supabase.from("profiles").select("id").eq("handle", `@${playerHandle}`).maybeSingle()
+        supabase.from("profiles").select("id").eq("handle", "@" + playerHandle).maybeSingle()
           .then(({ data }) => { if (data) setCurrentPlayer(data.id); });
       }
     }
