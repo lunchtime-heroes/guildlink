@@ -1,12 +1,101 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { C } from "../constants.js";
+import supabase from "../supabase.js";
+import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 
 function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, isLive, guildName }) {
   const [showEdit, setShowEdit] = useState(false);
   const [showRsvp, setShowRsvp] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [profiles, setProfiles] = useState({});
+  const [msgText, setMsgText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [loadingThread, setLoadingThread] = useState(false);
+  const threadBottomRef = useRef(null);
+
+  // Load thread messages when modal opens
+  useEffect(() => {
+    if (!showModal) { setMessages([]); return; }
+    loadThread();
+  }, [showModal]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (threadBottomRef.current) {
+      threadBottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const loadThread = async () => {
+    setLoadingThread(true);
+    const { data } = await supabase
+      .from("session_messages")
+      .select("id, content, created_at, user_id")
+      .eq("session_id", session.id)
+      .order("created_at", { ascending: true });
+    const msgs = data || [];
+    setMessages(msgs);
+
+    // Load profiles for message authors
+    const userIds = [...new Set(msgs.map(m => m.user_id).filter(Boolean))];
+    if (userIds.length > 0) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_initials, avatar_config, active_ring, is_founding")
+        .in("id", userIds);
+      const profileMap = {};
+      (profileData || []).forEach(p => { profileMap[p.id] = p; });
+      setProfiles(profileMap);
+    }
+    setLoadingThread(false);
+  };
+
+  const sendMessage = async () => {
+    if (!msgText.trim() || !currentUserId || sending) return;
+    setSending(true);
+    const content = msgText.trim();
+    setMsgText("");
+
+    // Optimistic insert
+    const tempId = "temp-" + Date.now();
+    setMessages(prev => [...prev, { id: tempId, content, created_at: new Date().toISOString(), user_id: currentUserId }]);
+
+    // Calculate session end for notification expiry
+    const sessionEnd = new Date(session.scheduled_at);
+    sessionEnd.setMinutes(sessionEnd.getMinutes() + (session.duration_minutes || 60));
+
+    const { data } = await supabase
+      .from("session_messages")
+      .insert({ session_id: session.id, user_id: currentUserId, content })
+      .select()
+      .single();
+
+    // Replace temp message with real one
+    if (data) {
+      setMessages(prev => prev.map(m => m.id === tempId ? data : m));
+    }
+
+    // Notify other RSVPs who are "in" or "maybe" — exclude sender
+    const notifyIds = rsvps
+      .filter(r => r.user_id !== currentUserId && (r.response === "in" || r.response === "maybe"))
+      .map(r => r.user_id);
+    if (notifyIds.length > 0) {
+      const notifications = notifyIds.map(uid => ({
+        user_id: uid,
+        type: "session_message",
+        message: "New message in your " + (session.game || "gaming") + " session",
+        guild_id: session.guild_id,
+        expires_at: sessionEnd.toISOString(),
+      }));
+      await supabase.from("notifications").insert(notifications).catch(() => {});
+    }
+
+    setSending(false);
+  };
 
   // Store time as 24h "HH:MM" string internally
   const [editTime, setEditTime] = useState(() => {
@@ -132,10 +221,10 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     width: "100%", boxSizing: "border-box", textAlign: "center",
   };
 
-  if (showEdit) {
-    const editForm = (
-      <>
-        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Edit Session</div>
+  // editForm is hoisted so both the standalone edit portal and the modal edit button can use it
+  const editForm = (
+    <>
+      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Edit Session</div>
 
         {/* Custom time picker — type="text" with inputMode avoids native spinners on desktop */}
         <div style={{ marginBottom: 12 }}>
@@ -212,11 +301,158 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
       </>
     );
 
-    // Mobile: full-screen overlay for comfortable editing
-    if (isMobile) {
-      return ReactDOM.createPortal(
+  return (
+    <>
+      <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ padding: "10px 12px", marginBottom: 6 }}>
+        <div
+          onClick={() => { if (currentUserId) setShowModal(true); }}
+          style={{ cursor: currentUserId ? "pointer" : "default" }}
+        >
+          <div style={{ fontWeight: 800, fontSize: 12, color: C.text, marginBottom: 2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+            {session.game || "Untitled"}
+          </div>
+          <div style={{ fontSize: 11, color: statusColor, fontWeight: 700, marginBottom: guildName ? 2 : 6 }}>
+            {isLive ? "\u25cf Online Now" : (timeStr + (durationStr ? " \u00b7 " + durationStr : ""))}
+          </div>
+          {guildName && (
+            <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 6, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{guildName}</div>
+          )}
+          <div style={{ fontSize: 11, lineHeight: 2 }}>
+            <div style={{ color: "#22c55e", fontWeight: 700 }}>{counts.in} in</div>
+            <div style={{ color: "#f59e0b", fontWeight: 700 }}>{counts.maybe} maybe</div>
+            <div style={{ color: "#ef4444", fontWeight: 700 }}>{counts.out} out</div>
+          </div>
+          {myRsvp && !isCreator && (
+            <div style={{ fontSize: 10, color: statusColor, fontWeight: 700, marginTop: 4 }}>
+              {"You're " + (myRsvp.response === "in" ? "in" : myRsvp.response === "maybe" ? "maybe" : "out") + " \u00b7 tap for thread"}
+            </div>
+          )}
+          {!myRsvp && !isCreator && (
+            <div style={{ fontSize: 10, color: C.gold, fontWeight: 700, marginTop: 4 }}>Tap to RSVP</div>
+          )}
+          {isCreator && (
+            <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>Tap to view</div>
+          )}
+        </div>
+      </PixelCornerBox>
+
+      {/* Session modal — full-screen on mobile, centered overlay on desktop */}
+      {showModal && ReactDOM.createPortal(
+        <div
+          onClick={() => setShowModal(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center" }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: C.bg, width: isMobile ? "100%" : 520, maxHeight: isMobile ? "90vh" : "80vh", display: "flex", flexDirection: "column", borderRadius: isMobile ? "12px 12px 0 0" : 8, overflow: "hidden" }}>
+
+            {/* Modal header */}
+            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 2 }}>{session.game || "Untitled"}</div>
+                  <div style={{ fontSize: 13, color: isLive ? C.accent : statusColor, fontWeight: 700 }}>
+                    {isLive ? "\u25cf Online Now" : (timeStr + (durationStr ? " \u00b7 " + durationStr : ""))}
+                  </div>
+                  {guildName && <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>{guildName}</div>}
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                  {isCreator && (
+                    <button
+                      onClick={() => { setShowModal(false); setShowEdit(true); }}
+                      style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3, padding: "5px 10px", color: C.textMuted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                      Edit
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowModal(false)}
+                    style={{ background: "none", border: "none", color: C.textDim, fontSize: 20, cursor: "pointer", lineHeight: 1, padding: "2px 4px" }}>
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* RSVP row */}
+              <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+                {[
+                  { response: "in", label: "I'm in", color: "#22c55e", activeBg: "#22c55e22", activeBorder: "#22c55e88" },
+                  { response: "maybe", label: "Maybe", color: "#f59e0b", activeBg: "#f59e0b22", activeBorder: "#f59e0b88" },
+                  { response: "out", label: "Can't make it", color: "#ef4444", activeBg: "#ef444422", activeBorder: "#ef444488" },
+                ].map(opt => {
+                  const isSelected = myRsvp?.response === opt.response;
+                  const count = counts[opt.response];
+                  return (
+                    <button key={opt.response}
+                      onClick={() => { onRsvp(session.id, opt.response); }}
+                      style={{ flex: 1, background: isSelected ? opt.activeBg : C.surfaceRaised, border: "1px solid " + (isSelected ? opt.activeBorder : C.border), borderRadius: 3, padding: "7px 4px", color: opt.color, fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>{count}</div>
+                      <div>{opt.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Thread messages */}
+            <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px 16px" }}>
+              {loadingThread && <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 20 }}>Loading...</div>}
+              {!loadingThread && messages.length === 0 && (
+                <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 24, lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>💬</div>
+                  No messages yet. Share your gamer tag, ask questions, or let the group know if you'll be late.
+                  <div style={{ fontSize: 11, marginTop: 12, color: C.textDim + "88" }}>This thread disappears when the session ends.</div>
+                </div>
+              )}
+              {messages.map(msg => {
+                const author = profiles[msg.user_id];
+                const isOwn = msg.user_id === currentUserId;
+                return (
+                  <div key={msg.id} style={{ display: "flex", gap: 10, marginBottom: 14, flexDirection: isOwn ? "row-reverse" : "row" }}>
+                    {!isOwn && (
+                      <Avatar
+                        initials={(author?.avatar_initials || "?").slice(0, 2).toUpperCase()}
+                        size={28}
+                        founding={author?.is_founding}
+                        ring={author?.active_ring}
+                        avatarConfig={author?.avatar_config}
+                      />
+                    )}
+                    <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start" }}>
+                      {!isOwn && <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 3 }}>{author?.username || "Member"}</div>}
+                      <div style={{ background: isOwn ? "color-mix(in srgb, " + C.accent + " 15%, " + C.bg + ")" : C.surfaceRaised, border: "1px solid " + (isOwn ? C.accentDim : C.border), borderRadius: 8, padding: "8px 12px", fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={threadBottomRef} />
+            </div>
+
+            {/* Message input */}
+            <div style={{ padding: "10px 16px", borderTop: "1px solid " + C.border, flexShrink: 0, display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                value={msgText}
+                onChange={e => setMsgText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                placeholder="Message..."
+                style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 20, padding: "9px 14px", color: C.text, fontSize: 14, outline: "none" }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!msgText.trim() || sending}
+                style={{ background: msgText.trim() ? C.accent : C.surfaceRaised, border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: msgText.trim() ? "pointer" : "default", flexShrink: 0, transition: "background 0.15s" }}>
+                <span style={{ color: msgText.trim() ? "#fff" : C.textDim, fontSize: 16 }}>{"\u2191"}</span>
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Edit form portal — triggered from modal Edit button */}
+      {showEdit && ReactDOM.createPortal(
         <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: C.bg, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: C.text }}>{session.game || "Untitled"}</div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 24 }}>
@@ -224,100 +460,8 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
           </div>
         </div>,
         document.body
-      );
-    }
-
-    // Desktop: inline edit card with padding
-    return (
-      <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ padding: "12px 14px", marginBottom: 6 }}>
-        {editForm}
-      </PixelCornerBox>
-    );
-  }
-
-  return (
-    <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ padding: "10px 12px", marginBottom: 6 }}>
-      <div
-        onClick={() => {
-          if (!currentUserId) return;
-          if (isCreator) { setShowEdit(true); return; }
-          setShowRsvp(r => !r);
-        }}
-        style={{ cursor: currentUserId ? "pointer" : "default" }}
-      >
-        <div style={{ fontWeight: 800, fontSize: 12, color: C.text, marginBottom: 2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-          {session.game || "Untitled"}
-        </div>
-        <div style={{ fontSize: 11, color: statusColor, fontWeight: 700, marginBottom: guildName ? 2 : 6 }}>
-          {isLive ? "\u25cf Online Now" : (timeStr + (durationStr ? " \u00b7 " + durationStr : ""))}
-        </div>
-        {guildName && (
-          <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 6, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{guildName}</div>
-        )}
-        {!showRsvp && (
-          <div style={{ fontSize: 11, lineHeight: 2 }}>
-            <div style={{ color: "#22c55e", fontWeight: 700 }}>{counts.in} in</div>
-            <div style={{ color: "#f59e0b", fontWeight: 700 }}>{counts.maybe} maybe</div>
-            <div style={{ color: "#ef4444", fontWeight: 700 }}>{counts.out} out</div>
-          </div>
-        )}
-        {myRsvp && !isCreator && (
-          <div style={{ fontSize: 10, color: statusColor, fontWeight: 700, marginTop: 4, lineHeight: 1.5 }}>
-            <div>{"You're " + (myRsvp.response === "in" ? "in" : myRsvp.response === "maybe" ? "maybe" : "out")}</div>
-            <div>tap to change</div>
-          </div>
-        )}
-        {!myRsvp && !isCreator && (
-          <div style={{ fontSize: 10, color: C.gold, fontWeight: 700, marginTop: 4 }}>Tap to respond</div>
-        )}
-        {isCreator && (
-          <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>Tap to edit</div>
-        )}
-      </div>
-
-      {showRsvp && !isCreator && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + borderColor }}>
-          {[
-            { response: "in", label: "I'm in", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55", selectedBg: "#22c55e33", selectedBorder: "#22c55e88", count: counts.in },
-            { response: "maybe", label: "Not sure", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55", selectedBg: "#f59e0b33", selectedBorder: "#f59e0b88", count: counts.maybe },
-            { response: "out", label: "I'm out", color: "#ef4444", bg: "#ef444422", border: "#ef444455", selectedBg: "#ef444433", selectedBorder: "#ef444488", count: counts.out },
-          ].map(opt => {
-            const isSelected = myRsvp?.response === opt.response;
-            return (
-              <button
-                key={opt.response}
-                onClick={() => handleRsvpSelect(opt.response)}
-                style={{
-                  width: "100%",
-                  background: isSelected ? opt.selectedBg : opt.bg,
-                  border: "1px solid " + (isSelected ? opt.selectedBorder : opt.border),
-                  borderRadius: 3,
-                  padding: "6px 10px",
-                  color: opt.color,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}>
-                <span style={{
-                  background: isSelected ? opt.selectedBg : opt.bg,
-                  border: "1px solid " + opt.border,
-                  borderRadius: 3,
-                  padding: "2px 7px",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  minWidth: 22,
-                  textAlign: "center",
-                }}>{opt.count}</span>
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
-        </div>
       )}
-    </PixelCornerBox>
+    </>
   );
 }
 
