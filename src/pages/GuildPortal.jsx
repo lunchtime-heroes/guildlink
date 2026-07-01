@@ -120,7 +120,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const loadSessions = async () => {
-    const now = new Date();
+    if (!guildId) return;
     // Use local midnight as the start boundary so sessions don't disappear based on UTC rollover
     const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const weekEnd = new Date(localMidnight);
@@ -146,7 +146,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const loadThread = async () => {
-    const { data } = await supabase
+    if (!guildId) return;
       .from("guild_posts")
       .select("id, content, created_at, user_id, parent_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("guild_id", guildId)
