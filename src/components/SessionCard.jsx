@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import PixelCornerBox from "./PixelCornerBox.jsx";
 import PixelButton from "./PixelButton.jsx";
@@ -118,56 +119,56 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
   };
 
   if (showEdit) {
-    return (
-      <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ marginBottom: 6 }}>
-        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Edit Session</div>
+    const editForm = (
+      <>
+        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Edit Session</div>
 
-        {/* Custom time picker — replaces type="time" which renders inconsistently */}
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ color: C.textDim, fontSize: 10, marginBottom: 4 }}>Start Time</div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        {/* Custom time picker — type="text" with inputMode avoids native spinners on desktop */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ color: C.textDim, fontSize: 10, marginBottom: 6 }}>Start Time</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
-              <input type="number" min="1" max="12" value={editH12}
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={editH12}
                 onChange={e => handleHourChange(e.target.value)} style={smallInput} />
               <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>hr</div>
             </div>
-            <div style={{ color: C.textDim, fontSize: 14, paddingBottom: 14 }}>:</div>
+            <div style={{ color: C.textDim, fontSize: 16, paddingBottom: 16 }}>:</div>
             <div style={{ flex: 1 }}>
-              <input type="number" min="0" max="59" value={String(editMin).padStart(2, "0")}
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={String(editMin).padStart(2, "0")}
                 onChange={e => handleMinChange(e.target.value)} style={smallInput} />
               <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>min</div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3, paddingBottom: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 16 }}>
               <button onClick={() => updateTime(editH12, editMin, "am")}
-                style={{ background: editAmpm === "am" ? C.accent + "33" : "transparent", border: "1px solid " + (editAmpm === "am" ? C.accent : C.border), borderRadius: 2, padding: "3px 8px", color: editAmpm === "am" ? C.accent : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: editAmpm === "am" ? C.accent + "33" : "transparent", border: "1px solid " + (editAmpm === "am" ? C.accent : C.border), borderRadius: 2, padding: "4px 10px", color: editAmpm === "am" ? C.accent : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 AM
               </button>
               <button onClick={() => updateTime(editH12, editMin, "pm")}
-                style={{ background: editAmpm === "pm" ? C.accent + "33" : "transparent", border: "1px solid " + (editAmpm === "pm" ? C.accent : C.border), borderRadius: 2, padding: "3px 8px", color: editAmpm === "pm" ? C.accent : C.textDim, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: editAmpm === "pm" ? C.accent + "33" : "transparent", border: "1px solid " + (editAmpm === "pm" ? C.accent : C.border), borderRadius: 2, padding: "4px 10px", color: editAmpm === "pm" ? C.accent : C.textDim, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 PM
               </button>
             </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ color: C.textDim, fontSize: 10, marginBottom: 4 }}>Duration</div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ color: C.textDim, fontSize: 10, marginBottom: 6 }}>Duration</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
-              <input type="number" min="0" max="12" placeholder="0" value={editDurH}
-                onChange={e => setEditDurH(e.target.value)} style={smallInput} />
+              <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="0" value={editDurH}
+                onChange={e => setEditDurH(e.target.value.replace(/[^0-9]/g, ""))} style={smallInput} />
               <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>hrs</div>
             </div>
-            <div style={{ color: C.textDim, fontSize: 14, paddingBottom: 14 }}>:</div>
+            <div style={{ color: C.textDim, fontSize: 16, paddingBottom: 16 }}>:</div>
             <div style={{ flex: 1 }}>
-              <input type="number" min="0" max="59" placeholder="0" value={editDurM}
-                onChange={e => setEditDurM(e.target.value)} style={smallInput} />
+              <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="0" value={editDurM}
+                onChange={e => setEditDurM(e.target.value.replace(/[^0-9]/g, ""))} style={smallInput} />
               <div style={{ color: C.textDim, fontSize: 9, textAlign: "center", marginTop: 2 }}>min</div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 8 }}>
           <div style={{ padding: "1px 0" }}>
             <PixelButton onClick={handleSaveEdit} size="xs" bg={C.accent} borderColor={C.accent}>Save</PixelButton>
           </div>
@@ -178,12 +179,35 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
             <PixelButton onClick={() => onDelete(session.id)} size="xs" bg="#ef444422" borderColor="#ef444444">{"Delete"}</PixelButton>
           </div>
         </div>
+      </>
+    );
+
+    // Mobile: full-screen overlay for comfortable editing
+    if (isMobile) {
+      return ReactDOM.createPortal(
+        <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: C.bg, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: C.text }}>{session.game || "Untitled"}</div>
+            <button onClick={() => setShowEdit(false)} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 15, fontWeight: 600, cursor: "pointer", padding: "4px 8px" }}>Cancel</button>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 24 }}>
+            {editForm}
+          </div>
+        </div>,
+        document.body
+      );
+    }
+
+    // Desktop: inline edit card with padding
+    return (
+      <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ padding: "12px 14px", marginBottom: 6 }}>
+        {editForm}
       </PixelCornerBox>
     );
   }
 
   return (
-    <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ marginBottom: 6 }}>
+    <PixelCornerBox size="lg" bgStyle={bgStyle} borderColor={borderColor} style={{ padding: "10px 12px", marginBottom: 6 }}>
       <div
         onClick={() => {
           if (!currentUserId) return;
