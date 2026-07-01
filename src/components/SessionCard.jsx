@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import { C } from "../constants.js";
-import PixelCornerBox from "./PixelCornerBox.jsx";
-import PixelButton from "./PixelButton.jsx";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
+import { PixelButton } from "./PixelButton.jsx";
 
 function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile }) {
   const [showEdit, setShowEdit] = useState(false);
