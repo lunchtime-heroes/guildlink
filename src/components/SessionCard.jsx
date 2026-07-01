@@ -113,8 +113,8 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
   };
 
   const smallInput = {
-    background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 3,
-    padding: "6px 8px", color: C.text, fontSize: 12, outline: "none",
+    background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 3,
+    padding: "8px 10px", color: C.text, fontSize: 13, outline: "none",
     width: "100%", boxSizing: "border-box", textAlign: "center",
   };
 
@@ -170,13 +170,13 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
 
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ padding: "1px 0" }}>
-            <PixelButton onClick={handleSaveEdit} size="xs" bg={C.accent} borderColor={C.accent}>Save</PixelButton>
+            <PixelButton onClick={handleSaveEdit} size="sm" bg={C.accent} borderColor={C.accent}>Save</PixelButton>
           </div>
           <div style={{ padding: "1px 0" }}>
-            <PixelButton onClick={() => setShowEdit(false)} size="xs" bg="transparent" borderColor={C.border}>Cancel</PixelButton>
+            <PixelButton onClick={() => setShowEdit(false)} size="sm" bg="transparent" borderColor={C.border}>Cancel</PixelButton>
           </div>
           <div style={{ padding: "1px 0", marginLeft: "auto" }}>
-            <PixelButton onClick={() => onDelete(session.id)} size="xs" bg="#ef444422" borderColor="#ef444444">{"Delete"}</PixelButton>
+            <PixelButton onClick={() => onDelete(session.id)} size="sm" bg="#ef444422" borderColor="#ef444444">{"Delete"}</PixelButton>
           </div>
         </div>
       </>
@@ -186,9 +186,8 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     if (isMobile) {
       return ReactDOM.createPortal(
         <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: C.bg, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "16px 20px 12px", borderBottom: "1px solid " + C.border, flexShrink: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: C.text }}>{session.game || "Untitled"}</div>
-            <button onClick={() => setShowEdit(false)} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 15, fontWeight: 600, cursor: "pointer", padding: "4px 8px" }}>Cancel</button>
           </div>
           <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 24 }}>
             {editForm}
