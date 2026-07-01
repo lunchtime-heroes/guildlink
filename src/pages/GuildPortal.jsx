@@ -195,11 +195,9 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   const scheduleSession = async (dayDate) => {
     if (!sessionTime || schedulingSession) return;
     if (!selectedGame && !gameSearch.trim()) return;
+    if (!currentUser?.id) return;
     setSchedulingSession(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const [h, m] = sessionTime.split(":").map(Number);
       const scheduled = new Date(dayDate);
       scheduled.setHours(h, m, 0, 0);
@@ -207,7 +205,6 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       const gameName = selectedGame ? selectedGame.name : gameSearch.trim();
       const gameId = selectedGame ? selectedGame.id : null;
 
-      // Generate ID client-side so we can use it for RSVP without a round-trip select
       const sessionId = crypto.randomUUID();
 
       await supabase.from("guild_sessions").insert({
@@ -217,22 +214,22 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
         game_id: gameId,
         scheduled_at: scheduled.toISOString(),
         duration_minutes: (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0) || null,
-        created_by: user.id,
+        created_by: currentUser.id,
         creator_tz_offset: -new Date().getTimezoneOffset(),
       });
 
       // Auto-RSVP creator as "in"
       await supabase.from("guild_session_rsvps").insert({
         session_id: sessionId,
-        user_id: user.id,
+        user_id: currentUser.id,
         response: "in",
       }).catch(() => {});
 
       if (gameId) {
-        supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});
+        supabase.from("chart_events").insert({ game_id: gameId, user_id: currentUser.id, event_type: "guild_session" }).then(() => {});
       }
 
-      notifyGuildMembers(user.id, "guild_session", "New gaming session scheduled in " + (guild?.name || "your guild"), guildId);
+      notifyGuildMembers(currentUser.id, "guild_session", "New gaming session scheduled in " + (guild?.name || "your guild"), guildId);
 
       setSessionTime("20:00");
       setSessionDurH("");

@@ -6,7 +6,13 @@ import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 
-function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, isLive, guildName }) {
+function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, guildName }) {
+  // Compute isLive from session data directly — no need for parent to pass it
+  const now = new Date();
+  const sessionStart = new Date(session.scheduled_at);
+  const durMs = (session.duration_minutes || 60) * 60000;
+  const sessionEnd = new Date(sessionStart.getTime() + durMs);
+  const isLive = now >= sessionStart && now <= sessionEnd;
   const [showEdit, setShowEdit] = useState(false);
   const [showRsvp, setShowRsvp] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -68,11 +74,19 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     const sessionEnd = new Date(session.scheduled_at);
     sessionEnd.setMinutes(sessionEnd.getMinutes() + (session.duration_minutes || 60));
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("session_messages")
       .insert({ session_id: session.id, user_id: currentUserId, content })
       .select()
       .single();
+
+    if (error) {
+      console.error("[session thread] message insert failed:", error.message, error);
+      // Remove temp message — it didn't save
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setSending(false);
+      return;
+    }
 
     // Replace temp message with real one
     if (data) {

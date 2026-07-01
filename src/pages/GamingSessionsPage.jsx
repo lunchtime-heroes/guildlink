@@ -404,7 +404,6 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
                   onEdit={handleEditSession}
                   onDelete={handleDeleteSession}
                   isMobile={isMobile}
-                  isLive={checkIsLive(s)}
                   guildName={s.guild_name}
                 />
               ))}
