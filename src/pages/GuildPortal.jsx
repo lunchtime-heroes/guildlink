@@ -7,7 +7,6 @@ import SessionCard from "../components/SessionCard.jsx";
 import GuildActivityFeed from "../components/GuildActivityFeed.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
-import { PixelButton } from "../components/PixelButton.jsx";
 
 function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [guild, setGuild] = useState(null);
