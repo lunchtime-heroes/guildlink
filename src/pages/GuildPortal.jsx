@@ -206,7 +206,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     const gameName = selectedGame ? selectedGame.name : gameSearch.trim();
     const gameId = selectedGame ? selectedGame.id : null;
 
-    await supabase.from("guild_sessions").insert({
+    const { data: newSession } = await supabase.from("guild_sessions").insert({
       guild_id: guildId,
       game: gameName,
       game_id: gameId,
@@ -214,7 +214,16 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       duration_minutes: (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0) || null,
       created_by: user.id,
       creator_tz_offset: -new Date().getTimezoneOffset(),
-    });
+    }).select().single();
+
+    // Auto-RSVP creator as "in"
+    if (newSession) {
+      await supabase.from("guild_session_rsvps").insert({
+        session_id: newSession.id,
+        user_id: user.id,
+        response: "in",
+      }).catch(() => {});
+    }
 
     if (gameId) {
       supabase.from("chart_events").insert({ game_id: gameId, user_id: user.id, event_type: "guild_session" }).then(() => {});

@@ -145,7 +145,7 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
     const scheduled = new Date(dayDate);
     scheduled.setHours(h, m, 0, 0);
     const totalMinutes = (parseInt(sessionDurH) || 0) * 60 + (parseInt(sessionDurM) || 0);
-    await supabase.from("guild_sessions").insert({
+    const { data: newSession } = await supabase.from("guild_sessions").insert({
       guild_id: selectedGuildId,
       created_by: currentUser.id,
       game: selectedGame?.name || "TBD",
@@ -153,7 +153,16 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
       title: selectedGame?.name || "Gaming Session",
       scheduled_at: scheduled.toISOString(),
       duration_minutes: totalMinutes > 0 ? totalMinutes : null,
-    });
+    }).select().single();
+
+    // Auto-RSVP creator as "in"
+    if (newSession) {
+      await supabase.from("guild_session_rsvps").insert({
+        session_id: newSession.id,
+        user_id: currentUser.id,
+        response: "in",
+      }).catch(() => {});
+    }
     setActiveDay(null);
     setGameSearch("");
     setSelectedGame(null);
