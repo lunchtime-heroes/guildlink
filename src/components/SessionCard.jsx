@@ -39,24 +39,16 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
   const loadThread = async () => {
     setLoadingThread(true);
     const { data } = await supabase
-      .from("session_messages")
-      .select("id, content, created_at, user_id")
+      .from("posts")
+      .select("id, content, created_at, user_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("session_id", session.id)
       .order("created_at", { ascending: true });
     const msgs = data || [];
+    // Build profile map from the joined data
+    const profileMap = {};
+    msgs.forEach(m => { if (m.profiles) profileMap[m.user_id] = m.profiles; });
+    setProfiles(profileMap);
     setMessages(msgs);
-
-    // Load profiles for message authors
-    const userIds = [...new Set(msgs.map(m => m.user_id).filter(Boolean))];
-    if (userIds.length > 0) {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_initials, avatar_config, active_ring, is_founding")
-        .in("id", userIds);
-      const profileMap = {};
-      (profileData || []).forEach(p => { profileMap[p.id] = p; });
-      setProfiles(profileMap);
-    }
     setLoadingThread(false);
   };
 
@@ -66,7 +58,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     const content = msgText.trim();
     setMsgText("");
 
-    // Optimistic insert
+    // Optimistic insert — profile will be filled in after real insert
     const tempId = "temp-" + Date.now();
     setMessages(prev => [...prev, { id: tempId, content, created_at: new Date().toISOString(), user_id: currentUserId }]);
 
@@ -75,21 +67,20 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     sessionEnd.setMinutes(sessionEnd.getMinutes() + (session.duration_minutes || 60));
 
     const { data, error } = await supabase
-      .from("session_messages")
-      .insert({ session_id: session.id, user_id: currentUserId, content })
-      .select()
+      .from("posts")
+      .insert({ session_id: session.id, user_id: currentUserId, content, post_type: "session_thread" })
+      .select("id, content, created_at, user_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .single();
 
     if (error) {
-      console.error("[session thread] message insert failed:", error.message, error);
-      // Remove temp message — it didn't save
+      console.error("[session thread] post insert failed:", error.message, error);
       setMessages(prev => prev.filter(m => m.id !== tempId));
       setSending(false);
       return;
     }
 
-    // Replace temp message with real one
     if (data) {
+      if (data.profiles) setProfiles(prev => ({ ...prev, [currentUserId]: data.profiles }));
       setMessages(prev => prev.map(m => m.id === tempId ? data : m));
     }
 
