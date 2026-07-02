@@ -26,9 +26,15 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     setGuildsLoading(true);
     const { data } = await supabase
       .from("guilds")
-      .select("id, name, description, is_public, looking_for_members, discord_url, website_url, created_by")
+      .select("id, name, description, is_public, is_platform_guild, looking_for_members, discord_url, website_url, created_by, guild_members(id)")
       .order("created_at", { ascending: false });
-    setGuilds(data || []);
+    // Platform guilds first, then the rest
+    const sorted = (data || []).sort((a, b) => {
+      if (a.is_platform_guild && !b.is_platform_guild) return -1;
+      if (!a.is_platform_guild && b.is_platform_guild) return 1;
+      return 0;
+    });
+    setGuilds(sorted);
     if (currentUser?.id) {
       const { data: mem } = await supabase.from("guild_members").select("guild_id, status").eq("user_id", currentUser.id);
       setMemberGuildIds(new Set((mem || []).filter(m => m.status === "active").map(m => m.guild_id)));
@@ -228,9 +234,13 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 6 }}>No guilds found</div>
               <div style={{ fontSize: 13, color: C.textDim }}>Be the first to create one.</div>
             </div>
-          ) : filteredGuilds.map(g => (
-            <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} onCancelRequest={() => cancelRequest(g.id)} />
-          ))}
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+              {filteredGuilds.map(g => (
+                <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} onCancelRequest={() => cancelRequest(g.id)} memberCount={g.guild_members?.length || 0} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
