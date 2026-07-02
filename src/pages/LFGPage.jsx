@@ -26,15 +26,33 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     setGuildsLoading(true);
     const { data } = await supabase
       .from("guilds")
-      .select("id, name, description, is_public, is_platform_guild, looking_for_members, discord_url, website_url, created_by, guild_members(id)")
+      .select("id, name, description, is_public, is_platform_guild, looking_for_members, discord_url, website_url, created_by")
       .order("created_at", { ascending: false });
-    // Platform guilds first, then the rest
-    const sorted = (data || []).sort((a, b) => {
-      if (a.is_platform_guild && !b.is_platform_guild) return -1;
-      if (!a.is_platform_guild && b.is_platform_guild) return 1;
-      return 0;
-    });
+    const guildsData = data || [];
+
+    // Fetch member counts separately — embedding guild_members in the join
+    // causes inner-join filtering that drops guilds depending on RLS
+    const guildIds = guildsData.map(g => g.id);
+    let countMap = {};
+    if (guildIds.length > 0) {
+      const { data: members } = await supabase
+        .from("guild_members")
+        .select("guild_id")
+        .in("guild_id", guildIds)
+        .eq("status", "active");
+      (members || []).forEach(m => { countMap[m.guild_id] = (countMap[m.guild_id] || 0) + 1; });
+    }
+
+    // Platform guilds first, then rest
+    const sorted = guildsData
+      .map(g => ({ ...g, memberCount: countMap[g.id] || 0 }))
+      .sort((a, b) => {
+        if (a.is_platform_guild && !b.is_platform_guild) return -1;
+        if (!a.is_platform_guild && b.is_platform_guild) return 1;
+        return 0;
+      });
     setGuilds(sorted);
+
     if (currentUser?.id) {
       const { data: mem } = await supabase.from("guild_members").select("guild_id, status").eq("user_id", currentUser.id);
       setMemberGuildIds(new Set((mem || []).filter(m => m.status === "active").map(m => m.guild_id)));
@@ -48,7 +66,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     setMyGuildsLoading(true);
     const { data } = await supabase
       .from("guild_members")
-      .select("guild_id, guilds(id, name, description, is_public, looking_for_members)")
+      .select("guild_id, guilds(id, name, description, is_public, is_platform_guild, looking_for_members)")
       .eq("user_id", currentUser.id)
       .eq("status", "active");
     setMyGuilds((data || []).map(m => m.guilds).filter(Boolean));
@@ -259,18 +277,15 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontWeight: 700, color: C.text, fontSize: 15, marginBottom: 8 }}>You haven't joined any guilds yet</div>
               <div style={{ fontSize: 13, color: C.textMuted, maxWidth: 360, margin: "0 auto" }}>Find one above or create your own.</div>
             </div>
-          ) : myGuilds.map(g => (
-            <PixelCornerBox key={g.id} size="lg" borderColor={C.border} bg={C.surface}
-              style={{ padding: 20, marginBottom: 12, cursor: "pointer" }}
-              onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 6 }}>{g.name}</div>
-              {g.description && <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.5 }}>{g.description}</div>}
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                {g.looking_for_members && <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 2, padding: "3px 8px" }}>LFM</span>}
-                <span style={{ color: C.textDim, fontSize: 12 }}>{g.is_public ? "Public" : "Private"}</span>
-              </div>
-            </PixelCornerBox>
-          ))}
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+              {myGuilds.map(g => (
+                <div key={g.id} onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }} style={{ cursor: "pointer" }}>
+                  <GuildCard guild={g} isMember={true} memberCount={g.memberCount || 0} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
