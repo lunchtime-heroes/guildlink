@@ -240,7 +240,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       setGameResults([]);
       setSelectedGame(null);
       setActiveDay(null);
-      loadSessions();
+      await loadSessions();
     } finally {
       setSchedulingSession(false);
     }
