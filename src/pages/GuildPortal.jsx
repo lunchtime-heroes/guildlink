@@ -120,7 +120,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const loadSessions = async () => {
-    if (!guildId) return;
+    if (!guildId || !currentUser?.id) return;
     const now = new Date();
     // Use local midnight as the start boundary so sessions don't disappear based on UTC rollover
     const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -158,10 +158,11 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   useEffect(() => {
+    if (!guildId || !currentUser?.id) return;
     load();
     loadSessions();
     loadThread();
-  }, [guildId]);
+  }, [guildId, currentUser?.id]);
 
   const searchGames = async (q) => {
     setGameSearch(q);
