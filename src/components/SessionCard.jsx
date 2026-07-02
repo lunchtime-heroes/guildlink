@@ -40,7 +40,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     setLoadingThread(true);
     const { data } = await supabase
       .from("posts")
-      .select("id, content, created_at, user_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
+      .select("id, content, created_at, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("session_id", session.id)
       .order("created_at", { ascending: true });
     const msgs = data || [];
@@ -69,7 +69,7 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     const { data, error } = await supabase
       .from("posts")
       .insert({ session_id: session.id, user_id: currentUserId, content, post_type: "session_thread" })
-      .select("id, content, created_at, user_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
+      .select("id, content, created_at, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .single();
 
     if (error) {
