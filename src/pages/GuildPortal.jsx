@@ -550,6 +550,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                     key={s.id}
                     session={s}
                     currentUserId={currentUser?.id}
+                    currentUser={currentUser}
                     rsvps={sessionRsvps[s.id] || []}
                     onRsvp={handleRsvp}
                     onEdit={handleEditSession}

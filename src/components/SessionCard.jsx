@@ -6,8 +6,7 @@ import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 
-function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, guildName }) {
-  // Compute isLive from session data directly — no need for parent to pass it
+function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, guildName, currentUser: currentUserProfile }) {
   const now = new Date();
   const sessionStart = new Date(session.scheduled_at);
   const durMs = (session.duration_minutes || 60) * 60000;
@@ -21,6 +20,8 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
   const [msgText, setMsgText] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [editingMsgId, setEditingMsgId] = useState(null);
+  const [editMsgText, setEditMsgText] = useState("");
   const threadBottomRef = useRef(null);
 
   // Load thread messages when modal opens — don't clear on close so reopening is instant
@@ -107,6 +108,23 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     }
 
     setSending(false);
+  };
+
+  const deleteMessage = async (msgId) => {
+    await supabase.from("session_messages").delete().eq("id", msgId);
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    setEditingMsgId(null);
+  };
+
+  const saveEditMessage = async (msgId) => {
+    const content = editMsgText.trim();
+    if (!content) return;
+    const { error } = await supabase.from("session_messages").update({ content }).eq("id", msgId);
+    if (!error) {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content } : m));
+    }
+    setEditingMsgId(null);
+    setEditMsgText("");
   };
 
   // Store time as 24h "HH:MM" string internally
@@ -420,11 +438,12 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                 </div>
               )}
               {messages.map(msg => {
-                // Handle both possible key names from PostgREST FK hint
                 const profileData = msg.profiles || msg["profiles!posts_user_id_fkey"];
-                const author = profileData || profiles[msg.user_id];
                 const isOwn = msg.user_id === currentUserId;
+                // Use joined profile data, then profiles map, then currentUserProfile for own messages
+                const author = profileData || profiles[msg.user_id] || (isOwn ? currentUserProfile : null);
                 const displayName = author?.username || (isOwn ? "You" : "Member");
+                const isEditing = editingMsgId === msg.id;
                 return (
                   <div key={msg.id} style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "flex-start" }}>
                     <Avatar
@@ -435,13 +454,34 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                       avatarConfig={author?.avatar_config}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                         <span style={{ fontWeight: 700, fontSize: 13, color: isOwn ? C.accentSoft : C.text }}>{displayName}</span>
-                        {isOwn && <span style={{ fontSize: 10, color: C.textDim }}>you</span>}
+                        {isOwn && !isEditing && (
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <span onClick={() => { setEditingMsgId(msg.id); setEditMsgText(msg.content); }}
+                              style={{ color: C.textDim, fontSize: 11, cursor: "pointer" }}>Edit</span>
+                            <span onClick={() => deleteMessage(msg.id)}
+                              style={{ color: "#ef4444", fontSize: 11, cursor: "pointer" }}>Delete</span>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "8px 12px", fontSize: 13, color: C.text, lineHeight: 1.5 }}>
-                        {msg.content}
-                      </div>
+                      {isEditing ? (
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            value={editMsgText}
+                            onChange={e => setEditMsgText(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter") saveEditMessage(msg.id); if (e.key === "Escape") { setEditingMsgId(null); setEditMsgText(""); } }}
+                            autoFocus
+                            style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.accentDim, borderRadius: 4, padding: "6px 10px", color: C.text, fontSize: 13, outline: "none" }}
+                          />
+                          <span onClick={() => saveEditMessage(msg.id)} style={{ color: C.accent, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save</span>
+                          <span onClick={() => { setEditingMsgId(null); setEditMsgText(""); }} style={{ color: C.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</span>
+                        </div>
+                      ) : (
+                        <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "8px 12px", fontSize: 13, color: C.text, lineHeight: 1.5 }}>
+                          {msg.content}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

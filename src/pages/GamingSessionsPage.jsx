@@ -401,6 +401,7 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
                   key={s.id}
                   session={s}
                   currentUserId={currentUser?.id}
+                  currentUser={currentUser}
                   rsvps={sessionRsvps[s.id] || []}
                   onRsvp={handleRsvp}
                   onEdit={handleEditSession}
