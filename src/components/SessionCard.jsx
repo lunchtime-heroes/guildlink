@@ -388,19 +388,24 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                   const isSelected = myRsvp?.response === opt.response;
                   const count = counts[opt.response];
                   return (
-                    <button key={opt.response}
-                      onClick={() => { onRsvp(session.id, opt.response); }}
-                      style={{ flex: 1, background: isSelected ? opt.activeBg : C.surfaceRaised, border: "1px solid " + (isSelected ? opt.activeBorder : C.border), borderRadius: 3, padding: "7px 4px", color: opt.color, fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>{count}</div>
-                      <div>{opt.label}</div>
-                    </button>
+                    <div key={opt.response} style={{ flex: 1, padding: "1px 0" }}>
+                      <PixelButton fullWidth
+                        onClick={() => onRsvp(session.id, opt.response)}
+                        bg={isSelected ? opt.activeBg : C.surfaceRaised}
+                        borderColor={isSelected ? opt.activeBorder : C.border}>
+                        <span style={{ color: opt.color, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                          <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1 }}>{count}</span>
+                          <span style={{ fontSize: 10 }}>{opt.label}</span>
+                        </span>
+                      </PixelButton>
+                    </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Thread messages */}
-            <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px 16px" }}>
+            {/* Thread messages — minHeight:0 prevents flex child from growing beyond modal */}
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px 16px" }}>
               {loadingThread && <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 20 }}>Loading...</div>}
               {!loadingThread && messages.length === 0 && (
                 <div style={{ color: C.textDim, fontSize: 13, textAlign: "center", padding: 24, lineHeight: 1.6 }}>
@@ -410,22 +415,26 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                 </div>
               )}
               {messages.map(msg => {
-                const author = profiles[msg.user_id];
+                // Handle both possible key names from PostgREST FK hint
+                const profileData = msg.profiles || msg["profiles!posts_user_id_fkey"];
+                const author = profileData || profiles[msg.user_id];
                 const isOwn = msg.user_id === currentUserId;
+                const displayName = author?.username || (isOwn ? "You" : "Member");
                 return (
-                  <div key={msg.id} style={{ display: "flex", gap: 10, marginBottom: 14, flexDirection: isOwn ? "row-reverse" : "row" }}>
-                    {!isOwn && (
-                      <Avatar
-                        initials={(author?.avatar_initials || "?").slice(0, 2).toUpperCase()}
-                        size={28}
-                        founding={author?.is_founding}
-                        ring={author?.active_ring}
-                        avatarConfig={author?.avatar_config}
-                      />
-                    )}
-                    <div style={{ maxWidth: "72%", display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start" }}>
-                      {!isOwn && <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 3 }}>{author?.username || "Member"}</div>}
-                      <div style={{ background: isOwn ? "color-mix(in srgb, " + C.accent + " 15%, " + C.bg + ")" : C.surfaceRaised, border: "1px solid " + (isOwn ? C.accentDim : C.border), borderRadius: 8, padding: "8px 12px", fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                  <div key={msg.id} style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "flex-start" }}>
+                    <Avatar
+                      initials={(author?.avatar_initials || displayName.slice(0, 2)).toUpperCase()}
+                      size={32}
+                      founding={author?.is_founding}
+                      ring={author?.active_ring}
+                      avatarConfig={author?.avatar_config}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: isOwn ? C.accentSoft : C.text }}>{displayName}</span>
+                        {isOwn && <span style={{ fontSize: 10, color: C.textDim }}>you</span>}
+                      </div>
+                      <div style={{ background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "8px 12px", fontSize: 13, color: C.text, lineHeight: 1.5 }}>
                         {msg.content}
                       </div>
                     </div>
