@@ -372,7 +372,7 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
   const dayCount = isMobile ? 3 : 7;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "72px 12px 16px" : "24px 20px" }}>
+    <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "72px 12px 16px" : "80px 20px 24px" }}>
 
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
