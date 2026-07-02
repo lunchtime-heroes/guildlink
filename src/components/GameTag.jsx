@@ -30,7 +30,7 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
   // Resolve colors by variant
   let bg, border, color;
   if (variant === "gold") {
-    bg = C.goldGlow;
+    bg = "color-mix(in srgb, " + C.gold + " 12%, " + C.bg + ")";
     border = C.goldBorder;
     color = C.gold;
   } else if (variant === "muted") {
@@ -39,7 +39,7 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
     color = C.textMuted;
   } else {
     // accent (default)
-    bg = C.accentGlow;
+    bg = "color-mix(in srgb, " + C.accent + " 12%, " + C.bg + ")";
     border = C.accentDim;
     color = C.accentSoft;
   }
@@ -53,7 +53,7 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
   const borderInset = size === "sm" ? 0 : -1;
 
   return (
-    <div style={{ position: "relative", display: "inline-flex", minWidth: 0, flexShrink: 0, alignSelf: "flex-start", ...style }}>
+    <div style={{ position: "relative", display: "inline-flex", minWidth: 0, maxWidth: "100%", alignSelf: "flex-start", ...style }}>
       {/* Border layer */}
       <div style={{
         position: "absolute",
@@ -77,15 +77,13 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
           display: "flex",
           alignItems: "center",
           gap: 4,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          width: "100%",
           cursor: onClick ? "pointer" : "default",
           zIndex: 1,
           lineHeight: 1.4,
         }}
       >
-        {label}
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{label}</span>
         {onRemove && (
           <span
             onClick={handleRemove}

@@ -4,6 +4,7 @@ import { C, NPCS } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent } from "../utils.js";
 import { Avatar } from "./Avatar.jsx";
+import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { FoundingBadge, NPCBadge, Badge } from "./FoundingBadge.jsx";
 import { ExitModal, LinkPreviewFetcher, LinkPreviewCard } from "./LinkPreview.jsx";
 import { SharePostButton } from "./ShareButton.jsx";
@@ -469,13 +470,12 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   if (localPost.deleted) return null;
 return (
-    <div style={{
-      background: C.surface,
-      border: "1px solid " + (localPost.user.isNPC ? C.goldBorder : C.border),
-      borderRadius: 14, marginBottom: 12, position: "relative",
-      boxShadow: localPost.user.isNPC ? `0 0 0 1px ${C.goldGlow}` : "none",
-      overflow: "hidden",
-    }}>
+    <PixelCornerBox
+      size="lg"
+      bg={C.surface}
+      bgStyle={localPost.user.isNPC ? "color-mix(in srgb, " + C.gold + " 4%, " + C.bg + ")" : null}
+      borderColor={localPost.user.isNPC ? C.goldBorder : C.border}
+      style={{ marginBottom: 12, position: "relative" }}>
       {/* Main post body */}
       <div style={{ display: "flex", gap: 0 }}>
 
@@ -818,7 +818,7 @@ return (
           </div>}
         </div>
       )}
-    </div>
+    </PixelCornerBox>
   );
 }
 

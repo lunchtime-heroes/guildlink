@@ -944,7 +944,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       <div style={{ flex: 1, background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "6px 10px", color: C.textDim, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {"guildlink.gg/join/" + inviteCode}
                       </div>
-                      <PixelButton size="sm" bg={inviteCopied ? "#10b98122" : C.accent} borderColor={inviteCopied ? "#10b98166" : C.accent} color={inviteCopied ? "#10b981" : C.accentText} onClick={() => {
+                      <PixelButton size="sm" bg={inviteCopied ? "color-mix(in srgb, #10b981 15%, " + C.bg + ")" : C.accent} borderColor={inviteCopied ? "#10b98166" : C.accent} color={inviteCopied ? "#10b981" : C.accentText} onClick={() => {
                         navigator.clipboard.writeText("https://guildlink.gg/join/" + inviteCode);
                         setInviteCopied(true);
                         setTimeout(() => setInviteCopied(false), 2000);
