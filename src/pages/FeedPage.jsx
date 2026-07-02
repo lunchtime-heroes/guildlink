@@ -586,6 +586,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), comments(id)")
         .in("user_id", followedIds)
         .is("npc_id", null)
+        .is("session_id", null)
         .order("created_at", { ascending: false })
         .limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", user.id),
@@ -632,6 +633,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     const [postsResult, likesResult] = await Promise.all([
       supabase.from("posts")
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+        .is("session_id", null)
         .order("created_at", { ascending: false })
         .range(nextStart, nextStart + 19),
       authUser
@@ -830,6 +832,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       const [postsResult, likesResult, tipsResult] = await Promise.all([
         supabase.from("posts")
           .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+          .is("session_id", null)
           .order("created_at", { ascending: false })
           .range(0, 19),
         authUser
