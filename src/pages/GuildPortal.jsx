@@ -219,11 +219,13 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       });
 
       // Auto-RSVP creator as "in"
-      await supabase.from("guild_session_rsvps").insert({
-        session_id: sessionId,
-        user_id: currentUser.id,
-        response: "in",
-      }).catch(() => {});
+      try {
+        await supabase.from("guild_session_rsvps").insert({
+          session_id: sessionId,
+          user_id: currentUser.id,
+          response: "in",
+        });
+      } catch(e) {}
 
       if (gameId) {
         supabase.from("chart_events").insert({ game_id: gameId, user_id: currentUser.id, event_type: "guild_session" }).then(() => {});

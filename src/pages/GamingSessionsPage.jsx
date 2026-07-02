@@ -158,11 +158,13 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
         duration_minutes: totalMinutes > 0 ? totalMinutes : null,
       });
       // Auto-RSVP creator as "in"
-      await supabase.from("guild_session_rsvps").insert({
-        session_id: sessionId,
-        user_id: currentUser.id,
-        response: "in",
-      }).catch(() => {});
+      try {
+        await supabase.from("guild_session_rsvps").insert({
+          session_id: sessionId,
+          user_id: currentUser.id,
+          response: "in",
+        });
+      } catch(e) {}
       setActiveDay(null);
       setGameSearch("");
       setSelectedGame(null);

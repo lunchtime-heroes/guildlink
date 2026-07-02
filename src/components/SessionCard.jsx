@@ -96,7 +96,9 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
         guild_id: session.guild_id,
         expires_at: sessionEnd.toISOString(),
       }));
-      await supabase.from("notifications").insert(notifications).catch(() => {});
+      try {
+        await supabase.from("notifications").insert(notifications);
+      } catch(e) {}
     }
 
     setSending(false);
