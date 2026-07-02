@@ -266,7 +266,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontSize: 13, color: C.textDim }}>Be the first to create one.</div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 12 }}>
               {filteredGuilds.map(g => (
                 <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} onCancelRequest={() => cancelRequest(g.id)} memberCount={g.memberCount || 0} />
               ))}
@@ -291,11 +291,10 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               <div style={{ fontSize: 13, color: C.textMuted, maxWidth: 360, margin: "0 auto" }}>Find one above or create your own.</div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 12 }}>
               {myGuilds.map(g => (
-                <div key={g.id} onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }} style={{ cursor: "pointer" }}>
-                  <GuildCard guild={g} isMember={true} memberCount={g.memberCount || 0} />
-                </div>
+                <GuildCard key={g.id} guild={g} isMember={true} memberCount={g.memberCount || 0}
+                  onClick={() => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); }} />
               ))}
             </div>
           )}

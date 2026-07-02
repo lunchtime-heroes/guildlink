@@ -3,17 +3,12 @@ import { C } from "../constants.js";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 
-function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest, memberCount }) {
+function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest, memberCount, onClick }) {
   const isPlatform = !!guild.is_platform_guild;
   const borderColor = isPlatform ? C.accent : C.border;
   const bgStyle = isPlatform
     ? "color-mix(in srgb, " + C.accent + " 6%, " + C.bg + ")"
     : null;
-
-  const joinLabel = isMember ? "Joined" : isRequested ? "Pending" : guild.is_public ? "Join" : "Request to Join";
-  const joinBg = isMember ? C.surfaceRaised : isRequested ? C.gold + "22" : C.accent;
-  const joinBorder = isMember ? C.border : isRequested ? C.gold + "55" : C.accent;
-  const joinColor = isMember ? C.textDim : isRequested ? C.gold : "#fff";
 
   return (
     <PixelCornerBox
@@ -21,69 +16,80 @@ function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest, memb
       borderColor={borderColor}
       bg={bgStyle ? null : C.surface}
       bgStyle={bgStyle}
-      style={{ padding: 20, display: "flex", flexDirection: "column", gap: 0 }}>
+      style={{ padding: "14px 16px", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}
+      onClick={onClick}>
 
       {/* Platform badge */}
       {isPlatform && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          <span style={{ background: "color-mix(in srgb, " + C.accent + " 12%, " + C.bg + ")", border: "1px solid " + C.accentDim, color: C.accentSoft, fontSize: 10, fontWeight: 700, borderRadius: 2, padding: "2px 8px", letterSpacing: "0.5px", textTransform: "uppercase" }}>GuildLink Guild</span>
+        <div style={{ marginBottom: 8 }}>
+          <span style={{ background: "color-mix(in srgb, " + C.accent + " 12%, " + C.bg + ")", border: "1px solid " + C.accentDim, color: C.accentSoft, fontSize: 9, fontWeight: 700, borderRadius: 2, padding: "2px 7px", letterSpacing: "0.5px", textTransform: "uppercase" }}>GuildLink Guild</span>
         </div>
       )}
 
       {/* Name */}
-      <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 8, lineHeight: 1.2 }}>{guild.name}</div>
+      <div style={{ fontWeight: 800, fontSize: 15, color: C.text, marginBottom: 6, lineHeight: 1.3 }}>
+        {guild.name}
+      </div>
 
       {/* Description */}
-      {guild.description && (
-        <div style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 12, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", flex: 1 }}>
+      {guild.description ? (
+        <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", flex: 1 }}>
           {guild.description}
         </div>
+      ) : (
+        <div style={{ flex: 1 }} />
       )}
 
-      {/* Tags row */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>
-        {guild.looking_for_members && (
-          <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 11, fontWeight: 700, borderRadius: 2, padding: "3px 8px" }}>LFM</span>
-        )}
-        <span style={{ background: C.surfaceRaised, border: "1px solid " + C.border, color: C.textDim, fontSize: 11, fontWeight: 600, borderRadius: 2, padding: "3px 8px" }}>
+      {/* Badges */}
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
+        <span style={{ background: C.surfaceRaised, border: "1px solid " + C.border, color: C.textDim, fontSize: 10, fontWeight: 600, borderRadius: 2, padding: "2px 7px" }}>
           {guild.is_public ? "Public" : "Private"}
         </span>
+        {guild.looking_for_members && (
+          <span style={{ background: "#22c55e22", border: "1px solid #22c55e44", color: "#22c55e", fontSize: 10, fontWeight: 700, borderRadius: 2, padding: "2px 7px" }}>LFM</span>
+        )}
         {guild.discord_url && (
           <a href={guild.discord_url} target="_blank" rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            style={{ background: "#5865f222", border: "1px solid #5865f244", color: "#5865f2", fontSize: 11, fontWeight: 600, borderRadius: 2, padding: "3px 8px", textDecoration: "none" }}>Discord</a>
-        )}
-        {guild.website_url && (
-          <a href={guild.website_url} target="_blank" rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            style={{ background: C.accentGlow, border: "1px solid " + C.accentDim, color: C.accentSoft, fontSize: 11, fontWeight: 600, borderRadius: 2, padding: "3px 8px", textDecoration: "none" }}>Website</a>
+            style={{ background: "#5865f222", border: "1px solid #5865f244", color: "#5865f2", fontSize: 10, fontWeight: 600, borderRadius: 2, padding: "2px 7px", textDecoration: "none" }}>Discord</a>
         )}
       </div>
 
       {/* Member count */}
-      <div style={{ color: C.textDim, fontSize: 12, fontWeight: 600, marginBottom: 16 }}>
+      <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
         {memberCount} {memberCount === 1 ? "member" : "members"}
       </div>
 
       {/* Join button */}
-      <div style={{ padding: "1px 0" }}>
-        <PixelButton
-          fullWidth
-          onClick={isMember || isRequested ? undefined : onJoin}
-          bg={joinBg}
-          borderColor={joinBorder}
-          size="sm">
-          <span style={{ color: joinColor, fontWeight: 700 }}>{joinLabel}</span>
-        </PixelButton>
-      </div>
+      {!isMember && (
+        <div style={{ padding: "1px 0" }}>
+          <PixelButton
+            fullWidth
+            size="sm"
+            onClick={e => { e.stopPropagation(); if (!isRequested) onJoin && onJoin(); }}
+            bg={isRequested ? C.gold + "22" : C.accent}
+            borderColor={isRequested ? C.gold + "55" : C.accent}>
+            <span style={{ color: isRequested ? C.gold : "#fff", fontWeight: 700 }}>
+              {isRequested ? "Pending" : guild.is_public ? "+ Join" : "+ Request to Join"}
+            </span>
+          </PixelButton>
+        </div>
+      )}
 
-      {/* Cancel request */}
       {isRequested && onCancelRequest && (
-        <div style={{ textAlign: "center", marginTop: 8 }}>
-          <span onClick={onCancelRequest}
+        <div style={{ textAlign: "center", marginTop: 6 }}>
+          <span onClick={e => { e.stopPropagation(); onCancelRequest(); }}
             style={{ color: C.textDim, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>
             Cancel request
           </span>
+        </div>
+      )}
+
+      {isMember && (
+        <div style={{ padding: "1px 0" }}>
+          <PixelButton fullWidth size="sm" bg={C.surfaceRaised} borderColor={C.border}>
+            <span style={{ color: C.textDim, fontWeight: 700 }}>View Guild</span>
+          </PixelButton>
         </div>
       )}
     </PixelCornerBox>
