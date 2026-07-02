@@ -243,17 +243,21 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
               </div>
             </PixelCornerBox>
           ) : (
-            <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-              <input value={guildSearch} onChange={e => setGuildSearch(e.target.value)} placeholder="Search for guilds by name" style={{ flex: 1, minWidth: 160, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 2, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
-              <button onClick={() => setLfmFilter(f => !f)}
-                style={{ background: lfmFilter ? "#22c55e22" : C.surface, border: "1px solid " + (lfmFilter ? "#22c55e44" : C.border), borderRadius: 2, padding: "8px 16px", color: lfmFilter ? "#22c55e" : C.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                Looking for Members
-              </button>
-              {currentUser && (
-                <button onClick={() => setShowCreateForm(true)} style={{ background: C.accent, border: "none", borderRadius: 2, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  + Create a Guild
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: "flex", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+                <input value={guildSearch} onChange={e => setGuildSearch(e.target.value)} placeholder="Search for guilds by name" style={{ flex: 1, minWidth: 160, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 2, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none" }} />
+                {currentUser && (
+                  <button onClick={() => setShowCreateForm(true)} style={{ background: C.accent, border: "none", borderRadius: 2, padding: "8px 20px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    {"+ Create a Guild"}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => setLfmFilter(f => !f)}
+                  style={{ background: lfmFilter ? "#22c55e22" : "transparent", border: "1px solid " + (lfmFilter ? "#22c55e55" : C.border), borderRadius: 20, padding: "5px 14px", color: lfmFilter ? "#22c55e" : C.textMuted, fontSize: 12, fontWeight: lfmFilter ? 700 : 400, cursor: "pointer" }}>
+                  Looking for Members
                 </button>
-              )}
+              </div>
             </div>
           )}
 
