@@ -69,7 +69,20 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
       .select("guild_id, guilds(id, name, description, is_public, is_platform_guild, looking_for_members)")
       .eq("user_id", currentUser.id)
       .eq("status", "active");
-    setMyGuilds((data || []).map(m => m.guilds).filter(Boolean));
+    const guilds = (data || []).map(m => m.guilds).filter(Boolean);
+
+    // Fetch member counts separately
+    const guildIds = guilds.map(g => g.id);
+    let countMap = {};
+    if (guildIds.length > 0) {
+      const { data: members } = await supabase
+        .from("guild_members")
+        .select("guild_id")
+        .in("guild_id", guildIds)
+        .eq("status", "active");
+      (members || []).forEach(m => { countMap[m.guild_id] = (countMap[m.guild_id] || 0) + 1; });
+    }
+    setMyGuilds(guilds.map(g => ({ ...g, memberCount: countMap[g.id] || 0 })));
     setMyGuildsLoading(false);
   };
 
