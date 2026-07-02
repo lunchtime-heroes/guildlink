@@ -404,9 +404,9 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
               {/* RSVP row */}
               <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
                 {[
-                  { response: "in", label: "I'm in", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55", selectedBg: "#22c55e44", selectedBorder: "#22c55e88" },
-                  { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55", selectedBg: "#f59e0b44", selectedBorder: "#f59e0b88" },
-                  { response: "out", label: "I'm out", color: "#ef4444", bg: "#ef444422", border: "#ef444455", selectedBg: "#ef444444", selectedBorder: "#ef444488" },
+                  { response: "in", label: "I'm in", color: "#22c55e", bg: "color-mix(in srgb, #22c55e 12%, " + C.bg + ")", border: "#22c55e66", selectedBg: "color-mix(in srgb, #22c55e 25%, " + C.bg + ")", selectedBorder: "#22c55e" },
+                  { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "color-mix(in srgb, #f59e0b 12%, " + C.bg + ")", border: "#f59e0b66", selectedBg: "color-mix(in srgb, #f59e0b 25%, " + C.bg + ")", selectedBorder: "#f59e0b" },
+                  { response: "out", label: "I'm out", color: "#ef4444", bg: "color-mix(in srgb, #ef4444 12%, " + C.bg + ")", border: "#ef444466", selectedBg: "color-mix(in srgb, #ef4444 25%, " + C.bg + ")", selectedBorder: "#ef4444" },
                 ].map(opt => {
                   const isSelected = myRsvp?.response === opt.response;
                   const count = counts[opt.response];
