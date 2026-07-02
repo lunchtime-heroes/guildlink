@@ -87,7 +87,7 @@ function GuildCard({ guild, onJoin, isMember, isRequested, onCancelRequest, memb
 
       {isMember && (
         <div style={{ padding: "1px 0" }}>
-          <PixelButton fullWidth size="sm" bg={C.surfaceRaised} borderColor={C.border}>
+          <PixelButton fullWidth size="sm" bg={C.surfaceRaised} borderColor={C.border} onClick={onClick}>
             <span style={{ color: C.textDim, fontWeight: 700 }}>View Guild</span>
           </PixelButton>
         </div>

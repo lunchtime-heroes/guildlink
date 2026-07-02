@@ -268,7 +268,8 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 12 }}>
               {filteredGuilds.map(g => (
-                <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} onCancelRequest={() => cancelRequest(g.id)} memberCount={g.memberCount || 0} />
+                <GuildCard key={g.id} guild={g} isMember={memberGuildIds.has(g.id)} isRequested={requestedGuildIds.has(g.id)} onJoin={() => joinGuild(g.id)} onCancelRequest={() => cancelRequest(g.id)} memberCount={g.memberCount || 0}
+                  onClick={memberGuildIds.has(g.id) ? () => { setCurrentGuild(g.id); setActivePage("guild"); window.history.pushState({ page: "guild", guildId: g.id }, "", "/guild/" + g.id); } : undefined} />
               ))}
             </div>
           )}
