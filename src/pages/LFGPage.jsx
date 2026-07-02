@@ -50,6 +50,7 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
   };
 
   useEffect(() => { if (activeTab === "find-guilds") loadGuilds(); }, [activeTab, currentUser?.id]);
+  useEffect(() => { loadMyGuilds(); }, [currentUser?.id]);
   useEffect(() => { if (activeTab === "your-guilds") loadMyGuilds(); }, [activeTab, currentUser?.id]);
 
   const joinGuild = async (guildId) => {
@@ -143,6 +144,18 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
         <h2 style={{ margin: "0 0 4px", fontWeight: 800, fontSize: isMobile ? 20 : 26, color: C.text, letterSpacing: "-0.5px" }}>Guilds</h2>
         <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>Guilds are the people you play games with. Join a guild to coordinate play schedules and find new games.</p>
       </div>
+
+      {/* Gaming Sessions banner — desktop only, shown when in at least one guild */}
+      {!isMobile && myGuilds.length > 0 && (
+        <div onClick={() => setActivePage("sessions")}
+          style={{ background: "color-mix(in srgb, " + C.accent + " 8%, " + C.bg + ")", border: "1px solid " + C.accentDim, borderRadius: 4, padding: "14px 20px", marginBottom: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: C.text, marginBottom: 2 }}>Upcoming Gaming Sessions</div>
+            <div style={{ color: C.textDim, fontSize: 12 }}>See what your guilds are playing this week</div>
+          </div>
+          <span style={{ color: C.accentSoft, fontSize: 20, fontWeight: 700 }}>{"\u2192"}</span>
+        </div>
+      )}
 
       <PixelTabBar
         tabs={tabs}
