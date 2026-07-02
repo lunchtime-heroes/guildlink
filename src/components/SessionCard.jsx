@@ -404,9 +404,9 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
               {/* RSVP row */}
               <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
                 {[
-                  { response: "in", label: "I'm in", color: "#22c55e", baseBg: "#22c55e33", baseBorder: "#22c55e", selectedBg: "#22c55e55", selectedBorder: "#22c55e" },
-                  { response: "maybe", label: "Maybe", color: "#f59e0b", baseBg: "#f59e0b33", baseBorder: "#f59e0b", selectedBg: "#f59e0b55", selectedBorder: "#f59e0b" },
-                  { response: "out", label: "I'm out", color: "#ef4444", baseBg: "#ef444433", baseBorder: "#ef4444", selectedBg: "#ef444455", selectedBorder: "#ef4444" },
+                  { response: "in", label: "I'm in", color: "#22c55e", bg: "#22c55e22", border: "#22c55e55", selectedBg: "#22c55e44", selectedBorder: "#22c55e88" },
+                  { response: "maybe", label: "Maybe", color: "#f59e0b", bg: "#f59e0b22", border: "#f59e0b55", selectedBg: "#f59e0b44", selectedBorder: "#f59e0b88" },
+                  { response: "out", label: "I'm out", color: "#ef4444", bg: "#ef444422", border: "#ef444455", selectedBg: "#ef444444", selectedBorder: "#ef444488" },
                 ].map(opt => {
                   const isSelected = myRsvp?.response === opt.response;
                   const count = counts[opt.response];
@@ -414,11 +414,11 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                     <div key={opt.response} style={{ flex: 1, padding: "1px 0" }}>
                       <PixelButton fullWidth
                         onClick={() => onRsvp(session.id, opt.response)}
-                        bg={isSelected ? opt.selectedBg : opt.baseBg}
-                        borderColor={isSelected ? opt.selectedBorder : opt.baseBorder}>
+                        bg={isSelected ? opt.selectedBg : opt.bg}
+                        borderColor={isSelected ? opt.selectedBorder : opt.border}>
                         <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                          <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1, color: "#fff" }}>{count}</span>
-                          <span style={{ fontSize: 10, fontWeight: isSelected ? 800 : 600, color: "#fff" }}>{opt.label}</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, lineHeight: 1, color: opt.color }}>{count}</span>
+                          <span style={{ fontSize: 10, fontWeight: isSelected ? 800 : 600, color: opt.color }}>{opt.label}</span>
                         </span>
                       </PixelButton>
                     </div>
