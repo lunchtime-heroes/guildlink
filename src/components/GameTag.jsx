@@ -53,7 +53,7 @@ function GameTag({ label, onClick, onRemove, variant = "accent", size = "md", st
   const borderInset = size === "sm" ? 0 : -1;
 
   return (
-    <div style={{ position: "relative", display: "inline-flex", minWidth: 0, maxWidth: "100%", alignSelf: "flex-start", ...style }}>
+    <div style={{ position: "relative", display: "inline-flex", minWidth: 0, flexShrink: 1, alignSelf: "flex-start", ...style }}>
       {/* Border layer */}
       <div style={{
         position: "absolute",
