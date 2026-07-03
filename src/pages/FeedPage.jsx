@@ -1307,12 +1307,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 items.push(
                   <div key={"vrow_" + vci} style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 10, marginBottom: 10 }}>
                     {rowCards.map(dc => (
-                      <DiscoveryCardVertical key={"dcv_" + dc.id} card={dc}
-                        currentUser={user} setActivePage={setActivePage}
-                        setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
-                        setGameDefaultTab={setGameDefaultTab}
-                        isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
-                      />
+                      <div key={"dcv_" + dc.id} style={{ minWidth: 0, overflow: "hidden" }}>
+                        <DiscoveryCardVertical card={dc}
+                          currentUser={user} setActivePage={setActivePage}
+                          setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
+                          setGameDefaultTab={setGameDefaultTab}
+                          isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
+                        />
+                      </div>
                     ))}
                   </div>
                 );
