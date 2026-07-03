@@ -9,6 +9,7 @@ import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { GameTag } from "../components/GameTag.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
+import { useGamesInCommon } from "../hooks/useGamesInCommon.js";
 
 function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, isMobile, currentUser, isGuest, onSignIn, setGameDefaultTab }) {
   const [profile, setProfile] = useState(null);
@@ -22,7 +23,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
     return "posts";
   });
   const [compatibility, setCompatibility] = useState(null);
-  const [overlapCount, setOverlapCount] = useState(null);
+  const overlapCount = useGamesInCommon(currentUser?.id, userId);
   const [loading, setLoading] = useState(true);
   const [followed, setFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -103,31 +104,7 @@ function PlayerProfilePage({ userId, setActivePage, setCurrentGame, setCurrentNP
               }
             }
 
-            // Load overlap count from user_similarity.
-            // If no similarity pair exists (below the 2-game minimum threshold),
-            // fall back to a direct count of shared have_played games so the badge
-            // shows the real number rather than 0. Similarity scoring is unchanged —
-            // this only affects what the badge displays.
-            const { data: simData } = await supabase.from("user_similarity")
-              .select("overlap_count")
-              .eq("user_id", authUser.id)
-              .eq("similar_user_id", userId)
-              .maybeSingle();
-            if (simData) {
-              setOverlapCount(simData.overlap_count);
-            } else {
-              const { count } = await supabase.from("user_games")
-                .select("game_id", { count: "exact", head: true })
-                .eq("status", "have_played")
-                .in("game_id", (
-                  await supabase.from("user_games")
-                    .select("game_id")
-                    .eq("user_id", authUser.id)
-                    .eq("status", "have_played")
-                ).data?.map(r => r.game_id) || [])
-                .eq("user_id", userId);
-              setOverlapCount(count || 0);
-            }
+            // Games in common handled by useGamesInCommon hook
           }
         }
       }

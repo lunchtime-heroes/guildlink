@@ -5,6 +5,7 @@ import supabase from "../supabase.js";
 import { timeAgo, logChartEvent } from "../utils.js";
 import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
+import { useGamesInCommon } from "../hooks/useGamesInCommon.js";
 import { FoundingBadge, NPCBadge, Badge } from "./FoundingBadge.jsx";
 import { ExitModal, LinkPreviewFetcher, LinkPreviewCard } from "./LinkPreview.jsx";
 import { SharePostButton } from "./ShareButton.jsx";
@@ -69,34 +70,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
   const [commentLinkWarning, setCommentLinkWarning] = useState(null);
   const [commentLinkLoading, setCommentLinkLoading] = useState(false);
   let commentLinkDebounce = null;
-  const [similarity, setSimilarity] = useState(null);
-
-  useEffect(() => {
-    if (!currentUser || !post.user_id || post.user_id === currentUser.id || post.user?.isNPC) return;
-    supabase.from("user_similarity")
-      .select("overlap_count")
-      .eq("user_id", currentUser.id)
-      .eq("similar_user_id", post.user_id)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        if (data && data.overlap_count > 0) {
-          setSimilarity(data.overlap_count);
-        } else {
-          // Fallback for users below the 2-game threshold — count directly
-          const { data: theirGames } = await supabase
-            .from("user_games").select("game_id")
-            .eq("user_id", post.user_id)
-            .in("status", ["have_played", "playing"]);
-          if (!theirGames || theirGames.length === 0) { setSimilarity(0); return; }
-          const { count } = await supabase
-            .from("user_games").select("game_id", { count: "exact", head: true })
-            .eq("user_id", currentUser.id)
-            .in("status", ["have_played", "playing"])
-            .in("game_id", theirGames.map(g => g.game_id));
-          setSimilarity(count || 0);
-        }
-      });
-  }, [post.user_id, currentUser?.id]);
+  const similarity = useGamesInCommon(currentUser?.id, post.user?.isNPC ? null : post.user_id);
 
   useEffect(() => {
     setLocalPost(prev => ({ ...prev, likes: post.likes }));
