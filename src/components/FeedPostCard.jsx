@@ -85,11 +85,13 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
           // Fallback for users below the 2-game threshold — count directly
           const { data: theirGames } = await supabase
             .from("user_games").select("game_id")
-            .eq("user_id", post.user_id).eq("status", "have_played");
+            .eq("user_id", post.user_id)
+            .in("status", ["have_played", "playing"]);
           if (!theirGames || theirGames.length === 0) { setSimilarity(0); return; }
           const { count } = await supabase
             .from("user_games").select("game_id", { count: "exact", head: true })
-            .eq("user_id", currentUser.id).eq("status", "have_played")
+            .eq("user_id", currentUser.id)
+            .in("status", ["have_played", "playing"])
             .in("game_id", theirGames.map(g => g.game_id));
           setSimilarity(count || 0);
         }
