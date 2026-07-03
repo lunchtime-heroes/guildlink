@@ -48,6 +48,31 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
   const [shelfOpen, setShelfOpen] = useState(false);
   const [cardRect, setCardRect] = useState(null);
   const cardRef = React.useRef(null);
+  const hasBeenVisible = React.useRef(false);
+  const hasFiredSeen = React.useRef(false);
+
+  // Scroll-past seen logic — mark card seen_at when user scrolls past it
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || !card.id || hasFiredSeen.current) return;
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting) {
+        hasBeenVisible.current = true;
+      } else if (hasBeenVisible.current && !hasFiredSeen.current) {
+        // Only fire when card has scrolled above viewport (user scrolled past it)
+        if (entry.boundingClientRect.bottom < 0) {
+          hasFiredSeen.current = true;
+          supabase.from("discovery_cards")
+            .update({ seen_at: new Date().toISOString() })
+            .eq("id", card.id)
+            .then(() => {});
+        }
+      }
+    }, { threshold: 0 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [card.id]);
 
   useEffect(() => {
     if (card.game_id) {

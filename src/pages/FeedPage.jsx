@@ -458,8 +458,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const loadDiscoveryCards = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
+    const cooldown = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const [{ data }, { data: followData }] = await Promise.all([
-      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id).eq("seen", false).order("actor_count", { ascending: false }).limit(400),
+      supabase.from("discovery_cards").select("*").eq("target_user_id", authUser.id)
+        .or("seen_at.is.null,seen_at.lt." + cooldown)
+        .order("updated_at", { ascending: false })
+        .limit(600),
       supabase.from("follows").select("followed_user_id").eq("follower_id", authUser.id),
     ]);
     if (data) {
@@ -484,7 +488,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           return true;
         })
         .sort((a, b) => {
-          if (parseInt(b.actor_count) !== parseInt(a.actor_count)) return parseInt(b.actor_count) - parseInt(a.actor_count);
+          // Fresh signal first — updated_at reflects when counts were last recalculated
+          const dateDiff = new Date(b.updated_at) - new Date(a.updated_at);
+          if (dateDiff !== 0) return dateDiff;
           return (parseInt(b.overlap_count) || 0) - (parseInt(a.overlap_count) || 0);
         });
       setDiscoveryCards(sorted);
