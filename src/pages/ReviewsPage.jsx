@@ -4,6 +4,7 @@ import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
+import { useGamesInCommon } from "../hooks/useGamesInCommon.js";
 import { GameTag } from "../components/GameTag.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
 
@@ -89,17 +90,7 @@ function ReviewsPage({ isMobile, currentUser, setActivePage, setCurrentGame, set
   const ReviewCard = ({ review }) => {
     const profile = review.profiles;
     const game = review.games;
-    const [similarity, setSimilarity] = useState(null);
-
-    useEffect(() => {
-      if (!currentUser || !review.user_id || review.user_id === currentUser.id) return;
-      supabase.from("user_similarity")
-        .select("overlap_count")
-        .eq("user_id", currentUser.id)
-        .eq("similar_user_id", review.user_id)
-        .maybeSingle()
-        .then(({ data }) => setSimilarity(data ? data.overlap_count : 0));
-    }, [review.user_id]);
+    const similarity = useGamesInCommon(currentUser?.id, review.user_id === currentUser?.id ? null : review.user_id);
 
     if (!game) return null;
     const initials = (profile?.avatar_initials || profile?.username || "?").slice(0,2).toUpperCase();
