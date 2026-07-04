@@ -141,7 +141,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
         <>
           <div style={textStyle}>You might like</div>
           {game && (
-            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />
+            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center", maxWidth: "100%" }} />
           )}
           <div style={textStyle}>based on shelf overlap</div>
         </>
@@ -154,7 +154,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
       return (
         <>
           {game && (
-            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />
+            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center", maxWidth: "100%" }} />
           )}
           <div style={textStyle}>
             {isNew ? "jumped into the top 10" : "moved up to #" + (card.chart_movement || "") + " on The Charts"}
@@ -168,7 +168,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
       return (
         <>
           {game && (
-            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />
+            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center", maxWidth: "100%" }} />
           )}
           <div style={textStyle}>{card.actor_count + " players added this week"}</div>
         </>
@@ -203,7 +203,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
           </div>
           <div style={textStyle}>{action}</div>
           {game && (
-            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />
+            <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center", maxWidth: "100%" }} />
           )}
         </>
       );
@@ -211,7 +211,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
 
     // Fallback — show game tag if we have it
     return game ? (
-      <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center" }} />
+      <GameTag label={game.name} onClick={navigateToGame} size="md" style={{ alignSelf: "center", maxWidth: "100%" }} />
     ) : null;
   };
   const renderCTA = () => {

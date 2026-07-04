@@ -1,5 +1,6 @@
 // src/components/ShareButton.jsx
 import React, { useState } from "react";
+import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import Icon from "./Icon.jsx";
 
@@ -69,7 +70,7 @@ export function SharePostButton({ post, currentUser, taggedGameName, style = {} 
         onMouseLeave={e => { e.currentTarget.style.color = C.textDim; }}>
         {loading ? <span style={{ fontSize: 11 }}>...</span> : <Icon name="share" size={18} color="currentColor" />}
       </button>
-      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-post.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
+      {imageUrl && ReactDOM.createPortal(<ShareLightbox imageUrl={imageUrl} filename="guildlink-post.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />, document.body)}
     </>
   );
 }
@@ -111,7 +112,7 @@ export function ShareReviewButton({ review, style = {} }) {
         <Icon name="share" size={16} color="currentColor" />
         {loading ? "Generating..." : "Share"}
       </button>
-      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-review.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
+      {imageUrl && ReactDOM.createPortal(<ShareLightbox imageUrl={imageUrl} filename="guildlink-review.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />, document.body)}
     </>
   );
 }
@@ -146,7 +147,7 @@ export function ShareShelfButton({ games, handle, style = {} }) {
         <Icon name="share" size={15} color="currentColor" />
         {loading ? "Generating..." : "Share Top 10"}
       </button>
-      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-top10.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
+      {imageUrl && ReactDOM.createPortal(<ShareLightbox imageUrl={imageUrl} filename="guildlink-top10.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />, document.body)}
     </>
   );
 }
@@ -183,7 +184,7 @@ export function ShareChartsButton({ games, label, style = {} }) {
         <Icon name="share" size={15} color="currentColor" />
         {loading ? "..." : "Share"}
       </button>
-      {imageUrl && <ShareLightbox imageUrl={imageUrl} filename="guildlink-charts.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />}
+      {imageUrl && ReactDOM.createPortal(<ShareLightbox imageUrl={imageUrl} filename="guildlink-charts.png" onClose={() => { URL.revokeObjectURL(imageUrl); setImageUrl(null); }} />, document.body)}
     </>
   );
 }
