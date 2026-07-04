@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
 import GuildPortal from "./pages/GuildPortal.jsx";
 import GamingSessionsPage from "./pages/GamingSessionsPage.jsx";
+import Icon from "./components/Icon.jsx";
 import LFGPage from "./pages/LFGPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import FeedPage from "./pages/FeedPage.jsx";
@@ -516,11 +517,11 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
     }
   };
   const mobileItems = [
-    { id: "feed", icon: "⊞", label: "Feed" },
-    { id: "games", icon: "🎮", label: "Games" },
-    { id: "reviews-nav", icon: "⭐", label: "Reviews" },
-    { id: "squad", icon: "🛡️", label: "Guild" },
-    { id: "feedback", icon: "💬", label: "Feedback" },
+    { id: "feed", icon: "feed", label: "Feed" },
+    { id: "games", icon: "games", label: "Games" },
+    { id: "reviews-nav", icon: "reviews", label: "Reviews" },
+    { id: "squad", icon: "guilds", label: "Guild" },
+    { id: "feedback", icon: "feedback", label: "Feedback" },
   ];
   const desktopItems = [
     { id: "feed", icon: "⊞", label: "Feed" },
@@ -558,8 +559,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
             ) : (
               <>
                 <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && notifications.filter(n => !n.read).length > 0) onMarkAllRead?.(); }}
-                  style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMuted, position: "relative", padding: "8px 6px", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-                  🔔
+                  style={{ background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: C.textMuted, position: "relative", padding: "8px 6px", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
+                  <Icon name="notifications" size={22} color={C.textMuted} />
                   {notifications.filter(n => !n.read).length > 0 && (
                     <span style={{ position: "absolute", top: 0, right: 0, background: C.accent, color: "#fff", borderRadius: "50%", width: 15, height: 15, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {notifications.filter(n => !n.read).length}
@@ -636,12 +637,12 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                 gap: 3,
                 background: "transparent", border: "none", cursor: "pointer",
-                color: active ? C.accentSoft : C.textDim,
+                color: active ? C.gold : C.textDim,
                 position: "relative",
                 padding: "6px 0 4px",
               }}>
-                {active && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.accent, borderRadius: "0 0 2px 2px" }} />}
-                <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
+                {active && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.gold, borderRadius: "0 0 2px 2px" }} />}
+                <Icon name={item.icon} size={22} color={active ? C.gold : C.textDim} />
                 <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.01em" }}>{item.label}</span>
               </button>
             );

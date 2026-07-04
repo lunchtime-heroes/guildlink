@@ -9,6 +9,7 @@ import { useGamesInCommon } from "../hooks/useGamesInCommon.js";
 import { FoundingBadge, NPCBadge, Badge } from "./FoundingBadge.jsx";
 import { ExitModal, LinkPreviewFetcher, LinkPreviewCard } from "./LinkPreview.jsx";
 import { SharePostButton } from "./ShareButton.jsx";
+import Icon from "./Icon.jsx";
 
 function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC, setActivePage) {
   if (!content) return null;
@@ -554,12 +555,12 @@ return (
 
           {/* Action row */}
           <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 12 }}>
-            <button onClick={toggleLike} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: localPost.liked ? "#ef4444" : C.textDim, fontSize: 13, padding: 0 }}>
-              <span style={{ fontSize: 15 }}>{localPost.liked ? "❤️" : "🤍"}</span>
+            <button onClick={toggleLike} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: localPost.liked ? C.gold : C.textDim, fontSize: 13, padding: 0 }}>
+              <Icon name={localPost.liked ? "liked" : "unliked"} size={18} color={localPost.liked ? C.gold : C.textDim} />
               <span>{localPost.likes || 0}</span>
             </button>
             <button onClick={toggleComments} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: C.textDim, fontSize: 13, padding: 0 }}>
-              <span style={{ fontSize: 15 }}>💬</span>
+              <Icon name="comment" size={18} color={C.textDim} />
               <span>{localPost.comment_count || 0}</span>
             </button>
             <SharePostButton post={localPost} currentUser={currentUser} taggedGameName={taggedGameName} />
