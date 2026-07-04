@@ -555,12 +555,18 @@ return (
 
           {/* Action row */}
           <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 12 }}>
-            <button onClick={toggleLike} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: localPost.liked ? C.gold : C.textDim, fontSize: 13, padding: 0 }}>
-              <Icon name={localPost.liked ? "liked" : "unliked"} size={18} color={localPost.liked ? C.gold : C.textDim} />
+            <button onClick={toggleLike}
+              onMouseEnter={e => { if (!localPost.liked) e.currentTarget.style.color = C.accent; }}
+              onMouseLeave={e => { if (!localPost.liked) e.currentTarget.style.color = C.textDim; }}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: localPost.liked ? C.gold : C.textDim, fontSize: 13, padding: 0 }}>
+              <Icon name={localPost.liked ? "liked" : "unliked"} size={18} color={localPost.liked ? C.gold : "currentColor"} />
               <span>{localPost.likes || 0}</span>
             </button>
-            <button onClick={toggleComments} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: C.textDim, fontSize: 13, padding: 0 }}>
-              <Icon name="comment" size={18} color={C.textDim} />
+            <button onClick={toggleComments}
+              onMouseEnter={e => e.currentTarget.style.color = C.accent}
+              onMouseLeave={e => e.currentTarget.style.color = C.textDim}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: C.textDim, fontSize: 13, padding: 0 }}>
+              <Icon name="comment" size={18} color="currentColor" />
               <span>{localPost.comment_count || 0}</span>
             </button>
             <SharePostButton post={localPost} currentUser={currentUser} taggedGameName={taggedGameName} />

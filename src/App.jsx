@@ -692,8 +692,8 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           <>
             <div style={{ position: "relative" }}>
               <button onClick={(e) => { e.stopPropagation(); setShowNotifs(s => !s); if (!showNotifs && unreadCount > 0) onMarkAllRead?.(); }}
-                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "none", borderRadius: 3, cursor: "pointer", fontSize: 18, color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "8px 12px", display: "flex", alignItems: "center", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-                🔔
+                style={{ background: showNotifs ? C.accentGlow : "transparent", border: "none", borderRadius: 3, cursor: "pointer", color: unreadCount > 0 ? C.text : C.textMuted, position: "relative", padding: "8px 12px", display: "flex", alignItems: "center", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
+                <Icon name="notifications" size={22} color={unreadCount > 0 ? C.text : C.textMuted} />
                 {unreadCount > 0 && (
                   <span style={{ position: "absolute", top: 2, right: 2, background: C.accent, color: C.accentText, borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
                     {unreadCount > 9 ? "9+" : unreadCount}

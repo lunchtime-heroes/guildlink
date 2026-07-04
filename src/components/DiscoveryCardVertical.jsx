@@ -5,6 +5,7 @@ import supabase from "../supabase.js";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
 import { GameTag } from "./GameTag.jsx";
+import Icon from "./Icon.jsx";
 
 function getBanner(type) {
   switch (type) {
@@ -322,13 +323,13 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
         <div style={{ width: "100%", aspectRatio: "3/4", background: "#0a0f1a", overflow: "hidden" }}>
           {game?.cover_url
             ? <img src={game.cover_url} alt={game?.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🎮</div>
+            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="games" size={40} color={C.textDim} /></div>
           }
         </div>
       </div>
 
       {/* Content zone */}
-      <div style={{ padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 5, alignItems: "center", textAlign: "center" }}>
+      <div style={{ padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 5, alignItems: "center", textAlign: "center", width: "100%", minWidth: 0, overflow: "hidden", boxSizing: "border-box" }}>
         {/* Banner */}
         {banner && (
           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: banner.color }}>
