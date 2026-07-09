@@ -64,10 +64,12 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
       .lt("scheduled_at", weekEnd.toISOString())
       .order("scheduled_at", { ascending: true });
 
-    const sessionsWithGuild = (sessionData || []).map(s => ({
-      ...s,
-      guild_name: guildNameMap[s.guild_id] || "",
-    }));
+    const sessionsWithGuild = (sessionData || [])
+      .map(s => ({ ...s, guild_name: guildNameMap[s.guild_id] || "" }))
+      .filter(s => {
+        const sessionEnd = new Date(new Date(s.scheduled_at).getTime() + (s.duration_minutes || 60) * 60000);
+        return sessionEnd > now;
+      });
     setSessions(sessionsWithGuild);
 
     if (sessionsWithGuild.length > 0) {
