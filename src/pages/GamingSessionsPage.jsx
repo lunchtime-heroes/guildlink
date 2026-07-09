@@ -64,7 +64,6 @@ function GamingSessionsPage({ currentUser, setActivePage, isMobile }) {
       .lt("scheduled_at", weekEnd.toISOString())
       .order("scheduled_at", { ascending: true });
 
-    const now = new Date();
     const sessionsWithGuild = (sessionData || [])
       .map(s => ({ ...s, guild_name: guildNameMap[s.guild_id] || "" }))
       .filter(s => {
