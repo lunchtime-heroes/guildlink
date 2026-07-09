@@ -133,7 +133,10 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
       .gte("scheduled_at", localMidnight.toISOString())
       .lt("scheduled_at", weekEnd.toISOString())
       .order("scheduled_at", { ascending: true });
-    setSessions(data || []);
+    setSessions((data || []).filter(s => {
+      const sessionEnd = new Date(new Date(s.scheduled_at).getTime() + (s.duration_minutes || 60) * 60000);
+      return sessionEnd > now;
+    }));
     if (data && data.length > 0 && currentUser?.id) {
       const sessionIds = data.map(s => s.id);
       const { data: rsvpData } = await supabase.from("guild_session_rsvps").select("*").in("session_id", sessionIds);
