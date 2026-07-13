@@ -362,15 +362,28 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer, isMobile }
     if (q.length < 2) { setResults(null); return; }
     setLoading(true);
     const seq = ++searchSeqRef.current;
-    const [{ local, fromIGDB }, usersRes] = await Promise.all([
-      searchGamesCore(q, { displayLimit: 4, igdbNewLimit: 3 }),
-      supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or("username.ilike.%" + q + "%,handle.ilike.%" + q + "%").limit(4),
-    ]);
-    if (seq !== searchSeqRef.current) return; // a newer query has since been fired — discard this stale response
-    const nowUnix = Math.floor(Date.now() / 1000);
-    const localWithFlags = local.map(g => ({ ...g, _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) }));
-    setResults({ games: [...localWithFlags, ...fromIGDB], users: usersRes.data || [] });
-    setLoading(false);
+    try {
+      const [gamesRes, usersRes] = await Promise.allSettled([
+        searchGamesCore(q, { displayLimit: 4, igdbNewLimit: 3 }),
+        supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or("username.ilike.%" + q + "%,handle.ilike.%" + q + "%").limit(4),
+      ]);
+      if (seq !== searchSeqRef.current) return; // a newer query has since been fired — discard this stale response
+      const { local, fromIGDB } = gamesRes.status === "fulfilled" ? gamesRes.value : { local: [], fromIGDB: [] };
+      const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
+      if (gamesRes.status === "rejected") console.error("[NavSearch] game search failed:", gamesRes.reason);
+      const nowUnix = Math.floor(Date.now() / 1000);
+      const localWithFlags = local.map(g => ({ ...g, _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) }));
+      setResults({ games: [...localWithFlags, ...fromIGDB], users });
+    } catch (err) {
+      console.error("[NavSearch] search failed unexpectedly:", err);
+      if (seq === searchSeqRef.current) setResults({ games: [], users: [] });
+    } finally {
+      // Runs regardless of success/failure/early-return-from-catch, so a
+      // stuck "Searching..." spinner (this session's regression — an outer
+      // Promise.all rejection skipped setLoading(false) entirely) can't
+      // happen again even if something else fails in the future.
+      if (seq === searchSeqRef.current) setLoading(false);
+    }
   };
 
   useEffect(() => {

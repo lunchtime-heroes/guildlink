@@ -105,11 +105,28 @@ export async function searchGamesCore(q, opts = {}) {
 }
 
 /**
- * Safety net for adding an IGDB-sourced game: upsert on igdb_id instead of
- * a plain insert, so even if search dedup somehow misses an existing game,
- * this resolves to the existing row instead of throwing a silent 409.
+ * Safety net for adding an IGDB-sourced game. games has TWO separate unique
+ * constraints — games_igdb_id_unique and games_name_unique — so upserting
+ * on igdb_id alone isn't sufficient: an IGDB result whose igdb_id doesn't
+ * match anything locally (e.g. a re-indexed IGDB entry with a different ID
+ * than what was originally stored) can still collide on name and 409.
+ *
+ * Strategy: check for an existing row by name FIRST (cheap, avoids the
+ * conflict entirely in the common case), fall back to upsert-by-igdb_id,
+ * and if that *still* 409s (name collision on the upsert itself), do one
+ * final lookup by name before giving up. This can't throw an uncaught 409
+ * for either constraint.
  */
 export async function upsertGameFromIGDB(game) {
+  // 1. Already exists by name? Just use that row — most common case for a
+  //    search-dedup miss, and avoids ever touching the unique constraints.
+  const { data: byName } = await supabase
+    .from("games")
+    .select("*")
+    .ilike("name", game.name)
+    .maybeSingle();
+  if (byName) return byName;
+
   const payload = {
     name: game.name,
     genre: game.genre,
@@ -120,13 +137,24 @@ export async function upsertGameFromIGDB(game) {
     followers: 0,
     platforms: game.platforms || null,
   };
+
+  // 2. Upsert on igdb_id — handles the case where the same IGDB game was
+  //    already inserted previously under this exact igdb_id.
   const { error: upsertErr } = await supabase
     .from("games")
     .upsert(payload, { onConflict: "igdb_id", ignoreDuplicates: true });
+
   if (upsertErr) {
-    console.error("game upsert failed", upsertErr);
-    return null;
+    // 3. Last resort: the upsert itself hit the OTHER unique constraint
+    //    (name) — a row with this name exists but wasn't caught by step 1
+    //    (race condition: something else inserted it between step 1 and
+    //    now) or has a different igdb_id than expected. Re-check by name
+    //    one more time rather than surfacing the 409 to the user.
+    console.error("game upsert failed, falling back to name lookup:", upsertErr);
+    const { data: fallback } = await supabase.from("games").select("*").ilike("name", game.name).maybeSingle();
+    return fallback || null;
   }
-  const { data: row } = await supabase.from("games").select("*").eq("igdb_id", game.igdb_id).single();
+
+  const { data: row } = await supabase.from("games").select("*").eq("igdb_id", game.igdb_id).maybeSingle();
   return row;
 }
