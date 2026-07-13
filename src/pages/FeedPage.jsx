@@ -604,8 +604,27 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const resolveMentionsInPosts = async (posts) => {
     const allHandles = new Set();
     posts.forEach(p => {
-      const matches = (p.content || "").match(/@(\S+)/g) || [];
-      matches.forEach(m => allHandles.add(m.slice(1).toLowerCase()));
+      // \S+ (the old pattern) matches ANY non-whitespace character with no
+      // stopping point, so "@half-life:alyx, cool game!" grabbed the
+      // trailing comma as part of the handle. That comma then landed raw
+      // inside a PostgREST .or() filter string below — comma and
+      // parentheses are that syntax's own structural characters, so a
+      // handle containing one breaks the whole query with a parse error
+      // (this is the "npcs 400 on page load" bug, July 2026).
+      //
+      // Fix: only match the characters real handles on this platform
+      // actually use (letters, digits, underscore, hyphen, period, colon —
+      // colon is legitimate mid-handle, e.g. "half-life:alyx"), then strip
+      // any accidental trailing period(s) from end-of-sentence punctuation
+      // (mid-handle periods like "supermariobros.wonder" are preserved).
+      const matches = (p.content || "").match(/@([a-zA-Z0-9_.:-]+)/g) || [];
+      matches.forEach(m => {
+        let h = m.slice(1).toLowerCase().replace(/\.+$/, "");
+        // Defense-in-depth: even if a bad handle somehow gets this far,
+        // never let PostgREST's own filter-syntax characters through.
+        h = h.replace(/[,()]/g, "");
+        if (h) allHandles.add(h);
+      });
     });
     if (allHandles.size === 0) return posts;
     const handleList = [...allHandles];
@@ -623,8 +642,14 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     return posts.map(p => {
       const existing = p.tagged_users || [];
       const existingHandles = new Set(existing.map(u => u.handle?.replace("@","").toLowerCase()));
-      const matches = (p.content || "").match(/@(\S+)/g) || [];
-      const extra = matches.map(m => resolved[m.slice(1).toLowerCase()]).filter(u => u && !existingHandles.has(u.handle.replace("@","").toLowerCase()));
+      // Same extraction rules as above — must match exactly, or a mention
+      // with trailing punctuation would silently fail to tag here even
+      // though it resolved correctly above.
+      const matches = (p.content || "").match(/@([a-zA-Z0-9_.:-]+)/g) || [];
+      const extra = matches
+        .map(m => m.slice(1).toLowerCase().replace(/\.+$/, "").replace(/[,()]/g, ""))
+        .map(h => resolved[h])
+        .filter(u => u && !existingHandles.has(u.handle.replace("@","").toLowerCase()));
       return extra.length ? { ...p, tagged_users: [...existing, ...extra] } : p;
     });
   };
