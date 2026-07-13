@@ -141,6 +141,7 @@ function SteamImportModal({ currentUser, onClose, onImportComplete, onSteamConne
     }
     // Recompute similarity so games in common badges update immediately
     await supabase.rpc("compute_user_similarity", { target_user_id: authUser.id });
+      await supabase.rpc("generate_discovery_cards");
 
     // Save Steam ID only after successful import
     if (steamData?.steamId) {

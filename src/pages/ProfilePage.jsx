@@ -688,43 +688,85 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     }
   };
 
+  // Relevance-aware game search for the "add to shelf" boxes.
+  //
+  // Bug this fixes (July 2026, "Myst" not addable): the old inline queries
+  // sorted local matches by first_release_date DESC with a hard limit(8).
+  // Substring matches like "Mystery"/"Mysteries"/"Mystic" (all newer) could
+  // fill every slot before an old exact match like "Myst" (1993) was ever
+  // considered — so it silently dropped out of `local`, which was also the
+  // set used to decide whether an IGDB result was "new." IGDB's own more
+  // lenient search still found Myst, misclassified it as new, and clicking
+  // "add" tried to INSERT a row that already existed — colliding with the
+  // unique constraint on games.name/igdb_id and failing with a silent 409.
+  //
+  // Fix: pull a wider local set with no date-sort, rank it by relevance
+  // client-side (exact match > starts-with > whole-word > substring, then
+  // shorter names, then newest), and dedup against the FULL local match
+  // set (by igdb_id AND name) — not just the display-limited slice.
+  const searchGamesForShelf = async (q) => {
+    const [localRes, igdbRes] = await Promise.allSettled([
+      supabase.from("games")
+        .select("id, name, developer, genre, cover_url, platforms, igdb_id, first_release_date")
+        .ilike("name", "%" + q + "%")
+        .limit(30),
+      fetch("/api/igdb", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      }).then(r => r.json()).catch(() => ({ games: [] })),
+    ]);
+    const localAll = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
+    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
+    const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
+
+    const qLower = q.toLowerCase();
+    const scored = localAll.map(g => {
+      const nameLower = g.name.toLowerCase();
+      let rank = 3; // plain substring match
+      if (nameLower === qLower) rank = 0;
+      else if (nameLower.startsWith(qLower)) rank = 1;
+      else if (nameLower.split(/\s+/).includes(qLower)) rank = 2;
+      return { ...g, _rank: rank };
+    });
+    scored.sort((a, b) => {
+      if (a._rank !== b._rank) return a._rank - b._rank;
+      if (a.name.length !== b.name.length) return a.name.length - b.name.length;
+      return (b.first_release_date || "").localeCompare(a.first_release_date || "");
+    });
+    const local = scored.slice(0, 8);
+
+    const localIgdbIds = new Set(localAll.map(g => g.igdb_id).filter(Boolean));
+    const localNamesLower = new Set(localAll.map(g => g.name.toLowerCase()));
+    const isKnown = g => (g.igdb_id && localIgdbIds.has(g.igdb_id)) || localNamesLower.has((g.name || "").toLowerCase());
+
+    const fromIGDB = igdb.filter(g => !isKnown(g)).map(g => ({ ...g, _fromIGDB: true }));
+    const fromUpcoming = upcoming.filter(g => !isKnown(g)).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
+
+    return [...fromUpcoming, ...local, ...fromIGDB].slice(0, 15);
+  };
+
+  // Safety net for adding an IGDB-sourced game: upsert on igdb_id instead of
+  // a plain insert, so even if search dedup somehow misses an existing game
+  // (race condition, stale client state, etc.), this can't 409 — it just
+  // resolves to the existing row instead of failing silently.
+  const upsertGameFromIGDB = async (game) => {
+    const payload = {
+      name: game.name, genre: game.genre, summary: game.summary,
+      cover_url: game.cover_url, igdb_id: game.igdb_id,
+      first_release_date: game.first_release_date, followers: 0,
+      platforms: game.platforms || null,
+    };
+    const { error: upsertErr } = await supabase.from("games").upsert(payload, { onConflict: "igdb_id", ignoreDuplicates: true });
+    if (upsertErr) { console.error("game upsert failed", upsertErr); return null; }
+    const { data: row } = await supabase.from("games").select("*").eq("igdb_id", game.igdb_id).single();
+    return row;
+  };
+
   const searchGames = async (q) => {
     setGameSearch(q);
     if (q.length < 2) { setGameSearchResults([]); return; }
-    // Search local DB first
-    const { data: localGames } = await supabase
-      .from("games")
-      .select("id, name, developer, genre, cover_url, platforms, igdb_id")
-      .ilike("name", `%${q}%`)
-      .limit(6);
-
-    const results = localGames || [];
+    const results = await searchGamesForShelf(q);
     setGameSearchResults(results);
-
-    // Also search IGDB for games not in DB yet
-    try {
-      const igdbRes = await fetch("/api/igdb", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q }),
-      });
-      const { games: igdbGames } = await igdbRes.json();
-      if (igdbGames?.length) {
-        const localIgdbIds = new Set(results.map(g => g.igdb_id).filter(Boolean));
-        const newGames = igdbGames.filter(g => !localIgdbIds.has(g.igdb_id)).map(g => ({ ...g, _fromIGDB: true }));
-        setGameSearchResults([...results, ...newGames].slice(0, 10));
-
-        // Background enrich: update any local games missing platforms
-        results.forEach(async (g) => {
-          if (!g.platforms && g.igdb_id) {
-            const match = igdbGames.find(ig => ig.igdb_id === g.igdb_id);
-            if (match?.platforms) {
-              await supabase.from("games").update({ platforms: match.platforms, cover_url: match.cover_url || g.cover_url }).eq("id", g.id);
-              setGameSearchResults(prev => prev.map(r => r.id === g.id ? { ...r, platforms: match.platforms, cover_url: match.cover_url || r.cover_url } : r));
-            }
-          }
-        });
-      }
-    } catch (e) { /* IGDB unavailable, local results are fine */ }
   };
 
   // dnd-kit sensors — distance:8 prevents accidental drags on click
@@ -1235,20 +1277,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       const val = e.target.value;
                       const q = val.startsWith("@") ? val.slice(1) : val;
                       if (q.length >= 2) {
-                        const [localRes, igdbRes] = await Promise.allSettled([
-                          supabase.from("games").select("id, name, developer, genre, cover_url, first_release_date").ilike("name", "%" + q + "%").order("first_release_date", { ascending: false }).limit(8),
-                          fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-                        ]);
-                        const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-                        const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-                        const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
-                        const localNames = new Set(local.map(g => g.name.toLowerCase()));
-                        // Local results already sorted by first_release_date DESC by the DB query.
-                        // IGDB results kept in IGDB's relevance order — do NOT re-sort by date or
-                        // less relevant but newer games ("Fabled") will leapfrog relevant ones ("Fable").
-                        const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        const fromUpcoming = upcoming.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
-                        setGameSearchResults([...fromUpcoming, ...local, ...fromIGDB].slice(0, 15));
+                        const results = await searchGamesForShelf(q);
+                        setGameSearchResults(results);
                       } else {
                         setGameSearchResults([]);
                       }
@@ -1288,12 +1318,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         {SHELF_COLUMNS.map(col => (
                           <button key={col.id} onClick={async () => {
                             if (game._fromIGDB) {
-                              const { data: inserted } = await supabase.from("games").insert({
-                                name: game.name, genre: game.genre, summary: game.summary,
-                                cover_url: game.cover_url, igdb_id: game.igdb_id,
-                                first_release_date: game.first_release_date, followers: 0,
-                                platforms: game.platforms || null,
-                              }).select().single();
+                              const inserted = await upsertGameFromIGDB(game);
                               if (inserted) { addToShelf(inserted, col.id); }
                             } else {
                               addToShelf(game, col.id);
@@ -1330,17 +1355,8 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       const val = e.target.value;
                       const q = val.startsWith("@") ? val.slice(1) : val;
                       if (q.length >= 2) {
-                        const [localRes, igdbRes] = await Promise.allSettled([
-                          supabase.from("games").select("id, name, developer, genre, cover_url, first_release_date").ilike("name", "%" + q + "%").order("first_release_date", { ascending: false }).limit(8),
-                          fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-                        ]);
-                        const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-                        const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-                        const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
-                        const localNames = new Set(local.map(g => g.name.toLowerCase()));
-                        const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        const fromUpcoming = upcoming.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
-                        setGameSearchResults([...fromUpcoming, ...local, ...fromIGDB].slice(0, 8));
+                        const results = await searchGamesForShelf(q);
+                        setGameSearchResults(results.slice(0, 8));
                       } else {
                         setGameSearchResults([]);
                       }
@@ -1374,12 +1390,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                           {SHELF_COLUMNS.map(col => (
                             <button key={col.id} onClick={async () => {
                               if (game._fromIGDB) {
-                                const { data: inserted } = await supabase.from("games").insert({
-                                  name: game.name, genre: game.genre, summary: game.summary,
-                                  cover_url: game.cover_url, igdb_id: game.igdb_id,
-                                  first_release_date: game.first_release_date, followers: 0,
-                                  platforms: game.platforms || null,
-                                }).select().single();
+                                const inserted = await upsertGameFromIGDB(game);
                                 if (inserted) { addToShelf(inserted, col.id); setGameSearchResults([]); setGameSearch(""); }
                               } else {
                                 addToShelf(game, col.id); setGameSearchResults([]); setGameSearch("");

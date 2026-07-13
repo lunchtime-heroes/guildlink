@@ -126,6 +126,7 @@ function XboxImportModal({ currentUser, onClose, onImportComplete, onXboxConnect
     }
     // Recompute similarity so games in common badges update immediately
     await supabase.rpc("compute_user_similarity", { target_user_id: authUser.id });
+      await supabase.rpc("generate_discovery_cards");
 
     // Save gamertag
     if (xboxData?.gamertag) {
