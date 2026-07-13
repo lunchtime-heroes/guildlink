@@ -73,6 +73,18 @@ export async function searchGamesCore(q, opts = {}) {
 
   // Relevance rank: exact match > starts-with > whole-word > substring,
   // then shorter names (closer to the query), then newest.
+  // first_release_date comes in two different shapes depending on source:
+  // local DB rows (a Postgres `date` column) return an ISO string like
+  // "1993-09-24"; IGDB's raw API returns a Unix timestamp (seconds). Mixing
+  // both in one sort without normalizing crashed on whichever shape the
+  // comparator wasn't written for — see conversation, July 13 2026.
+  const toTimestampMs = (d) => {
+    if (d == null || d === "") return 0;
+    if (typeof d === "number") return d * 1000; // IGDB epoch seconds -> ms
+    const t = Date.parse(d); // local ISO date string -> ms
+    return Number.isNaN(t) ? 0 : t;
+  };
+
   const qLower = q.toLowerCase();
   const scored = localAll.map((g) => {
     const nameLower = g.name.toLowerCase();
@@ -85,7 +97,7 @@ export async function searchGamesCore(q, opts = {}) {
   scored.sort((a, b) => {
     if (a._rank !== b._rank) return a._rank - b._rank;
     if (a.name.length !== b.name.length) return a.name.length - b.name.length;
-    return (b.first_release_date || "").localeCompare(a.first_release_date || "");
+    return toTimestampMs(b.first_release_date) - toTimestampMs(a.first_release_date);
   });
   const local = scored.slice(0, displayLimit);
 
