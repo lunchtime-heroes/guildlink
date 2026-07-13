@@ -1,4 +1,5 @@
 // src/utils/gameSearch.js
+// (deploy retry marker — Vercel missed the previous push, forcing a fresh commit)
 //
 // Shared game-search core. Consolidated July 2026 after the same bug —
 // relevance loss on old exact matches, name-only dedup causing duplicate
