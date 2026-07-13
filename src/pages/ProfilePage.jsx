@@ -145,6 +145,13 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [addingGame, setAddingGame] = useState(false);
   const [gameSearch, setGameSearch] = useState("");
   const [gameSearchResults, setGameSearchResults] = useState([]);
+  // Guards against search race conditions: every keystroke fires its own
+  // async round-trip (local DB + IGDB), and nothing otherwise guarantees
+  // the last-FIRED request also resolves last. A slower earlier response
+  // (e.g. "mys") landing after a later one ("myst") would silently
+  // overwrite correct results with stale ones. Bumped on every search
+  // call; a response only gets applied if it's still the latest one fired.
+  const gameSearchSeqRef = useRef(0);
   // Quest state
   const [userQuests, setUserQuests] = useState([]);
   const [userRewards, setUserRewards] = useState([]);
@@ -1277,9 +1284,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       const val = e.target.value;
                       const q = val.startsWith("@") ? val.slice(1) : val;
                       if (q.length >= 2) {
+                        const seq = ++gameSearchSeqRef.current;
                         const results = await searchGamesForShelf(q);
+                        if (seq !== gameSearchSeqRef.current) return; // a newer keystroke's request already fired — discard this stale response
                         setGameSearchResults(results);
                       } else {
+                        gameSearchSeqRef.current++; // invalidate any in-flight requests too
                         setGameSearchResults([]);
                       }
                     }}
@@ -1355,9 +1365,12 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                       const val = e.target.value;
                       const q = val.startsWith("@") ? val.slice(1) : val;
                       if (q.length >= 2) {
+                        const seq = ++gameSearchSeqRef.current;
                         const results = await searchGamesForShelf(q);
+                        if (seq !== gameSearchSeqRef.current) return; // a newer keystroke's request already fired — discard this stale response
                         setGameSearchResults(results.slice(0, 8));
                       } else {
+                        gameSearchSeqRef.current++;
                         setGameSearchResults([]);
                       }
                     }}
