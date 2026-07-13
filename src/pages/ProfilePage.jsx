@@ -9,6 +9,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { C, NPCS, QUESTS, PROFILE_RINGS, QUEST_THEMES, FOUNDING, THEMES, applyTheme } from "../constants.js";
 import supabase from "../supabase.js";
+import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
 import { timeAgo, logChartEvent, updateTasteProfile, isUsernameRestricted } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { AvatarPixel } from "../components/Avatar.jsx";
@@ -695,78 +696,14 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
     }
   };
 
-  // Relevance-aware game search for the "add to shelf" boxes.
-  //
-  // Bug this fixes (July 2026, "Myst" not addable): the old inline queries
-  // sorted local matches by first_release_date DESC with a hard limit(8).
-  // Substring matches like "Mystery"/"Mysteries"/"Mystic" (all newer) could
-  // fill every slot before an old exact match like "Myst" (1993) was ever
-  // considered — so it silently dropped out of `local`, which was also the
-  // set used to decide whether an IGDB result was "new." IGDB's own more
-  // lenient search still found Myst, misclassified it as new, and clicking
-  // "add" tried to INSERT a row that already existed — colliding with the
-  // unique constraint on games.name/igdb_id and failing with a silent 409.
-  //
-  // Fix: pull a wider local set with no date-sort, rank it by relevance
-  // client-side (exact match > starts-with > whole-word > substring, then
-  // shorter names, then newest), and dedup against the FULL local match
-  // set (by igdb_id AND name) — not just the display-limited slice.
+  // Game search now lives in src/utils/gameSearch.js — shared by every
+  // "search for a game" UI in the app (see that file's header comment for
+  // the July 2026 "Myst" bug this fixes and the full list of call sites
+  // still pending migration). This wrapper just adapts the shared shape to
+  // this component's existing gameSearchResults state shape.
   const searchGamesForShelf = async (q) => {
-    const [localRes, igdbRes] = await Promise.allSettled([
-      supabase.from("games")
-        .select("id, name, developer, genre, cover_url, platforms, igdb_id, first_release_date")
-        .ilike("name", "%" + q + "%")
-        .limit(30),
-      fetch("/api/igdb", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q }),
-      }).then(r => r.json()).catch(() => ({ games: [] })),
-    ]);
-    const localAll = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-    const upcoming = igdbRes.status === "fulfilled" ? (igdbRes.value.upcoming || []) : [];
-
-    const qLower = q.toLowerCase();
-    const scored = localAll.map(g => {
-      const nameLower = g.name.toLowerCase();
-      let rank = 3; // plain substring match
-      if (nameLower === qLower) rank = 0;
-      else if (nameLower.startsWith(qLower)) rank = 1;
-      else if (nameLower.split(/\s+/).includes(qLower)) rank = 2;
-      return { ...g, _rank: rank };
-    });
-    scored.sort((a, b) => {
-      if (a._rank !== b._rank) return a._rank - b._rank;
-      if (a.name.length !== b.name.length) return a.name.length - b.name.length;
-      return (b.first_release_date || "").localeCompare(a.first_release_date || "");
-    });
-    const local = scored.slice(0, 8);
-
-    const localIgdbIds = new Set(localAll.map(g => g.igdb_id).filter(Boolean));
-    const localNamesLower = new Set(localAll.map(g => g.name.toLowerCase()));
-    const isKnown = g => (g.igdb_id && localIgdbIds.has(g.igdb_id)) || localNamesLower.has((g.name || "").toLowerCase());
-
-    const fromIGDB = igdb.filter(g => !isKnown(g)).map(g => ({ ...g, _fromIGDB: true }));
-    const fromUpcoming = upcoming.filter(g => !isKnown(g)).map(g => ({ ...g, _fromIGDB: true, _upcoming: true }));
-
+    const { local, fromIGDB, fromUpcoming } = await searchGamesCore(q, { displayLimit: 8, igdbNewLimit: 7 });
     return [...fromUpcoming, ...local, ...fromIGDB].slice(0, 15);
-  };
-
-  // Safety net for adding an IGDB-sourced game: upsert on igdb_id instead of
-  // a plain insert, so even if search dedup somehow misses an existing game
-  // (race condition, stale client state, etc.), this can't 409 — it just
-  // resolves to the existing row instead of failing silently.
-  const upsertGameFromIGDB = async (game) => {
-    const payload = {
-      name: game.name, genre: game.genre, summary: game.summary,
-      cover_url: game.cover_url, igdb_id: game.igdb_id,
-      first_release_date: game.first_release_date, followers: 0,
-      platforms: game.platforms || null,
-    };
-    const { error: upsertErr } = await supabase.from("games").upsert(payload, { onConflict: "igdb_id", ignoreDuplicates: true });
-    if (upsertErr) { console.error("game upsert failed", upsertErr); return null; }
-    const { data: row } = await supabase.from("games").select("*").eq("igdb_id", game.igdb_id).single();
-    return row;
   };
 
   const searchGames = async (q) => {
