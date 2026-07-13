@@ -159,6 +159,7 @@ function PSNImportModal({ currentUser, onClose, onImportComplete, onPSNConnected
       if (wantToPlay > 0) await supabase.rpc("increment_quest_progress", { p_user_id: authUser2.id, p_trigger: "want_to_play", p_amount: wantToPlay });
       // Recompute similarity so games in common badges update immediately
       await supabase.rpc("compute_user_similarity", { target_user_id: authUser2.id });
+      await supabase.rpc("generate_discovery_cards");
     }
   };
 

@@ -27,6 +27,7 @@ import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 
 import supabase from "./supabase.js";
+import { searchGamesCore, upsertGameFromIGDB } from "./utils/gameSearch.js";
 import { PixelCornerBox } from "./components/PixelCornerBox.jsx";
 import { PixelButton } from "./components/PixelButton.jsx";
 
@@ -351,24 +352,38 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer, isMobile }
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const inputRef = useRef(null);
+  // Guards against a residual race window even with the debounce below: if
+  // a user pauses, resumes typing, and a slower earlier response resolves
+  // after a newer one, this discards the stale response. See gameSearch.js
+  // header comment for the full "Myst" bug writeup this was born from.
+  const searchSeqRef = useRef(0);
 
   const search = async (q) => {
     if (q.length < 2) { setResults(null); return; }
     setLoading(true);
-    const [gamesRes, usersRes, igdbRes] = await Promise.allSettled([
-      supabase.from("games").select("id, name, genre, cover_url, first_release_date").ilike("name", "%" + q + "%").order("first_release_date", { ascending: false }).limit(4),
-      supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or("username.ilike.%" + q + "%,handle.ilike.%" + q + "%").limit(4),
-      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-    ]);
-    const games = gamesRes.status === "fulfilled" ? (gamesRes.value.data || []) : [];
-    const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
-    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-    const nowUnix = Math.floor(Date.now() / 1000);
-    const localNames = new Set(games.map(g => g.name.toLowerCase()));
-    const localWithFlags = games.map(g => ({ ...g, _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) }));
-    const igdbNew = igdb.filter(g => !localNames.has(g.name.toLowerCase())).slice(0, 3).map(g => ({ ...g, _fromIGDB: true }));
-    setResults({ games: [...localWithFlags, ...igdbNew], users });
-    setLoading(false);
+    const seq = ++searchSeqRef.current;
+    try {
+      const [gamesRes, usersRes] = await Promise.allSettled([
+        searchGamesCore(q, { displayLimit: 4, igdbNewLimit: 3 }),
+        supabase.from("profiles").select("id, username, handle, avatar_initials, is_founding, active_ring").or("username.ilike.%" + q + "%,handle.ilike.%" + q + "%").limit(4),
+      ]);
+      if (seq !== searchSeqRef.current) return; // a newer query has since been fired — discard this stale response
+      const { local, fromIGDB } = gamesRes.status === "fulfilled" ? gamesRes.value : { local: [], fromIGDB: [] };
+      const users = usersRes.status === "fulfilled" ? (usersRes.value.data || []) : [];
+      if (gamesRes.status === "rejected") console.error("[NavSearch] game search failed:", gamesRes.reason);
+      const nowUnix = Math.floor(Date.now() / 1000);
+      const localWithFlags = local.map(g => ({ ...g, _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) }));
+      setResults({ games: [...localWithFlags, ...fromIGDB], users });
+    } catch (err) {
+      console.error("[NavSearch] search failed unexpectedly:", err);
+      if (seq === searchSeqRef.current) setResults({ games: [], users: [] });
+    } finally {
+      // Runs regardless of success/failure/early-return-from-catch, so a
+      // stuck "Searching..." spinner (this session's regression — an outer
+      // Promise.all rejection skipped setLoading(false) entirely) can't
+      // happen again even if something else fails in the future.
+      if (seq === searchSeqRef.current) setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -381,7 +396,7 @@ function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer, isMobile }
 
   const selectGame = async (game) => {
     if (game._fromIGDB) {
-      const { data: inserted } = await supabase.from("games").insert({ name: game.name, genre: game.genre, summary: game.summary, cover_url: game.cover_url, igdb_id: game.igdb_id, followers: 0, platforms: game.platforms || null }).select().single();
+      const inserted = await upsertGameFromIGDB(game);
       if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", "/game/" + inserted.id); }
     } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", "/game/" + game.id); }
     isMobile ? closeModal() : close();
