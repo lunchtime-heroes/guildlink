@@ -81,19 +81,13 @@ export default async function handler(req, res) {
 
     if (query) {
       const nowUnix = Math.floor(Date.now() / 1000);
-      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "");
+      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "").replace(/[®™©]/g, "").trim();
       // Single query with higher limit — upcoming games get floated to the top of the
       // sort rather than relying on a separate where-clause query. IGDB's `search`
       // operator ignores `where` field filters (it uses a separate full-text index),
       // so a second query with `where first_release_date > now` silently returns nothing.
       const mainRes = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
       const games = await mainRes.json();
-      // TEMPORARY DEBUG — remove once "Above Snakes: Prologue" (and similar
-      // silent-miss cases) is diagnosed. Logs the raw, unfiltered IGDB
-      // response so we can see whether IGDB's API genuinely returns zero/
-      // few results for this query, versus returning good results that
-      // something downstream still excludes.
-      console.error("[igdb debug] query:", safeQuery, "| raw result count:", games?.length, "| names:", (games || []).map(g => `${g.name} (cat:${g.category})`));
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
@@ -119,7 +113,7 @@ export default async function handler(req, res) {
       // follows, even when its name matched exactly. Check the full,
       // unfiltered `games` list (not just what survived category/quality
       // filtering) so a real exact match is never excluded for any reason.
-      const exactMatch = (games || []).find(g => g.name?.toLowerCase() === query.toLowerCase());
+      const exactMatch = (games || []).find(g => g.name?.toLowerCase() === safeQuery.toLowerCase());
       if (exactMatch && !results.some(r => r.id === exactMatch.id)) {
         results.pop();
         results.unshift(exactMatch);
