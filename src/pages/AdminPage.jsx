@@ -248,13 +248,18 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     setEnriching(prev => ({ ...prev, [game.id]: true }));
     try {
       const res = await fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: game.name }) });
-      const { games } = await res.json();
+      const { games, _usedFallbackQuery } = await res.json();
       if (!games?.length) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" })); return; }
       const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
       const updates = {};
       if (match.cover_url) updates.cover_url = match.cover_url;
       if (match.summary) updates.summary = match.summary;
-      if (match.igdb_id) updates.igdb_id = match.igdb_id;
+      // A fallback match (e.g. a demo borrowing its parent game's art)
+      // should never inherit the parent's igdb_id — that's what was
+      // causing demos to look like duplicates of the full game and get
+      // offered up for merging, which is exactly not what's wanted here.
+      // The demo stays its own distinct row; only the art gets borrowed.
+      if (match.igdb_id && !_usedFallbackQuery) updates.igdb_id = match.igdb_id;
       if (match.genre && !game.genre) updates.genre = match.genre;
       if (Object.keys(updates).length === 0) { setEnrichMsg(prev => ({ ...prev, [game.id]: "No new data" })); return; }
       const { error } = await supabase.from("games").update(updates).eq("id", game.id);
@@ -274,7 +279,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         return;
       }
       setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
-      setEnrichMsg(prev => ({ ...prev, [game.id]: "✓ Updated" }));
+      setEnrichMsg(prev => ({ ...prev, [game.id]: _usedFallbackQuery ? `✓ Art from "${_usedFallbackQuery}"` : "✓ Updated" }));
     } catch { setEnrichMsg(prev => ({ ...prev, [game.id]: "Failed" })); }
     finally { setEnriching(prev => ({ ...prev, [game.id]: false })); }
   };
