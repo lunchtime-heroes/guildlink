@@ -81,7 +81,7 @@ export default async function handler(req, res) {
 
     if (query) {
       const nowUnix = Math.floor(Date.now() / 1000);
-      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "").replace(/[®™©]/g, "").trim();
+      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "").replace(/[®™©]/g, " ").replace(/\s+/g, " ").trim();
       // Single query with higher limit — upcoming games get floated to the top of the
       // sort rather than relying on a separate where-clause query. IGDB's `search`
       // operator ignores `where` field filters (it uses a separate full-text index),
