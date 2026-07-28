@@ -73,8 +73,27 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     if (postsRes.data) setPosts(postsRes.data);
     if (reviewsRes.data) setReviews(reviewsRes.data);
 
-    const { data: gamesData } = await supabase.from("games").select("id, name, genre, igdb_id, cover_url, summary").order("name");
-    if (gamesData) setAllGames(gamesData);
+    // Paginated fetch — PostgREST silently caps unbounded queries at 1000
+    // rows, which meant "Enrich All Missing" was only ever operating on
+    // whichever missing-art games happened to land in the first 1000
+    // alphabetically, not the real full set. This fetches everything in
+    // batches of 1000 until exhausted, so it keeps working correctly as
+    // the catalog grows rather than needing a manually-raised limit that
+    // would just fail silently again later.
+    let allGamesData = [];
+    let gamesPage = 0;
+    while (true) {
+      const { data: pageData } = await supabase
+        .from("games")
+        .select("id, name, genre, igdb_id, cover_url, summary")
+        .order("name")
+        .range(gamesPage * 1000, gamesPage * 1000 + 999);
+      if (!pageData || pageData.length === 0) break;
+      allGamesData = allGamesData.concat(pageData);
+      if (pageData.length < 1000) break;
+      gamesPage++;
+    }
+    setAllGames(allGamesData);
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: analyticsEvents } = await supabase.from("analytics_events")
