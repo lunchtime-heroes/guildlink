@@ -145,7 +145,8 @@ export default async function handler(req, res) {
       // follows, even when its name matched exactly. Check the full,
       // unfiltered `games` list (not just what survived category/quality
       // filtering) so a real exact match is never excluded for any reason.
-      const exactMatch = (games || []).find(g => g.name?.toLowerCase() === safeQuery.toLowerCase());
+      const matchTarget = (usedFallbackQuery || safeQuery).toLowerCase();
+      const exactMatch = (games || []).find(g => g.name?.toLowerCase() === matchTarget);
       if (exactMatch && !results.some(r => r.id === exactMatch.id)) {
         results.pop();
         results.unshift(exactMatch);
