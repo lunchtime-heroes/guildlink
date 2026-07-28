@@ -104,6 +104,20 @@ export default async function handler(req, res) {
         return bScore - aScore;
       });
       const results = (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10);
+      // An exact (case-insensitive) name match should never lose to a more
+      // popular but less relevant fuzzy result — that's true for search,
+      // and it's the whole reason enrichment was silently missing real,
+      // obscure games: the same popularity-based cutoff that keeps noisy
+      // unrelated fuzzy matches out of search was also capable of pushing
+      // a small indie game below the top 10 just for lacking ratings/
+      // follows, even when its name matched exactly. Check the full,
+      // unfiltered `games` list (not just what survived category/quality
+      // filtering) so a real exact match is never excluded for any reason.
+      const exactMatch = (games || []).find(g => g.name?.toLowerCase() === query.toLowerCase());
+      if (exactMatch && !results.some(r => r.id === exactMatch.id)) {
+        results.pop();
+        results.unshift(exactMatch);
+      }
       return res.status(200).json({
         games: results.map(g => ({ ...formatGame(g), _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) })),
         upcoming: [],
