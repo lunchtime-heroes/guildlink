@@ -24,6 +24,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [dataRequests, setDataRequests] = useState([]);
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
+  const [duplicateCandidates, setDuplicateCandidates] = useState([]);
   const [enrichMsg, setEnrichMsg] = useState({});
   const [mostWanted, setMostWanted] = useState([]);
   const [restrictedUsernames, setRestrictedUsernames] = useState([]);
@@ -218,7 +219,21 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       if (match.genre && !game.genre) updates.genre = match.genre;
       if (Object.keys(updates).length === 0) { setEnrichMsg(prev => ({ ...prev, [game.id]: "No new data" })); return; }
       const { error } = await supabase.from("games").update(updates).eq("id", game.id);
-      if (error) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" })); return; }
+      if (error) {
+        // Postgres unique-violation on igdb_id — this game matched an
+        // IGDB entry that a DIFFERENT row in the table already owns.
+        // That's not a real error, it's a duplicate: this row and
+        // whichever one already holds that igdb_id are the same game.
+        // Surface it as a reviewable merge candidate instead of noise.
+        if (error.code === "23505" && match.igdb_id) {
+          const { data: existing } = await supabase.from("games").select("id, name").eq("igdb_id", match.igdb_id).maybeSingle();
+          setDuplicateCandidates(prev => [...prev, { dirtyId: game.id, dirtyName: game.name, cleanId: existing?.id, cleanName: existing?.name }]);
+          setEnrichMsg(prev => ({ ...prev, [game.id]: "⚠ Possible duplicate" }));
+        } else {
+          setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" }));
+        }
+        return;
+      }
       setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
       setEnrichMsg(prev => ({ ...prev, [game.id]: "✓ Updated" }));
     } catch { setEnrichMsg(prev => ({ ...prev, [game.id]: "Failed" })); }
@@ -677,11 +692,37 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url).length} with cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
-            <button onClick={async () => { for (const game of allGames.filter(g => !g.cover_url)) { await enrichGame(game); } }}
+            <button onClick={async () => {
+              // Small delay between sequential calls — running the full
+              // list back-to-back as fast as possible was very likely
+              // hitting IGDB's own rate limit, surfacing as opaque 500s.
+              const missing = allGames.filter(g => !g.cover_url);
+              for (const game of missing) {
+                await enrichGame(game);
+                await new Promise(r => setTimeout(r, 300));
+              }
+            }}
               style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               Enrich All Missing →
             </button>
           </div>
+
+          {duplicateCandidates.length > 0 && (
+            <div style={{ background: "color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")", border: "1px solid " + C.goldBorder, borderRadius: 4, padding: 14, marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: C.gold, fontSize: 13, marginBottom: 8 }}>
+                {duplicateCandidates.length} possible duplicate{duplicateCandidates.length === 1 ? "" : "s"} found during enrichment
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 10 }}>
+                Each of these matched an IGDB entry already claimed by a different row — very likely the same game stored twice (a ®/™ variant, a Steam bundle split, etc). Worth merging via SQL rather than re-enriching.
+              </div>
+              {duplicateCandidates.map((d, i) => (
+                <div key={i} style={{ fontSize: 12, color: C.text, padding: "5px 0", borderTop: i > 0 ? "1px solid " + C.border : "none" }}>
+                  <span style={{ color: C.textDim }}>"{d.dirtyName}"</span> → likely same as <span style={{ fontWeight: 700 }}>"{d.cleanName || "unknown"}"</span>
+                  {d.cleanId && <span style={{ color: C.textDim }}> (keep id: {d.cleanId})</span>}
+                </div>
+              ))}
+            </div>
+          )}
           <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
             {allGames.map((game, i) => (
               <div key={game.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < allGames.length - 1 ? "1px solid " + C.border : "none" }}>

@@ -87,6 +87,11 @@ export default async function handler(req, res) {
       // operator ignores `where` field filters (it uses a separate full-text index),
       // so a second query with `where first_release_date > now` silently returns nothing.
       const mainRes = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
+      if (!mainRes.ok) {
+        const errText = await mainRes.text();
+        console.error("[igdb] IGDB rejected request:", mainRes.status, errText);
+        return res.status(200).json({ games: [], upcoming: [], _igdbError: `IGDB returned ${mainRes.status}` });
+      }
       const games = await mainRes.json();
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
@@ -128,7 +133,7 @@ export default async function handler(req, res) {
   } catch (err) {
     cachedToken = null;
     tokenExpiry = 0;
-    console.error("[igdb] error:", err);
-    return res.status(500).json({ error: "IGDB request failed" });
+    console.error("[igdb] error:", err.message || err, err.stack || "");
+    return res.status(500).json({ error: "IGDB request failed", detail: err.message || String(err) });
   }
 }
