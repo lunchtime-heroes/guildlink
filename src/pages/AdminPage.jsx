@@ -25,6 +25,15 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [duplicateCandidates, setDuplicateCandidates] = useState([]);
+
+  // A cover_url can be present but still broken — Xbox imports sometimes
+  // fall back to a temporary, signed Microsoft CDN URL when IGDB matching
+  // fails at import time, and those expire. A plain "is cover_url null"
+  // check misses this entirely, since the field isn't empty, it's just
+  // pointing at something that no longer loads. Centralized here so any
+  // other platform's similar temporary-URL pattern can be added in one
+  // place rather than duplicated across every check.
+  const needsEnrichment = (game) => !game.cover_url || game.cover_url.includes("xboxlive.com");
   const [enrichMsg, setEnrichMsg] = useState({});
   const [mostWanted, setMostWanted] = useState([]);
   const [restrictedUsernames, setRestrictedUsernames] = useState([]);
@@ -691,12 +700,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       {tab === "games" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url).length} with cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url && !g.cover_url.includes("xboxlive.com")).length} with real cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
             <button onClick={async () => {
               // Small delay between sequential calls — running the full
               // list back-to-back as fast as possible was very likely
               // hitting IGDB's own rate limit, surfacing as opaque 500s.
-              const missing = allGames.filter(g => !g.cover_url);
+              const missing = allGames.filter(needsEnrichment);
               for (const game of missing) {
                 await enrichGame(game);
                 await new Promise(r => setTimeout(r, 300));
