@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { C } from "../constants.js";
+import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 
 const Section = ({ title, children }) => (
   <div style={{ marginBottom: 40 }}>
@@ -65,7 +66,6 @@ function PrivacyPage({ isMobile, setActivePage }) {
         <div style={{ marginBottom: 12 }}><Highlight>Account credentials.</Highlight> When you sign up, we collect your email address and a hashed password. Your email is used for account authentication, password resets, and occasional platform communications. It is stored separately from your public profile and is never visible to other users.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Profile information.</Highlight> Your username, handle, bio, avatar, and player tags. This is what other users see when they visit your profile. You control all of it and can update or delete it at any time.</div>
         <div style={{ marginBottom: 12 }}><Highlight>Gaming activity.</Highlight> The games you add to your shelf, your reviews, posts, Q&A, and comments. This is the core of GuildLink: your game history is your profile, and it drives discovery for you and others. You choose what you add. If you connect a Steam, Xbox, or PlayStation account to import your library, we only store the game titles. We do not store any platform credentials, purchase history, or playtime data. PlayStation library imports use your PSN trophy history to identify games you've played; your NPSSO token is used only to fetch this data and is never stored. Imported games are treated identically to games you add manually.</div>
-import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
         <div style={{ marginBottom: 12 }}><Highlight>Guild activity.</Highlight> Guild memberships, sessions you create or join, and posts in guild threads. This is visible to your fellow guild members.</div>
         <div><Highlight>Usage analytics.</Highlight> We use Vercel Analytics to understand how people navigate GuildLink. GuildLink doesn't collect cookies, perform fingerprinting, or track you across other websites. GuildLink collects aggregate data like page views and session counts in a way that isn't connected to your identity.</div>
       </Section>
