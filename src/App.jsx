@@ -22,6 +22,7 @@ import { ShelfPulseCard, ReviewSpotlightCard } from "./components/PulseCards.jsx
 import ReviewsPage from "./pages/ReviewsPage.jsx";
 import FeedbackPage from "./pages/FeedbackPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
+import EULAPage from "./pages/EULAPage.jsx";
 import CultureAgreementPage from "./pages/CultureAgreementPage.jsx";
 import FoundingMemberPage from "./pages/FoundingMemberPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
@@ -937,6 +938,7 @@ export default function GuildLink() {
     if (p === "profile") return { page: "profile" };
     if (p === "npcs") return { page: "npcs" };
     if (p === "privacy") return { page: "privacy" };
+    if (p === "eula") return { page: "eula" };
     if (p === "culture") return { page: "culture" };
     if (p === "feedback") return { page: "feedback" };
     if (p === "founding") return { page: "founding" };
@@ -1421,6 +1423,7 @@ export default function GuildLink() {
       {activePage === "founding" && <FoundingMemberPage setActivePage={navToPage} isMobile={isMobile} onSignUp={openSignUp} />}
       {activePage === "feedback" && <FeedbackPage currentUser={liveUser} isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
+      {activePage === "eula" && <EULAPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
 	<Analytics />
     </div>
