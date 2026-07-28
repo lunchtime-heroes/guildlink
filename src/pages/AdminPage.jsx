@@ -24,6 +24,17 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [dataRequests, setDataRequests] = useState([]);
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
+  const [duplicateCandidates, setDuplicateCandidates] = useState([]);
+  const [merging, setMerging] = useState({});
+
+  // A cover_url can be present but still broken — Xbox imports sometimes
+  // fall back to a temporary, signed Microsoft CDN URL when IGDB matching
+  // fails at import time, and those expire. A plain "is cover_url null"
+  // check misses this entirely, since the field isn't empty, it's just
+  // pointing at something that no longer loads. Centralized here so any
+  // other platform's similar temporary-URL pattern can be added in one
+  // place rather than duplicated across every check.
+  const needsEnrichment = (game) => !game.cover_url || game.cover_url.includes("xboxlive.com");
   const [enrichMsg, setEnrichMsg] = useState({});
   const [mostWanted, setMostWanted] = useState([]);
   const [restrictedUsernames, setRestrictedUsernames] = useState([]);
@@ -73,8 +84,27 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     if (postsRes.data) setPosts(postsRes.data);
     if (reviewsRes.data) setReviews(reviewsRes.data);
 
-    const { data: gamesData } = await supabase.from("games").select("id, name, genre, igdb_id, cover_url, summary").order("name");
-    if (gamesData) setAllGames(gamesData);
+    // Paginated fetch — PostgREST silently caps unbounded queries at 1000
+    // rows, which meant "Enrich All Missing" was only ever operating on
+    // whichever missing-art games happened to land in the first 1000
+    // alphabetically, not the real full set. This fetches everything in
+    // batches of 1000 until exhausted, so it keeps working correctly as
+    // the catalog grows rather than needing a manually-raised limit that
+    // would just fail silently again later.
+    let allGamesData = [];
+    let gamesPage = 0;
+    while (true) {
+      const { data: pageData } = await supabase
+        .from("games")
+        .select("id, name, genre, igdb_id, cover_url, summary")
+        .order("name")
+        .range(gamesPage * 1000, gamesPage * 1000 + 999);
+      if (!pageData || pageData.length === 0) break;
+      allGamesData = allGamesData.concat(pageData);
+      if (pageData.length < 1000) break;
+      gamesPage++;
+    }
+    setAllGames(allGamesData);
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: analyticsEvents } = await supabase.from("analytics_events")
@@ -185,23 +215,100 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     </div>
   );
 
+  const mergeGame = async (dup) => {
+    if (!dup.cleanId) return;
+    setMerging(prev => ({ ...prev, [dup.dirtyId]: true }));
+    try {
+      // 1. Remove the dirty row's shelf entries for anyone who already
+      //    has the clean row too, avoiding a unique-constraint conflict.
+      const { data: cleanUsers } = await supabase.from("user_games").select("user_id").eq("game_id", dup.cleanId);
+      const cleanUserIds = (cleanUsers || []).map(u => u.user_id);
+      if (cleanUserIds.length > 0) {
+        await supabase.from("user_games").delete().eq("game_id", dup.dirtyId).in("user_id", cleanUserIds);
+      }
+      // 2. Move everyone else over to the clean row.
+      await supabase.from("user_games").update({ game_id: dup.cleanId }).eq("game_id", dup.dirtyId);
+      // 3. Migrate chart events.
+      await supabase.from("chart_events").update({ game_id: dup.cleanId }).eq("game_id", dup.dirtyId);
+      // 4. Delete the duplicate.
+      const { error } = await supabase.from("games").delete().eq("id", dup.dirtyId);
+      if (error) throw error;
+
+      setDuplicateCandidates(prev => prev.filter(d => d.dirtyId !== dup.dirtyId));
+      setAllGames(prev => prev.filter(g => g.id !== dup.dirtyId));
+    } catch (e) {
+      console.error("[merge] failed:", e);
+      setEnrichMsg(prev => ({ ...prev, [dup.dirtyId]: "Merge failed" }));
+    } finally {
+      setMerging(prev => ({ ...prev, [dup.dirtyId]: false }));
+    }
+  };
+
   const enrichGame = async (game) => {
     setEnriching(prev => ({ ...prev, [game.id]: true }));
     try {
       const res = await fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: game.name }) });
-      const { games } = await res.json();
+      const { games, _usedFallbackQuery } = await res.json();
+
+      // If IGDB's fallback stripped this down to a parent-game name,
+      // check GuildLink's own catalog for that name FIRST — it's
+      // already loaded in memory, requires no extra query, and is far
+      // more reliable than trusting IGDB's fuzzy search ranking for an
+      // obscure title (which is exactly what went wrong with "Above
+      // Snakes" losing to the much more popular "Snake Pass"). If the
+      // parent game is already correctly enriched in our own database,
+      // that's a known-good source of truth IGDB's search can't beat.
+      if (_usedFallbackQuery) {
+        const localParent = allGames.find(g =>
+          g.name.toLowerCase() === _usedFallbackQuery.toLowerCase() && g.cover_url
+        );
+        if (localParent) {
+          const updates = { cover_url: localParent.cover_url };
+          if (localParent.summary) updates.summary = localParent.summary;
+          if (localParent.genre && !game.genre) updates.genre = localParent.genre;
+          const { error } = await supabase.from("games").update(updates).eq("id", game.id);
+          if (!error) {
+            setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
+            setEnrichMsg(prev => ({ ...prev, [game.id]: `✓ Art from "${localParent.name}" (local match)` }));
+          } else {
+            setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" }));
+          }
+          setEnriching(prev => ({ ...prev, [game.id]: false }));
+          return;
+        }
+      }
+
       if (!games?.length) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" })); return; }
       const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
       const updates = {};
       if (match.cover_url) updates.cover_url = match.cover_url;
       if (match.summary) updates.summary = match.summary;
-      if (match.igdb_id) updates.igdb_id = match.igdb_id;
+      // A fallback match (e.g. a demo borrowing its parent game's art)
+      // should never inherit the parent's igdb_id — that's what was
+      // causing demos to look like duplicates of the full game and get
+      // offered up for merging, which is exactly not what's wanted here.
+      // The demo stays its own distinct row; only the art gets borrowed.
+      if (match.igdb_id && !_usedFallbackQuery) updates.igdb_id = match.igdb_id;
       if (match.genre && !game.genre) updates.genre = match.genre;
       if (Object.keys(updates).length === 0) { setEnrichMsg(prev => ({ ...prev, [game.id]: "No new data" })); return; }
       const { error } = await supabase.from("games").update(updates).eq("id", game.id);
-      if (error) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" })); return; }
+      if (error) {
+        // Postgres unique-violation on igdb_id — this game matched an
+        // IGDB entry that a DIFFERENT row in the table already owns.
+        // That's not a real error, it's a duplicate: this row and
+        // whichever one already holds that igdb_id are the same game.
+        // Surface it as a reviewable merge candidate instead of noise.
+        if (error.code === "23505" && match.igdb_id) {
+          const { data: existing } = await supabase.from("games").select("id, name").eq("igdb_id", match.igdb_id).maybeSingle();
+          setDuplicateCandidates(prev => [...prev, { dirtyId: game.id, dirtyName: game.name, cleanId: existing?.id, cleanName: existing?.name }]);
+          setEnrichMsg(prev => ({ ...prev, [game.id]: "⚠ Possible duplicate" }));
+        } else {
+          setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" }));
+        }
+        return;
+      }
       setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
-      setEnrichMsg(prev => ({ ...prev, [game.id]: "✓ Updated" }));
+      setEnrichMsg(prev => ({ ...prev, [game.id]: _usedFallbackQuery ? `✓ Art from "${_usedFallbackQuery}"` : "✓ Updated" }));
     } catch { setEnrichMsg(prev => ({ ...prev, [game.id]: "Failed" })); }
     finally { setEnriching(prev => ({ ...prev, [game.id]: false })); }
   };
@@ -657,12 +764,56 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       {tab === "games" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url).length} with cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
-            <button onClick={async () => { for (const game of allGames.filter(g => !g.cover_url)) { await enrichGame(game); } }}
+            <div style={{ color: C.textMuted, fontSize: 13 }}>{allGames.length} games · {allGames.filter(g => g.cover_url && !g.cover_url.includes("xboxlive.com")).length} with real cover art · {allGames.filter(g => !g.igdb_id).length} not yet enriched</div>
+            <button onClick={async () => {
+              // Small delay between sequential calls — running the full
+              // list back-to-back as fast as possible was very likely
+              // hitting IGDB's own rate limit, surfacing as opaque 500s.
+              const missing = allGames.filter(needsEnrichment);
+              for (const game of missing) {
+                await enrichGame(game);
+                await new Promise(r => setTimeout(r, 300));
+              }
+            }}
               style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "7px 14px", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>
               Enrich All Missing →
             </button>
           </div>
+
+          {duplicateCandidates.length > 0 && (
+            <div style={{ background: "color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")", border: "1px solid " + C.goldBorder, borderRadius: 4, padding: 14, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ fontWeight: 700, color: C.gold, fontSize: 13 }}>
+                  {duplicateCandidates.length} possible duplicate{duplicateCandidates.length === 1 ? "" : "s"} found during enrichment
+                </div>
+                <button
+                  onClick={async () => {
+                    for (const dup of [...duplicateCandidates].filter(d => d.cleanId)) {
+                      await mergeGame(dup);
+                    }
+                  }}
+                  style={{ background: C.gold, border: "none", borderRadius: 3, padding: "6px 12px", color: C.bg, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  Merge All →
+                </button>
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 10 }}>
+                Each of these matched an IGDB entry already claimed by a different row — very likely the same game stored twice (a ®/™ variant, a Steam bundle split, etc). Merging moves shelf entries and chart events to the clean row, then deletes the duplicate — same as the manual SQL process, automated.
+              </div>
+              {duplicateCandidates.map((d, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: C.text, padding: "6px 0", borderTop: i > 0 ? "1px solid " + C.border : "none" }}>
+                  <div>
+                    <span style={{ color: C.textDim }}>"{d.dirtyName}"</span> → likely same as <span style={{ fontWeight: 700 }}>"{d.cleanName || "unknown"}"</span>
+                  </div>
+                  <button
+                    onClick={() => mergeGame(d)}
+                    disabled={!d.cleanId || merging[d.dirtyId]}
+                    style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "4px 10px", color: C.text, fontSize: 11, cursor: d.cleanId ? "pointer" : "not-allowed", flexShrink: 0, marginLeft: 10 }}>
+                    {merging[d.dirtyId] ? "…" : d.cleanId ? "Merge" : "No clean ID found"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
             {allGames.map((game, i) => (
               <div key={game.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < allGames.length - 1 ? "1px solid " + C.border : "none" }}>

@@ -81,13 +81,52 @@ export default async function handler(req, res) {
 
     if (query) {
       const nowUnix = Math.floor(Date.now() / 1000);
-      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "");
-      // Single query with higher limit — upcoming games get floated to the top of the
-      // sort rather than relying on a separate where-clause query. IGDB's `search`
-      // operator ignores `where` field filters (it uses a separate full-text index),
-      // so a second query with `where first_release_date > now` silently returns nothing.
-      const mainRes = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
-      const games = await mainRes.json();
+      const safeQuery = query.replace(/"/g, "").replace(/\*/g, "").replace(/[®™©]/g, " ").replace(/\s+/g, " ").trim();
+
+      const runSearch = async (q) => {
+        const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${q}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
+        if (!r.ok) {
+          const errText = await r.text();
+          console.error("[igdb] IGDB rejected request:", r.status, errText);
+          igdbError = `IGDB returned ${r.status}`;
+          return null;
+        }
+        return r.json();
+      };
+
+      let igdbError = null;
+      let games = await runSearch(safeQuery);
+      let usedFallbackQuery = null;
+
+      // A demo/prologue rarely has its own separate IGDB listing — it's
+      // a slice of a real game that almost certainly does. Rather than
+      // leave these permanently blank, strip common demo/prologue/beta
+      // wording and search again for the parent game, borrowing its art.
+      // The database row itself is untouched — this only affects what
+      // cover image gets attached to it.
+      if (!games?.length) {
+        const strippedQuery = safeQuery
+          .replace(/[:\-–]\s*(free\s+)?(demo|prologue|prelude|beta|trial|sample)s?\b.*$/i, "")
+          .replace(/\s*\((demo|prologue|prelude|beta|trial)[^)]*\)\s*$/i, "")
+          .replace(/\s+(demo|prologue|prelude|beta|trial)s?\s*$/i, "")
+          .trim();
+        if (strippedQuery && strippedQuery.toLowerCase() !== safeQuery.toLowerCase()) {
+          const fallbackGames = await runSearch(strippedQuery);
+          if (fallbackGames?.length) {
+            games = fallbackGames;
+            usedFallbackQuery = strippedQuery;
+          }
+        }
+      }
+
+      if (!games) games = [];
+      // TEMPORARY DEBUG — checking whether "Above Snakes" appears
+      // anywhere in IGDB's raw fallback results at all, or whether
+      // IGDB's own search never returns it for this query regardless
+      // of ranking.
+      if (usedFallbackQuery) {
+        console.error("[igdb debug] fallback query:", usedFallbackQuery, "| raw result count:", games.length, "| names:", games.map(g => `${g.name} (id:${g.id})`));
+      }
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
@@ -104,9 +143,26 @@ export default async function handler(req, res) {
         return bScore - aScore;
       });
       const results = (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10);
+      // An exact (case-insensitive) name match should never lose to a more
+      // popular but less relevant fuzzy result — that's true for search,
+      // and it's the whole reason enrichment was silently missing real,
+      // obscure games: the same popularity-based cutoff that keeps noisy
+      // unrelated fuzzy matches out of search was also capable of pushing
+      // a small indie game below the top 10 just for lacking ratings/
+      // follows, even when its name matched exactly. Check the full,
+      // unfiltered `games` list (not just what survived category/quality
+      // filtering) so a real exact match is never excluded for any reason.
+      const matchTarget = (usedFallbackQuery || safeQuery).toLowerCase();
+      const exactMatch = (games || []).find(g => g.name?.toLowerCase() === matchTarget);
+      if (exactMatch && !results.some(r => r.id === exactMatch.id)) {
+        results.pop();
+        results.unshift(exactMatch);
+      }
       return res.status(200).json({
         games: results.map(g => ({ ...formatGame(g), _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) })),
         upcoming: [],
+        _usedFallbackQuery: usedFallbackQuery,
+        _igdbError: igdbError,
       });
     }
 
@@ -114,7 +170,7 @@ export default async function handler(req, res) {
   } catch (err) {
     cachedToken = null;
     tokenExpiry = 0;
-    console.error("[igdb] error:", err);
-    return res.status(500).json({ error: "IGDB request failed" });
+    console.error("[igdb] error:", err.message || err, err.stack || "");
+    return res.status(500).json({ error: "IGDB request failed", detail: err.message || String(err) });
   }
 }
