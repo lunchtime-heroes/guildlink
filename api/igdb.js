@@ -120,6 +120,13 @@ export default async function handler(req, res) {
       }
 
       if (!games) games = [];
+      // TEMPORARY DEBUG — checking whether "Above Snakes" appears
+      // anywhere in IGDB's raw fallback results at all, or whether
+      // IGDB's own search never returns it for this query regardless
+      // of ranking.
+      if (usedFallbackQuery) {
+        console.error("[igdb debug] fallback query:", usedFallbackQuery, "| raw result count:", games.length, "| names:", games.map(g => `${g.name} (id:${g.id})`));
+      }
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0

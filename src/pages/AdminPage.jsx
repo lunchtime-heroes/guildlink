@@ -249,6 +249,35 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     try {
       const res = await fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: game.name }) });
       const { games, _usedFallbackQuery } = await res.json();
+
+      // If IGDB's fallback stripped this down to a parent-game name,
+      // check GuildLink's own catalog for that name FIRST — it's
+      // already loaded in memory, requires no extra query, and is far
+      // more reliable than trusting IGDB's fuzzy search ranking for an
+      // obscure title (which is exactly what went wrong with "Above
+      // Snakes" losing to the much more popular "Snake Pass"). If the
+      // parent game is already correctly enriched in our own database,
+      // that's a known-good source of truth IGDB's search can't beat.
+      if (_usedFallbackQuery) {
+        const localParent = allGames.find(g =>
+          g.name.toLowerCase() === _usedFallbackQuery.toLowerCase() && g.cover_url
+        );
+        if (localParent) {
+          const updates = { cover_url: localParent.cover_url };
+          if (localParent.summary) updates.summary = localParent.summary;
+          if (localParent.genre && !game.genre) updates.genre = localParent.genre;
+          const { error } = await supabase.from("games").update(updates).eq("id", game.id);
+          if (!error) {
+            setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...updates } : g));
+            setEnrichMsg(prev => ({ ...prev, [game.id]: `✓ Art from "${localParent.name}" (local match)` }));
+          } else {
+            setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" }));
+          }
+          setEnriching(prev => ({ ...prev, [game.id]: false }));
+          return;
+        }
+      }
+
       if (!games?.length) { setEnrichMsg(prev => ({ ...prev, [game.id]: "Not found" })); return; }
       const match = games.find(g => g.name.toLowerCase() === game.name.toLowerCase()) || games[0];
       const updates = {};
