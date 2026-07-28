@@ -82,17 +82,44 @@ export default async function handler(req, res) {
     if (query) {
       const nowUnix = Math.floor(Date.now() / 1000);
       const safeQuery = query.replace(/"/g, "").replace(/\*/g, "").replace(/[®™©]/g, " ").replace(/\s+/g, " ").trim();
-      // Single query with higher limit — upcoming games get floated to the top of the
-      // sort rather than relying on a separate where-clause query. IGDB's `search`
-      // operator ignores `where` field filters (it uses a separate full-text index),
-      // so a second query with `where first_release_date > now` silently returns nothing.
-      const mainRes = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
-      if (!mainRes.ok) {
-        const errText = await mainRes.text();
-        console.error("[igdb] IGDB rejected request:", mainRes.status, errText);
-        return res.status(200).json({ games: [], upcoming: [], _igdbError: `IGDB returned ${mainRes.status}` });
+
+      const runSearch = async (q) => {
+        const r = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${q}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
+        if (!r.ok) {
+          const errText = await r.text();
+          console.error("[igdb] IGDB rejected request:", r.status, errText);
+          igdbError = `IGDB returned ${r.status}`;
+          return null;
+        }
+        return r.json();
+      };
+
+      let igdbError = null;
+      let games = await runSearch(safeQuery);
+      let usedFallbackQuery = null;
+
+      // A demo/prologue rarely has its own separate IGDB listing — it's
+      // a slice of a real game that almost certainly does. Rather than
+      // leave these permanently blank, strip common demo/prologue/beta
+      // wording and search again for the parent game, borrowing its art.
+      // The database row itself is untouched — this only affects what
+      // cover image gets attached to it.
+      if (!games?.length) {
+        const strippedQuery = safeQuery
+          .replace(/[:\-–]\s*(free\s+)?(demo|prologue|prelude|beta|trial|sample)s?\b.*$/i, "")
+          .replace(/\s*\((demo|prologue|prelude|beta|trial)[^)]*\)\s*$/i, "")
+          .replace(/\s+(demo|prologue|prelude|beta|trial)s?\s*$/i, "")
+          .trim();
+        if (strippedQuery && strippedQuery.toLowerCase() !== safeQuery.toLowerCase()) {
+          const fallbackGames = await runSearch(strippedQuery);
+          if (fallbackGames?.length) {
+            games = fallbackGames;
+            usedFallbackQuery = strippedQuery;
+          }
+        }
       }
-      const games = await mainRes.json();
+
+      if (!games) games = [];
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
@@ -126,6 +153,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         games: results.map(g => ({ ...formatGame(g), _upcoming: !!(g.first_release_date && g.first_release_date > nowUnix) })),
         upcoming: [],
+        _usedFallbackQuery: usedFallbackQuery,
+        _igdbError: igdbError,
       });
     }
 
