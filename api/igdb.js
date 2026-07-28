@@ -88,6 +88,12 @@ export default async function handler(req, res) {
       // so a second query with `where first_release_date > now` silently returns nothing.
       const mainRes = await fetch("https://api.igdb.com/v4/games", { method: "POST", headers, body: `search "${safeQuery}"; fields ${FIELDS}, follows, category, rating, rating_count; limit 50;` });
       const games = await mainRes.json();
+      // TEMPORARY DEBUG — remove once "Above Snakes: Prologue" (and similar
+      // silent-miss cases) is diagnosed. Logs the raw, unfiltered IGDB
+      // response so we can see whether IGDB's API genuinely returns zero/
+      // few results for this query, versus returning good results that
+      // something downstream still excludes.
+      console.error("[igdb debug] query:", safeQuery, "| raw result count:", games?.length, "| names:", (games || []).map(g => `${g.name} (cat:${g.category})`));
       const categoryFiltered = (games || []).filter(g => ![1, 2, 6].includes(g.category));
       const qualityFiltered = categoryFiltered.filter(g =>
         g.cover?.image_id || (g.rating_count || 0) > 0 || (g.follows || 0) > 0 || g.category === 0
