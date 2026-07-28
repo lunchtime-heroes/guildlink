@@ -25,6 +25,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [duplicateCandidates, setDuplicateCandidates] = useState([]);
+  const [merging, setMerging] = useState({});
 
   // A cover_url can be present but still broken — Xbox imports sometimes
   // fall back to a temporary, signed Microsoft CDN URL when IGDB matching
@@ -213,8 +214,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       <button onClick={() => setActivePage("feed")} style={{ background: C.accent, border: "none", borderRadius: 3, padding: "10px 24px", color: C.accentText, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Back to Feed</button>
     </div>
   );
-
-  const [merging, setMerging] = useState({});
 
   const mergeGame = async (dup) => {
     if (!dup.cleanId) return;
