@@ -38,6 +38,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [enrichMsg, setEnrichMsg] = useState({});
   const [mostWanted, setMostWanted] = useState([]);
   const [restrictedUsernames, setRestrictedUsernames] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [reportDrafts, setReportDrafts] = useState({}); // { [reportId]: { tier, reasoning } }
+  const [reportSubmitting, setReportSubmitting] = useState({});
   const [newPattern, setNewPattern] = useState("");
   const [addingPattern, setAddingPattern] = useState(false);
 
@@ -137,6 +140,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const { data: ruData } = await supabase.from("restricted_usernames").select("*").order("created_at", { ascending: false });
     if (ruData) setRestrictedUsernames(ruData);
 
+    const { data: reportsData } = await supabase
+      .from("reports")
+      .select("*, reporter:profiles!reports_reporter_id_fkey(username), post:posts(id, content, user_id, profiles!posts_user_id_fkey(username)), comment:comments(id, content, user_id, profiles!comments_user_id_fkey(username))")
+      .order("created_at", { ascending: false });
+    if (reportsData) setReports(reportsData);
+
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: elevData } = await supabase.from("shelf_elevations")
       .select("game_id, to_position, from_position, created_at, games(id, name, cover_url)")
@@ -186,6 +195,52 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       highestOverlap: similarityOverlapRes.data?.length ? Math.max(...(similarityOverlapRes.data || []).map(r => r.overlap_count || 0)) : 0,
     });
     setLoading(false);
+  };
+
+  const handleDismissReport = async (report) => {
+    setReportSubmitting(prev => ({ ...prev, [report.id]: true }));
+    const { error } = await supabase.from("reports")
+      .update({ status: "dismissed", resolved_at: new Date().toISOString() })
+      .eq("id", report.id);
+    if (!error) {
+      // A dismissed report means nothing was actually wrong — the
+      // reporter shouldn't be left with it hidden for themselves just
+      // because they reported it. The confirmed/accepted/disputed
+      // trigger only manages moderator_hidden (visible to everyone);
+      // it doesn't know about this per-viewer hide, so it's cleared
+      // explicitly here.
+      await supabase.from("hidden_content")
+        .delete()
+        .eq("reason", "report_pending")
+        .eq(report.post_id ? "post_id" : "comment_id", report.post_id || report.comment_id)
+        .eq("user_id", report.reporter_id);
+      setReports(prev => prev.map(r => r.id === report.id ? { ...r, status: "dismissed" } : r));
+    }
+    setReportSubmitting(prev => ({ ...prev, [report.id]: false }));
+  };
+
+  const handleConfirmReport = async (report) => {
+    const draft = reportDrafts[report.id];
+    if (!draft?.tier) {
+      alert("Select a tier before confirming.");
+      return;
+    }
+    if (!draft?.reasoning?.trim()) {
+      alert("Add a brief reasoning before confirming — this is shown to the user.");
+      return;
+    }
+    setReportSubmitting(prev => ({ ...prev, [report.id]: true }));
+    const { error } = await supabase.from("reports")
+      .update({ status: "confirmed", tier: draft.tier, admin_reasoning: draft.reasoning.trim() })
+      .eq("id", report.id);
+    if (!error) {
+      // moderator_hidden gets set automatically by the existing
+      // reports_sync_moderator_hidden trigger — nothing else to do
+      // here. The accused user will see the violation notice next time
+      // they open the app, via get_pending_violation.
+      setReports(prev => prev.map(r => r.id === report.id ? { ...r, status: "confirmed", tier: draft.tier, admin_reasoning: draft.reasoning.trim() } : r));
+    }
+    setReportSubmitting(prev => ({ ...prev, [report.id]: false }));
   };
 
   const addRestrictedPattern = async () => {
@@ -328,6 +383,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       { id: "most_wanted", label: "Most Wanted" },
     ],
     moderation: [
+      { id: "reports", label: "Reports" },
       { id: "restricted_usernames", label: "Restricted Names" },
       { id: "data_requests", label: "Data Requests" },
     ],
@@ -576,6 +632,111 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       )}
 
       {/* ── MODERATION ── */}
+
+      {tab === "reports" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>Reports</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>
+              Confirming a report immediately pulls the content from public view and hides it for everyone — not just the reporter. The accused user sees the tier and your reasoning the next time they open the app, with Accept/Challenge. Dismissing restores visibility for the reporter too.
+            </div>
+          </div>
+
+          {reports.filter(r => r.status === "pending").length === 0 ? (
+            <PixelCornerBox size="lg" bg={C.surface} borderColor={C.border} style={{ padding: 30, textAlign: "center" }}>
+              <div style={{ color: C.textDim, fontSize: 14 }}>No pending reports.</div>
+            </PixelCornerBox>
+          ) : (
+            reports.filter(r => r.status === "pending").map(report => {
+              const target = report.post || report.comment;
+              const targetAuthor = target?.profiles?.username || target?.profiles?.[0]?.username || "unknown";
+              const draft = reportDrafts[report.id] || {};
+              const submitting = reportSubmitting[report.id];
+              return (
+                <PixelCornerBox key={report.id} size="lg" bg={C.surface} borderColor={C.border} style={{ padding: 20, marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 13, color: C.textMuted }}>
+                        Reported by <span style={{ color: C.text, fontWeight: 700 }}>@{report.reporter?.username || "unknown"}</span>
+                        {" · "}category: <span style={{ color: C.accentSoft }}>{report.category}</span>
+                        {report.comment_id && <span style={{ color: C.textDim }}> · comment</span>}
+                      </div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(report.created_at).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: C.bg, border: "1px solid " + C.border, borderRadius: 3, padding: 12, marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, color: C.textDim, marginBottom: 4 }}>@{targetAuthor} wrote:</div>
+                    <div style={{ fontSize: 14, color: C.text, fontStyle: "italic" }}>"{target?.content || "(content unavailable)"}"</div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                    {[1, 2, 3, 4].map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setReportDrafts(prev => ({ ...prev, [report.id]: { ...prev[report.id], tier: t } }))}
+                        style={{
+                          background: draft.tier === t ? C.accent : "transparent",
+                          border: "1px solid " + (draft.tier === t ? C.accent : C.border),
+                          borderRadius: 3, padding: "6px 12px",
+                          color: draft.tier === t ? C.accentText : C.textMuted,
+                          fontSize: 12, fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        Tier {t}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    value={draft.reasoning || ""}
+                    onChange={e => setReportDrafts(prev => ({ ...prev, [report.id]: { ...prev[report.id], reasoning: e.target.value } }))}
+                    placeholder="Reasoning shown to the user if confirmed — explain what crossed the line."
+                    style={{ width: "100%", minHeight: 60, background: C.bg, border: "1px solid " + C.border, borderRadius: 3, padding: 10, color: C.text, fontSize: 13, fontFamily: "inherit", marginBottom: 12, resize: "vertical" }}
+                  />
+
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      onClick={() => handleConfirmReport(report)}
+                      disabled={submitting}
+                      style={{ background: C.red, border: "none", borderRadius: 3, padding: "8px 16px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1 }}
+                    >
+                      {submitting ? "…" : "Confirm Violation"}
+                    </button>
+                    <button
+                      onClick={() => handleDismissReport(report)}
+                      disabled={submitting}
+                      style={{ background: "transparent", border: "1px solid " + C.border, borderRadius: 3, padding: "8px 16px", color: C.textMuted, fontSize: 13, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1 }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </PixelCornerBox>
+              );
+            })
+          )}
+
+          {reports.filter(r => r.status !== "pending").length > 0 && (
+            <div style={{ marginTop: 30 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: C.textDim, marginBottom: 10 }}>RESOLVED ({reports.filter(r => r.status !== "pending").length})</div>
+              {reports.filter(r => r.status !== "pending").slice(0, 20).map(report => (
+                <div key={report.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid " + C.border, fontSize: 12 }}>
+                  <div style={{ color: C.textMuted }}>
+                    @{report.reporter?.username || "unknown"} reported {report.comment_id ? "a comment" : "a post"}
+                    {report.tier && <span style={{ color: C.accentSoft }}> · Tier {report.tier}</span>}
+                  </div>
+                  <div style={{
+                    color: report.status === "dismissed" ? C.textDim : report.status === "disputed" ? C.gold : C.green,
+                    fontWeight: 700, textTransform: "capitalize",
+                  }}>
+                    {report.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === "restricted_usernames" && (
         <div>
