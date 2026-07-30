@@ -430,7 +430,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
         .eq("id", targetPostId)
         .single();
-      if (data) {
+      if (data && !data.moderator_hidden) {
         const mapped = { ...data, comment_count: data.comments?.length || 0 };
         setLivePosts(prev => [mapped, ...prev.filter(p => p.id !== mapped.id)]);
       }
@@ -593,6 +593,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         .in("user_id", followedIds)
         .is("npc_id", null)
         .is("session_id", null)
+        .eq("moderator_hidden", false)
         .order("created_at", { ascending: false })
         .limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", user.id),
@@ -665,6 +666,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       supabase.from("posts")
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
         .is("session_id", null)
+        .eq("moderator_hidden", false)
         .order("created_at", { ascending: false })
         .range(nextStart, nextStart + 19),
       authUser
@@ -796,6 +798,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .from("posts")
       .select("id, content, created_at, game_tag, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("post_type", "question")
+      .eq("moderator_hidden", false)
       .not("game_tag", "is", null)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -829,11 +832,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         supabase.from("posts")
           .select("*, npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .not("npc_id", "is", null)
+          .eq("moderator_hidden", false)
           .order("likes", { ascending: false })
           .limit(2),
         supabase.from("posts")
           .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .is("npc_id", null)
+          .eq("moderator_hidden", false)
           .order("likes", { ascending: false })
           .limit(30),
       ]);
@@ -864,6 +869,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         supabase.from("posts")
           .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .is("session_id", null)
+          .eq("moderator_hidden", false)
           .order("created_at", { ascending: false })
           .range(0, 19),
         authUser

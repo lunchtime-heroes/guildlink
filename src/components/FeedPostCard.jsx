@@ -238,6 +238,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
       .from("comments")
       .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", post.id)
+      .eq("moderator_hidden", false)
       .order("created_at", { ascending: true });
     if (!error && data) {
       const npcIds = [...new Set(data.filter(c => c.npc_id).map(c => c.npc_id))];
