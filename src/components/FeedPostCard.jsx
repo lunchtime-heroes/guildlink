@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { C, NPCS } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent } from "../utils.js";
+import ModerationMenu from "./ModerationMenu.jsx";
 import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { useGamesInCommon } from "../hooks/useGamesInCommon.js";
@@ -50,7 +51,7 @@ function renderPostContent(content, taggedUsers, setCurrentPlayer, setCurrentNPC
   );
 }
 
-function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit, autoExpandComments }) {
+function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentNPC, setCurrentPlayer, currentUser, isMobile, isGuest, onSignIn, onQuestTrigger, readOnly, onCommentReply, onExit, autoExpandComments, onUserBlocked }) {
   const [showComments, setShowComments] = useState(!!autoExpandComments);
 
   // useState's initializer only runs once on mount — if this post was already
@@ -234,12 +235,19 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const loadComments = async () => {
     if (!post.id || !post.id.includes('-')) return;
-    const { data, error } = await supabase
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const [blockedIds, hiddenIds] = authUser
+      ? await Promise.all([getBlockedUserIds(authUser.id), getHiddenContentIds(authUser.id, "comment")])
+      : [new Set(), new Set()];
+    let commentQuery = supabase
       .from("comments")
       .select("*, profiles(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
       .eq("post_id", post.id)
       .eq("moderator_hidden", false)
       .order("created_at", { ascending: true });
+    if (blockedIds.size > 0) commentQuery = commentQuery.not("user_id", "in", `(${[...blockedIds].join(",")})`);
+    if (hiddenIds.size > 0) commentQuery = commentQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
+    const { data, error } = await commentQuery;
     if (!error && data) {
       const npcIds = [...new Set(data.filter(c => c.npc_id).map(c => c.npc_id))];
       let npcMap = {};
@@ -461,7 +469,7 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
     setSubmittingComment(false);
   };
 
-  if (localPost.deleted) return null;
+  if (localPost.deleted || localPost.hidden) return null;
 return (
     <PixelCornerBox
       size="lg"
@@ -527,6 +535,19 @@ return (
                     <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: "#ef4444", fontSize: 13, cursor: "pointer", textAlign: "left" }}>Delete</button>
                   </div>
                 )}
+              </div>
+            )}
+            {!localPost.user.isNPC && currentUser && localPost.user_id !== currentUser.id && (
+              <div style={{ marginLeft: "auto" }}>
+                <ModerationMenu
+                  targetType="post"
+                  targetId={localPost.id}
+                  targetUserId={localPost.user_id}
+                  targetUsername={localPost.user?.name}
+                  currentUserId={currentUser.id}
+                  onHidden={() => setLocalPost(p => ({ ...p, hidden: true }))}
+                  onBlocked={(blockedUserId) => { setLocalPost(p => ({ ...p, hidden: true })); onUserBlocked?.(blockedUserId); }}
+                />
               </div>
             )}
           </div>
@@ -653,6 +674,20 @@ return (
                         style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 12, padding: 0 }}>
                         Delete
                       </button>
+                    )}
+                    {currentUser && comment.user_id !== currentUser.id && !comment.npc_id && (
+                      <ModerationMenu
+                        targetType="comment"
+                        targetId={comment.id}
+                        targetUserId={comment.user_id}
+                        targetUsername={authorName}
+                        currentUserId={currentUser.id}
+                        onHidden={() => setLiveComments(prev => (prev || []).filter(c => c.id !== comment.id))}
+                        onBlocked={(blockedUserId) => {
+                          setLiveComments(prev => (prev || []).filter(c => c.id !== comment.id));
+                          onUserBlocked?.(blockedUserId);
+                        }}
+                      />
                     )}
                   </div>
                   {/* Inline edit form */}

@@ -6,6 +6,7 @@ import { PixelButton } from "../components/PixelButton.jsx";
 import { GameTag } from "../components/GameTag.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
 import supabase from "../supabase.js";
+import { getBlockedUserIds, getHiddenContentIds } from "../moderationUtils.js";
 import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard, renderPostContent } from "../components/FeedPostCard.jsx";
@@ -194,6 +195,16 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [following, setFollowing] = useState([]);
   const [feedTab, setFeedTab] = useState("forYou");
   const [followingPosts, setFollowingPosts] = useState([]);
+
+  // Blocking removes the one post/comment where it was triggered
+  // (handled locally in FeedPostCard), but a blocked user could have
+  // other posts already loaded elsewhere in either list — this catches
+  // those too, in both tabs at once, rather than leaving them visible
+  // until the next full refetch.
+  const handleUserBlocked = (blockedUserId) => {
+    setLivePosts(prev => prev.filter(p => p.user_id !== blockedUserId));
+    setFollowingPosts(prev => prev.filter(p => p.user_id !== blockedUserId));
+  };
   const [playingGames, setPlayingGames] = useState([]);
   const [followedGames, setFollowedGames] = useState([]);
 
@@ -586,16 +597,19 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .not("followed_user_id", "is", null);
     if (!followData || followData.length === 0) { setFollowingPosts([]); return; }
     const followedIds = followData.map(f => f.followed_user_id);
+    const hiddenIds = await getHiddenContentIds(user.id, "post");
+    let followingQuery = supabase
+      .from("posts")
+      .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), comments(id)")
+      .in("user_id", followedIds)
+      .is("npc_id", null)
+      .is("session_id", null)
+      .eq("moderator_hidden", false)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (hiddenIds.size > 0) followingQuery = followingQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
     const [{ data }, likesResult] = await Promise.all([
-      supabase
-        .from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), comments(id)")
-        .in("user_id", followedIds)
-        .is("npc_id", null)
-        .is("session_id", null)
-        .eq("moderator_hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(30),
+      followingQuery,
       supabase.from("post_likes").select("post_id").eq("user_id", user.id),
     ]);
     const likedIds = new Set((likesResult.data || []).map(l => l.post_id));
@@ -662,13 +676,19 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     setLoadingMore(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const nextStart = livePosts.length;
+    const [blockedIds, hiddenIds] = authUser
+      ? await Promise.all([getBlockedUserIds(authUser.id), getHiddenContentIds(authUser.id, "post")])
+      : [new Set(), new Set()];
+    let moreQuery = supabase.from("posts")
+      .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+      .is("session_id", null)
+      .eq("moderator_hidden", false)
+      .order("created_at", { ascending: false })
+      .range(nextStart, nextStart + 19);
+    if (blockedIds.size > 0) moreQuery = moreQuery.not("user_id", "in", `(${[...blockedIds].join(",")})`);
+    if (hiddenIds.size > 0) moreQuery = moreQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
     const [postsResult, likesResult] = await Promise.all([
-      supabase.from("posts")
-        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
-        .is("session_id", null)
-        .eq("moderator_hidden", false)
-        .order("created_at", { ascending: false })
-        .range(nextStart, nextStart + 19),
+      moreQuery,
       authUser
         ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
         : Promise.resolve({ data: [] }),
@@ -865,13 +885,19 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setFeedLoading(false);
     } else {
       const { data: { user: authUser } } = await supabase.auth.getUser();
+      const [initBlockedIds, initHiddenIds] = authUser
+        ? await Promise.all([getBlockedUserIds(authUser.id), getHiddenContentIds(authUser.id, "post")])
+        : [new Set(), new Set()];
+      let initQuery = supabase.from("posts")
+        .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
+        .is("session_id", null)
+        .eq("moderator_hidden", false)
+        .order("created_at", { ascending: false })
+        .range(0, 19);
+      if (initBlockedIds.size > 0) initQuery = initQuery.not("user_id", "in", `(${[...initBlockedIds].join(",")})`);
+      if (initHiddenIds.size > 0) initQuery = initQuery.not("id", "in", `(${[...initHiddenIds].join(",")})`);
       const [postsResult, likesResult, tipsResult] = await Promise.all([
-        supabase.from("posts")
-          .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
-          .is("session_id", null)
-          .eq("moderator_hidden", false)
-          .order("created_at", { ascending: false })
-          .range(0, 19),
+        initQuery,
         authUser
           ? supabase.from("post_likes").select("post_id").eq("user_id", authUser.id).then(r => r.error ? { data: [] } : r)
           : Promise.resolve({ data: [] }),
@@ -1266,7 +1292,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 }} setActivePage={setActivePage} setCurrentGame={setCurrentGame}
                   setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer}
                   isMobile={isMobile} currentUser={user} isGuest={isGuest}
-                  onSignIn={onSignIn} onExit={onExit}
+                  onSignIn={onSignIn} onExit={onExit} onUserBlocked={handleUserBlocked}
                   autoExpandComments={post.id === targetPostId} />
               </div>
             );
@@ -1480,7 +1506,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                 comment_count: post.comment_count || 0,
                 commentList: [],
                 link_url: post.link_url || null,
-              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} />
+              }} setActivePage={setActivePage} setCurrentGame={setCurrentGame} setCurrentNPC={setCurrentNPC} setCurrentPlayer={setCurrentPlayer} isMobile={isMobile} currentUser={user} isGuest={isGuest} onSignIn={onSignIn} onExit={onExit} onUserBlocked={handleUserBlocked} />
             );
           })
         )}
