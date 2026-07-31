@@ -523,15 +523,15 @@ return (
                 </span>
               );
             })()}
-            {/* Post menu */}
-            {currentUser && (localPost.user_id === currentUser.id || currentUser.is_admin) && (
+            {/* Post menu — own posts only. Admin handling other people's
+                content goes through Report → Confirm like everyone else,
+                not a bypass that skips tier/reasoning/notice entirely. */}
+            {currentUser && localPost.user_id === currentUser.id && (
               <div style={{ marginLeft: "auto", position: "relative" }}>
                 <button onClick={() => setShowPostMenu(v => !v)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 16, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>⋯</button>
                 {showPostMenu && (
                   <div style={{ position: "absolute", right: 0, top: "100%", background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden", zIndex: 100, minWidth: 120, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}>
-                    {localPost.user_id === currentUser.id && (
-                      <button onClick={() => { setEditing(true); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}>Edit</button>
-                    )}
+                    <button onClick={() => { setEditing(true); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: C.text, fontSize: 13, cursor: "pointer", textAlign: "left" }}>Edit</button>
                     <button onClick={() => { deletePost(); setShowPostMenu(false); }} style={{ display: "block", width: "100%", background: "none", border: "none", padding: "10px 16px", color: "#ef4444", fontSize: 13, cursor: "pointer", textAlign: "left" }}>Delete</button>
                   </div>
                 )}
@@ -669,7 +669,7 @@ return (
                         Edit
                       </button>
                     )}
-                    {currentUser && (comment.user_id === currentUser.id || currentUser.is_admin) && (
+                    {currentUser && comment.user_id === currentUser.id && (
                       <button onClick={() => deleteComment(comment.id)}
                         style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 12, padding: 0 }}>
                         Delete
