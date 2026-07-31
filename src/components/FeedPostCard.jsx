@@ -236,9 +236,8 @@ function FeedPostCard({ post, onLike, setActivePage, setCurrentGame, setCurrentN
 
   const loadComments = async () => {
     if (!post.id || !post.id.includes('-')) return;
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    const [blockedIds, hiddenIds] = authUser
-      ? await Promise.all([getBlockedUserIds(authUser.id), getHiddenContentIds(authUser.id, "comment")])
+    const [blockedIds, hiddenIds] = currentUser
+      ? await Promise.all([getBlockedUserIds(currentUser.id), getHiddenContentIds(currentUser.id, "comment")])
       : [new Set(), new Set()];
     let commentQuery = supabase
       .from("comments")
