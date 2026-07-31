@@ -4,6 +4,7 @@ import { C, NPCS } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo, logChartEvent } from "../utils.js";
 import ModerationMenu from "./ModerationMenu.jsx";
+import { getBlockedUserIds, getHiddenContentIds } from "../moderationUtils.js";
 import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { useGamesInCommon } from "../hooks/useGamesInCommon.js";
