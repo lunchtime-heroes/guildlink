@@ -441,10 +441,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         .select("*, profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config), npcs(name, handle, avatar_initials, universe, role), comments(id)")
         .eq("id", targetPostId)
         .single();
-      if (data && !data.moderator_hidden) {
-        const mapped = { ...data, comment_count: data.comments?.length || 0 };
-        setLivePosts(prev => [mapped, ...prev.filter(p => p.id !== mapped.id)]);
+      if (!data || data.moderator_hidden) return;
+      if (user) {
+        const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenContentIds(user.id, "post")]);
+        if (blockedIds.has(data.user_id) || hiddenIds.has(data.id)) return;
       }
+      const mapped = { ...data, comment_count: data.comments?.length || 0 };
+      setLivePosts(prev => [mapped, ...prev.filter(p => p.id !== mapped.id)]);
     };
     fetchTargetPost();
   }, [targetPostId, livePosts.length, isGuest]);
@@ -814,7 +817,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       });
     }
 
-    const { data: recentQuestions } = await supabase
+    let qaQuery = supabase
       .from("posts")
       .select("id, content, created_at, game_tag, user_id, profiles!posts_user_id_fkey(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("post_type", "question")
@@ -823,6 +826,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(6);
+    if (currentUser?.id) {
+      const [qaBlockedIds, qaHiddenIds] = await Promise.all([getBlockedUserIds(currentUser.id), getHiddenContentIds(currentUser.id, "post")]);
+      if (qaBlockedIds.size > 0) qaQuery = qaQuery.not("user_id", "in", `(${[...qaBlockedIds].join(",")})`);
+      if (qaHiddenIds.size > 0) qaQuery = qaQuery.not("id", "in", `(${[...qaHiddenIds].join(",")})`);
+    }
+    const { data: recentQuestions } = await qaQuery;
     if (recentQuestions?.length) {
       const gameIds = [...new Set(recentQuestions.map(q => q.game_tag).filter(Boolean))];
       const { data: qaGames } = await supabase.from("games").select("id, name, cover_url").in("id", gameIds);
