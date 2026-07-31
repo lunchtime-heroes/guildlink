@@ -853,13 +853,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
           .select("*, npcs(name, handle, avatar_initials, universe, role), comments(id)")
           .not("npc_id", "is", null)
           .eq("moderator_hidden", false)
-          .order("likes", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(2),
         supabase.from("posts")
           .select("id, content, likes, created_at, game_tag, user_id, npc_id, tagged_users, link_url, comments(id), profiles!posts_user_id_fkey(username, handle, avatar_initials, is_founding, active_ring, avatar_config)")
           .is("npc_id", null)
           .eq("moderator_hidden", false)
-          .order("likes", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(30),
       ]);
 
