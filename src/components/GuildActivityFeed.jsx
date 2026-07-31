@@ -3,8 +3,9 @@ import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "./Avatar.jsx";
+import { getBlockedUserIds, getHiddenContentIds } from "../moderationUtils.js";
 
-function GuildActivityFeed({ guildId, memberIds }) {
+function GuildActivityFeed({ guildId, memberIds, currentUser }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,15 +13,22 @@ function GuildActivityFeed({ guildId, memberIds }) {
     if (!memberIds || memberIds.length === 0) { return; } // wait — don't set loading:false yet
     const load = async () => {
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [blockedIds, hiddenIds] = currentUser?.id
+        ? await Promise.all([getBlockedUserIds(currentUser.id), getHiddenContentIds(currentUser.id, "post")])
+        : [new Set(), new Set()];
+      let postsQuery = supabase
+        .from("posts")
+        .select("id, content, created_at, user_id, game_tag")
+        .in("user_id", memberIds)
+        .or("post_type.eq.post,post_type.is.null")
+        .eq("moderator_hidden", false)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (blockedIds.size > 0) postsQuery = postsQuery.not("user_id", "in", `(${[...blockedIds].join(",")})`);
+      if (hiddenIds.size > 0) postsQuery = postsQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
       const [postsRes, shelfRes, profilesRes] = await Promise.all([
-        supabase
-          .from("posts")
-          .select("id, content, created_at, user_id, game_tag")
-          .in("user_id", memberIds)
-          .or("post_type.eq.post,post_type.is.null")
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .limit(30),
+        postsQuery,
         supabase
           .from("user_games_history")
           .select("id, to_status, changed_at, user_id, game_id")
@@ -85,7 +93,7 @@ function GuildActivityFeed({ guildId, memberIds }) {
       setLoading(false);
     };
     load();
-  }, [guildId, (memberIds || []).join(",")]);
+  }, [guildId, (memberIds || []).join(","), currentUser?.id]);
 
   if (loading) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>Loading activity\u2026</div>;
   if (items.length === 0) return <div style={{ color: C.textDim, fontSize: 13, padding: "20px 0" }}>No recent activity from guild members.</div>;

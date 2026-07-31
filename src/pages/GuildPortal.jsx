@@ -7,6 +7,8 @@ import SessionCard from "../components/SessionCard.jsx";
 import GuildActivityFeed from "../components/GuildActivityFeed.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
+import ModerationMenu from "../components/ModerationMenu.jsx";
+import { getBlockedUserIds, getHiddenContentIds } from "../moderationUtils.js";
 
 function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [guild, setGuild] = useState(null);
@@ -149,14 +151,32 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
     }
   };
 
+  const handleGuildUserBlocked = (blockedUserId) => {
+    setPosts(prev => prev.filter(p => p.user_id !== blockedUserId));
+    setReplies(prev => {
+      const next = {};
+      Object.keys(prev).forEach(postId => {
+        next[postId] = (prev[postId] || []).filter(r => r.user_id !== blockedUserId);
+      });
+      return next;
+    });
+  };
+
   const loadThread = async () => {
     if (!guildId) return;
-    const { data } = await supabase
+    let threadQuery = supabase
       .from("guild_posts")
       .select("id, content, created_at, user_id, parent_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("guild_id", guildId)
       .is("parent_id", null)
+      .eq("moderator_hidden", false)
       .order("created_at", { ascending: false });
+    if (currentUser?.id) {
+      const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(currentUser.id), getHiddenContentIds(currentUser.id, "guild_post")]);
+      if (blockedIds.size > 0) threadQuery = threadQuery.not("user_id", "in", `(${[...blockedIds].join(",")})`);
+      if (hiddenIds.size > 0) threadQuery = threadQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
+    }
+    const { data } = await threadQuery;
     setPosts(data || []);
   };
 
@@ -352,12 +372,19 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
   };
 
   const loadReplies = async (postId) => {
-    const { data } = await supabase
+    let repliesQuery = supabase
       .from("guild_posts")
       .select("id, content, created_at, user_id, profiles(id, username, avatar_initials, avatar_config, active_ring, is_founding)")
       .eq("guild_id", guildId)
       .eq("parent_id", postId)
+      .eq("moderator_hidden", false)
       .order("created_at", { ascending: true });
+    if (currentUser?.id) {
+      const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(currentUser.id), getHiddenContentIds(currentUser.id, "guild_post")]);
+      if (blockedIds.size > 0) repliesQuery = repliesQuery.not("user_id", "in", `(${[...blockedIds].join(",")})`);
+      if (hiddenIds.size > 0) repliesQuery = repliesQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
+    }
+    const { data } = await repliesQuery;
     setReplies(prev => ({ ...prev, [postId]: data || [] }));
   };
 
@@ -695,6 +722,19 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                     <span onClick={() => { if (p?.id) { setCurrentPlayer(p.id); setActivePage("player"); } }} style={{ fontWeight: 700, color: C.text, fontSize: 14, cursor: p?.id ? "pointer" : "default" }}>{p?.username || "Member"}</span>
                     <span style={{ color: C.textDim, fontSize: 12 }}>{timeAgo(post.created_at)}</span>
+                    {currentUser && post.user_id !== currentUser.id && (
+                      <div style={{ marginLeft: "auto" }}>
+                        <ModerationMenu
+                          targetType="guild_post"
+                          targetId={post.id}
+                          targetUserId={post.user_id}
+                          targetUsername={p?.username}
+                          currentUserId={currentUser.id}
+                          onHidden={() => setPosts(prev => prev.filter(x => x.id !== post.id))}
+                          onBlocked={handleGuildUserBlocked}
+                        />
+                      </div>
+                    )}
                   </div>
                   <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 8px", whiteSpace: "pre-wrap" }}>{post.content}</p>
                   <button onClick={() => {
@@ -717,6 +757,19 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
                           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
                             <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{rp?.username || "Member"}</span>
                             <span style={{ color: C.textDim, fontSize: 11 }}>{timeAgo(reply.created_at)}</span>
+                            {currentUser && reply.user_id !== currentUser.id && (
+                              <div style={{ marginLeft: "auto" }}>
+                                <ModerationMenu
+                                  targetType="guild_post"
+                                  targetId={reply.id}
+                                  targetUserId={reply.user_id}
+                                  targetUsername={rp?.username}
+                                  currentUserId={currentUser.id}
+                                  onHidden={() => setReplies(prev => ({ ...prev, [post.id]: (prev[post.id] || []).filter(x => x.id !== reply.id) }))}
+                                  onBlocked={handleGuildUserBlocked}
+                                />
+                              </div>
+                            )}
                           </div>
                           <p style={{ color: C.text, fontSize: 13, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{reply.content}</p>
                         </div>
@@ -747,7 +800,7 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
 
       <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Activity</div>
-        <GuildActivityFeed guildId={guildId} memberIds={memberIds} />
+        <GuildActivityFeed guildId={guildId} memberIds={memberIds} currentUser={currentUser} />
       </PixelCornerBox>
     </div>
   );
