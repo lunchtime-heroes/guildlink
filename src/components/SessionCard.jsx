@@ -5,6 +5,8 @@ import supabase from "../supabase.js";
 import { Avatar } from "./Avatar.jsx";
 import { PixelCornerBox } from "./PixelCornerBox.jsx";
 import { PixelButton } from "./PixelButton.jsx";
+import ModerationMenu from "./ModerationMenu.jsx";
+import { getBlockedUserIds, getHiddenContentIds } from "../moderationUtils.js";
 
 function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, isMobile, guildName, currentUser: currentUserProfile }) {
   const now = new Date();
@@ -37,13 +39,24 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
     }
   }, [messages]);
 
+  const handleSessionUserBlocked = (blockedUserId) => {
+    setMessages(prev => prev.filter(m => m.user_id !== blockedUserId));
+  };
+
   const loadThread = async () => {
     setLoadingThread(true);
-    const { data: msgs } = await supabase
+    const [blockedIds, hiddenIds] = currentUserId
+      ? await Promise.all([getBlockedUserIds(currentUserId), getHiddenContentIds(currentUserId, "session_message")])
+      : [new Set(), new Set()];
+    let msgQuery = supabase
       .from("session_messages")
       .select("id, content, created_at, user_id")
       .eq("session_id", session.id)
+      .eq("moderator_hidden", false)
       .order("created_at", { ascending: true });
+    if (blockedIds.size > 0) msgQuery = msgQuery.not("user_id", "in", `(${[...blockedIds].join(",")})`);
+    if (hiddenIds.size > 0) msgQuery = msgQuery.not("id", "in", `(${[...hiddenIds].join(",")})`);
+    const { data: msgs } = await msgQuery;
     const msgList = msgs || [];
     setMessages(msgList);
 
@@ -463,6 +476,17 @@ function SessionCard({ session, currentUserId, rsvps, onRsvp, onDelete, onEdit, 
                             <span onClick={() => deleteMessage(msg.id)}
                               style={{ color: "#ef4444", fontSize: 11, cursor: "pointer" }}>Delete</span>
                           </div>
+                        )}
+                        {!isOwn && currentUserId && (
+                          <ModerationMenu
+                            targetType="session_message"
+                            targetId={msg.id}
+                            targetUserId={msg.user_id}
+                            targetUsername={displayName}
+                            currentUserId={currentUserId}
+                            onHidden={() => setMessages(prev => prev.filter(m => m.id !== msg.id))}
+                            onBlocked={handleSessionUserBlocked}
+                          />
                         )}
                       </div>
                       {isEditing ? (
