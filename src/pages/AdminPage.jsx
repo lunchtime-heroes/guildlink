@@ -21,6 +21,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [authorized, setAuthorized] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [feedbackData, setFeedbackData] = useState([]);
+  const [appBetaFeedback, setAppBetaFeedback] = useState([]);
   const [dataRequests, setDataRequests] = useState([]);
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
@@ -133,6 +134,9 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
     const { data: fbData } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
     if (fbData) setFeedbackData(fbData);
+
+    const { data: abfData } = await supabase.from("app_beta_feedback").select("*").order("created_at", { ascending: false });
+    if (abfData) setAppBetaFeedback(abfData);
 
     const { data: drData } = await supabase.from("data_requests").select("*").order("created_at", { ascending: false });
     if (drData) setDataRequests(drData);
@@ -259,6 +263,11 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     setRestrictedUsernames(prev => prev.filter(r => r.id !== id));
   };
 
+  const removeAppBetaFeedback = async (id) => {
+    await supabase.from("app_beta_feedback").delete().eq("id", id);
+    setAppBetaFeedback(prev => prev.filter(f => f.id !== id));
+  };
+
   if (loading) return <div style={{ maxWidth: 900, margin: "0 auto", padding: "100px 20px", textAlign: "center", color: C.textMuted }}>Loading admin data...</div>;
 
   if (!authorized) return (
@@ -379,6 +388,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       { id: "overview", label: "Overview" },
       { id: "analytics", label: "Analytics" },
       { id: "feedback", label: "Feedback" },
+      { id: "app_beta_feedback", label: "App Beta Feedback" },
       { id: "charts", label: "Chart Activity" },
       { id: "most_wanted", label: "Most Wanted" },
     ],
@@ -567,6 +577,56 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                   {f.liked && <div style={{ marginBottom: 8 }}><span style={{ color: C.online, fontSize: 11, fontWeight: 700 }}>LIKED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.liked}</span></div>}
                   {f.confused && <div style={{ marginBottom: 8 }}><span style={{ color: C.gold, fontSize: 11, fontWeight: 700 }}>CONFUSED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.confused}</span></div>}
                   {f.missing && <div><span style={{ color: C.accent, fontSize: 11, fontWeight: 700 }}>MISSING · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.missing}</span></div>}
+                </PixelCornerBox>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      {tab === "app_beta_feedback" && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 4 }}>App Beta Feedback</div>
+            <div style={{ color: C.textMuted, fontSize: 13 }}>
+              Separate from web's feedback stream above — its own table, own 1-5 star scale, own questions. Deletable: once a submission's been read and acted on, there's no reason to keep it around cluttering this view.
+            </div>
+          </div>
+          {appBetaFeedback.length === 0 ? (
+            <div style={{ color: C.textMuted, fontSize: 13, textAlign: "center", padding: 40 }}>No app beta feedback submitted yet.</div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+                {[
+                  { label: "Total Responses", value: appBetaFeedback.length, color: C.accent },
+                  { label: "Avg Stars", value: (appBetaFeedback.reduce((s,f) => s + (f.star_rating||0), 0) / appBetaFeedback.length).toFixed(1) + "/5", color: C.gold },
+                  { label: "4-5 ★", value: appBetaFeedback.filter(f => f.star_rating >= 4).length, color: C.online },
+                  { label: "1-2 ★", value: appBetaFeedback.filter(f => f.star_rating <= 2).length, color: C.red },
+                ].map(s => (
+                  <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 16, textAlign: "center" }}>
+                    <div style={{ fontWeight: 800, fontSize: 24, color: s.color }}>{s.value}</div>
+                    <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>{s.label}</div>
+                  </PixelCornerBox>
+                ))}
+              </div>
+              {appBetaFeedback.map(f => (
+                <PixelCornerBox key={f.id} size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{f.username || "Anonymous"}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ color: C.gold, fontSize: 14, letterSpacing: 1 }}>{"★".repeat(f.star_rating)}{"☆".repeat(5 - f.star_rating)}</div>
+                      <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(f.created_at).toLocaleDateString()}</div>
+                      <button
+                        onClick={() => removeAppBetaFeedback(f.id)}
+                        style={{ background: "#c0392b22", border: "1px solid #c0392b44", borderRadius: 3, padding: "4px 10px", color: "#c0392b", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  {f.discovery_helped && <div style={{ marginBottom: 8 }}><span style={{ color: C.online, fontSize: 11, fontWeight: 700 }}>HELPED DISCOVERY · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.discovery_helped}</span></div>}
+                  {f.discovery_hurt && <div style={{ marginBottom: 8 }}><span style={{ color: C.red, fontSize: 11, fontWeight: 700 }}>HURT DISCOVERY · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.discovery_hurt}</span></div>}
+                  {f.wishlist && <div style={{ marginBottom: 8 }}><span style={{ color: C.accent, fontSize: 11, fontWeight: 700 }}>WISHLIST · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.wishlist}</span></div>}
+                  {f.broken_expectations && <div><span style={{ color: C.gold, fontSize: 11, fontWeight: 700 }}>DIDN'T WORK AS EXPECTED · </span><span style={{ color: C.textMuted, fontSize: 13 }}>{f.broken_expectations}</span></div>}
                 </PixelCornerBox>
               ))}
             </>

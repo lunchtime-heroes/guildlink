@@ -42,7 +42,7 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
       <div style={{ marginBottom: 48 }}>
         <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>The GuildLink Culture Agreement</div>
         <h1 style={{ margin: "0 0 16px", fontWeight: 900, fontSize: isMobile ? 28 : 36, color: C.text, lineHeight: 1.2 }}>A place worth protecting.</h1>
-        <div style={{ color: C.textDim, fontSize: 12 }}>Last updated: April 2026</div>
+        <div style={{ color: C.textDim, fontSize: 12 }}>Last updated: August 2026</div>
       </div>
 
       {/* Preamble */}
@@ -115,30 +115,31 @@ function CultureAgreementPage({ isMobile, setActivePage }) {
       {/* Blips */}
       <Section title="Blips">
         <div style={{ marginBottom: 20 }}>
-          When content violates this agreement, the author receives a blip. Blips are not permanent marks — they're signals that something went wrong and an opportunity to course-correct. Three blips, however, result in a permanent ban.
+          When content violates this agreement, the author receives a blip. Blips aren't a strike count — they're points, weighted by severity, that build toward real consequences. A single serious violation carries more weight than a handful of small ones, and the reverse is also true: small missteps don't add up to the same outcome as one severe one.
         </div>
         <div style={{ marginBottom: 20 }}>
-          Blips come with a temporary restriction on posting. The duration scales with severity:
+          Here's what your accumulated score means:
         </div>
-        <Blip level="Minor" hours="24-hour restriction" description="First-time or low-severity violations. A nudge in the right direction." />
-        <Blip level="Moderate" hours="3-day restriction" description="Repeated minor violations or a single more serious offense." />
-        <Blip level="Serious" hours="7-day restriction" description="Significant violations including harassment or hate speech." />
-        <Blip level="Severe" hours="30-day restriction" description="Reserved for the most serious violations short of a permanent ban." />
+        <Blip level="1-2" hours="Warning" description="Recorded and visible to you, no restriction on posting." />
+        <Blip level="3-5" hours="24-hour restriction" description="A short pause to reset." />
+        <Blip level="6-9" hours="3-day restriction" description="Repeated or more serious violations." />
+        <Blip level="10-14" hours="7-day restriction" description="A pattern that needs real course-correction." />
+        <Blip level="15-19" hours="30-day restriction" description="Reserved for serious or repeated severe violations." />
+        <Blip level="20+" hours="Permanent ban" description="This isn't about punishment — it's about protecting a community people have invested in." />
         <div style={{ marginTop: 20 }}>
-          <Highlight>Three blips at any level result in a permanent ban.</Highlight> This isn't about punishment — it's about protecting a community that people have invested in. Repeated violations signal an unwillingness to be part of what we're building here.
+          <Highlight>Blips fade over time.</Highlight> A blip's points stay active for a while after any restriction it triggered ends, then decay off your live score. The record itself is never erased, but a mistake from months ago doesn't follow you forever the way it did the day it happened. Your current score is always visible to you, and only you, in Settings.
         </div>
       </Section>
 
       {/* Appeals */}
       <Section title="Appeals and the path back">
-        Every blip can be appealed. An appeal isn't a chance to argue that the blip was wrong — it's a chance to acknowledge what happened, recommit to the culture agreement, and get back to what you came here for.
+        Every confirmed violation is reviewed by a real person before it reaches you — never an automatic action based on report volume alone. When it does reach you, you'll see exactly what the violation was, which tier it fell under, and the reasoning behind it.
         <div style={{ marginTop: 16 }}>
-          A successful appeal requires three things:
+          From there, you have two options:
         </div>
-        <div style={{ marginTop: 12, marginBottom: 8 }}>→ <Highlight>Acknowledgment.</Highlight> Recognition of what the violation was and why it didn't belong here.</div>
-        <div style={{ marginBottom: 8 }}>→ <Highlight>Recommitment.</Highlight> A genuine statement that you understand and agree to the culture agreement going forward.</div>
-        <div style={{ marginBottom: 16 }}>→ <Highlight>Patience.</Highlight> The posting restriction runs its course. An appeal doesn't shorten the restriction — it clears the path forward.</div>
-        Appeals are reviewed by GuildLink's moderation team. We will respond within a reasonable timeframe. We want people to stay.
+        <div style={{ marginTop: 12, marginBottom: 8 }}>→ <Highlight>Accept.</Highlight> The consequence takes effect right away.</div>
+        <div style={{ marginBottom: 16 }}>→ <Highlight>Challenge.</Highlight> If you believe it was a mistake, you can dispute it directly with our moderation team. The content stays down while it's under review — a challenge argues the decision, it doesn't pause it — and we'll follow up with a final call once we've looked into it.</div>
+        We want people to stay. If you're unsure whether something crossed a line, the test is simple: has the focus shifted from the game to the person? That question resolves more than any rule in this document.
       </Section>
 
       {/* Reporting */}
