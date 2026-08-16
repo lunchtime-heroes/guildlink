@@ -5,7 +5,7 @@ import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
 
-function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn }) {
+function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -50,11 +50,13 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
         await supabase.from("user_private").insert({
           id: data.user.id,
           contact_email: contactEmail.trim(),
+          patch_notes_opt_in: patchNotesOptIn,
         });
-        // If user opted in to Patch Notes, notify parent to add to Resend audience
-        if (patchNotesOptIn) {
-          onSignupOptIn?.(contactEmail.trim());
-        }
+        // Resend sync now happens server-side via a trigger on this
+        // insert (see migration-resend-optin.sql) — reliable regardless
+        // of whether this tab stays open, unlike the old client-side
+        // onSignupOptIn callback (which was never actually wired up to
+        // anything and silently did nothing — see conversation).
         setConfirmedEmail(contactEmail.trim());
         setSignupSuccess(true);
       }
