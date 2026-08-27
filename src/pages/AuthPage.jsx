@@ -5,7 +5,7 @@ import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
 
-function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn }) {
+function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -44,17 +44,31 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage, onSignupOptIn 
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
       if (!password) { setError("Password is required."); setLoading(false); return; }
-      const { data, error } = await supabase.auth.signUp({ email: contactEmail.trim(), password });
+      const { data, error } = await supabase.auth.signUp({
+        email: contactEmail.trim(),
+        password,
+        options: { data: { patch_notes_opt_in: patchNotesOptIn } },
+      });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
-        await supabase.from("user_private").insert({
-          id: data.user.id,
-          contact_email: contactEmail.trim(),
-        });
-        // If user opted in to Patch Notes, notify parent to add to Resend audience
-        if (patchNotesOptIn) {
-          onSignupOptIn?.(contactEmail.trim());
-        }
+        // user_private is now created server-side by a trigger on
+        // auth.users (see migration-user-private-trigger.sql). This
+        // used to be a client-side insert right here, immediately after
+        // signUp() — but signUp() returning data.user doesn't guarantee
+        // the session is fully established yet (if email confirmation
+        // is required, data.session stays null until confirmed), so
+        // this insert could run unauthenticated and get rejected by
+        // RLS. Confirmed as a real, intermittent production error, not
+        // a theoretical one. The trigger runs with elevated privileges
+        // regardless of session state, so this can't happen anymore.
+        // patch_notes_opt_in is passed via the metadata option above so
+        // the trigger can read it — it has no other server-side source.
+        //
+        // Resend sync still happens server-side via the existing
+        // trigger on user_private's own insert (see
+        // migration-resend-optin.sql) — unaffected by this change,
+        // since that trigger fires on the row's creation regardless of
+        // whether a client or this new trigger created it.
         setConfirmedEmail(contactEmail.trim());
         setSignupSuccess(true);
       }
