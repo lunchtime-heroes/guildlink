@@ -16,6 +16,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [confirmedEmail, setConfirmedEmail] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [patchNotesOptIn, setPatchNotesOptIn] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Detect password reset redirect from Supabase email link
   useEffect(() => {
@@ -44,6 +45,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
       if (!password) { setError("Password is required."); setLoading(false); return; }
+      if (!agreedToTerms) { setError("Please agree to the Culture Agreement and Privacy Policy to continue."); setLoading(false); return; }
       const { data, error } = await supabase.auth.signUp({
         email: contactEmail.trim(),
         password,
@@ -235,11 +237,17 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
             )}
 
             {mode === "signup" && (
-              <div style={{ color: C.textDim, fontSize: 12, lineHeight: 1.6, marginBottom: 16, textAlign: "center" }}>
-                By creating an account you agree to our{" "}
-                <span onClick={() => { setActivePage?.("culture"); window.history.pushState({ page: "culture" }, "", "/culture"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Culture Agreement</span>
-                {" "}and{" "}
-                <span onClick={() => { setActivePage?.("privacy"); window.history.pushState({ page: "privacy" }, "", "/privacy"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Privacy Policy</span>.
+              <div onClick={() => setAgreedToTerms(v => !v)}
+                style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16, cursor: "pointer", userSelect: "none" }}>
+                <div style={{ width: 18, height: 18, borderRadius: 4, border: "2px solid " + (agreedToTerms ? C.accent : C.border), background: agreedToTerms ? C.accent : "transparent", flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                  {agreedToTerms && <span style={{ color: "#fff", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                </div>
+                <div style={{ color: C.textMuted, fontSize: 12, lineHeight: 1.5 }}>
+                  I have read and agree to the{" "}
+                  <span onClick={e => { e.stopPropagation(); setActivePage?.("culture"); window.history.pushState({ page: "culture" }, "", "/culture"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Culture Agreement</span>
+                  {" "}and{" "}
+                  <span onClick={e => { e.stopPropagation(); setActivePage?.("privacy"); window.history.pushState({ page: "privacy" }, "", "/privacy"); }} style={{ color: C.accentSoft, cursor: "pointer", textDecoration: "underline" }}>Privacy Policy</span>.
+                </div>
               </div>
             )}
 
