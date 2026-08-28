@@ -49,7 +49,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       const { data, error } = await supabase.auth.signUp({
         email: contactEmail.trim(),
         password,
-        options: { data: { patch_notes_opt_in: patchNotesOptIn } },
+        options: { data: { patch_notes_opt_in: patchNotesOptIn, agreed_to_terms: agreedToTerms } },
       });
       if (error) { setError(error.message); setLoading(false); return; }
       if (data?.user) {
