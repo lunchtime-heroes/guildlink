@@ -26,7 +26,6 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [allGames, setAllGames] = useState([]);
   const [enriching, setEnriching] = useState({});
   const [duplicateCandidates, setDuplicateCandidates] = useState([]);
-  const [merging, setMerging] = useState({});
 
   // A cover_url can be present but still broken — Xbox imports sometimes
   // fall back to a temporary, signed Microsoft CDN URL when IGDB matching
@@ -279,34 +278,16 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     </div>
   );
 
-  const mergeGame = async (dup) => {
-    if (!dup.cleanId) return;
-    setMerging(prev => ({ ...prev, [dup.dirtyId]: true }));
-    try {
-      // 1. Remove the dirty row's shelf entries for anyone who already
-      //    has the clean row too, avoiding a unique-constraint conflict.
-      const { data: cleanUsers } = await supabase.from("user_games").select("user_id").eq("game_id", dup.cleanId);
-      const cleanUserIds = (cleanUsers || []).map(u => u.user_id);
-      if (cleanUserIds.length > 0) {
-        await supabase.from("user_games").delete().eq("game_id", dup.dirtyId).in("user_id", cleanUserIds);
-      }
-      // 2. Move everyone else over to the clean row.
-      await supabase.from("user_games").update({ game_id: dup.cleanId }).eq("game_id", dup.dirtyId);
-      // 3. Migrate chart events.
-      await supabase.from("chart_events").update({ game_id: dup.cleanId }).eq("game_id", dup.dirtyId);
-      // 4. Delete the duplicate.
-      const { error } = await supabase.from("games").delete().eq("id", dup.dirtyId);
-      if (error) throw error;
-
-      setDuplicateCandidates(prev => prev.filter(d => d.dirtyId !== dup.dirtyId));
-      setAllGames(prev => prev.filter(g => g.id !== dup.dirtyId));
-    } catch (e) {
-      console.error("[merge] failed:", e);
-      setEnrichMsg(prev => ({ ...prev, [dup.dirtyId]: "Merge failed" }));
-    } finally {
-      setMerging(prev => ({ ...prev, [dup.dirtyId]: false }));
-    }
-  };
+  // mergeGame intentionally removed (was here, deleting a duplicate row
+  // after moving only user_games and chart_events to the clean row) —
+  // per direct instruction, deletion is never wanted here: a deleted
+  // row just reappears on the next import anyway, since the import
+  // process doesn't check for ®/™ variants. This also only ever
+  // touched 2 of the 17 tables actually referencing games.id (reviews,
+  // comments, discovery_cards, guild_sessions, and more were never
+  // updated) — any past use of this likely left orphaned references
+  // elsewhere. The real fix is the canonical_game_id system, tied to
+  // the future IGDB data dump migration — not deleting rows.
 
   const enrichGame = async (game, { isBulk = false } = {}) => {
     setEnriching(prev => ({ ...prev, [game.id]: true }));
@@ -1035,34 +1016,15 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
           {duplicateCandidates.length > 0 && (
             <div style={{ background: "color-mix(in srgb, " + C.gold + " 8%, " + C.bg + ")", border: "1px solid " + C.goldBorder, borderRadius: 4, padding: 14, marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <div style={{ fontWeight: 700, color: C.gold, fontSize: 13 }}>
-                  {duplicateCandidates.length} possible duplicate{duplicateCandidates.length === 1 ? "" : "s"} found during enrichment
-                </div>
-                <button
-                  onClick={async () => {
-                    for (const dup of [...duplicateCandidates].filter(d => d.cleanId)) {
-                      await mergeGame(dup);
-                    }
-                  }}
-                  style={{ background: C.gold, border: "none", borderRadius: 3, padding: "6px 12px", color: C.bg, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  Merge All →
-                </button>
+              <div style={{ fontWeight: 700, color: C.gold, fontSize: 13, marginBottom: 8 }}>
+                {duplicateCandidates.length} possible duplicate{duplicateCandidates.length === 1 ? "" : "s"} found during enrichment
               </div>
               <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 10 }}>
-                Each of these matched an IGDB entry already claimed by a different row — very likely the same game stored twice (a ®/™ variant, a Steam bundle split, etc). Merging moves shelf entries and chart events to the clean row, then deletes the duplicate — same as the manual SQL process, automated.
+                Each of these matched an IGDB entry already claimed by a different row — very likely the same game stored twice (a ®/™ variant, a Steam bundle split, etc). Read-only list — merging/deleting duplicate rows is intentionally not available here. A deleted row only comes back on the next import anyway, since the import process itself doesn't check for these variants; the real fix is the canonical_game_id system (tied to the future IGDB data dump migration), not deleting rows one at a time. Use "Enrich" on the individual row instead to at least fix its artwork in the meantime.
               </div>
               {duplicateCandidates.map((d, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: C.text, padding: "6px 0", borderTop: i > 0 ? "1px solid " + C.border : "none" }}>
-                  <div>
-                    <span style={{ color: C.textDim }}>"{d.dirtyName}"</span> → likely same as <span style={{ fontWeight: 700 }}>"{d.cleanName || "unknown"}"</span>
-                  </div>
-                  <button
-                    onClick={() => mergeGame(d)}
-                    disabled={!d.cleanId || merging[d.dirtyId]}
-                    style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 3, padding: "4px 10px", color: C.text, fontSize: 11, cursor: d.cleanId ? "pointer" : "not-allowed", flexShrink: 0, marginLeft: 10 }}>
-                    {merging[d.dirtyId] ? "…" : d.cleanId ? "Merge" : "No clean ID found"}
-                  </button>
+                <div key={i} style={{ fontSize: 12, color: C.text, padding: "6px 0", borderTop: i > 0 ? "1px solid " + C.border : "none" }}>
+                  <span style={{ color: C.textDim }}>"{d.dirtyName}"</span> → likely same as <span style={{ fontWeight: 700 }}>"{d.cleanName || "unknown"}"</span>
                 </div>
               ))}
             </div>
