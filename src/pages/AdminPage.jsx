@@ -308,7 +308,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     }
   };
 
-  const enrichGame = async (game) => {
+  const enrichGame = async (game, { isBulk = false } = {}) => {
     setEnriching(prev => ({ ...prev, [game.id]: true }));
     try {
       const res = await fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: game.name }) });
@@ -365,6 +365,38 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         if (error.code === "23505" && match.igdb_id) {
           const { data: existing } = await supabase.from("games").select("id, name").eq("igdb_id", match.igdb_id).maybeSingle();
           setDuplicateCandidates(prev => [...prev, { dirtyId: game.id, dirtyName: game.name, cleanId: existing?.id, cleanName: existing?.name }]);
+          // Bulk runs ("Enrich All Missing") never auto-apply here —
+          // confirming per-item would defeat the point of a bulk action.
+          // Just surface the candidate, same as before this fix existed;
+          // resolve it individually below instead.
+          if (isBulk) {
+            setEnrichMsg(prev => ({ ...prev, [game.id]: "⚠ Possible duplicate" }));
+            return;
+          }
+          // The update above failed as a whole because igdb_id conflicts —
+          // Postgres rolls back the ENTIRE statement on any single
+          // constraint violation, which was silently discarding cover_url/
+          // summary/genre too, even though those were never the problem.
+          // This is a real, one-time confirmation before copying — worth
+          // it here specifically, since this is the moment real data from
+          // one row gets applied to a different row.
+          const confirmed = window.confirm(
+            `"${game.name}" appears to be the same game as "${existing?.name || 'an existing entry'}".\n\nReplace its artwork and metadata with that game's data?`
+          );
+          if (!confirmed) {
+            setEnrichMsg(prev => ({ ...prev, [game.id]: "⚠ Possible duplicate" }));
+            return;
+          }
+          const { igdb_id, ...safeUpdates } = updates;
+          if (Object.keys(safeUpdates).length > 0) {
+            const { error: retryError } = await supabase.from("games").update(safeUpdates).eq("id", game.id);
+            if (!retryError) {
+              setAllGames(prev => prev.map(g => g.id === game.id ? { ...g, ...safeUpdates } : g));
+              setEnrichMsg(prev => ({ ...prev, [game.id]: "⚠ Possible duplicate — artwork applied" }));
+              setEnriching(prev => ({ ...prev, [game.id]: false }));
+              return;
+            }
+          }
           setEnrichMsg(prev => ({ ...prev, [game.id]: "⚠ Possible duplicate" }));
         } else {
           setEnrichMsg(prev => ({ ...prev, [game.id]: "Error" }));
@@ -992,7 +1024,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               // hitting IGDB's own rate limit, surfacing as opaque 500s.
               const missing = allGames.filter(needsEnrichment);
               for (const game of missing) {
-                await enrichGame(game);
+                await enrichGame(game, { isBulk: true });
                 await new Promise(r => setTimeout(r, 300));
               }
             }}
