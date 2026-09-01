@@ -641,28 +641,49 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
           background: C.surface + "fc", backdropFilter: "blur(20px)",
           borderTop: "1px solid " + C.border,
-          display: "flex", alignItems: "stretch",
+          display: "flex", flexDirection: "column",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
-          minHeight: 56,
         }}>
-          {mobileItems.map(item => {
-            const active = activePage === item.id || (item.id === "reviews-nav" && activePage === "reviews");
-            return (
-              <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
-                flex: 1,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 3,
-                background: "transparent", border: "none", cursor: "pointer",
-                color: active ? C.gold : C.textDim,
-                position: "relative",
-                padding: "6px 0 4px",
-              }}>
-                {active && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.gold, borderRadius: "0 0 2px 2px" }} />}
-                <Icon name={item.icon} size={22} color={active ? C.gold : C.textDim} />
-                <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.01em" }}>{item.label}</span>
-              </button>
-            );
-          })}
+          <div style={{ display: "flex", alignItems: "stretch", minHeight: 56 }}>
+            {mobileItems.map(item => {
+              const active = activePage === item.id || (item.id === "reviews-nav" && activePage === "reviews");
+              return (
+                <button key={item.id} onClick={() => handleNavClick(item.id)} style={{
+                  flex: 1,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  gap: 3,
+                  background: "transparent", border: "none", cursor: "pointer",
+                  color: active ? C.gold : C.textDim,
+                  position: "relative",
+                  padding: "6px 0 4px",
+                }}>
+                  {active && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.gold, borderRadius: "0 0 2px 2px" }} />}
+                  <Icon name={item.icon} size={22} color={active ? C.gold : C.textDim} />
+                  <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.01em" }}>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {/* IGDB attribution — required per contract terms. A second
+              row within this same fixed nav, directly under the icons,
+              rather than a separate floating element above the bar
+              (didn't sit right there per direct feedback). The nav's
+              own safe-area padding above already covers this row too,
+              since it's part of the same container now. */}
+          <a
+            href="https://www.igdb.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              textAlign: "center",
+              fontSize: 10,
+              color: C.textDim,
+              textDecoration: "none",
+              padding: "2px 0 6px",
+            }}
+          >
+            Games metadata is powered by IGDB.com
+          </a>
         </nav>
       </>
     );
@@ -1425,6 +1446,32 @@ export default function GuildLink() {
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "eula" && <EULAPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
+      {/* IGDB attribution — required per contract terms. Desktop only
+          here; mobile gets its own version built directly into the
+          bottom tab bar (see NavBar above) rather than floating above
+          it, per direct feedback that floating didn't sit right there. */}
+      {!isMobile && (
+        <a
+          href="https://www.igdb.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            position: "fixed",
+            bottom: 12,
+            right: 12,
+            zIndex: 100,
+            fontSize: 11,
+            color: C.textDim,
+            background: C.bg + "cc",
+            padding: "4px 8px",
+            borderRadius: 4,
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Games metadata is powered by IGDB.com
+        </a>
+      )}
 	<Analytics />
     </div>
   );
