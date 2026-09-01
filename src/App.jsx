@@ -1425,6 +1425,32 @@ export default function GuildLink() {
       {activePage === "privacy" && <PrivacyPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "eula" && <EULAPage isMobile={isMobile} setActivePage={navToPage} />}
       {activePage === "culture" && <CultureAgreementPage isMobile={isMobile} setActivePage={navToPage} />}
+      {/* IGDB attribution — required per contract terms. Fixed-position,
+          not part of page flow, so it's genuinely present on every page
+          without needing to be added to each one individually. Matches
+          the quest banner's established fixed-position/isMobile pattern
+          above, but with a much lower zIndex — this should never
+          compete with something as time-sensitive as that banner. */}
+      <a
+        href="https://www.igdb.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          position: "fixed",
+          bottom: isMobile ? 72 : 12,
+          right: 12,
+          zIndex: 100,
+          fontSize: 11,
+          color: C.textDim,
+          background: C.bg + "cc",
+          padding: "4px 8px",
+          borderRadius: 4,
+          textDecoration: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Games metadata is powered by IGDB.com
+      </a>
 	<Analytics />
     </div>
   );
