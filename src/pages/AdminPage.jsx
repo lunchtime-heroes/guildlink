@@ -145,7 +145,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
 
     const { data: reportsData } = await supabase
       .from("reports")
-      .select("*, reporter:profiles!reports_reporter_id_fkey(username), post:posts(id, content, user_id, profiles!posts_user_id_fkey(username)), comment:comments(id, content, user_id, profiles!comments_user_id_fkey(username))")
+      .select("*, reporter:profiles!reports_reporter_id_fkey(username), post:posts(id, content, user_id, profiles!posts_user_id_fkey(username)), comment:comments(id, content, user_id, profiles!comments_user_id_fkey(username)), session_message:session_messages(id, content, user_id, profiles!session_messages_user_id_fkey(username)), guild_post:guild_posts(id, content, user_id, profiles!guild_posts_user_id_fkey(username))")
       .order("created_at", { ascending: false });
     if (reportsData) setReports(reportsData);
 
@@ -211,11 +211,17 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       // because they reported it. The confirmed/accepted/disputed
       // trigger only manages moderator_hidden (visible to everyone);
       // it doesn't know about this per-viewer hide, so it's cleared
-      // explicitly here.
+      // explicitly here. Was only ever checking post_id/comment_id —
+      // extended to correctly identify all four content types.
+      const idColumn = report.post_id ? "post_id"
+        : report.comment_id ? "comment_id"
+        : report.session_message_id ? "session_message_id"
+        : "guild_post_id";
+      const idValue = report.post_id || report.comment_id || report.session_message_id || report.guild_post_id;
       await supabase.from("hidden_content")
         .delete()
         .eq("reason", "report_pending")
-        .eq(report.post_id ? "post_id" : "comment_id", report.post_id || report.comment_id)
+        .eq(idColumn, idValue)
         .eq("user_id", report.reporter_id);
       setReports(prev => prev.map(r => r.id === report.id ? { ...r, status: "dismissed" } : r));
     }
@@ -721,7 +727,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
             </PixelCornerBox>
           ) : (
             reports.filter(r => r.status === "pending").map(report => {
-              const target = report.post || report.comment;
+              const target = report.post || report.comment || report.session_message || report.guild_post;
               const targetAuthor = target?.profiles?.username || target?.profiles?.[0]?.username || "unknown";
               const draft = reportDrafts[report.id] || {};
               const submitting = reportSubmitting[report.id];
@@ -733,6 +739,8 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
                         Reported by <span style={{ color: C.text, fontWeight: 700 }}>@{report.reporter?.username || "unknown"}</span>
                         {" · "}category: <span style={{ color: C.accentSoft }}>{report.category}</span>
                         {report.comment_id && <span style={{ color: C.textDim }}> · comment</span>}
+                        {report.session_message_id && <span style={{ color: C.textDim }}> · session message</span>}
+                        {report.guild_post_id && <span style={{ color: C.textDim }}> · guild thread</span>}
                       </div>
                       <div style={{ color: C.textDim, fontSize: 11 }}>{new Date(report.created_at).toLocaleString()}</div>
                     </div>
@@ -795,7 +803,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               {reports.filter(r => r.status !== "pending").slice(0, 20).map(report => (
                 <div key={report.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid " + C.border, fontSize: 12 }}>
                   <div style={{ color: C.textMuted }}>
-                    @{report.reporter?.username || "unknown"} reported {report.comment_id ? "a comment" : "a post"}
+                    @{report.reporter?.username || "unknown"} reported {
+                      report.comment_id ? "a comment" :
+                      report.session_message_id ? "a session message" :
+                      report.guild_post_id ? "a guild thread post" :
+                      "a post"
+                    }
                     {report.tier && <span style={{ color: C.accentSoft }}> · Tier {report.tier}</span>}
                   </div>
                   <div style={{
