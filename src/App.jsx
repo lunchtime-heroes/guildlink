@@ -1015,7 +1015,7 @@ export default function GuildLink() {
       if (xboxErrorParam) window.__xboxError = xboxErrorParam;
       window.history.replaceState({}, "", window.location.pathname);
     }
-    window.history.replaceState({ page, gameId, playerHandle, guildId: parsedGuildId }, "", window.location.pathname + window.location.hash);
+    window.history.replaceState({ page, gameId, playerHandle, guildId: parsedGuildId }, "", window.location.pathname + window.location.search + window.location.hash);
     // Apply parsed path so refresh restores the correct page
     if (page && page !== "reset") {
       setActivePage(page);
