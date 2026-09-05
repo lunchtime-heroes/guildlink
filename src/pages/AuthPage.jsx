@@ -4,11 +4,17 @@ import supabase from "../supabase.js";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
 import { PixelTabBar } from "../components/PixelTabBar.jsx";
+import { isUsernameRestricted } from "../utils.js";
 
 function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
   const [mode, setMode] = useState(defaultMode); // "login" | "signup" | "forgot" | "reset"
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  // Separate from the login form's `username` (that one's actually an
+  // email/legacy-login field, not a real username) — this is the new
+  // username being chosen at signup.
+  const [signupUsername, setSignupUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState("idle"); // idle | checking | available | taken | invalid | restricted
   const [contactEmail, setContactEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,6 +31,26 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       setMode("reset");
     }
   }, []);
+
+  // Live username availability checking — same validation rules as
+  // UsernameGateModal (format, restricted words, then uniqueness),
+  // reused directly rather than duplicated, so both paths stay
+  // consistent by construction.
+  useEffect(() => {
+    if (mode !== "signup") return;
+    const trimmed = signupUsername.trim();
+    if (!trimmed) { setUsernameStatus("idle"); return; }
+    if (trimmed.length < 3) { setUsernameStatus("invalid"); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) { setUsernameStatus("invalid"); return; }
+    setUsernameStatus("checking");
+    const t = setTimeout(async () => {
+      const restricted = await isUsernameRestricted(trimmed);
+      if (restricted) { setUsernameStatus("restricted"); return; }
+      const { data: existing } = await supabase.from("profiles").select("id").eq("username", trimmed).limit(1);
+      setUsernameStatus(existing?.length > 0 ? "taken" : "available");
+    }, 500);
+    return () => clearTimeout(t);
+  }, [signupUsername, mode]);
 
   const fakeEmail = (u) => u.trim().toLowerCase().replace(/\s+/g, "_") + "@guildlink.gg";
 
@@ -45,13 +71,26 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       if (!contactEmail.trim()) { setError("Email is required."); setLoading(false); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) { setError("Please enter a valid email address."); setLoading(false); return; }
       if (!password) { setError("Password is required."); setLoading(false); return; }
+      if (usernameStatus !== "available") { setError("Please choose an available username to continue."); setLoading(false); return; }
       if (!agreedToTerms) { setError("Please agree to the Culture Agreement and Privacy Policy to continue."); setLoading(false); return; }
       const { data, error } = await supabase.auth.signUp({
         email: contactEmail.trim(),
         password,
-        options: { data: { patch_notes_opt_in: patchNotesOptIn, agreed_to_terms: agreedToTerms } },
+        options: { data: { patch_notes_opt_in: patchNotesOptIn, agreed_to_terms: agreedToTerms, username: signupUsername.trim() } },
       });
-      if (error) { setError(error.message); setLoading(false); return; }
+      if (error) {
+        // Rare race-window case, same as mobile — the client-side check
+        // above catches almost every real case; this is just a graceful
+        // fallback if two people somehow confirm the same username
+        // "available" within the same narrow window.
+        if (/unique|duplicate/i.test(error.message)) {
+          setError("That username was just taken. Please choose another.");
+        } else {
+          setError(error.message);
+        }
+        setLoading(false);
+        return;
+      }
       if (data?.user) {
         // user_private is now created server-side by a trigger on
         // auth.users (see migration-user-private-trigger.sql). This
@@ -199,6 +238,22 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
 
             {mode === "signup" && (
               <>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Username</div>
+                  <input value={signupUsername} onChange={e => setSignupUsername(e.target.value)} placeholder="Choose a username"
+                    style={{ width: "100%", background: C.surfaceRaised, border: "1px solid " + (usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "restricted" ? "#ef4444" : usernameStatus === "available" ? C.accent : C.border), borderRadius: 3, padding: "10px 12px", color: C.text, fontSize: 14, outline: "none" }} />
+                  <div style={{ fontSize: 11, marginTop: 4, color:
+                    usernameStatus === "available" ? C.accent :
+                    usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "restricted" ? "#ef4444" :
+                    C.textDim }}>
+                    {usernameStatus === "checking" && "Checking..."}
+                    {usernameStatus === "available" && "Available"}
+                    {usernameStatus === "taken" && "That username is already taken."}
+                    {usernameStatus === "restricted" && "Username unavailable."}
+                    {usernameStatus === "invalid" && "3+ characters — letters, numbers, and underscores only."}
+                    {usernameStatus === "idle" && "Letters, numbers, and underscores only."}
+                  </div>
+                </div>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ color: C.textMuted, fontSize: 12, marginBottom: 6 }}>Email</div>
                   <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="you@email.com"

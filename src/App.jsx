@@ -345,7 +345,7 @@ const AVATAR_BG_COLORS_LOCAL = {
 
 
 // ─── ONBOARDING TUTORIAL ──────────────────────────────────────────────────────
-import { OnboardingErrorBoundary, UsernameGateModal, OnboardingModal } from "./components/Onboarding.jsx";
+import { OnboardingErrorBoundary, OnboardingModal } from "./components/Onboarding.jsx";
 
 function NavSearch({ setActivePage, setCurrentGame, setCurrentPlayer, isMobile }) {
   const [query, setQuery] = useState("");
@@ -928,10 +928,10 @@ export default function GuildLink() {
   const [profile, setProfile] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showAuth, setShowAuth] = useState(window.location.pathname === "/reset-password" ? "reset" : false);
+  const [showOpenAppChoice, setShowOpenAppChoice] = useState(false);
   const [signInPromptMsg, setSignInPromptMsg] = useState(null);
   const [themeKey, setThemeKey] = useState("deep-space");
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showUsernameGate, setShowUsernameGate] = useState(false);
   const [feedTargetPost, setFeedTargetPost] = useState(null); // { id, ts } - set when a post notification is clicked
   const width = useWindowSize();
   const isMobile = width < 768;
@@ -1039,9 +1039,22 @@ export default function GuildLink() {
     // Apply any locally saved theme immediately on load
     try { const saved = localStorage.getItem("gl-theme"); if (saved) applyAndSetTheme(saved); } catch(e) {}
     const isRecovery = window.location.href.includes("type=recovery");
+    // Same detection pattern as isRecovery above — Supabase's
+    // confirmation link includes type=signup in the URL hash. Without
+    // this, a freshly-confirmed signup looks identical to a normal
+    // returning-user session restore, and the app silently continues
+    // straight into full onboarding on web — even for someone who
+    // signed up in the native app and never intended to land here.
+    const isSignupConfirmation = window.location.href.includes("type=signup");
     supabase.auth.getSession().then(({ data: { session } }) => {
   if (session && isRecovery) {
     setShowAuth("reset");
+    setAuthLoading(false);
+    return;
+  }
+  if (session && isSignupConfirmation) {
+    setSession(session);
+    setShowOpenAppChoice(true);
     setAuthLoading(false);
     return;
   }
@@ -1168,16 +1181,15 @@ export default function GuildLink() {
     if (data) {
       setProfile(data);
       if (data.theme) applyAndSetTheme(data.theme);
+      // Was previously checking for a placeholder "user_xxxxxxxx"
+      // username here and showing a gate to set a real one first — no
+      // longer needed now that signup itself collects a real username
+      // up front, on both platforms. Existing accounts that somehow
+      // still carry a placeholder can still fix it anytime from their
+      // profile page.
       if (!data.onboarded) {
         setActivePage("profile");
-        if (data.username && data.username.startsWith("user_") && data.username.length === 13) {
-          // Show username gate first — onboarding starts after username is set
-          setShowUsernameGate(true);
-        } else {
-          setShowOnboarding(true);
-        }
-      } else if (data.username && data.username.startsWith("user_") && data.username.length === 13) {
-        setShowUsernameGate(true);
+        setShowOnboarding(true);
       }
     }
     fetchNotifications(userId);
@@ -1243,6 +1255,46 @@ export default function GuildLink() {
       <div style={{ color: C.textMuted, fontSize: 14 }}>Loading...</div>
     </div>
   );
+
+  // Signup confirmation interstitial — lets someone who signed up in
+  // the native app return there to actually complete onboarding,
+  // rather than silently continuing straight into the full web
+  // experience the moment their confirmation link resolves a session.
+  // GUILDLINK_SCHEME confirmed directly against app.config.js's real
+  // "scheme" field for the production build (not the -dev variant).
+  if (showOpenAppChoice) {
+    const GUILDLINK_SCHEME = "guildlinkapp://";
+    // Was previously a bare scheme with no data at all — the app would
+    // just launch to its normal cold-start screen, fully logged out,
+    // gaining nothing from the person having just confirmed a signup
+    // seconds earlier. Passing the real tokens lets authDeepLink.ts
+    // (mobile side) establish this exact same session natively.
+    const openAppUrl = (() => {
+      const params = new URLSearchParams();
+      if (session?.access_token) params.set("access_token", session.access_token);
+      if (session?.refresh_token) params.set("refresh_token", session.refresh_token);
+      return GUILDLINK_SCHEME + "auth-callback?" + params.toString();
+    })();
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, maxWidth: 420, width: "100%", textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
+          <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Email confirmed!</div>
+          <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
+            Continue in the GuildLink app for the full experience, or keep going here on the web.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <PixelButton onClick={() => { window.location.href = openAppUrl; }} bg={C.accent} borderColor={C.accent} color="#fff">
+              Open App
+            </PixelButton>
+            <PixelButton onClick={() => { setShowOpenAppChoice(false); window.location.hash = ""; supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); if (session) fetchProfile(session.user.id); }); }} bg="transparent" borderColor={C.accentDim} color={C.accentSoft}>
+              Continue to Web
+            </PixelButton>
+          </div>
+        </PixelCornerBox>
+      </div>
+    );
+  }
 
   // Show full auth page if explicitly requested
   if (showAuth) return <AuthPage onBack={() => setShowAuth(false)} defaultMode={showAuth === "signup" ? "signup" : showAuth === "reset" ? "reset" : "login"} setActivePage={(page) => { setShowAuth(false); setActivePage(page); }} />;
@@ -1378,21 +1430,6 @@ export default function GuildLink() {
             </button>
           </div>
         </PixelCornerBox>
-      )}
-      {showUsernameGate && session?.user?.id && (
-        <UsernameGateModal
-          userId={session.user.id}
-          isMobile={isMobile}
-          onComplete={(newUsername) => {
-            setProfile(prev => ({ ...prev, username: newUsername, handle: "@" + newUsername.toLowerCase() }));
-            setShowUsernameGate(false);
-            // Start onboarding after username is set if not yet onboarded
-            if (liveUser && !liveUser.onboarded) {
-              setActivePage("profile");
-              setShowOnboarding(true);
-            }
-          }}
-        />
       )}
       {showOnboarding && liveUser && (
         <OnboardingErrorBoundary>
