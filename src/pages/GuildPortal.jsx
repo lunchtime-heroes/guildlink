@@ -4,7 +4,6 @@ import supabase from "../supabase.js";
 import { timeAgo } from "../utils.js";
 import { Avatar } from "../components/Avatar.jsx";
 import SessionCard from "../components/SessionCard.jsx";
-import GuildActivityFeed from "../components/GuildActivityFeed.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
 import ModerationMenu from "../components/ModerationMenu.jsx";
@@ -796,11 +795,6 @@ function GuildPortal({ guildId, isMobile, currentUser, setActivePage, setCurrent
             </div>
           );
         })}
-      </PixelCornerBox>
-
-      <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
-        <div style={{ fontWeight: 800, fontSize: 16, color: C.text, marginBottom: 16 }}>Activity</div>
-        <GuildActivityFeed guildId={guildId} memberIds={memberIds} currentUser={currentUser} />
       </PixelCornerBox>
     </div>
   );
