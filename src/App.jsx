@@ -1276,7 +1276,7 @@ export default function GuildLink() {
       return GUILDLINK_SCHEME + "auth-callback?" + params.toString();
     })();
     return (
-      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "Helvetica, Arial, sans-serif" }}>
         <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, maxWidth: 420, width: "100%", textAlign: "center" }}>
           <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Email confirmed!</div>
           <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
