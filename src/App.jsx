@@ -1283,10 +1283,10 @@ export default function GuildLink() {
             Continue in the GuildLink app for the full experience, or keep going here on the web.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <PixelButton onClick={() => { window.location.href = openAppUrl; }} bg={C.accent} borderColor={C.accent} color="#fff">
+            <PixelButton fullWidth onClick={() => { window.location.href = openAppUrl; }} bg={C.accent} borderColor={C.accent} color="#fff">
               Open App
             </PixelButton>
-            <PixelButton onClick={() => { setShowOpenAppChoice(false); window.location.hash = ""; supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); if (session) fetchProfile(session.user.id); }); }} bg="transparent" borderColor={C.accentDim} color={C.accentSoft}>
+            <PixelButton fullWidth onClick={() => { setShowOpenAppChoice(false); window.location.hash = ""; supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); if (session) fetchProfile(session.user.id); }); }} bg="transparent" borderColor={C.accentDim} color={C.accentSoft}>
               Continue to Web
             </PixelButton>
           </div>
