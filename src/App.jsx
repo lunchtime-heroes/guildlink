@@ -1276,18 +1276,17 @@ export default function GuildLink() {
       return GUILDLINK_SCHEME + "auth-callback?" + params.toString();
     })();
     return (
-      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "Helvetica, Arial, sans-serif" }}>
         <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 32, maxWidth: 420, width: "100%", textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
           <div style={{ fontWeight: 800, color: C.text, fontSize: 18, marginBottom: 10 }}>Email confirmed!</div>
           <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
             Continue in the GuildLink app for the full experience, or keep going here on the web.
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <PixelButton onClick={() => { window.location.href = openAppUrl; }} bg={C.accent} borderColor={C.accent} color="#fff">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <PixelButton fullWidth onClick={() => { window.location.href = openAppUrl; }} bg={C.accent} borderColor={C.accent} color="#fff">
               Open App
             </PixelButton>
-            <PixelButton onClick={() => { setShowOpenAppChoice(false); window.location.hash = ""; supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); if (session) fetchProfile(session.user.id); }); }} bg="transparent" borderColor={C.accentDim} color={C.accentSoft}>
+            <PixelButton fullWidth onClick={() => { setShowOpenAppChoice(false); window.location.hash = ""; supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); if (session) fetchProfile(session.user.id); }); }} bg="transparent" borderColor={C.accentDim} color={C.accentSoft}>
               Continue to Web
             </PixelButton>
           </div>
