@@ -13,6 +13,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
   const [section, setSection] = useState("insights");
   const [tab, setTab] = useState("overview");
   const [stats, setStats] = useState(null);
+  const [weeklyDiscovery, setWeeklyDiscovery] = useState([]);
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -65,7 +66,7 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [usersRes, totalUsersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes, weekUsersRes] = await Promise.all([
+    const [usersRes, totalUsersRes, postsRes, reviewsRes, chartRes, weekPostsRes, dayPostsRes, totalShelfRes, weekShelfRes, dayShelfRes, weekReviewsRes, discoveryRes, similarityRes, similarityOverlapRes, weekUsersRes, shelfSourceRes] = await Promise.all([
       supabase.from("profiles").select("id, username, handle, created_at, is_founding, is_admin").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("posts").select("*, profiles!posts_user_id_fkey(username, handle), npcs(name)").order("created_at", { ascending: false }).limit(30),
@@ -81,6 +82,12 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
       supabase.from("user_similarity").select("user_id", { count: "exact", head: true }),
       supabase.from("user_similarity").select("overlap_count"),
       supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", oneWeekAgo),
+      // Weekly discovery shelf-add pulse. onboarding excluded — a
+      // guided signup step, not a genuine discovery-vs-other signal.
+      // Explicit .limit() since PostgREST silently caps unbounded
+      // queries at 1000 (see comment below) — cheap insurance while
+      // the platform is still small, real protection later.
+      supabase.from("shelf_source_events").select("source, user_id, created_at").neq("source", "onboarding").order("created_at", { ascending: false }).limit(5000),
     ]);
 
     if (usersRes.data) setUsers(usersRes.data);
@@ -178,6 +185,44 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
         byGame[name].types[e.event_type] = (byGame[name].types[e.event_type] || 0) + 1;
       });
       setChartEvents(Object.values(byGame).sort((a, b) => b.total - a.total).slice(0, 15));
+    }
+
+    if (shelfSourceRes.data) {
+      // Sunday-anchored week, matching chart_events.week_start's own
+      // convention exactly — NOT a Monday-anchored ISO week, which
+      // would disagree with how "week" is defined everywhere else on
+      // the platform.
+      const getWeekStart = (dateStr) => {
+        const d = new Date(dateStr);
+        const day = d.getUTCDay();
+        d.setUTCDate(d.getUTCDate() - day);
+        d.setUTCHours(0, 0, 0, 0);
+        return d.toISOString().slice(0, 10);
+      };
+
+      const byWeek = {};
+      shelfSourceRes.data.forEach((row) => {
+        const week = getWeekStart(row.created_at);
+        if (!byWeek[week]) byWeek[week] = { discoveryUsers: new Set(), discoveryCount: 0, sourceCounts: {} };
+        byWeek[week].sourceCounts[row.source] = (byWeek[week].sourceCounts[row.source] || 0) + 1;
+        if (row.source.startsWith("discovery_")) {
+          byWeek[week].discoveryCount++;
+          byWeek[week].discoveryUsers.add(row.user_id);
+        }
+      });
+
+      const weekly = Object.entries(byWeek).map(([week, data]) => {
+        const topSource = Object.entries(data.sourceCounts).sort((a, b) => b[1] - a[1])[0];
+        return {
+          week,
+          discoveryDistinctUsers: data.discoveryUsers.size,
+          discoveryEventCount: data.discoveryCount,
+          topSource: topSource ? topSource[0] : null,
+          topSourceCount: topSource ? topSource[1] : 0,
+        };
+      }).sort((a, b) => b.week.localeCompare(a.week));
+
+      setWeeklyDiscovery(weekly);
     }
 
     const newUsersWeek = weekUsersRes.count || 0;
@@ -487,6 +532,42 @@ function AdminPage({ isMobile, currentUser, setActivePage, setCurrentPlayer }) {
               </PixelCornerBox>
             ))}
           </div>
+
+          {/* Weekly discovery shelf-add pulse. Event volume and distinct
+              users are both shown deliberately — event count alone could
+              be one very active person, not real, broad engagement. */}
+          <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20, marginBottom: 20 }}>
+            <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Weekly Discovery Pulse</div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "8px 10px", color: C.textDim, fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid " + C.border }}>Week Of</th>
+                    <th style={{ textAlign: "right", padding: "8px 10px", color: C.textDim, fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid " + C.border }}>Discovery Users</th>
+                    <th style={{ textAlign: "right", padding: "8px 10px", color: C.textDim, fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid " + C.border }}>Discovery Adds</th>
+                    <th style={{ textAlign: "left", padding: "8px 10px", color: C.textDim, fontSize: 11, textTransform: "uppercase", borderBottom: "1px solid " + C.border }}>Top Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeklyDiscovery.length === 0 ? (
+                    <tr><td colSpan={4} style={{ padding: "16px 10px", color: C.textDim, textAlign: "center" }}>No shelf-add activity yet.</td></tr>
+                  ) : weeklyDiscovery.map(w => (
+                    <tr key={w.week}>
+                      <td style={{ padding: "8px 10px", color: C.text, borderBottom: "1px solid " + C.border }}>
+                        {new Date(w.week + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </td>
+                      <td style={{ padding: "8px 10px", color: C.text, textAlign: "right", borderBottom: "1px solid " + C.border }}>{w.discoveryDistinctUsers}</td>
+                      <td style={{ padding: "8px 10px", color: C.text, textAlign: "right", borderBottom: "1px solid " + C.border }}>{w.discoveryEventCount}</td>
+                      <td style={{ padding: "8px 10px", color: C.textMuted, borderBottom: "1px solid " + C.border }}>
+                        {w.topSource ? `${w.topSource.replace(/^discovery_/, "").replace(/_/g, " ")} (${w.topSourceCount})` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </PixelCornerBox>
+
           <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ padding: 20 }}>
             <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>Recent Signups</div>
             {users.slice(0, 5).map(u => (
