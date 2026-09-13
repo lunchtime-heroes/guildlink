@@ -76,7 +76,7 @@ function AuthPage({ onBack, defaultMode = "login", setActivePage }) {
       const { data, error } = await supabase.auth.signUp({
         email: contactEmail.trim(),
         password,
-        options: { data: { patch_notes_opt_in: patchNotesOptIn, agreed_to_terms: agreedToTerms, username: signupUsername.trim() } },
+        options: { data: { patch_notes_opt_in: patchNotesOptIn, agreed_to_terms: agreedToTerms, username: signupUsername.trim(), signup_platform: 'web' } },
       });
       if (error) {
         // Rare race-window case, same as mobile — the client-side check
