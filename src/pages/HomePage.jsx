@@ -199,6 +199,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             </a>
           </div>
         </div>
+
         <div
           style={{
             position: "absolute",
@@ -209,7 +210,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             zIndex: 2,
           }}
         >
-          <img src="/public/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
+          <img src="/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
 
