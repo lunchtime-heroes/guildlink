@@ -125,7 +125,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
           borderBottom: "1px solid " + C.goldBorder,
           position: "relative",
           overflow: "hidden",
-          paddingBottom: isMobile ? 90 : 120,
+          paddingBottom: isMobile ? 190 : 250,
         }}
       >
         <div
@@ -205,7 +205,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             position: "absolute",
             bottom: 0,
             left: "50%",
-            transform: "translate(-50%, 42%)",
+            transform: "translateX(-50%)",
             width: isMobile ? 140 : 190,
             zIndex: 2,
           }}
@@ -215,9 +215,8 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
       </div>
 
       {/* "The argument" — kept from the original draft, now the follow-up
-          beat after the gold hero above. Extra top padding here clears
-          room for Blizmond hanging down off the gold section. */}
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: isMobile ? "130px 20px 40px" : "170px 24px 56px", textAlign: "center" }}>
+          beat after the gold hero above. */}
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: isMobile ? "56px 20px 40px" : "88px 24px 56px", textAlign: "center" }}>
         <h1
           style={{
             margin: "0 0 18px",
