@@ -97,50 +97,18 @@ const FeatureCard = ({ title, description, screenshotLabel, reverse, isMobile })
   </PixelCornerBox>
 );
 
-function HomePage({ isMobile, setActivePage, onSignUp }) {
+const APP_STORE_URL = "https://apps.apple.com/us/app/guildlink/id6795702522";
+
+// NavBar already renders the GuildLink logo plus Sign In / Join Free for
+// guests (both mobile and desktop), so this page starts straight into
+// content — no second header, no duplicate CTAs up top.
+function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
   const goSignUp = () => {
     if (onSignUp) return onSignUp();
-    setActivePage("auth");
   };
-
-  const APP_STORE_URL = "https://apps.apple.com/app/guildlink";
 
   return (
     <div style={{ background: C.bg }}>
-      {/* Simple public header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: isMobile ? "16px" : "20px 32px",
-          borderBottom: "1px solid " + C.border,
-          maxWidth: 1100,
-          margin: "0 auto",
-        }}
-      >
-        <div style={{ fontWeight: 900, fontSize: 18, color: C.text, letterSpacing: "0.02em" }}>GuildLink</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button
-            onClick={() => setActivePage("auth")}
-            style={{
-              background: "none",
-              border: "none",
-              color: C.textMuted,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: "8px 10px",
-            }}
-          >
-            Log in
-          </button>
-          <PixelButton size="sm" bg={C.accent} onClick={goSignUp}>
-            Sign up
-          </PixelButton>
-        </div>
-      </div>
-
       {/* Hero */}
       <div style={{ maxWidth: 780, margin: "0 auto", padding: isMobile ? "56px 20px 40px" : "88px 24px 56px", textAlign: "center" }}>
         <h1
