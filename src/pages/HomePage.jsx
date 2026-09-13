@@ -210,13 +210,13 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             zIndex: 2,
           }}
         >
-          <img src="/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
+          <img src="/blizmond.png" alt="Blizmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
 
       {/* "The argument" — kept from the original draft, now the follow-up
           beat after the gold hero above. Extra top padding here clears
-          room for Blizzmond hanging down off the gold section. */}
+          room for Blizmond hanging down off the gold section. */}
       <div style={{ maxWidth: 780, margin: "0 auto", padding: isMobile ? "130px 20px 40px" : "170px 24px 56px", textAlign: "center" }}>
         <h1
           style={{
