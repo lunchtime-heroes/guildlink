@@ -2,36 +2,22 @@ import React from "react";
 import { C } from "../constants.js";
 import { PixelButton } from "../components/PixelButton.jsx";
 
-/*
-  PUBLIC HOMEPAGE — logged-out landing page
-  ------------------------------------------
-  Replaces the old "live feed simulation" logged-out view. This page is a
-  straight marketing/identity page: why GuildLink, not a preview of the UI.
 
-  IMAGE SLOTS
-  Every screenshot placeholder below is a <ScreenshotSlot> — a bordered,
-  labeled box standing in for an App Store image. Drop a real <img> in by
-  passing a `src` prop (see the component itself), e.g.:
-
-    <ScreenshotSlot src="/images/shelf-screenshot.png" alt="The Shelf" />
-
-  Until real assets are wired in, these render a visible placeholder so it's
-  obvious where art belongs and at roughly what aspect ratio/size to export it.
-*/
-
-const ScreenshotSlot = ({ label, src, alt, aspect }) => {
-  const ratio = aspect || "9 / 16";
+const ScreenshotSlot = ({ label, src, alt, aspect, width }) => {
   if (src) {
     return (
-      <div style={{ width: "100%", borderRadius: 4, overflow: "hidden", border: "1px solid " + C.border }}>
-        <img src={src} alt={alt || label} style={{ width: "100%", display: "block" }} />
-      </div>
+      <img
+        src={src}
+        alt={alt || label}
+        style={{ width: width || "100%", height: "auto", display: "block" }}
+      />
     );
   }
+  const ratio = aspect || "9 / 16";
   return (
     <div
       style={{
-        width: "100%",
+        width: width || "100%",
         aspectRatio: ratio,
         borderRadius: 4,
         border: "1px dashed " + C.border,
@@ -50,23 +36,27 @@ const ScreenshotSlot = ({ label, src, alt, aspect }) => {
   );
 };
 
-const FeatureRow = ({ headingLines, caption, quote, imageLabel, imageSide, isMobile }) => (
-  <div style={{ borderTop: "1px solid " + C.goldBorder }}>
+// Each row's height is driven entirely by the screenshot — no vertical
+// padding on the row itself — and rows alternate background color,
+// separated by a thin gold line (borderTop).
+const FeatureRow = ({ headingLines, caption, quote, imageLabel, imageSrc, imageSide, bg, isMobile }) => (
+  <div style={{ borderTop: "1px solid " + C.goldBorder, background: bg }}>
     <div
       style={{
         maxWidth: 1040,
         margin: "0 auto",
-        padding: isMobile ? "40px 20px" : "64px 24px",
+        padding: isMobile ? "0 20px" : "0 24px",
         display: "flex",
         flexDirection: isMobile ? "column" : imageSide === "left" ? "row" : "row-reverse",
         alignItems: "center",
-        gap: isMobile ? 28 : 56,
+        justifyContent: "center",
+        gap: isMobile ? 20 : 56,
       }}
     >
-      <div style={{ flex: isMobile ? "none" : "0 0 42%", width: isMobile ? "70%" : "auto" }}>
-        <ScreenshotSlot label={imageLabel} aspect="9 / 18" />
+      <div style={{ flexShrink: 0 }}>
+        <ScreenshotSlot src={imageSrc} label={imageLabel} width={isMobile ? 220 : 320} />
       </div>
-      <div style={{ flex: 1, textAlign: isMobile ? "center" : "left" }}>
+      <div style={{ flex: 1, textAlign: isMobile ? "center" : "left", padding: isMobile ? "20px 0" : 0 }}>
         <div style={{ fontWeight: 900, fontSize: isMobile ? 24 : 30, color: C.text, lineHeight: 1.3, marginBottom: 10 }}>
           {headingLines.map((line, i) => (
             <div key={i}>{line}</div>
@@ -183,7 +173,6 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
           </div>
         </div>
 
-        {/* Blizzmond — full image, resting at the gold section's bottom edge. */}
         <div
           style={{
             position: "absolute",
@@ -194,7 +183,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             zIndex: 2,
           }}
         >
-          <img src="/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
+          <img src="/blizmond.png" alt="Blizmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
 
@@ -209,21 +198,26 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         </div>
       </div>
 
-      {/* App feature rows — each one leans on a real screenshot, alternating
-          image side left/right. Swap each ScreenshotSlot's `src` for the
-          matching App Store asset once it's in /public. */}
+      {/* App feature rows — real screenshots, alternating image side and
+          alternating background, thin gold divider between each (handled
+          inside FeatureRow itself). Files ship alongside this component —
+          drop them in /public with these exact names. */}
       <FeatureRow
         headingLines={["Add games", "to your shelf"]}
         caption="Any game, any era"
         imageLabel="Have Played shelf ranking"
+        imageSrc="/1_add_games.png"
         imageSide="right"
+        bg={C.bg}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Games In Common", "leads to discovery"]}
         caption="Taste > popularity"
         imageLabel="Discovery feed — FAR / L.A. Noire"
+        imageSrc="/2_games_in_common.png"
         imageSide="left"
+        bg={C.surfaceRaised}
         isMobile={isMobile}
       />
       <FeatureRow
@@ -231,28 +225,36 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="So that's why I disagree!"
         quote
         imageLabel="Reviews page"
+        imageSrc="/3_reviews.png"
         imageSide="left"
+        bg={C.bg}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Talk games", "with gamers"]}
         caption="Without attention hacks"
         imageLabel="Feed comments"
+        imageSrc="/4_talk_games.png"
         imageSide="left"
+        bg={C.surfaceRaised}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Schedule", "Gaming Sessions"]}
         caption="Never miss a chance to play"
         imageLabel="Gaming Sessions"
+        imageSrc="/5_game_sessions.png"
         imageSide="right"
+        bg={C.bg}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Create your", "gamer profile"]}
         caption="Share stats from your library"
         imageLabel="Gamer profile"
+        imageSrc="/6_profile.png"
         imageSide="left"
+        bg={C.surfaceRaised}
         isMobile={isMobile}
       />
 
