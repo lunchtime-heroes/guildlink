@@ -91,11 +91,10 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
   return (
     <div style={{ background: C.bg }}>
 
-      {/* Gold hero — full-width, matches FoundingMemberPage's gold treatment */}
       <div
         style={{
           background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
-          borderBottom: "1px solid " + C.goldBorder,
+          borderBottom: "3px solid " + C.goldBorder,
           position: "relative",
           overflow: "hidden",
           paddingBottom: isMobile ? 190 : 250,
@@ -186,9 +185,6 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
           <img src="/blizmond.png" alt="Blizmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
-
-      {/* Simplified pitch — no buttons here, the gold hero above and the gold
-          CTA below already carry both. This section is just the "why". */}
       <div style={{ maxWidth: 700, margin: "0 auto", padding: isMobile ? "56px 20px 48px" : "80px 24px 64px", textAlign: "center" }}>
         <div style={{ fontWeight: 900, fontSize: isMobile ? 26 : 34, color: C.text, lineHeight: 1.3, marginBottom: 14 }}>
           The best game recommendations come from people who know your taste
@@ -198,16 +194,13 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         </div>
       </div>
 
-      {/* App feature rows — real screenshots, alternating image side and
-          alternating background, thin gold divider between each (handled
-          inside FeatureRow itself). Files ship alongside this component —
-          drop them in /public with these exact names. */}
+
       <FeatureRow
         headingLines={["Add games", "to your shelf"]}
         caption="Any game, any era"
         imageLabel="Have Played shelf ranking"
         imageSrc="/1_add_games.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.bg}
         isMobile={isMobile}
       />
@@ -216,7 +209,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Taste > popularity"
         imageLabel="Discovery feed — FAR / L.A. Noire"
         imageSrc="/2_games_in_common.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
@@ -226,7 +219,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         quote
         imageLabel="Reviews page"
         imageSrc="/3_reviews.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.bg}
         isMobile={isMobile}
       />
@@ -235,7 +228,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Without attention hacks"
         imageLabel="Feed comments"
         imageSrc="/4_talk_games.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
@@ -244,7 +237,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Never miss a chance to play"
         imageLabel="Gaming Sessions"
         imageSrc="/5_game_sessions.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.bg}
         isMobile={isMobile}
       />
@@ -253,13 +246,10 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Share stats from your library"
         imageLabel="Gamer profile"
         imageSrc="/6_profile.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
-
-      {/* Gold CTA — mirrors the top hero's treatment, shorter, no logo or
-          mascot, closing the page the way it opened. */}
       <div
         style={{
           background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
