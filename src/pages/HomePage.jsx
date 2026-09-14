@@ -202,7 +202,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
           </div>
         </div>
 
-        {/* Blizzmond — full image, resting at the gold section's bottom edge. */}
+        {/* Blizmond — full image, resting at the gold section's bottom edge. */}
         <div
           style={{
             position: "absolute",
@@ -213,7 +213,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             zIndex: 2,
           }}
         >
-          <img src="/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
+          <img src="/blizmond.png" alt="Blizmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
 
@@ -256,7 +256,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         quote
         imageLabel="Reviews page"
         imageSrc="/3_reviews.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.bg}
         isMobile={isMobile}
       />
