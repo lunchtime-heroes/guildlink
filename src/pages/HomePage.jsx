@@ -1,8 +1,6 @@
 import React from "react";
 import { C } from "../constants.js";
-import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
-import { GameTag } from "../components/GameTag.jsx";
 
 /*
   PUBLIC HOMEPAGE — logged-out landing page
@@ -52,49 +50,34 @@ const ScreenshotSlot = ({ label, src, alt, aspect }) => {
   );
 };
 
-const CheckRow = ({ game, platform }) => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
-      padding: "12px 16px",
-      borderBottom: "1px solid " + C.border,
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-      <span style={{ color: C.green, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{"✓"}</span>
-      <span style={{ color: C.text, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {game}
-      </span>
+const FeatureRow = ({ headingLines, caption, quote, imageLabel, imageSide, isMobile }) => (
+  <div style={{ borderTop: "1px solid " + C.goldBorder }}>
+    <div
+      style={{
+        maxWidth: 1040,
+        margin: "0 auto",
+        padding: isMobile ? "40px 20px" : "64px 24px",
+        display: "flex",
+        flexDirection: isMobile ? "column" : imageSide === "left" ? "row" : "row-reverse",
+        alignItems: "center",
+        gap: isMobile ? 28 : 56,
+      }}
+    >
+      <div style={{ flex: isMobile ? "none" : "0 0 42%", width: isMobile ? "70%" : "auto" }}>
+        <ScreenshotSlot label={imageLabel} aspect="9 / 18" />
+      </div>
+      <div style={{ flex: 1, textAlign: isMobile ? "center" : "left" }}>
+        <div style={{ fontWeight: 900, fontSize: isMobile ? 24 : 30, color: C.text, lineHeight: 1.3, marginBottom: 10 }}>
+          {headingLines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+        <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: C.accent }}>
+          {quote ? "\u201C" + caption + "\u201D" : caption}
+        </div>
+      </div>
     </div>
-    <GameTag label={platform} />
   </div>
-);
-
-const FeatureCard = ({ title, description, screenshotLabel, reverse, isMobile }) => (
-  <PixelCornerBox
-    size="lg"
-    borderColor={C.border}
-    bg={C.surface}
-    style={{
-      padding: isMobile ? 20 : 28,
-      display: "flex",
-      flexDirection: isMobile ? "column" : reverse ? "row-reverse" : "row",
-      gap: isMobile ? 20 : 32,
-      alignItems: "center",
-      marginBottom: 20,
-    }}
-  >
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontWeight: 800, fontSize: 19, color: C.text, marginBottom: 10 }}>{title}</div>
-      <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.75 }}>{description}</div>
-    </div>
-    <div style={{ width: isMobile ? "60%" : 200, flexShrink: 0 }}>
-      <ScreenshotSlot label={screenshotLabel} />
-    </div>
-  </PixelCornerBox>
 );
 
 // The GuildLink "G" mark, exactly as used in the app NavBar — reused here so
@@ -200,6 +183,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
           </div>
         </div>
 
+        {/* Blizzmond — full image, resting at the gold section's bottom edge. */}
         <div
           style={{
             position: "absolute",
@@ -210,139 +194,115 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             zIndex: 2,
           }}
         >
-          <img src="/blizmond.png" alt="Blizmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
+          <img src="/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
 
-      {/* "The argument" — kept from the original draft, now the follow-up
-          beat after the gold hero above. */}
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: isMobile ? "56px 20px 40px" : "88px 24px 56px", textAlign: "center" }}>
-        <h1
-          style={{
-            margin: "0 0 18px",
-            fontWeight: 900,
-            fontSize: isMobile ? 30 : 44,
-            color: C.text,
-            lineHeight: 1.18,
-          }}
-        >
+      {/* Simplified pitch — no buttons here, the gold hero above and the gold
+          CTA below already carry both. This section is just the "why". */}
+      <div style={{ maxWidth: 700, margin: "0 auto", padding: isMobile ? "56px 20px 48px" : "80px 24px 64px", textAlign: "center" }}>
+        <div style={{ fontWeight: 900, fontSize: isMobile ? 26 : 34, color: C.text, lineHeight: 1.3, marginBottom: 14 }}>
           The best game recommendations come from people who know your taste
-        </h1>
-        <div style={{ color: C.textMuted, fontSize: isMobile ? 15 : 17, lineHeight: 1.6, marginBottom: 32 }}>
-          Until GuildLink, that was really hard to find online.
         </div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <PixelButton size="md" bg={C.accent} onClick={goSignUp}>
-            Sign up
-          </PixelButton>
-          <a href={APP_STORE_URL} style={{ textDecoration: "none" }}>
-            <PixelButton size="md" bg={C.surface} borderColor={C.border}>
-              Download the iOS app
-            </PixelButton>
-          </a>
+        <div style={{ fontWeight: 700, fontSize: isMobile ? 15 : 17, color: C.gold }}>
+          Until GuildLink, that was really hard to find
         </div>
       </div>
 
-      {/* Hero screenshot */}
-      <div style={{ maxWidth: 320, margin: "0 auto 72px", padding: "0 24px" }}>
-        <ScreenshotSlot label="Discovery Feed — hero shot" />
-      </div>
+      {/* App feature rows — each one leans on a real screenshot, alternating
+          image side left/right. Swap each ScreenshotSlot's `src` for the
+          matching App Store asset once it's in /public. */}
+      <FeatureRow
+        headingLines={["Add games", "to your shelf"]}
+        caption="Any game, any era"
+        imageLabel="Have Played shelf ranking"
+        imageSide="right"
+        isMobile={isMobile}
+      />
+      <FeatureRow
+        headingLines={["Games In Common", "leads to discovery"]}
+        caption="Taste > popularity"
+        imageLabel="Discovery feed — FAR / L.A. Noire"
+        imageSide="left"
+        isMobile={isMobile}
+      />
+      <FeatureRow
+        headingLines={["Reviews mean", "more than ever"]}
+        caption="So that's why I disagree!"
+        quote
+        imageLabel="Reviews page"
+        imageSide="left"
+        isMobile={isMobile}
+      />
+      <FeatureRow
+        headingLines={["Talk games", "with gamers"]}
+        caption="Without attention hacks"
+        imageLabel="Feed comments"
+        imageSide="left"
+        isMobile={isMobile}
+      />
+      <FeatureRow
+        headingLines={["Schedule", "Gaming Sessions"]}
+        caption="Never miss a chance to play"
+        imageLabel="Gaming Sessions"
+        imageSide="right"
+        isMobile={isMobile}
+      />
+      <FeatureRow
+        headingLines={["Create your", "gamer profile"]}
+        caption="Share stats from your library"
+        imageLabel="Gamer profile"
+        imageSide="left"
+        isMobile={isMobile}
+      />
 
-      {/* What GuildLink is */}
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: isMobile ? "0 20px 56px" : "0 24px 72px" }}>
-        <div style={{ color: C.accentSoft, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, textAlign: "center" }}>
-          A social discovery platform for video games
-        </div>
-        <div style={{ color: C.textMuted, fontSize: isMobile ? 15 : 16, lineHeight: 1.8, textAlign: "center" }}>
-          When you add games to your shelf, GuildLink gets to work doing game discovery how it's always worked
-          best: person to person. GuildLink compares your gaming history with other gamers. When their library
-          overlaps with yours, what they've played and enjoyed becomes your best recommendation.
-        </div>
-      </div>
-
-      {/* Any platform, any era */}
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: isMobile ? "0 20px 72px" : "0 24px 96px" }}>
-        <div style={{ textAlign: "center", marginBottom: 8, fontWeight: 800, fontSize: isMobile ? 22 : 26, color: C.text }}>
-          Everything you've played influences discovery.
-        </div>
-        <div style={{ textAlign: "center", marginBottom: 28, color: C.textMuted, fontSize: 15 }}>
-          Any platform. Any era.
-        </div>
-        <PixelCornerBox size="lg" borderColor={C.border} bg={C.surface} style={{ overflow: "hidden" }}>
-          <CheckRow game="Contra" platform="NES" />
-          <CheckRow game="Sonic" platform="Sega Game Gear" />
-          <CheckRow game="Metal Gear Solid" platform="PlayStation" />
-          <CheckRow game="Puzzle Quest" platform="Xbox 360" />
-          <CheckRow game="Half-Life" platform="PC" />
-          <div style={{ borderBottom: "none" }}>
-            <CheckRow game="Fortnite" platform="Mobile" />
+      {/* Gold CTA — mirrors the top hero's treatment, shorter, no logo or
+          mascot, closing the page the way it opened. */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
+          borderTop: "1px solid " + C.goldBorder,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "radial-gradient(circle at 1px 1px, " + C.gold + "06 1px, transparent 0)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: isMobile ? "56px 20px" : "80px 24px", textAlign: "center", position: "relative" }}>
+          <div style={{ fontWeight: 900, fontSize: isMobile ? 26 : 36, color: "#fff", letterSpacing: "-1px", lineHeight: 1.2, marginBottom: 6 }}>
+            Find your next favorite game
           </div>
-        </PixelCornerBox>
-        <div style={{ textAlign: "center", marginTop: 24, color: C.textMuted, fontSize: 15, lineHeight: 1.7 }}>
-          On GuildLink, every game you've played helps you find your next favorite game.
-        </div>
-      </div>
-
-      {/* Feature grid */}
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: isMobile ? "0 20px 72px" : "0 24px 96px" }}>
-        <FeatureCard
-          title="The Shelf"
-          description="Add games from any platform or era. The more you add, the better your recommendations get."
-          screenshotLabel="Shelf view"
-          isMobile={isMobile}
-        />
-        <FeatureCard
-          title="Discovery Feed"
-          description="See GuildLink Discoveries, follow what your friends are playing, and talk games without the typical drama of social media."
-          screenshotLabel="Discovery Feed"
-          reverse
-          isMobile={isMobile}
-        />
-        <FeatureCard
-          title="Guilds"
-          description="Game with friends? Guilds lets you schedule private Gaming Sessions so everyone is in the loop. RSVP with your status for each session, and chat in the session-specific chat."
-          screenshotLabel="Guild session"
-          isMobile={isMobile}
-        />
-        <FeatureCard
-          title="Gamer Profile"
-          description="Curate your gamer profile with stats about your gaming history."
-          screenshotLabel="Gamer Profile"
-          reverse
-          isMobile={isMobile}
-        />
-      </div>
-
-      {/* Privacy */}
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: isMobile ? "0 20px 80px" : "0 24px 100px" }}>
-        <PixelCornerBox size="lg" borderColor={C.accentDim} bg={C.surface} style={{ padding: isMobile ? 22 : 32, textAlign: "center" }}>
-          <div style={{ fontWeight: 800, fontSize: 18, color: C.text, marginBottom: 12 }}>Built Around Privacy</div>
-          <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.8, marginBottom: 16 }}>
-            GuildLink collects as little as possible and never sells it. We see you as a gamer, not a product.
+          <div style={{ fontWeight: 900, fontSize: isMobile ? 26 : 36, color: C.gold, letterSpacing: "-1px", lineHeight: 1.2, marginBottom: 28 }}>
+            on GuildLink
           </div>
-          <button
-            onClick={() => setActivePage("privacy")}
-            style={{ background: "none", border: "none", color: C.accentSoft, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
-          >
-            Read our privacy policy to see what we mean.
-          </button>
-        </PixelCornerBox>
-      </div>
-
-      {/* Final CTA */}
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: isMobile ? "0 20px 90px" : "0 24px 110px", textAlign: "center" }}>
-        <div style={{ fontWeight: 900, fontSize: isMobile ? 24 : 30, color: C.text, marginBottom: 24, lineHeight: 1.3 }}>
-          Ready to find your next favorite game?
-        </div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <PixelButton size="md" bg={C.accent} onClick={goSignUp}>
-            Sign Up
-          </PixelButton>
-          <a href={APP_STORE_URL} style={{ textDecoration: "none" }}>
-            <PixelButton size="md" bg={C.surface} borderColor={C.border}>
-              Download on the App Store
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <PixelButton
+              size="md"
+              bg={"linear-gradient(135deg, " + C.gold + ", #d97706)"}
+              color="#000"
+              style={{ fontWeight: 900, fontSize: 15, padding: "14px 40px", boxShadow: "0 8px 32px " + C.gold + "44" }}
+              onClick={goSignUp}
+            >
+              Sign Up
             </PixelButton>
-          </a>
+            <a href={APP_STORE_URL} style={{ textDecoration: "none" }}>
+              <PixelButton
+                size="md"
+                bg="transparent"
+                borderColor={C.goldBorder}
+                color={C.gold}
+                style={{ fontWeight: 800, fontSize: 15, padding: "14px 32px" }}
+              >
+                Download for iOS
+              </PixelButton>
+            </a>
+          </div>
         </div>
       </div>
 
