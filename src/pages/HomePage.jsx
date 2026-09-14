@@ -226,7 +226,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         quote
         imageLabel="Reviews page"
         imageSrc="/3_reviews.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.bg}
         isMobile={isMobile}
       />
@@ -263,7 +263,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
       <div
         style={{
           background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
-          borderTop: "1px solid " + C.goldBorder,
+          borderTop: "3px solid " + C.goldBorder,
           position: "relative",
           overflow: "hidden",
         }}
