@@ -69,7 +69,7 @@ const FeatureRow = ({ headingLines, caption, quote, detail, imageLabel, imageSrc
         gap: isMobile ? 20 : 56,
       }}
     >
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ flexShrink: 0, paddingTop: isMobile ? 28 : 0 }}>
         <ScreenshotSlot src={imageSrc} label={imageLabel} width={isMobile ? 165 : 240} />
       </div>
       <div
@@ -93,7 +93,20 @@ const FeatureRow = ({ headingLines, caption, quote, detail, imageLabel, imageSrc
           {quote ? "\u201C" + caption + "\u201D" : caption}
         </div>
         {detail && (
-          <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, maxWidth: 320, marginLeft: !isMobile && imageSide === "right" ? "auto" : 0 }}>
+          <div
+            style={{
+              color: C.textMuted,
+              fontSize: 14,
+              lineHeight: 1.6,
+              maxWidth: 320,
+              // On mobile this maxWidth block needs its own auto margins to
+              // actually center within the full-width parent — textAlign
+              // alone only centers the text inside this box, not the box
+              // itself. That's the "skewed off center" bug.
+              marginLeft: isMobile ? "auto" : imageSide === "right" ? "auto" : 0,
+              marginRight: isMobile ? "auto" : 0,
+            }}
+          >
             {detail}
           </div>
         )}

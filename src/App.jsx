@@ -533,23 +533,35 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
       setActivePage(id);
     }
   };
-  const mobileItems = [
-    { id: "feed", icon: "feed", label: "Feed" },
-    { id: "games", icon: "games", label: "Games" },
-    { id: "reviews-nav", icon: "reviews", label: "Reviews" },
-    { id: "squad", icon: "guilds", label: "Guild" },
-    { id: "feedback", icon: "feedback", label: "Feedback" },
-  ];
-  const desktopItems = [
-    { id: "feed", icon: "⊞", label: "Feed" },
-    { id: "games", icon: "🎮", label: "Games" },
-    { id: "reviews-nav", icon: "⭐", label: "Reviews" },
-    { id: "squad", icon: "🛡️", label: "Guild" },
-    { id: "founding", icon: "⚔️", label: "About", gold: true },
-    { id: "feedback", icon: "💬", label: "Feedback" },
-    ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
-    ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
-  ];
+  const mobileItems = isGuest
+    ? [
+        { id: "founding", label: "About" },
+        { id: "culture", label: "Culture Agreement" },
+        { id: "privacy", label: "Privacy" },
+      ]
+    : [
+        { id: "feed", icon: "feed", label: "Feed" },
+        { id: "games", icon: "games", label: "Games" },
+        { id: "reviews-nav", icon: "reviews", label: "Reviews" },
+        { id: "squad", icon: "guilds", label: "Guild" },
+        { id: "feedback", icon: "feedback", label: "Feedback" },
+      ];
+  const desktopItems = isGuest
+    ? [
+        { id: "founding", label: "About", gold: true },
+        { id: "culture", label: "Culture Agreement" },
+        { id: "privacy", label: "Privacy" },
+      ]
+    : [
+        { id: "feed", icon: "⊞", label: "Feed" },
+        { id: "games", icon: "🎮", label: "Games" },
+        { id: "reviews-nav", icon: "⭐", label: "Reviews" },
+        { id: "squad", icon: "🛡️", label: "Guild" },
+        { id: "founding", icon: "⚔️", label: "About", gold: true },
+        { id: "feedback", icon: "💬", label: "Feedback" },
+        ...(isAdmin ? [{ id: "admin", icon: "⚡", label: "Admin", admin: true }] : []),
+        ...(isWriter ? [{ id: "npc-studio", icon: "✍️", label: "Studio", admin: true }] : []),
+      ];
 
   if (isMobile) {
     return (
@@ -659,7 +671,7 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                   padding: "6px 0 4px",
                 }}>
                   {active && <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: 2, background: C.gold, borderRadius: "0 0 2px 2px" }} />}
-                  <Icon name={item.icon} size={22} color={active ? C.gold : C.textDim} />
+                  {item.icon && <Icon name={item.icon} size={22} color={active ? C.gold : C.textDim} />}
                   <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.01em" }}>{item.label}</span>
                 </button>
               );
@@ -1343,6 +1355,7 @@ export default function GuildLink() {
 
   const navToPage = (page) => {
     setActivePage(page);
+    window.scrollTo(0, 0);
     const path = page === "founding" ? "/about" : page === "squad" ? "/guilds" : `/${page}`;
     window.history.pushState({ page }, "", path);
     supabase.auth.getUser().then(({ data: { user } }) => { if (user) logAnalytics(user.id, "page_view", page); });
