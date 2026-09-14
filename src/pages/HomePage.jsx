@@ -74,9 +74,12 @@ const FeatureRow = ({ headingLines, caption, quote, detail, imageLabel, imageSrc
       </div>
       <div
         style={{
-          flex: 1,
-          // Text justifies toward whichever side the image sits on, so the
-          // pair reads as one centered unit instead of two separate columns.
+          // Fixed width instead of flex:1 — otherwise this stretches to fill
+          // all remaining space in the row, pinning image and text to
+          // opposite edges instead of letting them sit together as one
+          // centered group.
+          width: isMobile ? "100%" : 400,
+          flexShrink: isMobile ? 1 : 0,
           textAlign: isMobile ? "center" : imageSide === "right" ? "right" : "left",
           padding: isMobile ? "20px 0" : 0,
         }}
