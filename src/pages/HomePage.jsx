@@ -56,7 +56,7 @@ const ScreenshotSlot = ({ label, src, alt, aspect, width }) => {
 // padding on the row itself — and rows alternate background color,
 // separated by a thin gold line (borderTop).
 const FeatureRow = ({ headingLines, caption, quote, detail, imageLabel, imageSrc, imageSide, bg, isMobile }) => (
-  <div style={{ borderTop: "1px solid " + C.goldBorder, background: bg }}>
+  <div style={{ borderTop: "3px solid " + C.goldBorder, background: bg }}>
     <div
       style={{
         maxWidth: 1040,
@@ -238,18 +238,20 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
       <FeatureRow
         headingLines={["Add games", "to your shelf"]}
         caption="Any game, any era"
+        detail="Every game you've played has shaped your taste in games. On GuildLink, your entire gaming history helps you find your next favorite game."
         imageLabel="Have Played shelf ranking"
         imageSrc="/1_add_games.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.bg}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Games In Common", "leads to discovery"]}
         caption="Taste > popularity"
+        detail="GuildLink compares your library with other gamers on the platform. When there's a lot of overlap, great discoveries aren't far behind."
         imageLabel="Discovery feed — FAR / L.A. Noire"
         imageSrc="/2_games_in_common.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
@@ -257,36 +259,40 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         headingLines={["Reviews mean", "more than ever"]}
         caption="So that's why I disagree!"
         quote
+        detail="Opinionated reviews may be fun to read, but they aren't always helpful. But when you know the taste of the one writing the review, you know if they're worth listening to."
         imageLabel="Reviews page"
         imageSrc="/3_reviews.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.bg}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Talk games", "with gamers"]}
         caption="Without attention hacks"
+        detail="The social side of GuildLink is only about games. No wading through political posts, random pet photos from strangers, or anything that isn't related to gaming."
         imageLabel="Feed comments"
         imageSrc="/4_talk_games.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Schedule", "Gaming Sessions"]}
         caption="Never miss a chance to play"
+        detail="Finding a new game is great, but finding opportunities to play with friends is even better. Gaming Sessions let you schedule, RSVP, and plan your next time to play."
         imageLabel="Gaming Sessions"
         imageSrc="/5_game_sessions.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.bg}
         isMobile={isMobile}
       />
       <FeatureRow
         headingLines={["Create your", "gamer profile"]}
         caption="Share stats from your library"
+        detail="Your gaming history is a glimpse into who you are as a gamer. GuildLink is where you can show it off."
         imageLabel="Gamer profile"
         imageSrc="/6_profile.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
