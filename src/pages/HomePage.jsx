@@ -2,6 +2,22 @@ import React from "react";
 import { C } from "../constants.js";
 import { PixelButton } from "../components/PixelButton.jsx";
 
+/*
+  PUBLIC HOMEPAGE — logged-out landing page
+  ------------------------------------------
+  Replaces the old "live feed simulation" logged-out view. This page is a
+  straight marketing/identity page: why GuildLink, not a preview of the UI.
+
+  IMAGE SLOTS
+  Every screenshot placeholder below is a <ScreenshotSlot> — a bordered,
+  labeled box standing in for an App Store image. Drop a real <img> in by
+  passing a `src` prop (see the component itself), e.g.:
+
+    <ScreenshotSlot src="/images/shelf-screenshot.png" alt="The Shelf" />
+
+  Until real assets are wired in, these render a visible placeholder so it's
+  obvious where art belongs and at roughly what aspect ratio/size to export it.
+*/
 
 const ScreenshotSlot = ({ label, src, alt, aspect, width }) => {
   if (src) {
@@ -39,7 +55,7 @@ const ScreenshotSlot = ({ label, src, alt, aspect, width }) => {
 // Each row's height is driven entirely by the screenshot — no vertical
 // padding on the row itself — and rows alternate background color,
 // separated by a thin gold line (borderTop).
-const FeatureRow = ({ headingLines, caption, quote, imageLabel, imageSrc, imageSide, bg, isMobile }) => (
+const FeatureRow = ({ headingLines, caption, quote, detail, imageLabel, imageSrc, imageSide, bg, isMobile }) => (
   <div style={{ borderTop: "1px solid " + C.goldBorder, background: bg }}>
     <div
       style={{
@@ -54,17 +70,30 @@ const FeatureRow = ({ headingLines, caption, quote, imageLabel, imageSrc, imageS
       }}
     >
       <div style={{ flexShrink: 0 }}>
-        <ScreenshotSlot src={imageSrc} label={imageLabel} width={isMobile ? 220 : 320} />
+        <ScreenshotSlot src={imageSrc} label={imageLabel} width={isMobile ? 165 : 240} />
       </div>
-      <div style={{ flex: 1, textAlign: isMobile ? "center" : "left", padding: isMobile ? "20px 0" : 0 }}>
+      <div
+        style={{
+          flex: 1,
+          // Text justifies toward whichever side the image sits on, so the
+          // pair reads as one centered unit instead of two separate columns.
+          textAlign: isMobile ? "center" : imageSide === "right" ? "right" : "left",
+          padding: isMobile ? "20px 0" : 0,
+        }}
+      >
         <div style={{ fontWeight: 900, fontSize: isMobile ? 24 : 30, color: C.text, lineHeight: 1.3, marginBottom: 10 }}>
           {headingLines.map((line, i) => (
             <div key={i}>{line}</div>
           ))}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: C.accent }}>
+        <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: C.accent, marginBottom: detail ? 10 : 0 }}>
           {quote ? "\u201C" + caption + "\u201D" : caption}
         </div>
+        {detail && (
+          <div style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6, maxWidth: 320, marginLeft: !isMobile && imageSide === "right" ? "auto" : 0 }}>
+            {detail}
+          </div>
+        )}
       </div>
     </div>
   </div>
@@ -91,10 +120,11 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
   return (
     <div style={{ background: C.bg }}>
 
+      {/* Gold hero — full-width, matches FoundingMemberPage's gold treatment */}
       <div
         style={{
           background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
-          borderBottom: "3px solid " + C.goldBorder,
+          borderBottom: "1px solid " + C.goldBorder,
           position: "relative",
           overflow: "hidden",
           paddingBottom: isMobile ? 190 : 250,
@@ -172,6 +202,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
           </div>
         </div>
 
+        {/* Blizzmond — full image, resting at the gold section's bottom edge. */}
         <div
           style={{
             position: "absolute",
@@ -182,9 +213,12 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
             zIndex: 2,
           }}
         >
-          <img src="/blizmond.png" alt="Blizmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
+          <img src="/blizzmond.png" alt="Blizzmond" style={{ width: "100%", display: "block", imageRendering: "pixelated" }} />
         </div>
       </div>
+
+      {/* Simplified pitch — no buttons here, the gold hero above and the gold
+          CTA below already carry both. This section is just the "why". */}
       <div style={{ maxWidth: 700, margin: "0 auto", padding: isMobile ? "56px 20px 48px" : "80px 24px 64px", textAlign: "center" }}>
         <div style={{ fontWeight: 900, fontSize: isMobile ? 26 : 34, color: C.text, lineHeight: 1.3, marginBottom: 14 }}>
           The best game recommendations come from people who know your taste
@@ -194,13 +228,16 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         </div>
       </div>
 
-
+      {/* App feature rows — real screenshots, alternating image side and
+          alternating background, thin gold divider between each (handled
+          inside FeatureRow itself). Files ship alongside this component —
+          drop them in /public with these exact names. */}
       <FeatureRow
         headingLines={["Add games", "to your shelf"]}
         caption="Any game, any era"
         imageLabel="Have Played shelf ranking"
         imageSrc="/1_add_games.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.bg}
         isMobile={isMobile}
       />
@@ -209,7 +246,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Taste > popularity"
         imageLabel="Discovery feed — FAR / L.A. Noire"
         imageSrc="/2_games_in_common.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
@@ -228,7 +265,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Without attention hacks"
         imageLabel="Feed comments"
         imageSrc="/4_talk_games.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
@@ -237,7 +274,7 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Never miss a chance to play"
         imageLabel="Gaming Sessions"
         imageSrc="/5_game_sessions.png"
-        imageSide="left"
+        imageSide="right"
         bg={C.bg}
         isMobile={isMobile}
       />
@@ -246,14 +283,17 @@ function HomePage({ isMobile, setActivePage, onSignIn, onSignUp }) {
         caption="Share stats from your library"
         imageLabel="Gamer profile"
         imageSrc="/6_profile.png"
-        imageSide="right"
+        imageSide="left"
         bg={C.surfaceRaised}
         isMobile={isMobile}
       />
+
+      {/* Gold CTA — mirrors the top hero's treatment, shorter, no logo or
+          mascot, closing the page the way it opened. */}
       <div
         style={{
           background: "linear-gradient(135deg, #0f0a00 0%, #1f1500 40%, #0a0800 100%)",
-          borderTop: "3px solid " + C.goldBorder,
+          borderTop: "1px solid " + C.goldBorder,
           position: "relative",
           overflow: "hidden",
         }}
