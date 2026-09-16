@@ -124,6 +124,12 @@ function notifLabel(n) {
     case "guild_session": return n.message || "scheduled a session in your guild";
     case "guild_rsvp":    return n.message || "responded to your session";
     case "guild_request": return n.message || "requested to join your guild";
+    // session_message's `message` is a complete, pre-built sentence
+    // ("X commented in the Y game session in Z.") — it already includes
+    // the actor's name, unlike every other case above which expects the
+    // caller to prepend the name separately. fullLine tells the caller
+    // to render `text` on its own, not as a "{name} {label}" suffix.
+    case "session_message": return { fullLine: true, text: n.message || "commented in your session" };
     default:              return "interacted with you";
   }
 }
