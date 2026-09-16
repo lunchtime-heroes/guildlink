@@ -140,6 +140,14 @@ function notifLabel(n) {
     case "guild_session": return n.message || "scheduled a session in your guild";
     case "guild_rsvp":    return n.message || "responded to your session";
     case "guild_request": return n.message || "requested to join your guild";
+    // session_message's `message` is a complete, pre-built sentence
+    // ("X commented in the Y game session in Z.") — it already includes
+    // the actor's name, unlike every other case above which expects the
+    // caller to prepend the name separately. fullLine tells every render
+    // call site below to show `text` on its own, not as a "{name} {label}"
+    // suffix. This function is a local duplicate of utils.js's notifLabel —
+    // keep both in sync, this is the copy actually rendered on web.
+    case "session_message": return { fullLine: true, text: n.message || "commented in your session" };
     default:              return "interacted with you";
   }
 }
@@ -611,7 +619,9 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                         const notifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
                         const isGuildNotif = !!n.guild_id;
-                        const notifText = notifLabel(n);
+                        const notifLabelResult = notifLabel(n);
+                        const notifIsFullLine = notifLabelResult && typeof notifLabelResult === "object" && notifLabelResult.fullLine;
+                        const notifText = notifIsFullLine ? notifLabelResult.text : notifLabelResult;
                         return (
                           <div key={n.id} onClick={() => {
                             if (hasPost) { onOpenPost?.(n.post_id); setShowNotifs(false); }
@@ -621,7 +631,9 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                             <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={notifAvatarConfig} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-                                {isNPC ? (
+                                {notifIsFullLine ? (
+                                  <span style={{ color: C.text }}>{notifText}</span>
+                                ) : isNPC ? (
                                   <><strong style={{ color: C.gold }}>{npcData.name}</strong> <span style={{ color: C.gold }}>{notifText}</span></>
                                 ) : (
                                   <span style={{ color: C.text }}><strong>{actor?.username || "Someone"}</strong> {notifText}</span>
@@ -772,6 +784,9 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                         : (actor?.avatar_initials || actor?.username || "?").slice(0,2).toUpperCase();
                       const mobileNotifAvatarConfig = !isNPC ? (actor?.avatar_config || null) : null;
                       const isGuildNotif = !!n.guild_id;
+                      const notifLabelResult = notifLabel(n);
+                      const notifIsFullLine = notifLabelResult && typeof notifLabelResult === "object" && notifLabelResult.fullLine;
+                      const notifText = notifIsFullLine ? notifLabelResult.text : notifLabelResult;
                       return (
                         <div key={n.id}
                           onClick={() => {
@@ -786,18 +801,20 @@ function NavBar({ activePage, setActivePage, isMobile, signOut, currentUser, isG
                           <Avatar initials={avatarInitials} size={30} isNPC={isNPC} avatarConfig={mobileNotifAvatarConfig} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-                              {isNPC ? (
+                              {notifIsFullLine ? (
+                                <span style={{ color: C.text }}>{notifText}</span>
+                              ) : isNPC ? (
                                 <>
                                   <strong style={{ color: C.gold }}>{npcData.name}</strong>
                                   {" "}<NPCBadge />{" "}
-                                  <span style={{ color: C.gold }}>{notifLabel(n)}</span>
+                                  <span style={{ color: C.gold }}>{notifText}</span>
                                 </>
                               ) : (
                                 <span style={{ color: C.text }}>
                                   <strong
                                     onClick={e => { e.stopPropagation(); if (actor?.handle) { setCurrentPlayer?.(actor.id); setActivePage("player"); setShowNotifs(false); } }}
                                     style={{ cursor: actor?.handle ? "pointer" : "default", color: actor?.handle ? C.accentSoft : C.text }}
-                                  >{actor?.username || "Someone"}</strong> {notifLabel(n)}
+                                  >{actor?.username || "Someone"}</strong> {notifText}
                                 </span>
                               )}
                             </div>
