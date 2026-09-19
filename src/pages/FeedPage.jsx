@@ -8,6 +8,7 @@ import { PixelTabBar } from "../components/PixelTabBar.jsx";
 import supabase from "../supabase.js";
 import { getBlockedUserIds, getHiddenContentIds } from "../moderationUtils.js";
 import { timeAgo, logChartEvent, updateTasteProfile } from "../utils.js";
+import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
 import { Avatar } from "../components/Avatar.jsx";
 import { FeedPostCard, renderPostContent } from "../components/FeedPostCard.jsx";
 import { ShelfPulseCard, ReviewSpotlightCard, QACard } from "../components/PulseCards.jsx";
@@ -216,6 +217,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [taggedUsers, setTaggedUsers] = useState([]);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [dbGames, setDbGames] = useState({});
+  const [userShelf, setUserShelf] = useState(new Map()); // game_id -> status, for the "already on shelf" checkmark in @mention/nudge search
   const [dailyPrompt, setDailyPrompt] = useState(null);
   const [sidebarNPCs, setSidebarNPCs] = useState([]);
   const [showTagNudge, setShowTagNudge] = useState(false);
@@ -273,16 +275,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         setMentionQuery(query);
         setMentionIndex(0);
       } else {
-        const [localRes, igdbRes, playersRes, npcsRes] = await Promise.allSettled([
-          supabase.from("games").select("id, name, followers, igdb_id, cover_url, genre").ilike("name", `%${query}%`).order("followers", { ascending: false }).limit(4),
-          fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) }).then(r => r.json()).catch(() => ({ games: [] })),
+        const [gameRes, playersRes, npcsRes] = await Promise.allSettled([
+          searchGamesCore(query, { displayLimit: 4, igdbNewLimit: 4 }),
           supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${query}%,handle.ilike.%${query}%`).limit(3),
           supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${query}%,handle.ilike.%${query}%`).eq("is_active", true).limit(3),
         ]);
-        const localGames = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-        const igdbGames = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-        const localNames = new Set(localGames.map(g => g.name.toLowerCase()));
-        const newFromIGDB = igdbGames.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
+        const { local: localGames, fromIGDB: newFromIGDB } = gameRes.status === "fulfilled" ? gameRes.value : { local: [], fromIGDB: [] };
         const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
         const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
         setMentionResults([...players, ...npcs, ...localGames, ...newFromIGDB].slice(0, 10));
@@ -302,17 +300,11 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   };
 
   const addGameFromIGDB = async (game) => {
-    const { data, error } = await supabase.from("games").insert({
-      name: game.name,
-      genre: game.genre,
-      summary: game.summary,
-      cover_url: game.cover_url,
-      igdb_id: game.igdb_id,
-      first_release_date: game.first_release_date,
-      followers: 0,
-    }).select().single();
-    if (error) { console.error("[addGameFromIGDB]", error); return null; }
-    return data;
+    // Was a plain .insert() — collided on games' name/igdb_id unique
+    // constraints under race conditions. upsertGameFromIGDB is the shared,
+    // collision-safe version (see gameSearch.js header for the full bug
+    // history this fixes).
+    return upsertGameFromIGDB(game);
   };
 
   const handlePostKeyDown = (e) => {
@@ -376,15 +368,8 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setNudgeDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
     }
     if (val.length < 2) { setNudgeResults([]); return; }
-    const [localRes, igdbRes] = await Promise.allSettled([
-      supabase.from("games").select("id, name, cover_url, genre").ilike("name", "%" + val + "%").order("followers", { ascending: false }).limit(5),
-      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: val }) }).then(r => r.json()).catch(() => ({ games: [] })),
-    ]);
-    const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-    const localNames = new Set(local.map(g => g.name.toLowerCase()));
-    const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-    setNudgeResults([...local, ...fromIGDB].slice(0, 6));
+    const { local, fromIGDB } = await searchGamesCore(val, { displayLimit: 5, igdbNewLimit: 1 });
+    setNudgeResults([...local, ...fromIGDB]);
   };
 
   const selectNudgeGame = async (item) => {
@@ -427,6 +412,15 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
     setTargetPostId(feedTargetPost.id);
     setScrollTrigger(t => t + 1);
   }, [feedTargetPost]);
+
+  // Same game_id -> status Map pattern as GamesPage.jsx — powers the
+  // "already on shelf" checkmark in the @mention and tag-nudge dropdowns.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    supabase.from("user_games").select("game_id, status").eq("user_id", currentUser.id).then(({ data }) => {
+      if (data) setUserShelf(new Map(data.map(r => [r.game_id, r.status])));
+    });
+  }, [currentUser?.id]);
 
   // Once posts are loaded, if a target post isn't in the list (e.g. older than the
   // initial 20-post window), fetch it directly so it can be displayed and scrolled to.
@@ -1162,7 +1156,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                               : <div style={{ width: 48, height: 64, borderRadius: 5, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎮</div>
                             }
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                              <div style={{ color: C.text, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                                {userShelf.has(item.id) && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+                              </div>
                               {(item.platforms || item.genre) && <div style={{ color: C.textDim, fontSize: 10 }}>{item.platforms || item.genre}</div>}
                             </div>
                             {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, flexShrink: 0, fontWeight: 600 }}>+ Add</span>}
@@ -1203,7 +1200,10 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                                 : <div style={{ width: 32, height: 42, borderRadius: 4, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
                               }
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                                <div style={{ color: C.text, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                                  {userShelf.has(item.id) && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
+                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+                                </div>
                                 {item.genre && <div style={{ color: C.textDim, fontSize: 11 }}>{item.genre}</div>}
                               </div>
                               {item._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { logChartEvent, formatScore } from "../utils.js";
+import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
@@ -12,7 +13,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   // ── Games data ──
   const [dbGames, setDbGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(true);
-  const [userShelf, setUserShelf] = useState(new Set());
+  const [userShelf, setUserShelf] = useState(new Map()); // game_id -> status
 
   // ── Discovery state ──
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
@@ -101,8 +102,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
       setGamesLoading(false);
     });
     if (currentUser?.id) {
-      supabase.from("user_games").select("game_id").eq("user_id", currentUser.id).then(({ data }) => {
-        if (data) setUserShelf(new Set(data.map(r => r.game_id)));
+      // Was game_id only (membership Set) — now also pulls status so search
+      // results can show a checkmark AND callers can look up which status
+      // a game is already on, not just whether it's on the shelf at all.
+      supabase.from("user_games").select("game_id, status").eq("user_id", currentUser.id).then(({ data }) => {
+        if (data) setUserShelf(new Map(data.map(r => [r.game_id, r.status])));
       });
     }
   }, [currentUser?.id]);
@@ -502,15 +506,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(null);
     setDiscoveryLoading(true);
     setDiscoveryLabel("Results for \"" + q + "\"");
-    const [localRes, igdbRes] = await Promise.allSettled([
-      supabase.from("games").select("id, name, genre, cover_url").ilike("name", "%" + q + "%").limit(8),
-      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-    ]);
-    const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-    const localNames = new Set(local.map(g => g.name.toLowerCase()));
-    const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-    const all = [...local, ...fromIGDB].slice(0, 16);
+    const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 8, igdbNewLimit: 8 });
+    const all = [...local, ...fromIGDB];
     setDiscoveryResults(all.map(g => ({ ...g, _stat: g.genre || "" })));
     setDiscoveryLoading(false);
   };
@@ -751,15 +748,8 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       const q = val.startsWith("@") ? val.slice(1) : val;
                       if (!q) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
                       if (q.length >= 2) {
-                        const [localRes, igdbRes] = await Promise.allSettled([
-                          supabase.from("games").select("id, name, genre, cover_url").ilike("name", "%" + q + "%").limit(4),
-                          fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-                        ]);
-                        const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-                        const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-                        const localNames = new Set(local.map(g => g.name.toLowerCase()));
-                        const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        setTypeaheadResults([...local, ...fromIGDB].slice(0, 6));
+                        const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 4, igdbNewLimit: 2 });
+                        setTypeaheadResults([...local, ...fromIGDB]);
                       } else {
                         setTypeaheadResults([]);
                       }
@@ -781,7 +771,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     {typeaheadResults.map((g, i) => (
                       <div key={g.id || g.igdb_id} onMouseDown={async () => {
                         if (g._fromIGDB) {
-                          const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
+                          const inserted = await upsertGameFromIGDB(g);
                           if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
                         } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }
                         setTypeaheadResults([]); setNameSearch("");
@@ -794,7 +784,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                           : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
                         }
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+                            {userShelf.has(g.id) && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+                          </div>
                           {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
                         </div>
                         {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
@@ -848,7 +841,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 const navigateToGame = async () => {
                   if (menuOpen) { setShelfMenuOpen(null); return; }
                   if (g._fromIGDB) {
-                    const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
+                    const inserted = await upsertGameFromIGDB(g);
                     if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", "/game/" + inserted.id); }
                   } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", "/game/" + g.id); }
                 };
@@ -894,7 +887,10 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       }
                     </div>
                     <div style={{ padding: "10px 12px" }}>
-                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, display: "flex", alignItems: "center", gap: 5 }}>
+                        {onShelf && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+                      </div>
                       {g._stat && (
                         <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{g._stat}</div>
                       )}
