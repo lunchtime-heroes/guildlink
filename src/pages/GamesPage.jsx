@@ -6,7 +6,7 @@ import { logChartEvent, formatScore } from "../utils.js";
 import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
 import { useUserShelf } from "../hooks/useUserShelf.js";
 import { GameResultRow } from "../components/GameResultRow.jsx";
-import { ShelfStatusMenu } from "../components/ShelfStatusMenu.jsx";
+import { ShelfStatusMenu, STATUS_LABEL_BY_ID, STATUS_COLOR_KEY_BY_ID } from "../components/ShelfStatusMenu.jsx";
 import { PlatformTag } from "../components/PlatformTag.jsx";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
@@ -874,25 +874,33 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         : <div style={{ width: "100%", height: "100%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
                       }
                     </div>
-                    <div style={{ padding: "10px 12px" }}>
-                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column" }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, display: "flex", alignItems: "center", gap: 5, minHeight: 17 }}>
                         {onShelf && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
                       </div>
-                      {g._stat && (
-                        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{g._stat}</div>
-                      )}
-                      {g.platforms && (
-                        <div style={{ marginBottom: 6 }}>
-                          <PlatformTag platforms={g.platforms} />
-                        </div>
-                      )}
+                      {/* Genre row — fixed height reserved whether or not a game has one,
+                          so cards with/without genre stay the same height in the grid. */}
+                      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4, minHeight: 14 }}>
+                        {g._stat || ""}
+                      </div>
+                      {/* Platform tag row — same fixed-height-reservation approach. */}
+                      <div style={{ marginBottom: 6, minHeight: 20 }}>
+                        {g.platforms && <PlatformTag platforms={g.platforms} />}
+                      </div>
                       {currentUser && (
                         <div style={{ padding: "1px 0" }}>
                           {onShelf ? (
-                            <div style={{ fontSize: 11, fontWeight: 700, color: C.accentDim, textAlign: "center", padding: "6px 0" }}>
-                              {{ want_to_play: "On Want to Play", playing: "On Playing Now", have_played: "On Have Played", not_for_me: "Not Interested" }[shelfStatus] || "On Your Shelf"}
-                            </div>
+                            <PixelButton
+                              fullWidth size="xs"
+                              bg={C.surface}
+                              borderColor={C[STATUS_COLOR_KEY_BY_ID[shelfStatus]] || C.accentDim}
+                              color={C[STATUS_COLOR_KEY_BY_ID[shelfStatus]] || C.accentDim}
+                              style={{ justifyContent: "center" }}
+                              onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
+                            >
+                              {STATUS_LABEL_BY_ID[shelfStatus] || "On Your Shelf"}
+                            </PixelButton>
                           ) : (
                             <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={openShelfMenu}>
                               {"+ Add to Shelf"}

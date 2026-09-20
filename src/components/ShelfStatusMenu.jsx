@@ -17,12 +17,19 @@ import { PixelButton } from "./PixelButton.jsx";
 import { C } from "../constants.js";
 import { logChartEvent } from "../utils.js";
 
-const STATUS_OPTIONS = [
+export const STATUS_OPTIONS = [
   { id: "want_to_play", label: "Want to Play", color: "accent" },
   { id: "playing", label: "Playing Now", color: "green" },
   { id: "have_played", label: "Have Played", color: "gold" },
   { id: "not_for_me", label: "Not Interested", color: "red" },
 ];
+
+// Derived lookups for callers that just need "what color/label goes with
+// this status" without re-declaring the same four entries themselves —
+// e.g. the discovery card's shelf-status button. Colors are exported as
+// C[...] keys resolved here (not raw hex) so they stay theme-aware.
+export const STATUS_LABEL_BY_ID = Object.fromEntries(STATUS_OPTIONS.map(o => [o.id, o.label]));
+export const STATUS_COLOR_KEY_BY_ID = Object.fromEntries(STATUS_OPTIONS.map(o => [o.id, o.color]));
 
 const CHART_EVENT_MAP = { playing: "shelf_playing", want_to_play: "shelf_want", have_played: "shelf_played" };
 
