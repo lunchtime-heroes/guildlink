@@ -51,15 +51,10 @@ import supabase from "../supabase.js";
  * @param {number} opts.localFetchLimit - how many local rows to pull before ranking (default 30, wide on purpose — narrowing this reintroduces the original bug)
  * @param {number} opts.displayLimit - how many ranked local results to keep for display (default 8)
  * @param {number} opts.igdbNewLimit - how many net-new IGDB results to include (default unlimited/all returned)
- * @param {number} opts.igdbFetchLimit - how many raw results to request from /api/igdb itself before
- *   dedup (default 10, matching the endpoint's own default). Separate from igdbNewLimit: this controls
- *   the size of the pool IGDB returns; igdbNewLimit controls how many of that pool get shown after
- *   dedup against local matches. Raise this for a dedicated results view expecting many matches (e.g.
- *   a common name like "Mario" or "Halo"); leave it at default for a lightweight inline typeahead.
  * @returns {Promise<{ local: object[], fromIGDB: object[], fromUpcoming: object[] }>}
  */
 export async function searchGamesCore(q, opts = {}) {
-  const { localFetchLimit = 30, displayLimit = 8, igdbNewLimit = null, igdbFetchLimit = null } = opts;
+  const { localFetchLimit = 30, displayLimit = 8, igdbNewLimit = null } = opts;
 
   const [localRes, igdbRes] = await Promise.allSettled([
     supabase.from("games")
@@ -68,7 +63,7 @@ export async function searchGamesCore(q, opts = {}) {
       .limit(localFetchLimit),
     fetch("/api/igdb", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: q, ...(igdbFetchLimit ? { limit: igdbFetchLimit } : {}) }),
+      body: JSON.stringify({ query: q }),
     }).then(r => r.json()).catch(() => ({ games: [] })),
   ]);
 
