@@ -60,7 +60,7 @@ const FIELDS = "name, genres.name, summary, cover.image_id, first_release_date, 
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  const { query, igdb_id, slug } = req.body;
+  const { query, igdb_id, slug, limit } = req.body;
   try {
     const token = await getAccessToken();
     const headers = {
@@ -142,7 +142,15 @@ export default async function handler(req, res) {
         const bScore = (b.cover?.image_id ? 10000 : 0) + (b.rating_count || 0) * 10 + (b.follows || 0);
         return bScore - aScore;
       });
-      const results = (sorted.length > 0 ? sorted : categoryFiltered).slice(0, 10);
+      // Was a hardcoded slice(0, 10) — meant any caller (inline typeahead,
+      // full search page) got the same small cap regardless of context.
+      // A dedicated search-results view (which already replaces the whole
+      // page, not competing with "don't take over the homepage") can
+      // reasonably ask for more than a lightweight dropdown should.
+      // Defaults to 10 to preserve prior behavior for callers that don't
+      // pass one.
+      const resultLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 50) : 10;
+      const results = (sorted.length > 0 ? sorted : categoryFiltered).slice(0, resultLimit);
       // An exact (case-insensitive) name match should never lose to a more
       // popular but less relevant fuzzy result — that's true for search,
       // and it's the whole reason enrichment was silently missing real,

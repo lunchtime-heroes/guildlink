@@ -502,7 +502,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(null);
     setDiscoveryLoading(true);
     setDiscoveryLabel("Results for \"" + q + "\"");
-    const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 8, igdbNewLimit: 8 });
+    const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 12, igdbNewLimit: 20, igdbFetchLimit: 30 });
     const all = [...local, ...fromIGDB];
     setDiscoveryResults(all.map(g => ({ ...g, _stat: g.genre || "" })));
     setDiscoveryLoading(false);
@@ -863,6 +863,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     {menuOpen && (
                       <ShelfStatusMenu
                         game={g}
+                        currentStatus={shelfStatus}
                         onStatusSet={setLocalStatus}
                         onClose={() => setShelfMenuOpen(null)}
                         onNotForMe={(gameId) => setDiscoveryResults(prev => prev.filter(r => r.id !== gameId))}

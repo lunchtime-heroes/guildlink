@@ -35,13 +35,15 @@ const CHART_EVENT_MAP = { playing: "shelf_playing", want_to_play: "shelf_want", 
 
 /**
  * @param {object} game - the game being added/changed (needs at least .id, .name)
+ * @param {string} [currentStatus] - the game's existing status, if any (e.g. userShelf.get(game.id)) —
+ *   shown as a checkmark next to the matching option so opening the menu doesn't lose that context
  * @param {function} onStatusSet - called with (gameId, statusId) after a successful write, so the
  *   caller can update its own userShelf Map (e.g. via useUserShelf's setLocalStatus) without a refetch
  * @param {function} onClose - called when the menu should close (selection made, or Cancel clicked)
  * @param {function} onNotForMe - optional — called after a "not_for_me" selection, for callers that
  *   want to remove the game from a results list (GamesPage's discovery grid does this)
  */
-export function ShelfStatusMenu({ game, onStatusSet, onClose, onNotForMe }) {
+export function ShelfStatusMenu({ game, currentStatus, onStatusSet, onClose, onNotForMe }) {
   const handleSelect = async (opt, e) => {
     e.stopPropagation();
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -61,10 +63,12 @@ export function ShelfStatusMenu({ game, onStatusSet, onClose, onNotForMe }) {
       <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{game.name}</div>
       {STATUS_OPTIONS.map(opt => {
         const optColor = C[opt.color];
+        const isCurrent = opt.id === currentStatus;
         return (
           <div key={opt.id} style={{ padding: "1px 0" }}>
-            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={optColor} color={optColor} style={{ justifyContent: "center" }}
+            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={optColor} color={optColor} style={{ justifyContent: "center", gap: 6 }}
               onClick={e => handleSelect(opt, e)}>
+              {isCurrent && <span>✓</span>}
               {opt.label}
             </PixelButton>
           </div>

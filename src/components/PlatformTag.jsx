@@ -54,22 +54,21 @@ export function PlatformTag({ platforms, style = {} }) {
         See Platforms <span style={{ fontSize: 9 }}>▾</span>
       </span>
       {open && (
-        <div
-          onClick={e => { e.stopPropagation(); setOpen(false); }}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
+        <>
+          {/* Local backdrop — covers just this card (its nearest position:relative
+              ancestor, same technique ShelfStatusMenu uses), not the whole viewport. */}
+          <div
+            onClick={e => { e.stopPropagation(); setOpen(false); }}
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 20, borderRadius: "inherit" }}
+          />
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 20, minWidth: 240, maxWidth: 320, textAlign: "center" }}
+            style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 21, background: C.surface, border: "1px solid " + C.border, borderRadius: "10px 10px 0 0", padding: 16, textAlign: "center" }}
           >
-            {/* Matches the "GUILDLINK DISCOVERY" banner treatment used on
-                DiscoveryCardVertical — uppercase, bold, letter-spaced —
-                so this reads as a consistent piece of the app's visual
-                language rather than a one-off dialog style. */}
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: TEAL, marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: TEAL, marginBottom: 12 }}>
               Available On
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 160, overflowY: "auto" }}>
               {list.map(p => (
                 <div key={p} style={{ color: C.text, fontSize: 13, textAlign: "center", padding: "4px 0", borderBottom: "1px solid " + C.border }}>
                   {p}
@@ -78,12 +77,12 @@ export function PlatformTag({ platforms, style = {} }) {
             </div>
             <button
               onClick={() => setOpen(false)}
-              style={{ marginTop: 14, width: "100%", background: "transparent", border: "1px solid " + C.border, borderRadius: 6, color: C.textDim, fontSize: 12, padding: "6px 0", cursor: "pointer", textAlign: "center" }}
+              style={{ marginTop: 12, width: "100%", background: "transparent", border: "1px solid " + C.border, borderRadius: 6, color: C.textDim, fontSize: 12, padding: "6px 0", cursor: "pointer", textAlign: "center" }}
             >
               Close
             </button>
           </div>
-        </div>
+        </>
       )}
     </>
   );
