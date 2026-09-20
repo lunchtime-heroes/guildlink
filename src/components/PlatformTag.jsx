@@ -60,19 +60,25 @@ export function PlatformTag({ platforms, style = {} }) {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 20, minWidth: 240, maxWidth: 320 }}
+            style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: 20, minWidth: 240, maxWidth: 320, textAlign: "center" }}
           >
-            <div style={{ color: C.text, fontWeight: 700, fontSize: 14, marginBottom: 12 }}>Available On</div>
+            {/* Matches the "GUILDLINK DISCOVERY" banner treatment used on
+                DiscoveryCardVertical — uppercase, bold, letter-spaced —
+                so this reads as a consistent piece of the app's visual
+                language rather than a one-off dialog style. */}
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: TEAL, marginBottom: 14 }}>
+              Available On
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {list.map(p => (
-                <div key={p} style={{ color: C.text, fontSize: 13, padding: "4px 0", borderBottom: "1px solid " + C.border }}>
+                <div key={p} style={{ color: C.text, fontSize: 13, textAlign: "center", padding: "4px 0", borderBottom: "1px solid " + C.border }}>
                   {p}
                 </div>
               ))}
             </div>
             <button
               onClick={() => setOpen(false)}
-              style={{ marginTop: 14, width: "100%", background: "transparent", border: "1px solid " + C.border, borderRadius: 6, color: C.textDim, fontSize: 12, padding: "6px 0", cursor: "pointer" }}
+              style={{ marginTop: 14, width: "100%", background: "transparent", border: "1px solid " + C.border, borderRadius: 6, color: C.textDim, fontSize: 12, padding: "6px 0", cursor: "pointer", textAlign: "center" }}
             >
               Close
             </button>
