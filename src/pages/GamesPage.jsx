@@ -824,6 +824,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               {discoveryResults.map(g => {
                 const cardId = g.id || g.igdb_id;
                 const onShelf = userShelf.has(g.id);
+                const shelfStatus = userShelf.get(g.id);
                 const menuOpen = shelfMenuOpen === cardId;
                 const navigateToGame = async () => {
                   if (menuOpen) { setShelfMenuOpen(null); return; }
@@ -831,6 +832,26 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                     const inserted = await upsertGameFromIGDB(g);
                     if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", "/game/" + inserted.id); }
                   } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", "/game/" + g.id); }
+                };
+                // Was previously excluded entirely for IGDB-sourced results
+                // (results 9+ once local displayLimit is exhausted), which
+                // made the "+ Add to Shelf" button appear to vanish partway
+                // through a result set. ShelfStatusMenu needs a real local
+                // game.id to write to user_games, so an IGDB-only result
+                // must be upserted into `games` first — same resolve step
+                // navigateToGame already does — before the menu can open.
+                const openShelfMenu = async (e) => {
+                  e.stopPropagation();
+                  if (menuOpen) { setShelfMenuOpen(null); return; }
+                  if (g._fromIGDB) {
+                    const inserted = await upsertGameFromIGDB(g);
+                    if (inserted) {
+                      setDiscoveryResults(prev => prev.map(r => (r === g ? { ...inserted, _stat: inserted.genre || "" } : r)));
+                      setShelfMenuOpen(inserted.id);
+                    }
+                  } else {
+                    setShelfMenuOpen(cardId);
+                  }
                 };
                 return (
                   <PixelCornerBox key={cardId} size="lg" borderColor={onShelf ? C.accentDim : C.border} bg={C.surface} style={{ cursor: "pointer", position: "relative", alignSelf: "start", minWidth: 0 }}>
@@ -860,11 +881,17 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       {g._stat && (
                         <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{g._stat}</div>
                       )}
-                      {currentUser && !g._fromIGDB && !onShelf && (
+                      {currentUser && (
                         <div style={{ padding: "1px 0" }}>
-                          <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}>
-                            {"+ Add to Shelf"}
-                          </PixelButton>
+                          {onShelf ? (
+                            <div style={{ fontSize: 11, fontWeight: 700, color: C.accentDim, textAlign: "center", padding: "6px 0" }}>
+                              {{ want_to_play: "On Want to Play", playing: "On Playing Now", have_played: "On Have Played", not_for_me: "Not Interested" }[shelfStatus] || "On Your Shelf"}
+                            </div>
+                          ) : (
+                            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={openShelfMenu}>
+                              {"+ Add to Shelf"}
+                            </PixelButton>
+                          )}
                         </div>
                       )}
                     </div>
