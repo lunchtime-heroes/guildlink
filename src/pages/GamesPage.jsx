@@ -4,6 +4,9 @@ import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { logChartEvent, formatScore } from "../utils.js";
 import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
+import { useUserShelf } from "../hooks/useUserShelf.js";
+import { GameResultRow } from "../components/GameResultRow.jsx";
+import { ShelfStatusMenu } from "../components/ShelfStatusMenu.jsx";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
@@ -13,7 +16,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   // ── Games data ──
   const [dbGames, setDbGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(true);
-  const [userShelf, setUserShelf] = useState(new Map()); // game_id -> status
+  const { userShelf, setLocalStatus } = useUserShelf(currentUser);
 
   // ── Discovery state ──
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
@@ -95,21 +98,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     }).sort((a, b) => b.finalScore - a.finalScore);
   };
 
-  // Load games + shelf
+  // Load games (shelf now handled by useUserShelf above)
   useEffect(() => {
     supabase.from("games").select("*").order("followers", { ascending: false }).then(({ data }) => {
       if (data) setDbGames(data);
       setGamesLoading(false);
     });
-    if (currentUser?.id) {
-      // Was game_id only (membership Set) — now also pulls status so search
-      // results can show a checkmark AND callers can look up which status
-      // a game is already on, not just whether it's on the shelf at all.
-      supabase.from("user_games").select("game_id, status").eq("user_id", currentUser.id).then(({ data }) => {
-        if (data) setUserShelf(new Map(data.map(r => [r.game_id, r.status])));
-      });
-    }
-  }, [currentUser?.id]);
+  }, []);
 
   // Load social graph (follows + guild members)
   useEffect(() => {
@@ -769,29 +764,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 {typeaheadResults.length > 0 && dropdownRect && ReactDOM.createPortal(
                   <div style={{ position: "fixed", top: dropdownTop, left: dropdownLeft, width: dropdownWidth, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, zIndex: 2000, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                     {typeaheadResults.map((g, i) => (
-                      <div key={g.id || g.igdb_id} onMouseDown={async () => {
-                        if (g._fromIGDB) {
-                          const inserted = await upsertGameFromIGDB(g);
-                          if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
-                        } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }
-                        setTypeaheadResults([]); setNameSearch("");
-                      }}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
-                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                        onMouseLeave={e => e.currentTarget.style.background = C.surface}>
-                        {g.cover_url
-                          ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                          : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
-                        }
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
-                            {userShelf.has(g.id) && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
-                          </div>
-                          {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
-                        </div>
-                        {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
-                      </div>
+                      <GameResultRow
+                        key={g.id || g.igdb_id}
+                        game={g}
+                        shelfStatus={userShelf.get(g.id)}
+                        variant="compact"
+                        useMouseDown
+                        style={{ padding: "8px 12px", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
+                        onSelect={async (game) => {
+                          if (game._fromIGDB) {
+                            const inserted = await upsertGameFromIGDB(game);
+                            if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
+                          } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }
+                          setTypeaheadResults([]); setNameSearch("");
+                        }}
+                      />
                     ))}
                     <div onMouseDown={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
                       style={{ padding: "8px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", borderTop: "1px solid " + C.border, textAlign: "center" }}
@@ -852,33 +839,12 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       document.body
                     )}
                     {menuOpen && (
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
-                        <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{g.name}</div>
-                        {[{ id: "want_to_play", label: "Want to Play" }, { id: "playing", label: "Playing Now" }, { id: "have_played", label: "Have Played" }, { id: "not_for_me", label: "Not Interested" }].map(opt => {
-                          const optColor = opt.id === "playing" ? C.green : opt.id === "want_to_play" ? C.accent : opt.id === "have_played" ? C.gold : C.red;
-                          return (
-                            <div key={opt.id} style={{ padding: "1px 0" }}>
-                              <PixelButton key={opt.id} fullWidth size="xs" bg={C.surface} borderColor={optColor} color={optColor} style={{ justifyContent: "center" }} onClick={async e => {
-                                e.stopPropagation();
-                                const { data: { user: authUser } } = await supabase.auth.getUser();
-                                if (!authUser) return;
-                                await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
-                                const eventMap = { playing: "shelf_playing", want_to_play: "shelf_want", have_played: "shelf_played" };
-                                if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
-                                setUserShelf(prev => new Set([...prev, g.id]));
-                                if (opt.id === "not_for_me") {
-                                  setDiscoveryResults(prev => prev.filter(r => r.id !== g.id));
-                                }
-                                setShelfMenuOpen(null);
-                              }}>{opt.label}</PixelButton>
-                            </div>
-                          );
-                        })}
-                        <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(null); }}
-                          style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
-                          Cancel
-                        </button>
-                      </div>
+                      <ShelfStatusMenu
+                        game={g}
+                        onStatusSet={setLocalStatus}
+                        onClose={() => setShelfMenuOpen(null)}
+                        onNotForMe={(gameId) => setDiscoveryResults(prev => prev.filter(r => r.id !== gameId))}
+                      />
                     )}
                     <div style={{ width: "100%", height: 200, flexShrink: 0, background: "#0a0f1a" }} onClick={navigateToGame}>
                       {g.cover_url
