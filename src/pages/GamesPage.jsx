@@ -27,6 +27,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [guildMemberIds, setGuildMemberIds] = useState([]);
   const [nameSearch, setNameSearch] = useState("");
   const [typeaheadResults, setTypeaheadResults] = useState([]);
+  // Guards against the exact race condition documented in gameSearch.js's
+  // own header comments (bug #4), here manifesting as a "stuck" dropdown:
+  // onChange is async, so if Enter is pressed before a prior keystroke's
+  // request resolves, that stale response can call setTypeaheadResults
+  // AFTER Enter already cleared it, silently reopening the dropdown.
+  // Any action that should invalidate in-flight typeahead (a newer
+  // keystroke, Enter, clicking Search) bumps this ref; a response only
+  // applies if its own sequence number still matches when it resolves.
+  const typeaheadSeqRef = useRef(0);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null);
   const [discoveryResults, setDiscoveryResults] = useState(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
@@ -742,21 +751,23 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       const val = e.target.value;
                       setNameSearch(val);
                       const q = val.startsWith("@") ? val.slice(1) : val;
+                      const mySeq = ++typeaheadSeqRef.current;
                       if (!q) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
                       if (q.length >= 2) {
                         const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 4, igdbNewLimit: 2 });
+                        if (typeaheadSeqRef.current !== mySeq) return; // a newer keystroke or Enter has since invalidated this response
                         setTypeaheadResults([...local, ...fromIGDB]);
                       } else {
                         setTypeaheadResults([]);
                       }
                     }}
-                    onKeyDown={e => { if (e.key === "Enter") { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); } }}
+                    onKeyDown={e => { if (e.key === "Enter") { typeaheadSeqRef.current++; setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); } }}
                     onBlur={() => setTimeout(() => setTypeaheadResults([]), 150)}
                     placeholder="Search by name or @game..."
                     style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
                   />
                   {nameSearch && (
-                    <button onClick={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
+                    <button onClick={() => { typeaheadSeqRef.current++; setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
                       style={{ background: C.accent, border: "none", borderRadius: 4, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                       Search
                     </button>
