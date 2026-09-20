@@ -7,6 +7,7 @@ import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
 import { useUserShelf } from "../hooks/useUserShelf.js";
 import { GameResultRow } from "../components/GameResultRow.jsx";
 import { ShelfStatusMenu } from "../components/ShelfStatusMenu.jsx";
+import { PlatformTag } from "../components/PlatformTag.jsx";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
@@ -880,6 +881,11 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       </div>
                       {g._stat && (
                         <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{g._stat}</div>
+                      )}
+                      {g.platforms && (
+                        <div style={{ marginBottom: 6 }}>
+                          <PlatformTag platforms={g.platforms} />
+                        </div>
                       )}
                       {currentUser && (
                         <div style={{ padding: "1px 0" }}>
