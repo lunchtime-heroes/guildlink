@@ -3,6 +3,11 @@ import ReactDOM from "react-dom";
 import { C } from "../constants.js";
 import supabase from "../supabase.js";
 import { logChartEvent, formatScore } from "../utils.js";
+import { searchGamesCore, upsertGameFromIGDB } from "../utils/gameSearch.js";
+import { useUserShelf } from "../hooks/useUserShelf.js";
+import { GameResultRow } from "../components/GameResultRow.jsx";
+import { ShelfStatusMenu, STATUS_LABEL_BY_ID, STATUS_COLOR_KEY_BY_ID } from "../components/ShelfStatusMenu.jsx";
+import { PlatformTag } from "../components/PlatformTag.jsx";
 import { ShareChartsButton } from "../components/ShareButton.jsx";
 import { PixelCornerBox } from "../components/PixelCornerBox.jsx";
 import { PixelButton } from "../components/PixelButton.jsx";
@@ -12,7 +17,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   // ── Games data ──
   const [dbGames, setDbGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(true);
-  const [userShelf, setUserShelf] = useState(new Set());
+  const { userShelf, setLocalStatus } = useUserShelf(currentUser);
 
   // ── Discovery state ──
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
@@ -22,8 +27,26 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const [guildMemberIds, setGuildMemberIds] = useState([]);
   const [nameSearch, setNameSearch] = useState("");
   const [typeaheadResults, setTypeaheadResults] = useState([]);
+  // Guards against the exact race condition documented in gameSearch.js's
+  // own header comments (bug #4), here manifesting as a "stuck" dropdown:
+  // onChange is async, so if Enter is pressed before a prior keystroke's
+  // request resolves, that stale response can call setTypeaheadResults
+  // AFTER Enter already cleared it, silently reopening the dropdown.
+  // Any action that should invalidate in-flight typeahead (a newer
+  // keystroke, Enter, clicking Search) bumps this ref; a response only
+  // applies if its own sequence number still matches when it resolves.
+  const typeaheadSeqRef = useRef(0);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null);
   const [discoveryResults, setDiscoveryResults] = useState(null);
+  // Tags which of the two distinct result-population paths below currently
+  // fills discoveryResults, so shelf_source_events can attribute an add
+  // correctly. Matches mobile's confirmed live source names exactly
+  // (add-game.tsx uses 'add_game_page'; these two web-only equivalents —
+  // 'games_page_insight' and 'game_page_search' — already exist as real
+  // values in production shelf_source_events data, per the admin dashboard's
+  // weekly discovery pulse, even though this file had no write for them
+  // until now).
+  const [resultsSource, setResultsSource] = useState(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [discoveryLabel, setDiscoveryLabel] = useState("");
 
@@ -94,18 +117,13 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     }).sort((a, b) => b.finalScore - a.finalScore);
   };
 
-  // Load games + shelf
+  // Load games (shelf now handled by useUserShelf above)
   useEffect(() => {
     supabase.from("games").select("*").order("followers", { ascending: false }).then(({ data }) => {
       if (data) setDbGames(data);
       setGamesLoading(false);
     });
-    if (currentUser?.id) {
-      supabase.from("user_games").select("game_id").eq("user_id", currentUser.id).then(({ data }) => {
-        if (data) setUserShelf(new Set(data.map(r => r.game_id)));
-      });
-    }
-  }, [currentUser?.id]);
+  }, []);
 
   // Load social graph (follows + guild members)
   useEffect(() => {
@@ -479,6 +497,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(insight.id);
     setDiscoveryLoading(true);
     setDiscoveryResults(null);
+    setResultsSource("games_page_insight");
     setDiscoveryLabel(insight.label);
     setNameSearch("");
     const userPool = getUserPool(ring ?? activeRing);
@@ -502,21 +521,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(null);
     setDiscoveryLoading(true);
     setDiscoveryLabel("Results for \"" + q + "\"");
-    const [localRes, igdbRes] = await Promise.allSettled([
-      supabase.from("games").select("id, name, genre, cover_url").ilike("name", "%" + q + "%").limit(8),
-      fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-    ]);
-    const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-    const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-    const localNames = new Set(local.map(g => g.name.toLowerCase()));
-    const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-    const all = [...local, ...fromIGDB].slice(0, 16);
+    setResultsSource("game_page_search");
+    const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 8, igdbNewLimit: 8 });
+    const all = [...local, ...fromIGDB];
     setDiscoveryResults(all.map(g => ({ ...g, _stat: g.genre || "" })));
     setDiscoveryLoading(false);
   };
 
   const clearDiscovery = () => {
-    setActiveInsight(null); setDiscoveryResults(null);
+    setActiveInsight(null); setDiscoveryResults(null); setResultsSource(null);
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
@@ -749,28 +762,23 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       const val = e.target.value;
                       setNameSearch(val);
                       const q = val.startsWith("@") ? val.slice(1) : val;
+                      const mySeq = ++typeaheadSeqRef.current;
                       if (!q) { setDiscoveryResults(null); setActiveInsight(null); setDiscoveryLabel(""); setTypeaheadResults([]); return; }
                       if (q.length >= 2) {
-                        const [localRes, igdbRes] = await Promise.allSettled([
-                          supabase.from("games").select("id, name, genre, cover_url").ilike("name", "%" + q + "%").limit(4),
-                          fetch("/api/igdb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) }).then(r => r.json()).catch(() => ({ games: [] })),
-                        ]);
-                        const local = localRes.status === "fulfilled" ? (localRes.value.data || []) : [];
-                        const igdb = igdbRes.status === "fulfilled" ? (igdbRes.value.games || []) : [];
-                        const localNames = new Set(local.map(g => g.name.toLowerCase()));
-                        const fromIGDB = igdb.filter(g => !localNames.has(g.name.toLowerCase())).map(g => ({ ...g, _fromIGDB: true }));
-                        setTypeaheadResults([...local, ...fromIGDB].slice(0, 6));
+                        const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 4, igdbNewLimit: 2 });
+                        if (typeaheadSeqRef.current !== mySeq) return; // a newer keystroke or Enter has since invalidated this response
+                        setTypeaheadResults([...local, ...fromIGDB]);
                       } else {
                         setTypeaheadResults([]);
                       }
                     }}
-                    onKeyDown={e => { if (e.key === "Enter") { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); } }}
+                    onKeyDown={e => { if (e.key === "Enter") { typeaheadSeqRef.current++; setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); } }}
                     onBlur={() => setTimeout(() => setTypeaheadResults([]), 150)}
                     placeholder="Search by name or @game..."
                     style={{ flex: 1, background: C.surfaceRaised, border: "1px solid " + C.border, borderRadius: 4, padding: "8px 14px", color: C.text, fontSize: 14, outline: "none" }}
                   />
                   {nameSearch && (
-                    <button onClick={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
+                    <button onClick={() => { typeaheadSeqRef.current++; setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
                       style={{ background: C.accent, border: "none", borderRadius: 4, padding: "8px 16px", color: C.accentText, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                       Search
                     </button>
@@ -779,26 +787,21 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                 {typeaheadResults.length > 0 && dropdownRect && ReactDOM.createPortal(
                   <div style={{ position: "fixed", top: dropdownTop, left: dropdownLeft, width: dropdownWidth, background: C.surface, border: "1px solid " + C.border, borderRadius: 4, zIndex: 2000, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                     {typeaheadResults.map((g, i) => (
-                      <div key={g.id || g.igdb_id} onMouseDown={async () => {
-                        if (g._fromIGDB) {
-                          const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
-                          if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
-                        } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", `/game/${g.id}`); }
-                        setTypeaheadResults([]); setNameSearch("");
-                      }}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
-                        onMouseEnter={e => e.currentTarget.style.background = C.surfaceHover}
-                        onMouseLeave={e => e.currentTarget.style.background = C.surface}>
-                        {g.cover_url
-                          ? <img src={g.cover_url} alt="" style={{ width: 24, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                          : <div style={{ width: 24, height: 32, borderRadius: 2, background: C.surfaceRaised, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🎮</div>
-                        }
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ color: C.text, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                          {g.genre && <div style={{ color: C.textDim, fontSize: 10 }}>{g.genre}</div>}
-                        </div>
-                        {g._fromIGDB && <span style={{ color: C.teal, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>+ Add</span>}
-                      </div>
+                      <GameResultRow
+                        key={g.id || g.igdb_id}
+                        game={g}
+                        shelfStatus={userShelf.get(g.id)}
+                        variant="compact"
+                        useMouseDown
+                        style={{ padding: "8px 12px", borderBottom: i < typeaheadResults.length - 1 ? "1px solid " + C.border : "none", background: C.surface }}
+                        onSelect={async (game) => {
+                          if (game._fromIGDB) {
+                            const inserted = await upsertGameFromIGDB(game);
+                            if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", `/game/${inserted.id}`); }
+                          } else { setCurrentGame(game.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: game.id }, "", `/game/${game.id}`); }
+                          setTypeaheadResults([]); setNameSearch("");
+                        }}
+                      />
                     ))}
                     <div onMouseDown={() => { setTypeaheadResults([]); runNameSearch(nameSearch.startsWith("@") ? nameSearch.slice(1) : nameSearch); }}
                       style={{ padding: "8px 12px", color: C.accentSoft, fontSize: 12, fontWeight: 600, cursor: "pointer", borderTop: "1px solid " + C.border, textAlign: "center" }}
@@ -844,13 +847,34 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
               {discoveryResults.map(g => {
                 const cardId = g.id || g.igdb_id;
                 const onShelf = userShelf.has(g.id);
+                const shelfStatus = userShelf.get(g.id);
                 const menuOpen = shelfMenuOpen === cardId;
                 const navigateToGame = async () => {
                   if (menuOpen) { setShelfMenuOpen(null); return; }
                   if (g._fromIGDB) {
-                    const { data: inserted } = await supabase.from("games").insert({ name: g.name, genre: g.genre, summary: g.summary, cover_url: g.cover_url, igdb_id: g.igdb_id, first_release_date: g.first_release_date, followers: 0 }).select().single();
+                    const inserted = await upsertGameFromIGDB(g);
                     if (inserted) { setCurrentGame(inserted.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: inserted.id }, "", "/game/" + inserted.id); }
                   } else { setCurrentGame(g.id); setActivePage("game"); window.history.pushState({ page: "game", gameId: g.id }, "", "/game/" + g.id); }
+                };
+                // Was previously excluded entirely for IGDB-sourced results
+                // (results 9+ once local displayLimit is exhausted), which
+                // made the "+ Add to Shelf" button appear to vanish partway
+                // through a result set. ShelfStatusMenu needs a real local
+                // game.id to write to user_games, so an IGDB-only result
+                // must be upserted into `games` first — same resolve step
+                // navigateToGame already does — before the menu can open.
+                const openShelfMenu = async (e) => {
+                  e.stopPropagation();
+                  if (menuOpen) { setShelfMenuOpen(null); return; }
+                  if (g._fromIGDB) {
+                    const inserted = await upsertGameFromIGDB(g);
+                    if (inserted) {
+                      setDiscoveryResults(prev => prev.map(r => (r === g ? { ...inserted, _stat: inserted.genre || "" } : r)));
+                      setShelfMenuOpen(inserted.id);
+                    }
+                  } else {
+                    setShelfMenuOpen(cardId);
+                  }
                 };
                 return (
                   <PixelCornerBox key={cardId} size="lg" borderColor={onShelf ? C.accentDim : C.border} bg={C.surface} style={{ cursor: "pointer", position: "relative", alignSelf: "start", minWidth: 0 }}>
@@ -859,33 +883,14 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       document.body
                     )}
                     {menuOpen && (
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 12px", gap: 8 }}>
-                        <div style={{ color: C.text, fontWeight: 700, fontSize: 12, textAlign: "center", marginBottom: 4 }}>{g.name}</div>
-                        {[{ id: "want_to_play", label: "Want to Play" }, { id: "playing", label: "Playing Now" }, { id: "have_played", label: "Have Played" }, { id: "not_for_me", label: "Not Interested" }].map(opt => {
-                          const optColor = opt.id === "playing" ? C.green : opt.id === "want_to_play" ? C.accent : opt.id === "have_played" ? C.gold : C.red;
-                          return (
-                            <div key={opt.id} style={{ padding: "1px 0" }}>
-                              <PixelButton key={opt.id} fullWidth size="xs" bg={C.surface} borderColor={optColor} color={optColor} style={{ justifyContent: "center" }} onClick={async e => {
-                                e.stopPropagation();
-                                const { data: { user: authUser } } = await supabase.auth.getUser();
-                                if (!authUser) return;
-                                await supabase.from("user_games").upsert({ user_id: authUser.id, game_id: g.id, status: opt.id, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
-                                const eventMap = { playing: "shelf_playing", want_to_play: "shelf_want", have_played: "shelf_played" };
-                                if (eventMap[opt.id]) logChartEvent(g.id, eventMap[opt.id], authUser.id);
-                                setUserShelf(prev => new Set([...prev, g.id]));
-                                if (opt.id === "not_for_me") {
-                                  setDiscoveryResults(prev => prev.filter(r => r.id !== g.id));
-                                }
-                                setShelfMenuOpen(null);
-                              }}>{opt.label}</PixelButton>
-                            </div>
-                          );
-                        })}
-                        <button onClick={e => { e.stopPropagation(); setShelfMenuOpen(null); }}
-                          style={{ background: "transparent", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", marginTop: 4, textAlign: "center" }}>
-                          Cancel
-                        </button>
-                      </div>
+                      <ShelfStatusMenu
+                        game={g}
+                        currentStatus={shelfStatus}
+                        source={resultsSource}
+                        onStatusSet={setLocalStatus}
+                        onClose={() => setShelfMenuOpen(null)}
+                        onNotForMe={(gameId) => setDiscoveryResults(prev => prev.filter(r => r.id !== gameId))}
+                      />
                     )}
                     <div style={{ width: "100%", height: 200, flexShrink: 0, background: "#0a0f1a" }} onClick={navigateToGame}>
                       {g.cover_url
@@ -893,16 +898,38 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                         : <div style={{ width: "100%", height: "100%", background: C.surfaceRaised, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🎮</div>
                       }
                     </div>
-                    <div style={{ padding: "10px 12px" }}>
-                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</div>
-                      {g._stat && (
-                        <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4 }}>{g._stat}</div>
-                      )}
-                      {currentUser && !g._fromIGDB && !onShelf && (
+                    <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column" }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 13, marginBottom: 2, lineHeight: 1.3, display: "flex", alignItems: "center", gap: 5, minHeight: 17 }}>
+                        {onShelf && <span style={{ color: C.accent, flexShrink: 0 }}>✓</span>}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
+                      </div>
+                      {/* Genre row — fixed height reserved whether or not a game has one,
+                          so cards with/without genre stay the same height in the grid. */}
+                      <div style={{ color: C.textDim, fontSize: 10, fontWeight: 600, marginBottom: 6, lineHeight: 1.4, minHeight: 14 }}>
+                        {g._stat || ""}
+                      </div>
+                      {/* Platform tag row — same fixed-height-reservation approach. */}
+                      <div style={{ marginBottom: 6, minHeight: 20 }}>
+                        {g.platforms && <PlatformTag platforms={g.platforms} />}
+                      </div>
+                      {currentUser && (
                         <div style={{ padding: "1px 0" }}>
-                          <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}>
-                            {"+ Add to Shelf"}
-                          </PixelButton>
+                          {onShelf ? (
+                            <PixelButton
+                              fullWidth size="xs"
+                              bg={C.surface}
+                              borderColor={C[STATUS_COLOR_KEY_BY_ID[shelfStatus]] || C.accentDim}
+                              color={C[STATUS_COLOR_KEY_BY_ID[shelfStatus]] || C.accentDim}
+                              style={{ justifyContent: "center" }}
+                              onClick={e => { e.stopPropagation(); setShelfMenuOpen(menuOpen ? null : cardId); }}
+                            >
+                              {STATUS_LABEL_BY_ID[shelfStatus] || "On Your Shelf"}
+                            </PixelButton>
+                          ) : (
+                            <PixelButton fullWidth size="xs" bg={C.surface} borderColor={C.goldBorder} color={C.gold} style={{ justifyContent: "center" }} onClick={openShelfMenu}>
+                              {"+ Add to Shelf"}
+                            </PixelButton>
+                          )}
                         </div>
                       )}
                     </div>
