@@ -38,6 +38,15 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   const typeaheadSeqRef = useRef(0);
   const [shelfMenuOpen, setShelfMenuOpen] = useState(null);
   const [discoveryResults, setDiscoveryResults] = useState(null);
+  // Tags which of the two distinct result-population paths below currently
+  // fills discoveryResults, so shelf_source_events can attribute an add
+  // correctly. Matches mobile's confirmed live source names exactly
+  // (add-game.tsx uses 'add_game_page'; these two web-only equivalents —
+  // 'games_page_insight' and 'game_page_search' — already exist as real
+  // values in production shelf_source_events data, per the admin dashboard's
+  // weekly discovery pulse, even though this file had no write for them
+  // until now).
+  const [resultsSource, setResultsSource] = useState(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [discoveryLabel, setDiscoveryLabel] = useState("");
 
@@ -488,6 +497,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(insight.id);
     setDiscoveryLoading(true);
     setDiscoveryResults(null);
+    setResultsSource("games_page_insight");
     setDiscoveryLabel(insight.label);
     setNameSearch("");
     const userPool = getUserPool(ring ?? activeRing);
@@ -511,6 +521,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
     setActiveInsight(null);
     setDiscoveryLoading(true);
     setDiscoveryLabel("Results for \"" + q + "\"");
+    setResultsSource("game_page_search");
     const { local, fromIGDB } = await searchGamesCore(q, { displayLimit: 8, igdbNewLimit: 8 });
     const all = [...local, ...fromIGDB];
     setDiscoveryResults(all.map(g => ({ ...g, _stat: g.genre || "" })));
@@ -518,7 +529,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
   };
 
   const clearDiscovery = () => {
-    setActiveInsight(null); setDiscoveryResults(null);
+    setActiveInsight(null); setDiscoveryResults(null); setResultsSource(null);
     setDiscoveryLabel(""); setNameSearch(""); setDiscoveryOpen(false);
   };
 
@@ -875,6 +886,7 @@ function GamesPage({ setActivePage, setCurrentGame, isMobile, currentUser, onSig
                       <ShelfStatusMenu
                         game={g}
                         currentStatus={shelfStatus}
+                        source={resultsSource}
                         onStatusSet={setLocalStatus}
                         onClose={() => setShelfMenuOpen(null)}
                         onNotForMe={(gameId) => setDiscoveryResults(prev => prev.filter(r => r.id !== gameId))}

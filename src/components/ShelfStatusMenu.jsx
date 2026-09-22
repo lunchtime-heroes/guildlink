@@ -37,13 +37,21 @@ const CHART_EVENT_MAP = { playing: "shelf_playing", want_to_play: "shelf_want", 
  * @param {object} game - the game being added/changed (needs at least .id, .name)
  * @param {string} [currentStatus] - the game's existing status, if any (e.g. userShelf.get(game.id)) —
  *   shown as a checkmark next to the matching option so opening the menu doesn't lose that context
+ * @param {string} [source] - which surface/context this add is coming from, for shelf_source_events
+ *   attribution (e.g. "games_page_insight", "game_page_search"). Confirmed live values as of Sept 2026
+ *   include add_game_page, games_page_insight, game_page_direct, game_page_search, onboarding, and the
+ *   discovery_* family — see wiki-admin-processes.md. Mirrors mobile's add-game.tsx, which already writes
+ *   this on every add; web had no equivalent write anywhere until this component. If source is omitted,
+ *   no event is logged — callers that don't have a clear attribution should pass one explicitly rather
+ *   than silently mislabeling an add, since a wrong source pollutes the weekly discovery pulse same as
+ *   a missing one does.
  * @param {function} onStatusSet - called with (gameId, statusId) after a successful write, so the
  *   caller can update its own userShelf Map (e.g. via useUserShelf's setLocalStatus) without a refetch
  * @param {function} onClose - called when the menu should close (selection made, or Cancel clicked)
  * @param {function} onNotForMe - optional — called after a "not_for_me" selection, for callers that
  *   want to remove the game from a results list (GamesPage's discovery grid does this)
  */
-export function ShelfStatusMenu({ game, currentStatus, onStatusSet, onClose, onNotForMe }) {
+export function ShelfStatusMenu({ game, currentStatus, source, onStatusSet, onClose, onNotForMe }) {
   const handleSelect = async (opt, e) => {
     e.stopPropagation();
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -52,6 +60,16 @@ export function ShelfStatusMenu({ game, currentStatus, onStatusSet, onClose, onN
       { user_id: authUser.id, game_id: game.id, status: opt.id, updated_at: new Date().toISOString() },
       { onConflict: "user_id,game_id" }
     );
+    // Append-only event log — fires on every add/status-change action this
+    // menu performs, regardless of whether the game was already on the
+    // shelf. Never overwritten, never upserted — same convention as
+    // add-game.tsx on mobile. Only fires when the caller supplied a real
+    // source; see the source param note above for why that's deliberate.
+    if (source) {
+      supabase.from("shelf_source_events").insert({
+        user_id: authUser.id, game_id: game.id, status: opt.id, source,
+      }).then(() => {});
+    }
     if (CHART_EVENT_MAP[opt.id]) logChartEvent(game.id, CHART_EVENT_MAP[opt.id], authUser.id);
     onStatusSet?.(game.id, opt.id);
     if (opt.id === "not_for_me") onNotForMe?.(game.id);
