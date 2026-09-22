@@ -225,6 +225,12 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
   const [nudgeResults, setNudgeResults] = useState([]);
   const [nudgeDropdownPos, setNudgeDropdownPos] = useState(null);
   const nudgeInputRef = useRef(null);
+  // Same stale-response guard added elsewhere today (GamesPage.jsx's
+  // typeahead, both mobile composers) — a fast typer's older mention
+  // search resolving after a newer one could otherwise silently
+  // repopulate the dropdown with outdated results.
+  const mentionSeqRef = useRef(0);
+  const nudgeSeqRef = useRef(0);
   const textareaRef = useRef(null);
 
   const URL_REGEX = /https?:\/\/[^\s<>"]+/gi;
@@ -275,11 +281,13 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
         setMentionQuery(query);
         setMentionIndex(0);
       } else {
+        const mySeq = ++mentionSeqRef.current;
         const [gameRes, playersRes, npcsRes] = await Promise.allSettled([
           searchGamesCore(query, { displayLimit: 4, igdbNewLimit: 4 }),
           supabase.from("profiles").select("id, username, handle, avatar_initials").or(`username.ilike.%${query}%,handle.ilike.%${query}%`).limit(3),
           supabase.from("npcs").select("id, name, handle, avatar_initials").or(`name.ilike.%${query}%,handle.ilike.%${query}%`).eq("is_active", true).limit(3),
         ]);
+        if (mentionSeqRef.current !== mySeq) return; // a newer keystroke has since invalidated this response
         const { local: localGames, fromIGDB: newFromIGDB } = gameRes.status === "fulfilled" ? gameRes.value : { local: [], fromIGDB: [] };
         const players = (playersRes.status === "fulfilled" ? (playersRes.value.data || []) : []).map(p => ({ ...p, _type: "player" }));
         const npcs = (npcsRes.status === "fulfilled" ? (npcsRes.value.data || []) : []).map(n => ({ ...n, _type: "npc" }));
@@ -368,7 +376,9 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
       setNudgeDropdownPos({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width });
     }
     if (val.length < 2) { setNudgeResults([]); return; }
+    const mySeq = ++nudgeSeqRef.current;
     const { local, fromIGDB } = await searchGamesCore(val, { displayLimit: 5, igdbNewLimit: 1 });
+    if (nudgeSeqRef.current !== mySeq) return; // a newer keystroke has since invalidated this response
     setNudgeResults([...local, ...fromIGDB]);
   };
 
