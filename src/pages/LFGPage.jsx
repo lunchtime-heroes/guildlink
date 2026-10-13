@@ -31,16 +31,17 @@ function LFGPage({ isMobile, currentUser, setCurrentPlayer, setActivePage, setCu
     const guildsData = data || [];
 
     // Fetch member counts separately — embedding guild_members in the join
-    // causes inner-join filtering that drops guilds depending on RLS
+    // causes inner-join filtering that drops guilds depending on RLS.
+    // Uses an RPC rather than counting rows client-side: RLS hides the member
+    // rows of private guilds from non-members, so a plain select would report
+    // 0 for them. The function returns only the number, never who.
     const guildIds = guildsData.map(g => g.id);
     let countMap = {};
     if (guildIds.length > 0) {
-      const { data: members } = await supabase
-        .from("guild_members")
-        .select("guild_id")
-        .in("guild_id", guildIds)
-        .eq("status", "active");
-      (members || []).forEach(m => { countMap[m.guild_id] = (countMap[m.guild_id] || 0) + 1; });
+      const { data: counts, error: countsError } = await supabase
+        .rpc("get_guild_member_counts", { p_guild_ids: guildIds });
+      if (countsError) console.warn("Could not load guild member counts:", countsError.message);
+      (counts || []).forEach(c => { countMap[c.guild_id] = c.member_count; });
     }
 
     // Platform guilds first, then rest
