@@ -1395,6 +1395,7 @@ function FeedPage({ activePage, setActivePage, setCurrentGame, setCurrentNPC, se
                           setCurrentGame={setCurrentGame} setCurrentPlayer={setCurrentPlayer}
                           setGameDefaultTab={setGameDefaultTab}
                           isMobile={isMobile} isGuest={isGuest} onSignIn={onSignIn}
+                          currentStatus={userShelf.get(dc.game_id)}
                         />
                       </div>
                     ))}

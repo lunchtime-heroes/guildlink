@@ -41,7 +41,8 @@ const SHELF_OPTIONS = [
 
 const textStyle = { fontSize: 12, color: C.textMuted, lineHeight: 1.4 };
 
-const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn, setGameDefaultTab }) {
+const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, currentUser, setActivePage, setCurrentGame, setCurrentPlayer, isMobile, isGuest, onSignIn, setGameDefaultTab, currentStatus }) {
+  // currentStatus: this game's status on the viewer's shelf (from the parent's shared shelf map), if any
   const [game, setGame] = useState(null);
   const [actor, setActor] = useState(null);
   const [addedToShelf, setAddedToShelf] = useState(null);
@@ -116,6 +117,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
   const handleShelfSelect = async (status) => {
     if (isGuest) { onSignIn?.("Sign in to add games to your shelf."); return; }
     if (!game) return;
+    if (status === currentStatus) { setShelfOpen(false); return; } // already there, nothing to change
     const { data: { user: authUser } } = await supabase.auth.getUser();
     await Promise.all([
       supabase.from("user_games").upsert(
@@ -306,7 +308,7 @@ const DiscoveryCardVertical = React.memo(function DiscoveryCardVertical({ card, 
                   cursor: "pointer",
                   borderRadius: 2,
                 }}>
-                {opt.label}
+                {currentStatus === opt.status ? "\u2713 " : ""}{opt.label}
               </button>
             );
           })}
