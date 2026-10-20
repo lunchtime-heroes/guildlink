@@ -213,6 +213,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
   }, [dbGame]);
 
   const setShelf = async (status) => {
+    if (status === shelfStatus) { setShowShelfMenu(false); return; } // already there, nothing to change
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !dbGame) return;
     await supabase.from("user_games").upsert({ user_id: user.id, game_id: dbGame.id, status, updated_at: new Date().toISOString() }, { onConflict: "user_id,game_id" });
@@ -388,7 +389,7 @@ function GamePage({ gameId, setActivePage, setCurrentGame, setCurrentNPC, setCur
                         {[{ id: "playing", label: "Playing Now" }, { id: "want_to_play", label: "Want to Play" }, { id: "have_played", label: "Have Played" }].map(opt => (
                           <button key={opt.id} onClick={() => setShelf(opt.id)}
                             style={{ display: "block", width: "100%", background: shelfStatus === opt.id ? game.color + "22" : "none", border: "none", padding: "10px 16px", color: shelfStatus === opt.id ? game.color : C.text, fontSize: 13, cursor: "pointer", textAlign: "left", fontWeight: shelfStatus === opt.id ? 700 : 400 }}>
-                            {opt.label}
+                            {shelfStatus === opt.id ? "\u2713 " : ""}{opt.label}
                           </button>
                         ))}
                       </div>

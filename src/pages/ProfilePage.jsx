@@ -137,6 +137,9 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   const [postCount, setPostCount] = useState(0);
   const [postGameNames, setPostGameNames] = useState({});
   const [userShelf, setUserShelf] = useState({ want_to_play: [], playing: [], have_played: [], not_for_me: [] });
+  // game_id -> status, derived from userShelf so the add-game search can mark games already shelved
+  const shelfStatusById = {};
+  Object.entries(userShelf).forEach(([st, arr]) => arr.forEach(e => { shelfStatusById[e.game_id] = st; }));
   const [activeId, setActiveId] = useState(null); // dnd-kit active drag id
   const [activeStatus, setActiveStatus] = useState(null); // which column is being dragged from
   const [dragOverCol, setDragOverCol] = useState(null); // column highlighted during cross-column drag
@@ -547,6 +550,10 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
   };
 
   const addToShelf = async (game, status = "want_to_play") => {
+    if (shelfStatusById[game.id] === status) { // already in this status, nothing to change
+      setAddingGame(false); setGameSearch(""); setGameSearchResults([]);
+      return;
+    }
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const { error } = await supabase.from("user_games").upsert({
@@ -1257,7 +1264,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                        <span style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{game.name}</span>
+                        <span style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{shelfStatusById[game.id] && <span style={{ color: C.accent, marginRight: 6 }}>{"\u2713"}</span>}{game.name}</span>
                         {game._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>COMING SOON</span>}
                       </div>
                       <div style={{ color: C.textDim, fontSize: 12, marginBottom: 10 }}>{game.genre || game.developer || ""}</div>
@@ -1275,7 +1282,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                             setAddingGame(false);
                           }}
                             style={{ background: col.color + "22", border: "1px solid " + col.color + "55", borderRadius: 3, padding: "7px 10px", color: col.color, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            {"+ " + col.label}
+                            {shelfStatusById[game.id] === col.id ? "\u2713 " + col.label : "+ " + col.label}
                           </button>
                         ))}
                       </div>
@@ -1331,7 +1338,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                         }
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{game.name}</span>
+                            <span style={{ fontWeight: 700, color: C.text, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shelfStatusById[game.id] && <span style={{ color: C.accent, marginRight: 6 }}>{"\u2713"}</span>}{game.name}</span>
                             {game._upcoming && <span style={{ color: C.teal, fontSize: 10, fontWeight: 700, background: C.teal + "22", border: "1px solid " + C.teal + "44", borderRadius: 2, padding: "1px 5px", flexShrink: 0 }}>COMING SOON</span>}
                           </div>
                           <div style={{ color: C.textDim, fontSize: 11 }}>{game.platforms || game.genre || game.developer || ""}</div>
@@ -1347,7 +1354,7 @@ function ProfilePage({ setActivePage, setCurrentGame, setCurrentNPC, setCurrentP
                               }
                             }}
                               style={{ background: "transparent", border: "1px solid " + col.color + "44", borderRadius: 3, padding: "4px 8px", color: col.color, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                              {col.label}
+                              {shelfStatusById[game.id] === col.id ? "\u2713 " + col.label : col.label}
                             </button>
                           ))}
                         </div>
